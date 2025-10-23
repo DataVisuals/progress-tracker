@@ -1,0 +1,349 @@
+.metric-chart-container {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Custom Tooltip Styles */
+.custom-tooltip {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 2px solid #00aeef;
+  border-radius: 8px;
+  padding: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 174, 239, 0.1);
+  min-width: 220px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.tooltip-header {
+  background: linear-gradient(135deg, #00aeef 0%, #003c71 100%);
+  color: white;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: 6px 6px 0 0;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+
+.tooltip-body {
+  padding: 12px 14px;
+}
+
+.tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 13px;
+}
+
+.tooltip-row.highlight {
+  background: rgba(0, 174, 239, 0.08);
+  margin: 8px -14px -12px -14px;
+  padding: 10px 14px;
+  border-radius: 0 0 6px 6px;
+  font-weight: 600;
+}
+
+.tooltip-label {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.tooltip-value {
+  font-weight: 600;
+  color: #1f2937;
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltip-value.complete {
+  color: #00aeef;
+}
+
+.tooltip-value.positive {
+  color: #10b981;
+}
+
+.tooltip-value.negative {
+  color: #ef4444;
+}
+
+.tooltip-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
+  margin: 8px 0;
+}
+
+.metric-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #003c71;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #00aeef;
+  padding-bottom: 6px;
+}
+
+.commentary-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.commentary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.commentary-header h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.add-btn {
+  background-color: #00aeef;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.add-btn:hover {
+  background-color: #003c71;
+}
+
+.commentary-view-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.commentary-item {
+  padding: 6px 10px;
+  background-color: #f9fafb;
+  border-radius: 4px;
+  line-height: 1.4;
+  color: #4b5563;
+  font-size: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  position: relative;
+}
+
+.commentary-item strong {
+  color: #1f2937;
+  margin-right: 6px;
+  font-size: 12px;
+}
+
+.commentary-item.latest-comment {
+  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+  border-left: 3px solid #00aeef;
+  padding-left: 12px;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 174, 239, 0.1);
+}
+
+.commentary-item.latest-comment strong {
+  color: #00aeef;
+  font-weight: 600;
+}
+
+.delete-comment-btn {
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.delete-comment-btn:hover {
+  color: #dc2626;
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+.comment-author {
+  color: #9ca3af;
+  font-style: italic;
+  font-size: 11px;
+}
+
+.commentary-add-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.commentary-item-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comment-date-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comment-date-selector label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.comment-date-select {
+  flex: 1;
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #374151;
+  cursor: pointer;
+  background-color: white;
+}
+
+.comment-date-select:focus {
+  outline: none;
+  border-color: #00aeef;
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.1);
+}
+
+.period-select-instructions {
+  font-size: 13px;
+  color: #374151;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.period-select-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.period-select-btn {
+  padding: 8px 16px;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.2s;
+}
+
+.period-select-btn:hover {
+  background-color: #00aeef;
+  border-color: #00aeef;
+  color: white;
+}
+
+.back-btn {
+  padding: 8px 16px;
+  background-color: #f3f4f6;
+  color: #374151;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.back-btn:hover {
+  background-color: #e5e7eb;
+}
+
+.commentary-item-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.commentary-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+}
+
+.commentary-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.commentary-textarea:focus {
+  outline: none;
+  border-color: #00aeef;
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.1);
+}
+
+.commentary-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.save-btn,
+.cancel-btn {
+  padding: 8px 20px;
+  border-radius: 4px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-btn {
+  background-color: #10b981;
+  color: white;
+}
+
+.save-btn:hover {
+  background-color: #059669;
+}
+
+.cancel-btn {
+  background-color: #6b7280;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background-color: #4b5563;
+}

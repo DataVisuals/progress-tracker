@@ -1,0 +1,302 @@
+.craids-container {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.craids-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.craids-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+.add-craid-btn {
+  background-color: #00aeef;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.add-craid-btn:hover {
+  background-color: #003c71;
+}
+
+.craids-loading {
+  padding: 20px;
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.craids-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+.craids-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.craids-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.craid-icon {
+  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.craid-icon-risk {
+  color: #f59e0b;
+}
+
+.craid-icon-issue {
+  color: #ef4444;
+}
+
+.craid-icon-dependency {
+  color: #8b5cf6;
+}
+
+.craid-icon-action {
+  color: #10b981;
+}
+
+.craids-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.craid-item {
+  background-color: #f9fafb;
+  border-radius: 6px;
+  padding: 12px;
+  border-left: 4px solid #d1d5db;
+  transition: all 0.2s;
+}
+
+.craid-item:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.craid-item.craid-open {
+  border-left-color: #3b82f6;
+}
+
+.craid-item.craid-in_progress {
+  border-left-color: #f59e0b;
+}
+
+.craid-item.craid-closed {
+  border-left-color: #10b981;
+  opacity: 0.7;
+}
+
+.craid-item.priority-critical {
+  background-color: #fef2f2;
+}
+
+.craid-item.priority-high {
+  background-color: #fefce8;
+}
+
+.craid-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.craid-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.craid-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edit-craid-btn,
+.delete-craid-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  opacity: 0.7;
+}
+
+.edit-craid-btn:hover {
+  background-color: #f3f4f6;
+  opacity: 1;
+}
+
+.delete-craid-btn {
+  color: #dc2626;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.delete-craid-btn:hover {
+  background-color: #fef2f2;
+  opacity: 1;
+}
+
+.aged-indicator {
+  font-size: 16px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+.craid-item.aged {
+  background-color: #fef2f2;
+  border-left-color: #dc2626;
+}
+
+.craid-badges {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.priority-badge,
+.status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.priority-badge.priority-critical {
+  background-color: #dc2626;
+  color: white;
+}
+
+.priority-badge.priority-high {
+  background-color: #f59e0b;
+  color: white;
+}
+
+.priority-badge.priority-medium {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.priority-badge.priority-low {
+  background-color: #6b7280;
+  color: white;
+}
+
+.status-badge.status-open {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge.status-in_progress {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.status-closed {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.craid-description {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.craid-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.craid-period,
+.craid-owner {
+  display: inline-block;
+}
+
+.craid-modal .form-group select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  background-color: white;
+  cursor: pointer;
+}
+
+.craid-modal .form-group select:focus {
+  outline: none;
+  border-color: #00aeef;
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.1);
+}
+
+@media (max-width: 900px) {
+  .craids-grid {
+    grid-template-columns: 1fr;
+  }
+}
