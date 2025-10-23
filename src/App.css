@@ -50,7 +50,10 @@
 
 .new-project-btn,
 .delete-project-btn,
-.edit-data-btn {
+.edit-data-btn,
+.audit-log-btn,
+.manage-users-btn,
+.logout-btn {
   background-color: rgba(255, 255, 255, 0.2);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -69,7 +72,10 @@
 
 .new-project-btn:hover,
 .delete-project-btn:hover,
-.edit-data-btn:hover {
+.edit-data-btn:hover,
+.audit-log-btn:hover,
+.manage-users-btn:hover,
+.logout-btn:hover {
   background-color: rgba(255, 255, 255, 0.3);
   border-color: rgba(255, 255, 255, 0.5);
 }
@@ -147,6 +153,24 @@
   margin: 0;
 }
 
+.project-name-input {
+  font-size: 20px;
+  font-weight: 700;
+  color: #003c71;
+  border: 2px solid #00aeef;
+  border-radius: 4px;
+  padding: 4px 8px;
+  background-color: white;
+  font-family: inherit;
+  min-width: 300px;
+}
+
+.project-name-input:focus {
+  outline: none;
+  border-color: #00aeef;
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.2);
+}
+
 .report-meta {
   color: #6b7280;
   font-size: 12px;
@@ -188,6 +212,46 @@
   font-weight: 600;
   color: #003c71;
   margin-bottom: 20px;
+}
+
+.audit-modal {
+  max-width: 1200px;
+  width: 95%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #003c71;
+  transform: scale(1.1);
 }
 
 .form-group {

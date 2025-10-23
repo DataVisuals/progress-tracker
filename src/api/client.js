@@ -36,6 +36,7 @@ export const api = {
   // Projects
   getProjects: () => client.get('/projects'),
   createProject: (data) => client.post('/projects', data),
+  updateProject: (id, data) => client.put(`/projects/${id}`, data),
   deleteProject: (id) => client.delete(`/projects/${id}`),
 
   // Metrics
@@ -61,6 +62,22 @@ export const api = {
   createCRAID: (projectId, data) => client.post(`/projects/${projectId}/craids`, data),
   updateCRAID: (id, data) => client.put(`/craids/${id}`, data),
   deleteCRAID: (id) => client.delete(`/craids/${id}`),
+
+  // Audit Log
+  getAuditLog: (params) => {
+    const queryString = new URLSearchParams(params).toString();
+    return client.get(`/audit${queryString ? `?${queryString}` : ''}`);
+  },
+
+  // User Management
+  getUsers: () => client.get('/users'),
+  updateUserRole: (userId, role) => client.put(`/users/${userId}/role`, { role }),
+  deleteUser: (userId) => client.delete(`/users/${userId}`),
+
+  // Project Permissions
+  getProjectPermissions: (projectId) => client.get(`/projects/${projectId}/permissions`),
+  grantProjectPermission: (projectId, userId) => client.post(`/projects/${projectId}/permissions`, { user_id: userId }),
+  revokeProjectPermission: (projectId, userId) => client.delete(`/projects/${projectId}/permissions/${userId}`),
 };
 
 export default api;

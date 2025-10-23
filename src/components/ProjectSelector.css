@@ -35,3 +35,21 @@
   border-color: rgba(255, 255, 255, 0.5);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
 }
+
+.selector-input {
+  padding: 8px 16px;
+  font-size: 14px;
+  border: 2px solid #00aeef;
+  border-radius: 6px;
+  background-color: white;
+  color: #1f2937;
+  min-width: 250px;
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.selector-input:focus {
+  outline: none;
+  border-color: #00aeef;
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.3);
+}

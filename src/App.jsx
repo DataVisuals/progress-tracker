@@ -5,12 +5,15 @@ import MetricChart from './components/MetricChart';
 import MetricTabs from './components/MetricTabs';
 import DataGrid from './components/DataGrid';
 import CRAIDs from './components/CRAIDs';
+import AuditLog from './components/AuditLog';
+import UserManagement from './components/UserManagement';
 import { api } from './api/client';
 import { MdShowChart } from 'react-icons/md';
 import './App.css';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [projectData, setProjectData] = useState([]);
@@ -20,13 +23,21 @@ function App() {
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDesc, setNewProjectDesc] = useState('');
   const [newProjectManager, setNewProjectManager] = useState('');
+  const [editingProjectName, setEditingProjectName] = useState(false);
+  const [editProjectNameValue, setEditProjectNameValue] = useState('');
+  const [showAuditLog, setShowAuditLog] = useState(false);
+  const [showUserManagement, setShowUserManagement] = useState(false);
 
-  // Load projects when authenticated
+  // Load user on mount and load projects regardless of auth
   useEffect(() => {
-    if (isAuthenticated) {
-      loadProjects();
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    if (token && userStr) {
+      setIsAuthenticated(true);
+      setCurrentUser(JSON.parse(userStr));
     }
-  }, [isAuthenticated]);
+    loadProjects();
+  }, []);
 
   // Load project data when project selected
   useEffect(() => {
@@ -63,9 +74,7 @@ function App() {
     }
   };
 
-  if (!isAuthenticated) {
-    return <Login onLogin={() => setIsAuthenticated(true)} />;
-  }
+  // No longer blocking on authentication - allow unauthenticated viewing
 
   const handleProjectChange = (projectId) => {
     setSelectedProject(projectId);
@@ -166,6 +175,45 @@ function App() {
     }
   };
 
+  const handleProjectRename = async (projectId, newName) => {
+    try {
+      const project = projects.find(p => p.id === parseInt(projectId));
+      if (!project) return;
+
+      await api.updateProject(projectId, {
+        name: newName,
+        description: project.description,
+        initiative_manager: project.initiative_manager
+      });
+
+      // Reload projects to reflect the new name
+      await loadProjects();
+    } catch (err) {
+      console.error('Failed to rename project:', err);
+      alert('Failed to rename project');
+    }
+  };
+
+  const handleProjectNameDoubleClick = () => {
+    setEditingProjectName(true);
+    setEditProjectNameValue(projectName);
+  };
+
+  const handleProjectNameKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSaveProjectName();
+    } else if (e.key === 'Escape') {
+      setEditingProjectName(false);
+    }
+  };
+
+  const handleSaveProjectName = async () => {
+    if (editProjectNameValue.trim() && editProjectNameValue !== projectName) {
+      await handleProjectRename(selectedProject, editProjectNameValue.trim());
+    }
+    setEditingProjectName(false);
+  };
+
   const handleMetricCreated = async (metricName) => {
     // Reload project data to include the new metric
     await loadProjectData();
@@ -211,6 +259,16 @@ function App() {
 
   const currentProjectData = projectData;
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    setProjects([]);
+    setSelectedProject('');
+    setProjectData([]);
+  };
+
   return (
     <div className="app">
       <header className="app-header-main">
@@ -227,10 +285,12 @@ function App() {
               selectedProject={selectedProject}
               onProjectChange={handleProjectChange}
             />
-            <button className="new-project-btn" onClick={() => setShowNewProject(true)}>
-              + New Project
-            </button>
-            {selectedProject && (
+            {currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm') && (
+              <button className="new-project-btn" onClick={() => setShowNewProject(true)}>
+                + New Project
+              </button>
+            )}
+            {selectedProject && currentUser && currentUser.role !== 'viewer' && (
               <>
                 <button className="delete-project-btn" onClick={handleDeleteProject}>
                   Delete Project
@@ -239,6 +299,30 @@ function App() {
                   Edit Data
                 </button>
               </>
+            )}
+            {currentUser && currentUser.role === 'admin' && (
+              <button className="manage-users-btn" onClick={() => setShowUserManagement(true)}>
+                Manage Users
+              </button>
+            )}
+            {isAuthenticated && (
+              <>
+                <button className="audit-log-btn" onClick={() => setShowAuditLog(true)}>
+                  Audit Log
+                </button>
+                <button className="logout-btn" onClick={handleLogout}>
+                  Logout
+                </button>
+              </>
+            )}
+            {!isAuthenticated && (
+              <Login onLogin={() => {
+                setIsAuthenticated(true);
+                const userStr = localStorage.getItem('user');
+                if (userStr) {
+                  setCurrentUser(JSON.parse(userStr));
+                }
+              }} />
             )}
           </div>
         </div>
@@ -250,7 +334,25 @@ function App() {
           <div className="report-section">
             <div className="report-header">
               <div>
-                <h2>{projectName}</h2>
+                {editingProjectName ? (
+                  <input
+                    type="text"
+                    className="project-name-input"
+                    value={editProjectNameValue}
+                    onChange={(e) => setEditProjectNameValue(e.target.value)}
+                    onKeyDown={handleProjectNameKeyDown}
+                    onBlur={handleSaveProjectName}
+                    autoFocus
+                  />
+                ) : (
+                  <h2
+                    onDoubleClick={handleProjectNameDoubleClick}
+                    title="Double-click to rename"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {projectName}
+                  </h2>
+                )}
               </div>
               <p className="report-meta">
                 Generated on {new Date().toLocaleDateString()}
@@ -314,6 +416,18 @@ function App() {
         />
       )}
 
+      {showAuditLog && (
+        <div className="modal-overlay" onClick={() => setShowAuditLog(false)}>
+          <div className="modal-content audit-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Audit Log</h2>
+              <button className="close-btn" onClick={() => setShowAuditLog(false)}>×</button>
+            </div>
+            <AuditLog />
+          </div>
+        </div>
+      )}
+
       {showNewProject && (
         <div className="modal-overlay" onClick={() => setShowNewProject(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -359,6 +473,13 @@ function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {showUserManagement && currentUser && (
+        <UserManagement
+          currentUser={currentUser}
+          onClose={() => setShowUserManagement(false)}
+        />
       )}
     </div>
   );
