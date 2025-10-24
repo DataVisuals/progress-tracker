@@ -1,39 +1,63 @@
 .project-selector {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  position: relative;
 }
 
 .selector-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
   white-space: nowrap;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
 }
 
 .selector-dropdown {
-  padding: 8px 16px;
-  font-size: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
-  background-color: rgba(255, 255, 255, 0.9);
-  color: #1f2937;
+  padding: 10px 40px 10px 16px;
+  font-size: 15px;
+  font-weight: 500;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.95);
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23003c71' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  color: #003c71;
   cursor: pointer;
-  transition: all 0.2s;
-  min-width: 250px;
-  height: 38px;
+  transition: all 0.2s ease;
+  min-width: 280px;
+  height: 42px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .selector-dropdown:hover {
   background-color: white;
-  border-color: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
 }
 
 .selector-dropdown:focus {
   outline: none;
   background-color: white;
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+  border-color: #00aeef;
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.selector-dropdown option {
+  padding: 12px;
+  font-size: 14px;
+  color: #1f2937;
+  background-color: white;
+}
+
+.selector-dropdown option:hover {
+  background-color: #f3f4f6;
 }
 
 .selector-input {
