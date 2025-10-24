@@ -4,11 +4,17 @@ A modern, comprehensive web application for tracking project metrics, milestones
 
 ## Demo
 
-> **📹 [Watch the full demo video](./demo.mov)** - Download and play locally (28MB MOV file)
+![Progress Tracker Demo](demo.gif)
 
-![Progress Tracker Screenshot](screenshot.png)
+*Interactive dashboard showing real-time progress tracking, draggable expected values, and comprehensive project metrics.*
 
-*Screenshot showing the main dashboard with interactive progress charts, metrics tracking, and real-time updates.*
+### Key Capabilities Shown Above:
+- 📊 **Visual Progress Charts** - Stacked bars with completed/remaining work
+- 📈 **Draggable Expected Line** - Adjust forecasts directly on the chart
+- 📅 **Current Period Highlighting** - Clear visual indicator of active timeframe
+- 💬 **Inline Commentary** - Add context notes to specific periods
+- 🎯 **Scope Tracking** - See target changes over time
+- ⚠️ **CRAID Management** - Track risks, issues, and dependencies
 
 ## Overview
 
