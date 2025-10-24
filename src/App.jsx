@@ -270,11 +270,6 @@ function App() {
   const isAdmin = () => currentUser?.role === 'admin';
   const canEdit = () => currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm');
 
-  // Debug logging
-  console.log('Current User:', currentUser);
-  console.log('Can Edit:', canEdit());
-  console.log('Is Admin:', isAdmin());
-
   return (
     <div className="app">
       <header className="app-header-main">
@@ -322,7 +317,6 @@ function App() {
               </button>
             ) : (
               <Login onLogin={(user) => {
-                console.log('onLogin callback called with user:', user);
                 setCurrentUser(user);
                 setIsAuthenticated(true);
               }} />

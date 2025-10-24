@@ -18,8 +18,6 @@ const Login = ({ onLogin }) => {
       const response = await api.login(email, password);
       const { token, user } = response.data;
 
-      console.log('Login response user:', user);
-
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
 
@@ -71,9 +69,6 @@ const Login = ({ onLogin }) => {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
-        <div className="login-footer">
-          <small>Default: admin@example.com / admin123</small>
-        </div>
       </div>
     </div>
   );
