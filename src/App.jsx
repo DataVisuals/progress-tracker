@@ -321,13 +321,10 @@ function App() {
                 Logout
               </button>
             ) : (
-              <Login onLogin={() => {
-                const userStr = localStorage.getItem('user');
-                if (userStr) {
-                  const user = JSON.parse(userStr);
-                  setCurrentUser(user);
-                  setIsAuthenticated(true);
-                }
+              <Login onLogin={(user) => {
+                console.log('onLogin callback called with user:', user);
+                setCurrentUser(user);
+                setIsAuthenticated(true);
               }} />
             )}
           </div>

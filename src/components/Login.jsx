@@ -18,11 +18,13 @@ const Login = ({ onLogin }) => {
       const response = await api.login(email, password);
       const { token, user } = response.data;
 
+      console.log('Login response user:', user);
+
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
 
       setShowModal(false);
-      onLogin();
+      onLogin(user); // Pass user data directly to callback
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
       setPassword('');
