@@ -32,7 +32,7 @@ async function logAudit(user, action, tableName, recordId, oldValues, newValues,
       `INSERT INTO audit_log (user_id, user_email, action, table_name, record_id, old_values, new_values, description, ip_address)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        user?.id || null,
+        user?.userId || user?.id || null,
         user?.email || null,
         action,
         tableName,
@@ -1038,7 +1038,7 @@ app.get('/api/audit', authenticateToken, async (req, res) => {
     }
     if (user_id) {
       query += ' AND user_id = ?';
-      params.push(user_id);
+      params.push(parseInt(user_id));
     }
     if (action) {
       query += ' AND action = ?';
