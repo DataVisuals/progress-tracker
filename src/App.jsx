@@ -264,10 +264,11 @@ function App() {
     localStorage.removeItem('user');
     setIsAuthenticated(false);
     setCurrentUser(null);
-    setProjects([]);
-    setSelectedProject('');
-    setProjectData([]);
   };
+
+  // Helper functions for role checks
+  const isAdmin = () => currentUser?.role === 'admin';
+  const canEdit = () => currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm');
 
   return (
     <div className="app">
@@ -285,12 +286,12 @@ function App() {
               selectedProject={selectedProject}
               onProjectChange={handleProjectChange}
             />
-            {currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm') && (
+            {canEdit() && (
               <button className="new-project-btn" onClick={() => setShowNewProject(true)}>
                 + New Project
               </button>
             )}
-            {selectedProject && currentUser && currentUser.role !== 'viewer' && (
+            {selectedProject && canEdit() && (
               <>
                 <button className="delete-project-btn" onClick={handleDeleteProject}>
                   Delete Project
@@ -300,22 +301,21 @@ function App() {
                 </button>
               </>
             )}
-            {currentUser && currentUser.role === 'admin' && (
-              <button className="manage-users-btn" onClick={() => setShowUserManagement(true)}>
-                Manage Users
-              </button>
-            )}
-            {isAuthenticated && (
+            {isAdmin() && (
               <>
+                <button className="manage-users-btn" onClick={() => setShowUserManagement(true)}>
+                  Manage Users
+                </button>
                 <button className="audit-log-btn" onClick={() => setShowAuditLog(true)}>
                   Audit Log
                 </button>
-                <button className="logout-btn" onClick={handleLogout}>
-                  Logout
-                </button>
               </>
             )}
-            {!isAuthenticated && (
+            {isAuthenticated ? (
+              <button className="logout-btn" onClick={handleLogout}>
+                Logout
+              </button>
+            ) : (
               <Login onLogin={() => {
                 setIsAuthenticated(true);
                 const userStr = localStorage.getItem('user');
@@ -346,9 +346,9 @@ function App() {
                   />
                 ) : (
                   <h2
-                    onDoubleClick={handleProjectNameDoubleClick}
-                    title="Double-click to rename"
-                    style={{ cursor: 'pointer' }}
+                    onDoubleClick={canEdit() ? handleProjectNameDoubleClick : undefined}
+                    title={canEdit() ? "Double-click to rename" : undefined}
+                    style={{ cursor: canEdit() ? 'pointer' : 'default' }}
                   >
                     {projectName}
                   </h2>
@@ -365,6 +365,7 @@ function App() {
                 selectedMetric={selectedMetric}
                 onMetricChange={handleMetricChange}
                 onMetricRename={handleMetricRename}
+                canEdit={canEdit()}
               />
             )}
 

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import './MetricTabs.css';
 
-const MetricTabs = ({ metrics, selectedMetric, onMetricChange, onMetricRename }) => {
+const MetricTabs = ({ metrics, selectedMetric, onMetricChange, onMetricRename, canEdit }) => {
   const [editingMetric, setEditingMetric] = useState(null);
   const [editValue, setEditValue] = useState('');
 
   const handleDoubleClick = (metric) => {
+    if (!canEdit) return;
     setEditingMetric(metric);
     setEditValue(metric);
   };
@@ -47,7 +48,7 @@ const MetricTabs = ({ metrics, selectedMetric, onMetricChange, onMetricRename })
                 className={`metric-tab ${selectedMetric === metric ? 'active' : ''}`}
                 onClick={() => onMetricChange(metric)}
                 onDoubleClick={() => handleDoubleClick(metric)}
-                title="Double-click to rename"
+                title={canEdit ? "Double-click to rename" : undefined}
               >
                 {metric}
               </button>

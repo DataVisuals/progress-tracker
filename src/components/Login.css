@@ -1,10 +1,28 @@
+.login-btn {
+  padding: 8px 16px;
+  background-color: #003c71;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.login-btn:hover {
+  background-color: #00aeef;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 174, 239, 0.3);
+}
+
 .login-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #003c71 0%, #00aeef 100%);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -18,11 +36,35 @@
   width: 100%;
   max-width: 400px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  position: relative;
 }
 
 .login-header {
   text-align: center;
   margin-bottom: 32px;
+  position: relative;
+}
+
+.login-header .close-btn {
+  position: absolute;
+  right: -10px;
+  top: -10px;
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: #6b7280;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
+.login-header .close-btn:hover {
+  color: #003c71;
 }
 
 .login-header h1 {

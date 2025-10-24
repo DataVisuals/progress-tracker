@@ -3,6 +3,7 @@ import { api } from '../api/client';
 import './Login.css';
 
 const Login = ({ onLogin }) => {
+  const [showModal, setShowModal] = useState(false);
   const [email, setEmail] = useState('admin@example.com');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -20,6 +21,7 @@ const Login = ({ onLogin }) => {
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
 
+      setShowModal(false);
       onLogin();
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
@@ -29,12 +31,20 @@ const Login = ({ onLogin }) => {
     }
   };
 
+  if (!showModal) {
+    return (
+      <button className="login-btn" onClick={() => setShowModal(true)}>
+        Login
+      </button>
+    );
+  }
+
   return (
-    <div className="login-overlay">
-      <div className="login-modal">
+    <div className="login-overlay" onClick={() => setShowModal(false)}>
+      <div className="login-modal" onClick={(e) => e.stopPropagation()}>
         <div className="login-header">
-          <h1>Progress Tracker</h1>
-          <p>Please enter your password to continue</p>
+          <h1>Login</h1>
+          <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
         </div>
         <form className="login-form" onSubmit={handleSubmit}>
           <input
