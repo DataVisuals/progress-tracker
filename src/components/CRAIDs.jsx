@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
 import { api } from '../api/client';
+import { selectStyles } from './SelectStyles';
+import './FormInputs.css';
 import './CRAIDs.css';
 
 const CRAIDIcon = ({ type }) => {
@@ -249,15 +252,17 @@ const CRAIDs = ({ projectId, canEdit = false }) => {
             <h2>{editingCRAID ? 'Edit Item' : 'Add New Risk/Action/Dependency'}</h2>
             <div className="form-group">
               <label htmlFor="craid-type">Type:</label>
-              <select
+              <Select
                 id="craid-type"
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              >
-                <option value="risk">Risk</option>
-                <option value="action">Action</option>
-                <option value="dependency">Dependency</option>
-              </select>
+                value={{ value: formData.type, label: formData.type.charAt(0).toUpperCase() + formData.type.slice(1) }}
+                onChange={(option) => setFormData({ ...formData, type: option.value })}
+                options={[
+                  { value: 'risk', label: 'Risk' },
+                  { value: 'action', label: 'Action' },
+                  { value: 'dependency', label: 'Dependency' }
+                ]}
+                styles={selectStyles}
+              />
             </div>
             <div className="form-group">
               <label htmlFor="craid-title">Title:</label>
@@ -282,43 +287,52 @@ const CRAIDs = ({ projectId, canEdit = false }) => {
             </div>
             <div className="form-group">
               <label htmlFor="craid-priority">Priority:</label>
-              <select
+              <Select
                 id="craid-priority"
-                value={formData.priority}
-                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
+                value={{ value: formData.priority, label: formData.priority.charAt(0).toUpperCase() + formData.priority.slice(1) }}
+                onChange={(option) => setFormData({ ...formData, priority: option.value })}
+                options={[
+                  { value: 'low', label: 'Low' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'high', label: 'High' },
+                  { value: 'critical', label: 'Critical' }
+                ]}
+                styles={selectStyles}
+              />
             </div>
             <div className="form-group">
               <label htmlFor="craid-status">Status:</label>
-              <select
+              <Select
                 id="craid-status"
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              >
-                <option value="open">Open</option>
-                <option value="in_progress">In Progress</option>
-                <option value="closed">Closed</option>
-              </select>
+                value={{
+                  value: formData.status,
+                  label: formData.status === 'in_progress' ? 'In Progress' :
+                         formData.status.charAt(0).toUpperCase() + formData.status.slice(1)
+                }}
+                onChange={(option) => setFormData({ ...formData, status: option.value })}
+                options={[
+                  { value: 'open', label: 'Open' },
+                  { value: 'in_progress', label: 'In Progress' },
+                  { value: 'closed', label: 'Closed' }
+                ]}
+                styles={selectStyles}
+              />
             </div>
             <div className="form-group">
               <label htmlFor="craid-period">Period (optional):</label>
-              <select
+              <Select
                 id="craid-period"
-                value={formData.period_id || ''}
-                onChange={(e) => setFormData({ ...formData, period_id: e.target.value ? parseInt(e.target.value) : null })}
-              >
-                <option value="">Not linked to a specific period</option>
-                {periods.map((period) => (
-                  <option key={period.id} value={period.id}>
-                    {period.date}
-                  </option>
-                ))}
-              </select>
+                value={
+                  formData.period_id
+                    ? { value: formData.period_id, label: periods.find(p => p.id === formData.period_id)?.date }
+                    : null
+                }
+                onChange={(option) => setFormData({ ...formData, period_id: option ? option.value : null })}
+                options={periods.map(period => ({ value: period.id, label: period.date }))}
+                styles={selectStyles}
+                isClearable
+                placeholder="Not linked to a specific period"
+              />
             </div>
             <div className="modal-actions">
               <button className="save-btn" onClick={handleSaveCRAID}>

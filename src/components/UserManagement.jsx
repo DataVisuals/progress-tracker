@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
 import { api } from '../api/client';
+import { selectStyles, compactSelectStyles } from './SelectStyles';
+import './FormInputs.css';
 import './UserManagement.css';
 
 const UserManagement = ({ currentUser, onClose }) => {
@@ -225,15 +228,19 @@ const UserManagement = ({ currentUser, onClose }) => {
                         </span>
                       </td>
                       <td onClick={(e) => e.stopPropagation()}>
-                        <select
-                          value={user.role}
-                          onChange={(e) => handleChangeRole(user.id, e.target.value)}
-                          className="role-select"
-                        >
-                          <option value="admin">Admin</option>
-                          <option value="pm">PM</option>
-                          <option value="viewer">Viewer</option>
-                        </select>
+                        <div style={{ display: 'inline-block', minWidth: '120px', marginRight: '8px' }}>
+                          <Select
+                            value={{ value: user.role, label: user.role.toUpperCase() }}
+                            onChange={(option) => handleChangeRole(user.id, option.value)}
+                            options={[
+                              { value: 'admin', label: 'ADMIN' },
+                              { value: 'pm', label: 'PM' },
+                              { value: 'viewer', label: 'VIEWER' }
+                            ]}
+                            styles={compactSelectStyles}
+                            className="role-select"
+                          />
+                        </div>
                         {user.id !== currentUser.userId && (
                           <button
                             onClick={() => handleDeleteUser(user.id, user.email)}
@@ -346,13 +353,15 @@ const UserManagement = ({ currentUser, onClose }) => {
               </div>
               <div className="form-group">
                 <label>Role:</label>
-                <select
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                >
-                  <option value="pm">PM</option>
-                  <option value="admin">Admin</option>
-                </select>
+                <Select
+                  value={{ value: newUser.role, label: newUser.role.toUpperCase() }}
+                  onChange={(option) => setNewUser({ ...newUser, role: option.value })}
+                  options={[
+                    { value: 'pm', label: 'PM' },
+                    { value: 'admin', label: 'ADMIN' }
+                  ]}
+                  styles={selectStyles}
+                />
               </div>
               <div className="add-user-actions">
                 <button className="save-btn" onClick={handleAddUser}>

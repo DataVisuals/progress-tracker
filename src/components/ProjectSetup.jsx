@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
+import Select from 'react-select';
 import { api } from '../api/client';
+import { selectStyles } from './SelectStyles';
+import './FormInputs.css';
 import './ProjectSetup.css';
 
 const ProjectSetup = ({ onComplete, onCancel }) => {
@@ -157,15 +160,17 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
           </div>
           <div className="form-group">
             <label htmlFor="frequency">Frequency *</label>
-            <select
+            <Select
               id="frequency"
-              value={frequency}
-              onChange={(e) => setFrequency(e.target.value)}
-            >
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
-            </select>
+              value={{ value: frequency, label: frequency.charAt(0).toUpperCase() + frequency.slice(1) }}
+              onChange={(option) => setFrequency(option.value)}
+              options={[
+                { value: 'weekly', label: 'Weekly' },
+                { value: 'monthly', label: 'Monthly' },
+                { value: 'quarterly', label: 'Quarterly' }
+              ]}
+              styles={selectStyles}
+            />
           </div>
         </div>
       </div>
@@ -202,14 +207,21 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
               </div>
               <div className="form-group metric-progression">
                 <label>Progression Curve</label>
-                <select
-                  value={metric.progression}
-                  onChange={(e) => updateMetric(index, 'progression', e.target.value)}
-                >
-                  <option value="linear">Linear</option>
-                  <option value="exponential">Exponential (S-curve)</option>
-                  <option value="logarithmic">Logarithmic (Front-loaded)</option>
-                </select>
+                <Select
+                  value={{
+                    value: metric.progression,
+                    label: metric.progression === 'linear' ? 'Linear' :
+                           metric.progression === 'exponential' ? 'Exponential (S-curve)' :
+                           'Logarithmic (Front-loaded)'
+                  }}
+                  onChange={(option) => updateMetric(index, 'progression', option.value)}
+                  options={[
+                    { value: 'linear', label: 'Linear' },
+                    { value: 'exponential', label: 'Exponential (S-curve)' },
+                    { value: 'logarithmic', label: 'Logarithmic (Front-loaded)' }
+                  ]}
+                  styles={selectStyles}
+                />
               </div>
               {metrics.length > 1 && (
                 <button
