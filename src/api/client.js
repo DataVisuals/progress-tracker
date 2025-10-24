@@ -35,6 +35,7 @@ export const api = {
   // Auth
   login: (email, password) => client.post('/auth/login', { email, password }),
   register: (email, name, password) => client.post('/auth/register', { email, name, password }),
+  changePassword: (currentPassword, newPassword) => client.post('/auth/change-password', { currentPassword, newPassword }),
 
   // Projects
   getProjects: () => client.get('/projects'),

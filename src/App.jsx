@@ -8,8 +8,9 @@ import CRAIDs from './components/CRAIDs';
 import AuditLog from './components/AuditLog';
 import UserManagement from './components/UserManagement';
 import ProjectSetup from './components/ProjectSetup';
+import PasswordChange from './components/PasswordChange';
 import { api } from './api/client';
-import { MdShowChart } from 'react-icons/md';
+import { MdShowChart, MdArrowDropDown } from 'react-icons/md';
 import './App.css';
 
 function App() {
@@ -25,6 +26,10 @@ function App() {
   const [editProjectNameValue, setEditProjectNameValue] = useState('');
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
+  const [showAdminDropdown, setShowAdminDropdown] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
@@ -270,35 +275,93 @@ function App() {
               selectedProject={selectedProject}
               onProjectChange={handleProjectChange}
             />
+
+            {/* Project Actions Dropdown */}
             {canEdit() && (
-              <button className="new-project-btn" onClick={() => setShowNewProject(true)}>
-                + New Project
-              </button>
-            )}
-            {selectedProject && canEdit() && (
-              <>
-                <button className="delete-project-btn" onClick={handleDeleteProject}>
-                  Delete Project
+              <div className="dropdown-container">
+                <button
+                  className="dropdown-btn"
+                  onClick={() => {
+                    setShowProjectDropdown(!showProjectDropdown);
+                    setShowAdminDropdown(false);
+                    setShowUserDropdown(false);
+                  }}
+                  onBlur={() => setTimeout(() => setShowProjectDropdown(false), 200)}
+                >
+                  Project <MdArrowDropDown />
                 </button>
-                <button className="edit-data-btn" onClick={() => setShowDataGrid(true)}>
-                  Edit Data
-                </button>
-              </>
+                {showProjectDropdown && (
+                  <div className="dropdown-menu">
+                    <button onClick={() => { setShowNewProject(true); setShowProjectDropdown(false); }}>
+                      New Project
+                    </button>
+                    {selectedProject && (
+                      <>
+                        <button onClick={() => { setShowDataGrid(true); setShowProjectDropdown(false); }}>
+                          Edit Data
+                        </button>
+                        <button onClick={() => { handleDeleteProject(); setShowProjectDropdown(false); }}>
+                          Delete Project
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
+
+            {/* Admin Dropdown */}
             {isAdmin() && (
-              <>
-                <button className="manage-users-btn" onClick={() => setShowUserManagement(true)}>
-                  Manage Users
+              <div className="dropdown-container">
+                <button
+                  className="dropdown-btn"
+                  onClick={() => {
+                    setShowAdminDropdown(!showAdminDropdown);
+                    setShowProjectDropdown(false);
+                    setShowUserDropdown(false);
+                  }}
+                  onBlur={() => setTimeout(() => setShowAdminDropdown(false), 200)}
+                >
+                  Admin <MdArrowDropDown />
                 </button>
-                <button className="audit-log-btn" onClick={() => setShowAuditLog(true)}>
-                  Audit Log
-                </button>
-              </>
+                {showAdminDropdown && (
+                  <div className="dropdown-menu">
+                    <button onClick={() => { setShowUserManagement(true); setShowAdminDropdown(false); }}>
+                      Manage Users
+                    </button>
+                    <button onClick={() => { setShowAuditLog(true); setShowAdminDropdown(false); }}>
+                      Audit Log
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
+
+            {/* Account Menu Dropdown */}
             {isAuthenticated ? (
-              <button className="logout-btn" onClick={handleLogout}>
-                Logout
-              </button>
+              <div className="dropdown-container">
+                <button
+                  className="dropdown-btn user-menu-btn"
+                  onClick={() => {
+                    setShowUserDropdown(!showUserDropdown);
+                    setShowProjectDropdown(false);
+                    setShowAdminDropdown(false);
+                  }}
+                  onBlur={() => setTimeout(() => setShowUserDropdown(false), 200)}
+                >
+                  Account <MdArrowDropDown />
+                </button>
+                {showUserDropdown && (
+                  <div className="dropdown-menu">
+                    <button onClick={() => { setShowPasswordChange(true); setShowUserDropdown(false); }}>
+                      Change Password
+                    </button>
+                    <button onClick={() => { handleLogout(); setShowUserDropdown(false); }}>
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <Login onLogin={(user) => {
                 setCurrentUser(user);
@@ -427,6 +490,12 @@ function App() {
         <UserManagement
           currentUser={currentUser}
           onClose={() => setShowUserManagement(false)}
+        />
+      )}
+
+      {showPasswordChange && (
+        <PasswordChange
+          onClose={() => setShowPasswordChange(false)}
         />
       )}
     </div>

@@ -76,6 +76,56 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
+app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.userId;
+
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters' });
+    }
+
+    // Get user from database
+    const user = await dbGet('SELECT * FROM users WHERE id = ?', [userId]);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify current password
+    if (!bcrypt.compareSync(currentPassword, user.password_hash)) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    // Hash new password
+    const newHash = bcrypt.hashSync(newPassword, 10);
+
+    // Update password
+    await dbRun('UPDATE users SET password_hash = ? WHERE id = ?', [newHash, userId]);
+
+    // Log audit entry
+    await logAudit(
+      { id: userId, email: user.email },
+      'UPDATE',
+      'users',
+      userId,
+      { action: 'password_change' },
+      { action: 'password_changed' },
+      `User ${user.email} changed their password`,
+      req.ip
+    );
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (err) {
+    console.error('Password change error:', err);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
 // ===== PROJECTS =====
 app.get('/api/projects', async (req, res) => {
   try {
