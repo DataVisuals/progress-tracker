@@ -4,9 +4,11 @@ A modern, comprehensive web application for tracking project metrics, milestones
 
 ## Demo
 
-https://github.com/user-attachments/assets/demo.mov
+> **📹 [Watch the full demo video](./demo.mov)** - Download and play locally (28MB MOV file)
 
 ![Progress Tracker Screenshot](screenshot.png)
+
+*Screenshot showing the main dashboard with interactive progress charts, metrics tracking, and real-time updates.*
 
 ## Overview
 
