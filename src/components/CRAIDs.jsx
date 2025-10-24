@@ -12,7 +12,7 @@ const CRAIDIcon = ({ type }) => {
   return <span className={`craid-icon craid-icon-${type}`}>{icons[type] || '•'}</span>;
 };
 
-const CRAIDs = ({ projectId }) => {
+const CRAIDs = ({ projectId, canEdit = false }) => {
   const [craids, setCraids] = useState([]);
   const [loading, setLoading] = useState(true);
   const [periods, setPeriods] = useState([]);
@@ -184,10 +184,12 @@ const CRAIDs = ({ projectId }) => {
   return (
     <div className="craids-container">
       <div className="craids-header">
-        <h3 className="craids-title">Risks and Dependencies</h3>
-        <button className="add-craid-btn" onClick={handleStartAdd}>
-          Add
-        </button>
+        <h3 className="craids-title">Risks, Actions and Dependencies</h3>
+        {canEdit && (
+          <button className="add-craid-btn" onClick={handleStartAdd}>
+            Add
+          </button>
+        )}
       </div>
       <div className="craids-grid">
         {Object.entries(filteredGroupedCRAIDs).map(([type, items]) => (
@@ -213,12 +215,16 @@ const CRAIDs = ({ projectId }) => {
                           {craid.status.replace('_', ' ')}
                         </span>
                       </div>
-                      <button className="edit-craid-btn" onClick={() => handleStartEdit(craid)} title="Edit">
-                        ✏️
-                      </button>
-                      <button className="delete-craid-btn" onClick={() => handleDeleteCRAID(craid.id)} title="Delete">
-                        ×
-                      </button>
+                      {canEdit && (
+                        <>
+                          <button className="edit-craid-btn" onClick={() => handleStartEdit(craid)} title="Edit">
+                            ✏️
+                          </button>
+                          <button className="delete-craid-btn" onClick={() => handleDeleteCRAID(craid.id)} title="Delete">
+                            ×
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="craid-description">{craid.description}</div>

@@ -88,9 +88,13 @@ app.get('/api/projects', async (req, res) => {
 
 app.post('/api/projects', authenticateToken, async (req, res) => {
   try {
-    // Check if user can create projects
-    const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
-    if (!canCreateProject(user)) {
+    // Verify user is authenticated
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    // Check if user can create projects (using role from JWT token)
+    if (!canCreateProject(req.user)) {
       return res.status(403).json({ error: 'You do not have permission to create projects' });
     }
 
@@ -101,7 +105,7 @@ app.post('/api/projects', authenticateToken, async (req, res) => {
     );
 
     // Auto-grant permission to the creating user if they are a PM
-    if (user.role === ROLES.PM) {
+    if (req.user.role === ROLES.PM) {
       await dbRun(
         'INSERT INTO project_permissions (project_id, user_id) VALUES (?, ?)',
         [result.lastID, req.user.userId]
@@ -320,6 +324,7 @@ app.get('/api/projects/:projectId/data', async (req, res) => {
         mp.expected,
         mp.target as final_target,
         mp.complete,
+        mp.commentary,
         m.id as metric_id,
         p.name as initiative,
         u.name as owner,

@@ -65,6 +65,16 @@
   color: #00aeef;
 }
 
+.tooltip-value.scope-complete {
+  color: #7dd3fc;
+  font-weight: 600;
+}
+
+.tooltip-value.scope-remaining {
+  color: #d1d5db;
+  font-weight: 600;
+}
+
 .tooltip-value.positive {
   color: #10b981;
 }
@@ -162,6 +172,12 @@
 .commentary-item.latest-comment strong {
   color: #00aeef;
   font-weight: 600;
+}
+
+.commentary-item.system-commentary {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-left: 3px solid #6b7280;
+  font-style: italic;
 }
 
 .delete-comment-btn {

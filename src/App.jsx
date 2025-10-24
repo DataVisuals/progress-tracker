@@ -7,6 +7,7 @@ import DataGrid from './components/DataGrid';
 import CRAIDs from './components/CRAIDs';
 import AuditLog from './components/AuditLog';
 import UserManagement from './components/UserManagement';
+import ProjectSetup from './components/ProjectSetup';
 import { api } from './api/client';
 import { MdShowChart } from 'react-icons/md';
 import './App.css';
@@ -20,9 +21,6 @@ function App() {
   const [selectedMetric, setSelectedMetric] = useState('');
   const [showDataGrid, setShowDataGrid] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectDesc, setNewProjectDesc] = useState('');
-  const [newProjectManager, setNewProjectManager] = useState('');
   const [editingProjectName, setEditingProjectName] = useState(false);
   const [editProjectNameValue, setEditProjectNameValue] = useState('');
   const [showAuditLog, setShowAuditLog] = useState(false);
@@ -132,29 +130,15 @@ function App() {
     }
   };
 
-  const handleCreateProject = async () => {
-    if (!newProjectName.trim()) {
-      alert('Please enter a project name');
-      return;
-    }
+  const handleProjectSetupComplete = async (projectId) => {
+    await loadProjects();
+    setSelectedProject(projectId.toString());
+    await loadProjectData();
+    setShowNewProject(false);
+  };
 
-    try {
-      const response = await api.createProject({
-        name: newProjectName,
-        description: newProjectDesc,
-        initiative_manager: newProjectManager
-      });
-      setNewProjectName('');
-      setNewProjectDesc('');
-      setNewProjectManager('');
-      setShowNewProject(false);
-      await loadProjects();
-      // Auto-select the newly created project
-      setSelectedProject(response.data.id.toString());
-    } catch (err) {
-      console.error('Failed to create project:', err);
-      alert('Failed to create project');
-    }
+  const handleProjectSetupCancel = () => {
+    setShowNewProject(false);
   };
 
   const handleDeleteProject = async () => {
@@ -373,11 +357,13 @@ function App() {
                   metricName={selectedMetric}
                   data={projectData.filter(item => item.metric === selectedMetric)}
                   onCommentaryChange={handleCommentaryChange}
+                  onDataChange={loadProjectData}
+                  canEdit={canEdit()}
                 />
               </div>
             )}
 
-            <CRAIDs projectId={selectedProject} />
+            <CRAIDs projectId={selectedProject} canEdit={canEdit()} />
           </div>
         )}
 
@@ -427,48 +413,12 @@ function App() {
       )}
 
       {showNewProject && (
-        <div className="modal-overlay" onClick={() => setShowNewProject(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Create New Project</h2>
-            <div className="form-group">
-              <label htmlFor="project-name">Project Name:</label>
-              <input
-                id="project-name"
-                type="text"
-                value={newProjectName}
-                onChange={(e) => setNewProjectName(e.target.value)}
-                placeholder="Enter project name..."
-                autoFocus
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="project-manager">Project Manager:</label>
-              <input
-                id="project-manager"
-                type="text"
-                value={newProjectManager}
-                onChange={(e) => setNewProjectManager(e.target.value)}
-                placeholder="Enter project manager name..."
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="project-desc">Description (optional):</label>
-              <textarea
-                id="project-desc"
-                value={newProjectDesc}
-                onChange={(e) => setNewProjectDesc(e.target.value)}
-                placeholder="Enter project description..."
-                rows={3}
-              />
-            </div>
-            <div className="modal-actions">
-              <button className="save-btn" onClick={handleCreateProject}>
-                Create
-              </button>
-              <button className="cancel-btn" onClick={() => setShowNewProject(false)}>
-                Cancel
-              </button>
-            </div>
+        <div className="modal-overlay" onClick={handleProjectSetupCancel}>
+          <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+            <ProjectSetup
+              onComplete={handleProjectSetupComplete}
+              onCancel={handleProjectSetupCancel}
+            />
           </div>
         </div>
       )}

@@ -1,19 +1,34 @@
 import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
 import { api } from '../api/client';
+import { compactSelectStyles } from './SelectStyles';
 import './AuditLog.css';
 
 const AuditLog = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState([]);
   const [filters, setFilters] = useState({
     table_name: '',
     action: '',
-    limit: 50
+    user_id: '',
+    limit: 100
   });
 
   useEffect(() => {
+    loadUsers();
     loadLogs();
   }, [filters]);
+
+  const loadUsers = async () => {
+    try {
+      const response = await api.getUsers();
+      setUsers(response.data);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+      setUsers([]);
+    }
+  };
 
   const loadLogs = async () => {
     try {
@@ -21,6 +36,7 @@ const AuditLog = () => {
       const params = {};
       if (filters.table_name) params.table_name = filters.table_name;
       if (filters.action) params.action = filters.action;
+      if (filters.user_id) params.user_id = filters.user_id;
       if (filters.limit) params.limit = filters.limit;
 
       const response = await api.getAuditLog(params);
@@ -57,44 +73,73 @@ const AuditLog = () => {
     }
   };
 
+  const tableOptions = [
+    { value: '', label: 'All Tables' },
+    { value: 'projects', label: 'Projects' },
+    { value: 'metrics', label: 'Metrics' },
+    { value: 'metric_periods', label: 'Metric Periods' },
+    { value: 'comments', label: 'Comments' },
+    { value: 'craids', label: 'CRAIDs' }
+  ];
+
+  const actionOptions = [
+    { value: '', label: 'All Actions' },
+    { value: 'CREATE', label: 'Create' },
+    { value: 'UPDATE', label: 'Update' },
+    { value: 'DELETE', label: 'Delete' }
+  ];
+
+  const userOptions = [
+    { value: '', label: 'All Users' },
+    ...users.map(user => ({ value: user.id.toString(), label: user.name }))
+  ];
+
+  const limitOptions = [
+    { value: '50', label: '50 entries' },
+    { value: '100', label: '100 entries' },
+    { value: '250', label: '250 entries' },
+    { value: '500', label: '500 entries' }
+  ];
+
   return (
     <div className="audit-log-container">
       <div className="audit-log-header">
         <div className="audit-filters">
-          <select
-            value={filters.table_name}
-            onChange={(e) => setFilters({ ...filters, table_name: e.target.value })}
-            className="filter-select"
-          >
-            <option value="">All Tables</option>
-            <option value="projects">Projects</option>
-            <option value="metrics">Metrics</option>
-            <option value="metric_periods">Metric Periods</option>
-            <option value="comments">Comments</option>
-            <option value="craids">CRAIDs</option>
-          </select>
+          <Select
+            value={tableOptions.find(opt => opt.value === filters.table_name)}
+            onChange={(option) => setFilters({ ...filters, table_name: option.value })}
+            options={tableOptions}
+            styles={compactSelectStyles}
+            placeholder="Filter by table..."
+            isClearable={false}
+          />
 
-          <select
-            value={filters.action}
-            onChange={(e) => setFilters({ ...filters, action: e.target.value })}
-            className="filter-select"
-          >
-            <option value="">All Actions</option>
-            <option value="CREATE">Create</option>
-            <option value="UPDATE">Update</option>
-            <option value="DELETE">Delete</option>
-          </select>
+          <Select
+            value={actionOptions.find(opt => opt.value === filters.action)}
+            onChange={(option) => setFilters({ ...filters, action: option.value })}
+            options={actionOptions}
+            styles={compactSelectStyles}
+            placeholder="Filter by action..."
+            isClearable={false}
+          />
 
-          <select
-            value={filters.limit}
-            onChange={(e) => setFilters({ ...filters, limit: e.target.value })}
-            className="filter-select"
-          >
-            <option value="25">25 entries</option>
-            <option value="50">50 entries</option>
-            <option value="100">100 entries</option>
-            <option value="250">250 entries</option>
-          </select>
+          <Select
+            value={userOptions.find(opt => opt.value === filters.user_id)}
+            onChange={(option) => setFilters({ ...filters, user_id: option.value })}
+            options={userOptions}
+            styles={compactSelectStyles}
+            placeholder="Filter by user..."
+            isClearable={false}
+          />
+
+          <Select
+            value={limitOptions.find(opt => opt.value === filters.limit.toString())}
+            onChange={(option) => setFilters({ ...filters, limit: option.value })}
+            options={limitOptions}
+            styles={compactSelectStyles}
+            placeholder="Limit..."
+            isClearable={false}
+          />
         </div>
       </div>
 

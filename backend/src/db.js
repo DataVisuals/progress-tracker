@@ -52,12 +52,16 @@ function calculateExpectedValue(progressionType, finalTarget, periodIndex, total
   switch(progressionType) {
     case 'linear':
       return Math.round(finalTarget * ratio);
+    case 'exponential':
     case 's-curve':
-      // Sigmoid: 1 / (1 + e^(-10(x-0.5)))
+      // Sigmoid S-curve: 1 / (1 + e^(-10(x-0.5)))
+      // This creates slow start, fast middle, slow end
       return Math.round(finalTarget / (1 + Math.exp(-10 * (ratio - 0.5))));
+    case 'logarithmic':
     case 'j-curve':
-      // Exponential: x^2
-      return Math.round(finalTarget * Math.pow(ratio, 2));
+      // Square root curve: front-loaded progress
+      // This creates fast start, gradually slowing down
+      return Math.round(finalTarget * Math.sqrt(ratio));
     default:
       return Math.round(finalTarget * ratio);
   }

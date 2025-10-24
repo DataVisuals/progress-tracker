@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ComposedChart,
   Bar,
@@ -74,6 +74,40 @@ const CustomXAxisTick = ({ x, y, payload, index, visibleTicksCount, data }) => {
   );
 };
 
+// Custom draggable dot for expected line
+const CustomExpectedDot = (props) => {
+  const { cx, cy, payload, index, canEdit, onMouseDown, key, ...rest } = props;
+  console.log('CustomExpectedDot render', { cx, cy, payload, index, canEdit, hasOnMouseDown: !!onMouseDown });
+
+  if (!canEdit) {
+    console.log('CustomExpectedDot: canEdit is false, returning null');
+    return null;
+  }
+
+  const handleMouseDown = (e) => {
+    console.log('Circle onMouseDown fired', { index, payload });
+    e.preventDefault();
+    e.stopPropagation();
+    if (onMouseDown) {
+      onMouseDown(e, payload, index);
+    }
+  };
+
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={8}
+      fill="#10b981"
+      stroke="#fff"
+      strokeWidth={2}
+      style={{ cursor: 'ns-resize' }}
+      onMouseDown={handleMouseDown}
+      onPointerDown={handleMouseDown}
+    />
+  );
+};
+
 // Custom Tooltip component
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -133,11 +167,16 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const MetricChart = ({ metricName, data }) => {
+const MetricChart = ({ metricName, data, canEdit = false, onDataChange }) => {
+  console.log('MetricChart rendered with canEdit:', canEdit);
+
   const [isAdding, setIsAdding] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [newCommentText, setNewCommentText] = useState('');
   const [comments, setComments] = useState({});
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedPoint, setDraggedPoint] = useState(null);
+  const chartContainerRef = useRef(null);
 
   // Sort data by date always for consistency
   const sortedData = [...data].sort((a, b) => {
@@ -165,15 +204,31 @@ const MetricChart = ({ metricName, data }) => {
     }
   }, [data]);
 
+  // Get baseline target (first period's target)
+  const baselineTarget = sortedData.length > 0 ? sortedData[0].final_target : 0;
+
   // Transform data for the chart
-  const chartData = sortedData.map(item => ({
-    name: item.reporting_date,
-    complete: item.complete,
-    remaining: item.final_target - item.complete,
-    expected: item.expected,
-    final_target: item.final_target,
-    id: item.id
-  }));
+  const chartData = sortedData.map((item, index) => {
+    const scopeDelta = item.final_target - baselineTarget;
+    const prevTarget = index > 0 ? sortedData[index - 1].final_target : baselineTarget;
+    const scopeChange = item.final_target - prevTarget;
+
+    // Use dragged value if this point is being dragged
+    const expectedValue = (draggedPoint && draggedPoint.index === index)
+      ? draggedPoint.currentValue
+      : item.expected;
+
+    return {
+      name: item.reporting_date,
+      complete: item.complete,
+      remaining: item.final_target - item.complete,
+      expected: expectedValue,
+      final_target: item.final_target,
+      scopeDelta: scopeDelta,
+      scopeChange: scopeChange,
+      id: item.id
+    };
+  });
 
   // Find current period (closest date to today that is <= today)
   const today = new Date();
@@ -218,11 +273,15 @@ const MetricChart = ({ metricName, data }) => {
       return;
     }
 
+    console.log('Adding comment to period:', period.id, 'with text:', newCommentText);
+
     try {
-      await api.createComment(period.id, { comment_text: newCommentText });
+      const createResponse = await api.createComment(period.id, { comment_text: newCommentText });
+      console.log('Comment created:', createResponse.data);
 
       // Reload comments for this period
       const response = await api.getPeriodComments(period.id);
+      console.log('Reloaded comments:', response.data);
       setComments(prev => ({
         ...prev,
         [period.id]: response.data
@@ -234,7 +293,8 @@ const MetricChart = ({ metricName, data }) => {
       setNewCommentText('');
     } catch (err) {
       console.error('Failed to add comment:', err);
-      alert('Failed to add comment');
+      console.error('Error response:', err.response?.data);
+      alert(`Failed to add comment: ${err.response?.data?.error || err.message}`);
     }
   };
 
@@ -264,14 +324,117 @@ const MetricChart = ({ metricName, data }) => {
     setNewCommentText('');
   };
 
+  // Handle dragging expected line points
+  const handleExpectedDotMouseDown = (e, payload, index) => {
+    console.log('handleExpectedDotMouseDown called', { canEdit, payload, index, e });
+    if (!canEdit) {
+      console.log('canEdit is false, returning');
+      return;
+    }
+
+    // Get the actual data point from sortedData using the index
+    const dataPoint = sortedData[index];
+    if (!dataPoint) {
+      console.error('No data point found at index', index);
+      return;
+    }
+
+    console.log('Found data point:', dataPoint);
+
+    // Handle both DOM events and Recharts events
+    const clientY = e.clientY || (e.nativeEvent && e.nativeEvent.clientY) || window.event.clientY || 0;
+
+    if (e.stopPropagation) {
+      e.stopPropagation();
+    }
+    if (e.preventDefault) {
+      e.preventDefault();
+    }
+
+    setIsDragging(true);
+    setDraggedPoint({
+      index,
+      startY: clientY,
+      startValue: dataPoint.expected,
+      currentValue: dataPoint.expected
+    });
+    console.log('Set dragging state', { index, startY: clientY, startValue: dataPoint.expected });
+  };
+
+  const handleMouseMove = useCallback((e) => {
+    if (!draggedPoint) return;
+
+    const deltaY = draggedPoint.startY - e.clientY;
+    const chartHeight = 300; // Height of the ResponsiveContainer
+    const dataRange = Math.max(...sortedData.map(item => Math.max(item.final_target, item.expected)));
+    const valuePerPixel = dataRange / chartHeight;
+    const newValue = Math.max(0, Math.round(draggedPoint.startValue + (deltaY * valuePerPixel)));
+
+    // Update the dragged point's current value for live preview
+    setDraggedPoint(prev => prev ? { ...prev, currentValue: newValue } : null);
+  }, [draggedPoint, sortedData]);
+
+  const handleMouseUp = useCallback(async () => {
+    if (!draggedPoint) return;
+
+    // Only update if value changed
+    if (draggedPoint.currentValue !== draggedPoint.startValue) {
+      try {
+        await api.updatePeriod(sortedData[draggedPoint.index].id, { expected: draggedPoint.currentValue });
+        // Trigger parent to reload data
+        if (onDataChange) {
+          await onDataChange();
+        }
+      } catch (err) {
+        console.error('Failed to update expected value:', err);
+        alert('Failed to update expected value');
+      }
+    }
+
+    setIsDragging(false);
+    setDraggedPoint(null);
+  }, [draggedPoint, sortedData, onDataChange]);
+
+  // Add global mouse event listeners
+  useEffect(() => {
+    if (!isDragging) return;
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, handleMouseMove, handleMouseUp]);
+
   // Get all comments sorted by reporting date (latest period first), then by created_at
+  // Combine both system commentary (from metric_periods) and user comments (from comments table)
   const allComments = sortedData.flatMap(item => {
     const periodComments = comments[item.id] || [];
-    return periodComments.map(comment => ({
+    const result = [];
+
+    // Add system commentary if it exists
+    if (item.commentary) {
+      result.push({
+        id: `system-${item.id}`,
+        comment_text: item.commentary,
+        reporting_date: item.reporting_date,
+        period_id: item.id,
+        is_system: true,
+        created_at: item.reporting_date // Use reporting date as created_at for sorting
+      });
+    }
+
+    // Add user comments
+    result.push(...periodComments.map(comment => ({
       ...comment,
       reporting_date: item.reporting_date,
-      period_id: item.id
-    }));
+      period_id: item.id,
+      is_system: false
+    })));
+
+    return result;
   }).sort((a, b) => {
     // First sort by reporting_date descending (latest period first)
     const dateCompare = new Date(b.reporting_date) - new Date(a.reporting_date);
@@ -284,8 +447,9 @@ const MetricChart = ({ metricName, data }) => {
     <div className="metric-chart-container">
       <h3 className="metric-title">{metricName}</h3>
 
+      <div ref={chartContainerRef} style={{ position: 'relative', width: '100%', height: 300 }}>
       <ResponsiveContainer width="100%" height={300}>
-        <ComposedChart data={chartData} margin={{ top: 30, right: 20, left: 10, bottom: 50 }}>
+        <ComposedChart data={chartData} margin={{ top: 50, right: 20, left: 10, bottom: 50 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="name"
@@ -307,18 +471,80 @@ const MetricChart = ({ metricName, data }) => {
           <Bar dataKey="complete" stackId="a" fill="#00aeef" name="Complete" />
           <Bar dataKey="remaining" stackId="a" fill="#d1d5db" name="Remaining">
             <LabelList
-              dataKey="final_target"
-              position="top"
-              style={{ fontSize: 10, fill: '#6b7280', fontWeight: 600 }}
-              formatter={(value, entry, index) => {
-                // Show target value if it changed from previous
-                if (index === 0) return value;
-                const prevValue = chartData[index - 1]?.final_target;
-                return value !== prevValue ? value : '';
+              content={({ x, y, width, value, index }) => {
+                const item = chartData[index];
+                if (!item) return null;
+
+                // Show target value at top of bar
+                const targetLabel = `${item.final_target}`;
+
+                // Show scope change if it exists
+                const scopeChange = item.scopeChange;
+                let scopeLabel = null;
+                let scopeColor = null;
+
+                if (scopeChange > 0) {
+                  scopeLabel = `+${scopeChange}`;
+                  scopeColor = '#ef4444'; // Red for scope increase
+                } else if (scopeChange < 0) {
+                  scopeLabel = `${scopeChange}`;
+                  scopeColor = '#10b981'; // Green for scope decrease
+                }
+
+                return (
+                  <g>
+                    <text
+                      x={x + width / 2}
+                      y={y - 4}
+                      textAnchor="middle"
+                      fill="#6b7280"
+                      fontSize={10}
+                      fontWeight={600}
+                    >
+                      {targetLabel}
+                    </text>
+                    {scopeLabel && (
+                      <text
+                        x={x + width / 2}
+                        y={y - 16}
+                        textAnchor="middle"
+                        fill={scopeColor}
+                        fontSize={9}
+                        fontWeight={700}
+                      >
+                        {scopeLabel}
+                      </text>
+                    )}
+                  </g>
+                );
               }}
             />
           </Bar>
-          <Line type="monotone" dataKey="expected" stroke="#10b981" strokeWidth={2} name="Expected">
+          <Line
+            type="monotone"
+            dataKey="expected"
+            stroke="#10b981"
+            strokeWidth={2}
+            name="Expected"
+            dot={canEdit ? { r: 8, fill: "#10b981", stroke: "#fff", strokeWidth: 2, cursor: 'pointer' } : { r: 4 }}
+            activeDot={canEdit ? {
+              r: 10,
+              fill: "#10b981",
+              stroke: "#fff",
+              strokeWidth: 3,
+              cursor: 'ns-resize',
+              onMouseDown: (e, payload) => {
+                console.log('activeDot clicked!', payload);
+                if (payload && payload.payload) {
+                  const index = chartData.findIndex(item => item.name === payload.payload.name);
+                  console.log('Found index:', index);
+                  if (index !== -1) {
+                    handleExpectedDotMouseDown(e, payload.payload, index);
+                  }
+                }
+              }
+            } : false}
+          >
             <LabelList
               dataKey="expected"
               position="top"
@@ -334,11 +560,12 @@ const MetricChart = ({ metricName, data }) => {
           </Line>
         </ComposedChart>
       </ResponsiveContainer>
+      </div>
 
       <div className="commentary-section">
         <div className="commentary-header">
           <h4>Commentary</h4>
-          {!isAdding && (
+          {!isAdding && canEdit && (
             <button className="add-btn" onClick={handleStartAdd}>
               Add
             </button>
@@ -389,22 +616,27 @@ const MetricChart = ({ metricName, data }) => {
               allComments.map((comment, index) => (
                 <div
                   key={comment.id}
-                  className={`commentary-item ${index === 0 ? 'latest-comment' : ''}`}
+                  className={`commentary-item ${index === 0 ? 'latest-comment' : ''} ${comment.is_system ? 'system-commentary' : ''}`}
                 >
                   <div style={{ flex: 1 }}>
                     <strong>{comment.reporting_date}:</strong>{' '}
                     {comment.comment_text}
-                    {comment.created_by_name && (
+                    {comment.created_by_name && !comment.is_system && (
                       <span className="comment-author"> — {comment.created_by_name}</span>
                     )}
+                    {comment.is_system && (
+                      <span className="comment-author"> — System</span>
+                    )}
                   </div>
-                  <button
-                    className="delete-comment-btn"
-                    onClick={() => handleDeleteComment(comment.id, comment.period_id)}
-                    title="Delete comment"
-                  >
-                    ×
-                  </button>
+                  {!comment.is_system && canEdit && (
+                    <button
+                      className="delete-comment-btn"
+                      onClick={() => handleDeleteComment(comment.id, comment.period_id)}
+                      title="Delete comment"
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
               ))
             ) : (

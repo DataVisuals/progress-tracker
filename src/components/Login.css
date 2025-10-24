@@ -103,13 +103,22 @@
 }
 
 .login-error {
-  color: #ef4444;
+  color: #dc2626;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   text-align: center;
-  padding: 8px;
+  padding: 12px 16px;
   background-color: #fee2e2;
-  border-radius: 6px;
+  border: 2px solid #ef4444;
+  border-radius: 8px;
+  animation: shake 0.4s ease-in-out;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
 }
 
 .login-button {

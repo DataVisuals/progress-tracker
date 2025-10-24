@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
 import { api } from '../api/client';
+import { selectStyles } from './SelectStyles';
 import './DataGrid.css';
 
 const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCreated }) => {
@@ -42,11 +44,34 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
   }, [selectedMetric]);
 
   const handleCellChange = (id, field, value) => {
-    setEditedData(prev =>
-      prev.map(row =>
+    setEditedData(prev => {
+      // If changing the target value, propagate to all subsequent periods
+      if (field === 'final_target') {
+        // Find the index of the current row
+        const currentIndex = prev.findIndex(row => row.id === id);
+
+        // Sort by date to ensure we're working with chronological order
+        const sorted = [...prev].sort((a, b) =>
+          new Date(a.reporting_date) - new Date(b.reporting_date)
+        );
+
+        const sortedIndex = sorted.findIndex(row => row.id === id);
+
+        // Update current row and all subsequent rows
+        return prev.map(row => {
+          const rowSortedIndex = sorted.findIndex(r => r.id === row.id);
+          if (rowSortedIndex >= sortedIndex) {
+            return { ...row, final_target: value };
+          }
+          return row;
+        });
+      }
+
+      // For other fields, just update the single row
+      return prev.map(row =>
         row.id === id ? { ...row, [field]: value } : row
-      )
-    );
+      );
+    });
   };
 
   const handleSave = () => {
@@ -184,19 +209,14 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
         <div className="metric-selector-section">
           <div className="metric-selector-row">
             <div className="metric-selector-control">
-              <select
-                id="metric-select"
-                value={selectedMetric}
-                onChange={(e) => setSelectedMetric(e.target.value)}
-                className="metric-select"
-              >
-                <option value="">-- Select a Metric --</option>
-                {metrics.map((metric) => (
-                  <option key={metric} value={metric}>
-                    {metric}
-                  </option>
-                ))}
-              </select>
+              <Select
+                value={selectedMetric ? { value: selectedMetric, label: selectedMetric } : null}
+                onChange={(option) => setSelectedMetric(option ? option.value : '')}
+                options={metrics.map(m => ({ value: m, label: m }))}
+                styles={selectStyles}
+                placeholder="-- Select a Metric --"
+                isClearable={true}
+              />
             </div>
             <button className="new-metric-btn" onClick={() => setShowNewMetric(true)}>
               + Add Metric
