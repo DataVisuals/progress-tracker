@@ -270,6 +270,11 @@ function App() {
   const isAdmin = () => currentUser?.role === 'admin';
   const canEdit = () => currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm');
 
+  // Debug logging
+  console.log('Current User:', currentUser);
+  console.log('Can Edit:', canEdit());
+  console.log('Is Admin:', isAdmin());
+
   return (
     <div className="app">
       <header className="app-header-main">
@@ -317,10 +322,11 @@ function App() {
               </button>
             ) : (
               <Login onLogin={() => {
-                setIsAuthenticated(true);
                 const userStr = localStorage.getItem('user');
                 if (userStr) {
-                  setCurrentUser(JSON.parse(userStr));
+                  const user = JSON.parse(userStr);
+                  setCurrentUser(user);
+                  setIsAuthenticated(true);
                 }
               }} />
             )}
