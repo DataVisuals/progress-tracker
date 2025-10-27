@@ -11,7 +11,7 @@ A modern, comprehensive web application for tracking project metrics, milestones
 ### Key Capabilities Shown Above:
 - 📊 **Visual Progress Charts** - Stacked bars with completed/remaining work
 - 📈 **Draggable Expected Line** - Adjust forecasts directly on the chart
-- 📅 **Current Period Highlighting** - Clear visual indicator of active timeframe
+- 📅 **Current Period Highlighting** - Amber background highlights active period with legend indicator
 - 💬 **Inline Commentary** - Add context notes to specific periods
 - 🎯 **Scope Tracking** - See target changes over time
 - ⚠️ **CRAID Management** - Track risks, issues, and dependencies

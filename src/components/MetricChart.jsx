@@ -458,14 +458,22 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
           />
           <YAxis tick={{ fontSize: 11 }} />
           <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ fontSize: '12px' }} />
+          <Legend
+            wrapperStyle={{ fontSize: '12px' }}
+            payload={[
+              { value: 'Complete', type: 'rect', id: 'complete', color: '#00aeef' },
+              { value: 'Remaining', type: 'rect', id: 'remaining', color: '#d1d5db' },
+              { value: 'Expected', type: 'line', id: 'expected', color: '#10b981' },
+              { value: 'Target', type: 'line', id: 'target', color: '#6b7280' },
+              ...(currentPeriodX1 && currentPeriodX2 ? [{ value: 'Current Period', type: 'rect', id: 'current', color: '#fde68a' }] : [])
+            ]}
+          />
           {currentPeriodX1 && currentPeriodX2 && (
             <ReferenceArea
               x1={currentPeriodX1}
               x2={currentPeriodX2}
               fill="#fbbf24"
-              fillOpacity={0.15}
-              label={{ value: 'Current Period', position: 'insideBottom', fill: '#92400e', fontSize: 11, fontWeight: 600, offset: 10 }}
+              fillOpacity={0.25}
             />
           )}
           <Bar dataKey="complete" stackId="a" fill="#00aeef" name="Complete" />
