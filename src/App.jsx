@@ -9,6 +9,7 @@ import AuditLog from './components/AuditLog';
 import UserManagement from './components/UserManagement';
 import ProjectSetup from './components/ProjectSetup';
 import PasswordChange from './components/PasswordChange';
+import TimeTravel from './components/TimeTravel';
 import { api } from './api/client';
 import { MdShowChart, MdArrowDropDown } from 'react-icons/md';
 import './App.css';
@@ -30,6 +31,7 @@ function App() {
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showAdminDropdown, setShowAdminDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [timeTravelTimestamp, setTimeTravelTimestamp] = useState(null);
 
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
@@ -68,13 +70,20 @@ function App() {
     }
   };
 
-  const loadProjectData = async () => {
+  const loadProjectData = async (timestamp = null) => {
     try {
-      const response = await api.getProjectData(selectedProject);
+      const response = timestamp
+        ? await api.getProjectDataTimeTravel(selectedProject, timestamp)
+        : await api.getProjectData(selectedProject);
       setProjectData(response.data);
     } catch (err) {
       console.error('Failed to load project data:', err);
     }
+  };
+
+  const handleTimeTravelChange = async (timestamp) => {
+    setTimeTravelTimestamp(timestamp);
+    await loadProjectData(timestamp);
   };
 
   // No longer blocking on authentication - allow unauthenticated viewing
@@ -121,17 +130,30 @@ function App() {
                    original.expected !== item.expected ||
                    original.final_target !== item.final_target) {
           // This is an existing period - update it
-          await api.updatePeriod(item.id, {
-            complete: item.complete,
-            expected: item.expected,
-            target: item.final_target
-          });
+          try {
+            await api.updatePeriod(item.id, {
+              complete: item.complete,
+              expected: item.expected,
+              target: item.final_target
+            });
+          } catch (updateErr) {
+            // Check if this is a historic edit error
+            if (updateErr.response?.data?.isHistoricEdit) {
+              alert(updateErr.response.data.error + '\n\nOnly administrators can edit completion values for past periods.');
+              throw updateErr; // Re-throw to stop processing
+            }
+            throw updateErr;
+          }
         }
       }
       // Reload project data
       await loadProjectData();
     } catch (err) {
       console.error('Failed to update data:', err);
+      // Don't show generic alert if we already showed specific historic edit message
+      if (!err.response?.data?.isHistoricEdit) {
+        alert('Failed to update data. Please try again.');
+      }
     }
   };
 
@@ -245,6 +267,13 @@ function App() {
   const projectName = selectedProject
     ? projects.find(p => p.id === parseInt(selectedProject))?.name || ''
     : '';
+
+  // Get metric tolerances from the selected metric's data
+  const selectedMetricData = selectedMetric
+    ? projectData.find(item => item.metric === selectedMetric)
+    : null;
+  const amberTolerance = selectedMetricData?.amber_tolerance || 5.0;
+  const redTolerance = selectedMetricData?.red_tolerance || 10.0;
 
   const currentProjectData = projectData;
 
@@ -414,16 +443,27 @@ function App() {
             )}
 
             {selectedMetric && (
-              <div className="metrics-container">
-                <MetricChart
-                  key={selectedMetric}
-                  metricName={selectedMetric}
-                  data={projectData.filter(item => item.metric === selectedMetric)}
-                  onCommentaryChange={handleCommentaryChange}
-                  onDataChange={loadProjectData}
-                  canEdit={canEdit()}
-                />
-              </div>
+              <>
+                <div className="metrics-container">
+                  <MetricChart
+                    key={selectedMetric}
+                    metricName={selectedMetric}
+                    data={projectData.filter(item => item.metric === selectedMetric)}
+                    onCommentaryChange={handleCommentaryChange}
+                    onDataChange={loadProjectData}
+                    canEdit={canEdit() && !timeTravelTimestamp}
+                    amberTolerance={amberTolerance}
+                    redTolerance={redTolerance}
+                    timeTravelTimestamp={timeTravelTimestamp}
+                  />
+                </div>
+                {canEdit() && (
+                  <TimeTravel
+                    projectId={selectedProject}
+                    onTimeTravelChange={handleTimeTravelChange}
+                  />
+                )}
+              </>
             )}
 
             <CRAIDs projectId={selectedProject} canEdit={canEdit()} />

@@ -3,12 +3,27 @@ export const selectStyles = {
   control: (base, state) => ({
     ...base,
     minHeight: '38px',
+    height: '38px',
     fontSize: '14px',
     borderColor: state.isFocused ? '#00aeef' : '#d1d5db',
     boxShadow: state.isFocused ? '0 0 0 3px rgba(0, 174, 239, 0.1)' : 'none',
     '&:hover': {
       borderColor: '#00aeef'
     }
+  }),
+  valueContainer: (base) => ({
+    ...base,
+    height: '38px',
+    padding: '0 12px'
+  }),
+  input: (base) => ({
+    ...base,
+    margin: '0',
+    padding: '0'
+  }),
+  indicatorsContainer: (base) => ({
+    ...base,
+    height: '38px'
   }),
   menu: (base) => ({
     ...base,

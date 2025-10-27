@@ -27,11 +27,11 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
   const [endDate, setEndDate] = useState(defaultDates.end);
   const [frequency, setFrequency] = useState('monthly');
   const [metrics, setMetrics] = useState([
-    { name: '', target: '', progression: 'linear' }
+    { name: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0 }
   ]);
 
   const addMetric = () => {
-    setMetrics([...metrics, { name: '', target: '', progression: 'linear' }]);
+    setMetrics([...metrics, { name: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0 }]);
   };
 
   const removeMetric = (index) => {
@@ -81,7 +81,9 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
           end_date: endDate,
           frequency: frequency,
           progression_type: metric.progression,
-          final_target: parseInt(metric.target)
+          final_target: parseInt(metric.target),
+          amber_tolerance: metric.amberTolerance,
+          red_tolerance: metric.redTolerance
         });
 
         // The backend will automatically generate periods based on the metric configuration
@@ -211,16 +213,40 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
                   value={{
                     value: metric.progression,
                     label: metric.progression === 'linear' ? 'Linear' :
-                           metric.progression === 'exponential' ? 'Exponential (S-curve)' :
+                           metric.progression === 'exponential' ? 'Exponential (Back-loaded)' :
+                           metric.progression === 's-curve' ? 'S-curve' :
                            'Logarithmic (Front-loaded)'
                   }}
                   onChange={(option) => updateMetric(index, 'progression', option.value)}
                   options={[
                     { value: 'linear', label: 'Linear' },
-                    { value: 'exponential', label: 'Exponential (S-curve)' },
+                    { value: 'exponential', label: 'Exponential (Back-loaded)' },
+                    { value: 's-curve', label: 'S-curve' },
                     { value: 'logarithmic', label: 'Logarithmic (Front-loaded)' }
                   ]}
                   styles={selectStyles}
+                />
+              </div>
+              <div className="form-group metric-tolerance">
+                <label><span className="tolerance-indicator amber">●</span> Amber %</label>
+                <input
+                  type="number"
+                  value={metric.amberTolerance}
+                  onChange={(e) => updateMetric(index, 'amberTolerance', parseFloat(e.target.value))}
+                  placeholder="5.0"
+                  min="0"
+                  step="0.1"
+                />
+              </div>
+              <div className="form-group metric-tolerance">
+                <label><span className="tolerance-indicator red">●</span> Red %</label>
+                <input
+                  type="number"
+                  value={metric.redTolerance}
+                  onChange={(e) => updateMetric(index, 'redTolerance', parseFloat(e.target.value))}
+                  placeholder="10.0"
+                  min="0"
+                  step="0.1"
                 />
               </div>
               {metrics.length > 1 && (
@@ -238,8 +264,9 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
         <p className="help-text">
           <strong>Progression Curves:</strong><br/>
           • Linear: Equal progress in each period<br/>
-          • Exponential (S-curve): Slow start, fast middle, slow end<br/>
-          • Logarithmic: Fast start, gradually slowing down
+          • Exponential (Back-loaded): Slow start, then rapid acceleration at the end<br/>
+          • S-curve: Slow start, fast middle, slow end<br/>
+          • Logarithmic (Front-loaded): Fast start, gradually slowing down
         </p>
       </div>
 

@@ -87,8 +87,18 @@ Track project challenges, risks, actions, issues, and dependencies with comprehe
   - Old and new values (JSON diff)
   - Descriptive change summaries
   - IP address and timestamp
+- **Historic Edit Protection**: Safeguard data integrity with automatic controls:
+  - Completion values for past periods (after end date) can only be changed by admins
+  - Historic edits are clearly marked with ⚠️ HISTORIC EDIT in the audit log
+  - Non-admin users receive clear error messages when attempting historic edits
+  - Prevents retroactive manipulation while allowing authorized corrections
+- **Time Travel Feature** (Admin/PM only): View historical project state at any point in time
+  - Reconstructs complete data state from audit log replay
+  - Shows exact completion values, commentary, and variance indicators as they appeared
+  - Interactive timeline slider for exploring project history
+  - Perfect for retrospectives and historical analysis
 - **Filterable History**: Search and filter audit events
-- **Admin-Only Access**: Restricted to administrators for compliance
+- **Admin-Only Access**: Audit log and time travel restricted to authorized users
 
 ### 📤 Data Export
 - **Automated Excel Exports**: Daily scheduled exports at midnight GMT
@@ -357,18 +367,23 @@ Access is controlled at multiple levels:
 - Create/edit/delete any project
 - Manage all users
 - View complete audit log
+- Access time travel feature
+- Make historic edits to past period completion values
 - Access all system features
 
 **Project Managers can:**
 - Create new projects
 - Edit projects they own or are assigned to
 - View all projects (read-only for unassigned)
+- Access time travel feature
+- Edit current and future periods (historic edits blocked)
 - Cannot manage users or view audit log
 
 **Viewers can:**
 - View all projects and metrics
 - Cannot create, edit, or delete anything
 - Read-only access to CRAIDs and commentary
+- No time travel access
 
 ## Development
 

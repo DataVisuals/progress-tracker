@@ -58,7 +58,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET);
+    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, userId: user.id, email: user.email, name: user.name, role: user.role } });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -242,7 +242,7 @@ app.post('/api/projects/:projectId/metrics', authenticateToken, async (req, res)
       return res.status(403).json({ error: 'You do not have permission to add metrics to this project' });
     }
 
-    const { name, owner_id, start_date, end_date, frequency, progression_type, final_target } = req.body;
+    const { name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance } = req.body;
 
     // Verify project exists first
     const project = await dbGet('SELECT id, initiative_manager FROM projects WHERE id = ?', [req.params.projectId]);
@@ -281,9 +281,9 @@ app.post('/api/projects/:projectId/metrics', authenticateToken, async (req, res)
     });
 
     const result = await dbRun(`
-      INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [req.params.projectId, name, finalOwnerId, start_date, end_date, frequency, progression_type || 'linear', final_target]);
+      INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [req.params.projectId, name, finalOwnerId, start_date, end_date, frequency, progression_type || 'linear', final_target, amber_tolerance || 5.0, red_tolerance || 10.0]);
 
     console.log('Metric created with ID:', result.lastID);
 
@@ -376,6 +376,8 @@ app.get('/api/projects/:projectId/data', async (req, res) => {
         mp.complete,
         mp.commentary,
         m.id as metric_id,
+        m.amber_tolerance,
+        m.red_tolerance,
         p.name as initiative,
         u.name as owner,
         p.initiative_manager
@@ -454,6 +456,24 @@ app.put('/api/metric-periods/:id', authenticateToken, async (req, res) => {
     }
 
     const { complete, expected, target } = req.body;
+
+    // Check if this is a historic edit of completion values (period end date has passed)
+    const periodEndDate = new Date(periodData.reporting_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isHistoricEdit = periodEndDate < today && complete !== undefined;
+
+    // Only admins can make historic edits
+    if (isHistoricEdit) {
+      const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
+      if (!isAdmin(user)) {
+        return res.status(403).json({
+          error: 'Historic edits of completion values are restricted to administrators only',
+          isHistoricEdit: true
+        });
+      }
+    }
+
     const updates = [];
     const params = [];
     const oldValues = {};
@@ -483,15 +503,20 @@ app.put('/api/metric-periods/:id', authenticateToken, async (req, res) => {
       params.push(req.params.id);
       await dbRun(`UPDATE metric_periods SET ${updates.join(', ')} WHERE id = ?`, params);
 
+      // Mark historic edits clearly in audit log
+      const description = isHistoricEdit
+        ? `⚠️ HISTORIC EDIT: Updated complete value for metric "${periodData.metric_name}" on ${periodData.reporting_date} (period ended ${periodData.reporting_date})`
+        : `Updated period for metric "${periodData.metric_name}" on ${periodData.reporting_date}`;
+
       await logAudit(req.user, 'UPDATE', 'metric_periods', req.params.id,
         oldValues,
         newValues,
-        `Updated period for metric "${periodData.metric_name}" on ${periodData.reporting_date}`,
+        description,
         req.ip
       );
     }
 
-    res.json({ success: true });
+    res.json({ success: true, isHistoricEdit });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -516,17 +541,40 @@ app.patch('/api/metric-periods/:id', authenticateToken, async (req, res) => {
     }
 
     const { complete } = req.body;
+
+    // Check if this is a historic edit of completion values (period end date has passed)
+    const periodEndDate = new Date(periodData.reporting_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isHistoricEdit = periodEndDate < today && complete !== undefined;
+
+    // Only admins can make historic edits
+    if (isHistoricEdit) {
+      const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
+      if (!isAdmin(user)) {
+        return res.status(403).json({
+          error: 'Historic edits of completion values are restricted to administrators only',
+          isHistoricEdit: true
+        });
+      }
+    }
+
     if (complete !== undefined) {
       await dbRun('UPDATE metric_periods SET complete = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [complete, req.params.id]);
+
+      // Mark historic edits clearly in audit log
+      const description = isHistoricEdit
+        ? `⚠️ HISTORIC EDIT: Updated complete value for metric "${periodData.metric_name}" on ${periodData.reporting_date} (period ended ${periodData.reporting_date})`
+        : `Updated complete value for metric "${periodData.metric_name}" on ${periodData.reporting_date}`;
 
       await logAudit(req.user, 'UPDATE', 'metric_periods', req.params.id,
         { complete: periodData.complete },
         { complete },
-        `Updated complete value for metric "${periodData.metric_name}" on ${periodData.reporting_date}`,
+        description,
         req.ip
       );
     }
-    res.json({ success: true });
+    res.json({ success: true, isHistoricEdit });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1055,6 +1103,185 @@ app.get('/api/audit', authenticateToken, async (req, res) => {
   }
 });
 
+// ===== TIME TRAVEL (Reconstruct historical state from audit log) =====
+app.get('/api/projects/:projectId/data/time-travel', authenticateToken, async (req, res) => {
+  try {
+    const { timestamp } = req.query;
+
+    if (!timestamp) {
+      return res.status(400).json({ error: 'timestamp parameter is required' });
+    }
+
+    const targetDate = new Date(timestamp);
+    if (isNaN(targetDate.getTime())) {
+      return res.status(400).json({ error: 'Invalid timestamp format' });
+    }
+
+    const projectId = req.params.projectId;
+
+    // Get all metric_periods for this project at the target time
+    // We need to replay the audit log to reconstruct the state
+
+    // First, get all metrics for this project
+    const metrics = await dbAll('SELECT id FROM metrics WHERE project_id = ?', [projectId]);
+    const metricIds = metrics.map(m => m.id);
+
+    if (metricIds.length === 0) {
+      return res.json([]);
+    }
+
+    // Get all metric_periods for these metrics (current state)
+    const periods = await dbAll(`
+      SELECT
+        mp.id,
+        mp.metric_id,
+        mp.reporting_date,
+        mp.expected,
+        mp.target,
+        mp.complete
+      FROM metric_periods mp
+      WHERE mp.metric_id IN (${metricIds.map(() => '?').join(',')})
+      ORDER BY mp.id
+    `, metricIds);
+
+    // Get ALL audit log entries for metric_periods (we need CREATE entries for all periods)
+    const allAuditLogs = await dbAll(`
+      SELECT
+        id,
+        action,
+        record_id,
+        old_values,
+        new_values,
+        created_at
+      FROM audit_log
+      WHERE table_name = 'metric_periods'
+      ORDER BY created_at ASC, id ASC
+    `);
+
+    // Create a map of period states - initialize from CREATE audit entries
+    const periodStates = {};
+
+    // First pass: Find CREATE entries to establish initial state
+    allAuditLogs.forEach(log => {
+      if (log.action === 'CREATE') {
+        const recordId = log.record_id;
+        const newValues = JSON.parse(log.new_values || '{}');
+        const createdAt = new Date(log.created_at);
+
+        if (metricIds.includes(newValues.metric_id)) {
+          periodStates[recordId] = {
+            id: recordId,
+            metric_id: newValues.metric_id,
+            reporting_date: newValues.reporting_date,
+            expected: newValues.expected || 0,
+            target: newValues.target || 0,
+            // Only use complete from CREATE if period was created before time travel date
+            complete: createdAt <= targetDate ? (newValues.complete || 0) : 0,
+            commentary: createdAt <= targetDate ? (newValues.commentary || null) : null
+          };
+        }
+      }
+    });
+
+    // Add any current periods that don't have CREATE audit entries (shouldn't happen but handle it)
+    periods.forEach(period => {
+      if (!periodStates[period.id]) {
+        periodStates[period.id] = {
+          id: period.id,
+          metric_id: period.metric_id,
+          reporting_date: period.reporting_date,
+          expected: period.expected,
+          target: period.target,
+          complete: 0,
+          commentary: null
+        };
+      }
+    });
+
+    // Second pass: Apply UPDATE/DELETE entries up to target timestamp
+    const auditLogs = allAuditLogs.filter(log =>
+      new Date(log.created_at) <= targetDate
+    );
+
+    // Replay audit log to reconstruct historical state
+    auditLogs.forEach(log => {
+      const recordId = log.record_id;
+
+      if (log.action === 'CREATE') {
+        // CREATE already handled in first pass, skip
+        return;
+      } else if (log.action === 'UPDATE') {
+        // Update the period state if it exists
+        if (periodStates[recordId]) {
+          const newValues = JSON.parse(log.new_values || '{}');
+          const periodReportingDate = new Date(periodStates[recordId].reporting_date);
+
+          // Apply updates for complete, expected (plan changes), target (scope changes), and commentary
+          // For complete: only apply if the period's reporting date has occurred
+          if (newValues.complete !== undefined && periodReportingDate <= targetDate) {
+            periodStates[recordId].complete = newValues.complete;
+          }
+          // For expected and target: always apply (plan/scope changes can happen before period date)
+          if (newValues.expected !== undefined) {
+            periodStates[recordId].expected = newValues.expected;
+          }
+          if (newValues.target !== undefined) {
+            periodStates[recordId].target = newValues.target;
+          }
+          // For commentary: always apply (commentary is added as events occur)
+          if (newValues.commentary !== undefined) {
+            periodStates[recordId].commentary = newValues.commentary;
+          }
+        }
+      } else if (log.action === 'DELETE') {
+        // Remove period from state if deleted
+        if (periodStates[recordId]) {
+          delete periodStates[recordId];
+        }
+      }
+    });
+
+    // Format the response - include all periods (existing and future)
+    const historicalData = await Promise.all(
+      Object.values(periodStates)
+        .filter(period => metricIds.includes(period.metric_id))
+        .map(async (period) => {
+          // Get metric and project info
+          const metric = await dbGet(`
+            SELECT m.name, m.project_id, m.amber_tolerance, m.red_tolerance, p.name as initiative, p.initiative_manager
+            FROM metrics m
+            JOIN projects p ON m.project_id = p.id
+            WHERE m.id = ?
+          `, [period.metric_id]);
+
+          const owner = await dbGet('SELECT name FROM users WHERE id = (SELECT owner_id FROM metrics WHERE id = ?)', [period.metric_id]);
+
+          return {
+            id: period.id,
+            reporting_date: period.reporting_date,
+            metric: metric?.name || 'Unknown',
+            expected: period.expected,
+            target: period.target,
+            final_target: period.target, // Use target as final_target for consistency
+            complete: period.complete,
+            commentary: period.commentary,
+            metric_id: period.metric_id,
+            amber_tolerance: metric?.amber_tolerance || 5.0,
+            red_tolerance: metric?.red_tolerance || 10.0,
+            initiative: metric?.initiative || 'Unknown',
+            owner: owner?.name || null,
+            initiative_manager: metric?.initiative_manager || null
+          };
+        })
+    );
+
+    res.json(historicalData.sort((a, b) => new Date(a.reporting_date) - new Date(b.reporting_date)));
+  } catch (err) {
+    console.error('Time travel error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ===== EXPORT =====
 const { exportAllData } = require('./exportService');
 
@@ -1100,6 +1327,15 @@ app.listen(PORT, async () => {
     console.log('✅ Cleaned up user roles');
   } catch (err) {
     console.error('Error updating user roles:', err);
+  }
+
+  // Migration: Add tolerance columns to metrics table
+  try {
+    await dbRun(`ALTER TABLE metrics ADD COLUMN amber_tolerance REAL DEFAULT 5.0`);
+    await dbRun(`ALTER TABLE metrics ADD COLUMN red_tolerance REAL DEFAULT 10.0`);
+    console.log('✅ Added tolerance columns to metrics table');
+  } catch (err) {
+    // Columns already exist, that's fine
   }
 
   // Create default admin user if none exists

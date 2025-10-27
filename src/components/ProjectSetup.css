@@ -1,5 +1,5 @@
 .project-setup-container {
-  max-width: 900px;
+  max-width: 1350px;
   margin: 0 auto;
 }
 
@@ -107,7 +107,7 @@
 
 .metric-row {
   display: grid;
-  grid-template-columns: 30px 2fr 1fr 1.5fr 40px;
+  grid-template-columns: 30px 2fr 1fr 1.5fr 0.8fr 0.8fr 40px;
   gap: 12px;
   align-items: end;
   background: white;
@@ -140,6 +140,20 @@
 
 .metric-progression {
   flex: 1.5;
+}
+
+.tolerance-indicator {
+  font-size: 16px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.tolerance-indicator.amber {
+  color: #f59e0b;
+}
+
+.tolerance-indicator.red {
+  color: #ef4444;
 }
 
 .remove-metric-btn {

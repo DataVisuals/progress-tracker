@@ -51,6 +51,7 @@ export const api = {
 
   // Data
   getProjectData: (projectId) => client.get(`/projects/${projectId}/data`),
+  getProjectDataTimeTravel: (projectId, timestamp) => client.get(`/projects/${projectId}/data/time-travel?timestamp=${encodeURIComponent(timestamp)}`),
   getMetricPeriods: (metricId) => client.get(`/metrics/${metricId}/periods`),
   createPeriod: (data) => client.post('/metric-periods', data),
   updatePeriod: (id, data) => client.put(`/metric-periods/${id}`, data),

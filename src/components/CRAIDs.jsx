@@ -160,9 +160,9 @@ const CRAIDs = ({ projectId, canEdit = false }) => {
     dependency: 'Dependencies'
   };
 
-  // Filter out issues - they should be metrics instead
+  // Filter to show only dependencies
   const filteredGroupedCRAIDs = Object.entries(groupedCRAIDs)
-    .filter(([type]) => type !== 'issue')
+    .filter(([type]) => type === 'dependency')
     .reduce((acc, [type, items]) => {
       acc[type] = items;
       return acc;
@@ -187,7 +187,7 @@ const CRAIDs = ({ projectId, canEdit = false }) => {
   return (
     <div className="craids-container">
       <div className="craids-header">
-        <h3 className="craids-title">Risks, Actions and Dependencies</h3>
+        <h3 className="craids-title">Dependencies</h3>
         {canEdit && (
           <button className="add-craid-btn" onClick={handleStartAdd}>
             Add

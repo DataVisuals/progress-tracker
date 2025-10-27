@@ -167,7 +167,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const MetricChart = ({ metricName, data, canEdit = false, onDataChange }) => {
+const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTolerance = 5.0, redTolerance = 10.0, timeTravelTimestamp = null }) => {
   console.log('MetricChart rendered with canEdit:', canEdit);
 
   const [isAdding, setIsAdding] = useState(false);
@@ -465,7 +465,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange }) => {
               x2={currentPeriodX2}
               fill="#fbbf24"
               fillOpacity={0.15}
-              label={{ value: 'Current Period', position: 'top', fill: '#92400e', fontSize: 11, fontWeight: 600 }}
+              label={{ value: 'Current Period', position: 'insideBottom', fill: '#92400e', fontSize: 11, fontWeight: 600, offset: 10 }}
             />
           )}
           <Bar dataKey="complete" stackId="a" fill="#00aeef" name="Complete" />
@@ -477,6 +477,32 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange }) => {
 
                 // Show target value at top of bar
                 const targetLabel = `${item.final_target}`;
+
+                // Calculate variance percentage
+                const variance = item.complete - item.expected;
+                const variancePercent = item.expected > 0 ? Math.abs((variance / item.expected) * 100) : 0;
+
+                // Determine the cutoff date (time travel timestamp or current date)
+                const cutoffDate = timeTravelTimestamp ? new Date(timeTravelTimestamp) : new Date();
+                const periodDate = new Date(item.name);
+                const isPastOrCurrent = periodDate <= cutoffDate;
+
+                // Determine variance indicator using project tolerances
+                // Only show variance for periods that have occurred (on or before cutoff date)
+                let varianceIcon = null;
+                let varianceColor = null;
+                let varianceText = null;
+                if (isPastOrCurrent && variance < 0) { // Behind schedule and period has occurred
+                  if (variancePercent > redTolerance) {
+                    varianceIcon = '🔴'; // Red circle for exceeding red tolerance
+                    varianceColor = '#ef4444';
+                    varianceText = `${variancePercent.toFixed(1)}% (tol: ${redTolerance}%)`;
+                  } else if (variancePercent > amberTolerance) {
+                    varianceIcon = '🟡'; // Amber circle for exceeding amber tolerance
+                    varianceColor = '#f59e0b';
+                    varianceText = `${variancePercent.toFixed(1)}% (tol: ${amberTolerance}%)`;
+                  }
+                }
 
                 // Show scope change if it exists
                 const scopeChange = item.scopeChange;
@@ -514,6 +540,28 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange }) => {
                       >
                         {scopeLabel}
                       </text>
+                    )}
+                    {varianceIcon && (
+                      <>
+                        <text
+                          x={x + width / 2}
+                          y={y - (scopeLabel ? 48 : 36)}
+                          textAnchor="middle"
+                          fontSize={12}
+                        >
+                          {varianceIcon}
+                        </text>
+                        <text
+                          x={x + width / 2}
+                          y={y - (scopeLabel ? 36 : 24)}
+                          textAnchor="middle"
+                          fontSize={8}
+                          fill={varianceColor}
+                          fontWeight={600}
+                        >
+                          {varianceText}
+                        </text>
+                      </>
                     )}
                   </g>
                 );

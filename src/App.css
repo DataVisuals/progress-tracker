@@ -290,7 +290,7 @@
 }
 
 .modal-content.modal-large {
-  max-width: 900px;
+  max-width: 1400px;
   max-height: 90vh;
   overflow-y: auto;
 }
