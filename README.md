@@ -2,23 +2,39 @@
 
 A modern, comprehensive web application for tracking project metrics, milestones, and progress across multiple initiatives with intelligent automation and role-based access control.
 
-## Demo
-
-![Progress Tracker Demo](demo.gif)
-
-*Interactive dashboard showing real-time progress tracking, draggable expected values, and comprehensive project metrics.*
-
-### Key Capabilities Shown Above:
-- 📊 **Visual Progress Charts** - Stacked bars with completed/remaining work
-- 📈 **Draggable Expected Line** - Adjust forecasts directly on the chart
-- 📅 **Current Period Highlighting** - Amber background highlights active period with legend indicator
-- 💬 **Inline Commentary** - Add context notes to specific periods
-- 🎯 **Scope Tracking** - See target changes over time
-- ⚠️ **CRAID Management** - Track risks, issues, and dependencies
-
 ## Overview
 
-Progress Tracker provides a powerful yet intuitive platform for project managers and teams to monitor project health, track key metrics, manage risks, and visualize progress over time. Built with modern web technologies, it offers real-time updates, smart progression curves, and comprehensive audit logging.
+Progress Tracker provides a powerful yet intuitive platform for project managers and teams to monitor project health, track key metrics, manage risks, and visualize progress over time. Built with modern web technologies, it offers real-time updates, smart progression curves, comprehensive audit logging, and data consistency validation.
+
+![Progress Tracker Screenshot](screenshot.png)
+
+*Interactive dashboard showing project metrics, progress charts, and real-time tracking*
+
+## Latest Features
+
+### 🔍 Data Consistency Reports (Admin Only)
+Automated data quality analysis to identify potential issues:
+- **Vacation Month Growth Detection**: Flags unusual progress during January (December work) and August (July/August work)
+- **Back-Loaded Growth Patterns**: Identifies projects where all metrics show disproportionate second-half progress
+- **Single Metric Projects**: Highlights projects with only one tracking metric
+- **Severity Levels**: High, Warning, and Info classifications with color-coded badges
+- **Clickable Navigation**: Jump directly to flagged projects for review
+- **Initiative Manager Tracking**: See which PM owns each flagged project
+
+### 🔗 Project Links
+Organize external resources and documentation:
+- **Unlimited Links Per Project**: Add as many reference links as needed
+- **Custom Labels**: Name each link descriptively
+- **Display Order Control**: Organize links in your preferred sequence
+- **Quick Access**: One-click navigation to external tools, docs, and dashboards
+- **Inline Management**: Add, edit, and delete links without leaving project view
+
+### 👤 User Profile Management
+Self-service account management:
+- **Update Profile**: Change your name and email address
+- **Password Changes**: Secure password updates with current password verification
+- **Session Persistence**: Stay logged in across password changes
+- **Dropdown Menu Access**: Convenient access from header user menu
 
 ## Key Features
 
@@ -72,11 +88,13 @@ Track project challenges, risks, actions, issues, and dependencies with comprehe
 
 ### 🔐 Authentication & Security
 - **Role-Based Access Control (RBAC)**:
-  - **Admin**: Full system access, user management, audit log viewing
+  - **Admin**: Full system access, user management, audit log viewing, data consistency reports
   - **Project Manager (PM)**: Create projects, manage assigned projects, edit data
   - **Viewer**: Read-only access to all projects
 - **Secure Authentication**: JWT-based authentication with bcrypt password hashing
 - **Session Management**: Automatic token refresh and secure logout
+- **User Profile Management**: Update name and email address
+- **Password Management**: Secure password changes with current password verification
 - **Enhanced Login UX**: Clear error feedback with visual animations
 
 ### 📋 Audit & Compliance
