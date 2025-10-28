@@ -8,6 +8,7 @@ import CRAIDs from './components/CRAIDs';
 import AuditLog from './components/AuditLog';
 import UserManagement from './components/UserManagement';
 import ProjectSetup from './components/ProjectSetup';
+import ProjectLinksEditor from './components/ProjectLinksEditor';
 import PasswordChange from './components/PasswordChange';
 import TimeTravel from './components/TimeTravel';
 import { api } from './api/client';
@@ -33,6 +34,7 @@ function App() {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [timeTravelTimestamp, setTimeTravelTimestamp] = useState(null);
   const [projectLinks, setProjectLinks] = useState([]);
+  const [showLinksEditor, setShowLinksEditor] = useState(false);
 
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
@@ -438,34 +440,59 @@ function App() {
                     {projectName}
                   </h2>
                 )}
-                {projectLinks.length > 0 && (
-                  <div className="project-links" style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {projectLinks.map((link) => (
-                      <a
-                        key={link.id}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="project-link-btn"
-                        style={{
-                          backgroundColor: '#00aeef',
-                          color: 'white',
-                          padding: '6px 14px',
-                          borderRadius: '6px',
-                          textDecoration: 'none',
-                          fontSize: '13px',
-                          fontWeight: '500',
-                          transition: 'background-color 0.2s',
-                          display: 'inline-block'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#003c71'}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#00aeef'}
-                      >
-                        {link.label}
-                      </a>
-                    ))}
-                  </div>
-                )}
+                <div className="project-links" style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  {projectLinks.map((link) => (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="project-link-btn"
+                      style={{
+                        backgroundColor: '#00aeef',
+                        color: 'white',
+                        padding: '6px 14px',
+                        borderRadius: '6px',
+                        textDecoration: 'none',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        transition: 'background-color 0.2s',
+                        display: 'inline-block'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#003c71'}
+                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#00aeef'}
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                  {canEdit() && (
+                    <button
+                      onClick={() => setShowLinksEditor(true)}
+                      style={{
+                        backgroundColor: 'transparent',
+                        color: '#6b7280',
+                        border: '1px solid #d1d5db',
+                        padding: '6px 14px',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f3f4f6';
+                        e.currentTarget.style.borderColor = '#9ca3af';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.borderColor = '#d1d5db';
+                      }}
+                      title="Edit project links"
+                    >
+                      {projectLinks.length === 0 ? '+ Add Links' : 'Edit Links'}
+                    </button>
+                  )}
+                </div>
               </div>
               <p className="report-meta">
                 Generated on {new Date().toLocaleDateString()}
@@ -561,6 +588,18 @@ function App() {
             <ProjectSetup
               onComplete={handleProjectSetupComplete}
               onCancel={handleProjectSetupCancel}
+            />
+          </div>
+        </div>
+      )}
+
+      {showLinksEditor && selectedProject && (
+        <div className="modal-overlay" onClick={() => setShowLinksEditor(false)}>
+          <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+            <ProjectLinksEditor
+              projectId={selectedProject}
+              onClose={() => setShowLinksEditor(false)}
+              onUpdate={loadProjectLinks}
             />
           </div>
         </div>
