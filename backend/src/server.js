@@ -70,6 +70,22 @@ app.post('/api/auth/register', async (req, res) => {
     const { email, name, password } = req.body;
     const hash = bcrypt.hashSync(password, 10);
     const result = await dbRun('INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)', [email, name, hash]);
+
+    // Log user registration in audit log
+    await dbRun(
+      'INSERT INTO audit_log (user_id, user_email, action, table_name, record_id, new_values, description, ip_address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        result.lastID,
+        email,
+        'CREATE',
+        'users',
+        result.lastID,
+        JSON.stringify({ email, name, role: 'editor' }),
+        `User registered: ${email}`,
+        req.ip
+      ]
+    );
+
     res.json({ id: result.lastID, email, name });
   } catch (err) {
     res.status(400).json({ error: 'User already exists' });
@@ -426,13 +442,57 @@ app.put('/api/metrics/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'You do not have permission to edit this metric' });
     }
 
-    const { name } = req.body;
-    await dbRun('UPDATE metrics SET name = ? WHERE id = ?', [name, req.params.id]);
+    // Extract all editable fields from request body
+    const { name, amber_tolerance, red_tolerance, final_target, progression_type } = req.body;
+
+    // Build update query for provided fields
+    const updates = [];
+    const values = [];
+    const oldValues = {};
+    const newValues = {};
+
+    if (name !== undefined) {
+      updates.push('name = ?');
+      values.push(name);
+      oldValues.name = metric.name;
+      newValues.name = name;
+    }
+    if (amber_tolerance !== undefined) {
+      updates.push('amber_tolerance = ?');
+      values.push(amber_tolerance);
+      oldValues.amber_tolerance = metric.amber_tolerance;
+      newValues.amber_tolerance = amber_tolerance;
+    }
+    if (red_tolerance !== undefined) {
+      updates.push('red_tolerance = ?');
+      values.push(red_tolerance);
+      oldValues.red_tolerance = metric.red_tolerance;
+      newValues.red_tolerance = red_tolerance;
+    }
+    if (final_target !== undefined) {
+      updates.push('final_target = ?');
+      values.push(final_target);
+      oldValues.final_target = metric.final_target;
+      newValues.final_target = final_target;
+    }
+    if (progression_type !== undefined) {
+      updates.push('progression_type = ?');
+      values.push(progression_type);
+      oldValues.progression_type = metric.progression_type;
+      newValues.progression_type = progression_type;
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    values.push(req.params.id);
+    await dbRun(`UPDATE metrics SET ${updates.join(', ')} WHERE id = ?`, values);
 
     await logAudit(req.user, 'UPDATE', 'metrics', req.params.id,
-      { name: metric.name },
-      { name },
-      `Renamed metric from "${metric.name}" to "${name}"`,
+      oldValues,
+      newValues,
+      `Updated metric "${metric.name}"`,
       req.ip
     );
 

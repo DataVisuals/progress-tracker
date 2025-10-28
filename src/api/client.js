@@ -60,6 +60,7 @@ export const api = {
   // Comments
   getPeriodComments: (periodId) => client.get(`/periods/${periodId}/comments`),
   createComment: (periodId, data) => client.post(`/periods/${periodId}/comments`, data),
+  updateComment: (id, data) => client.put(`/comments/${id}`, data),
   deleteComment: (id) => client.delete(`/comments/${id}`),
 
   // CRAIDs
