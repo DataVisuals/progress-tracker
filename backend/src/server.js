@@ -225,6 +225,113 @@ app.delete('/api/projects/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// ===== PROJECT LINKS =====
+// Get all links for a project
+app.get('/api/projects/:projectId/links', async (req, res) => {
+  try {
+    const links = await dbAll(
+      'SELECT * FROM project_links WHERE project_id = ? ORDER BY display_order, id',
+      [req.params.projectId]
+    );
+    res.json(links);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create a new project link
+app.post('/api/projects/:projectId/links', authenticateToken, async (req, res) => {
+  try {
+    // Check if user can edit this project
+    if (!(await canEditProject(req.user.userId, req.params.projectId))) {
+      return res.status(403).json({ error: 'You do not have permission to add links to this project' });
+    }
+
+    const { label, url, display_order = 0 } = req.body;
+
+    if (!label || !url) {
+      return res.status(400).json({ error: 'Label and URL are required' });
+    }
+
+    const result = await dbRun(
+      'INSERT INTO project_links (project_id, label, url, display_order) VALUES (?, ?, ?, ?)',
+      [req.params.projectId, label, url, display_order]
+    );
+
+    await logAudit(req.user, 'CREATE', 'project_links', result.lastID,
+      null,
+      { project_id: req.params.projectId, label, url, display_order },
+      `Added link "${label}" to project`,
+      req.ip
+    );
+
+    res.json({ success: true, id: result.lastID });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update a project link
+app.put('/api/project-links/:id', authenticateToken, async (req, res) => {
+  try {
+    const link = await dbGet('SELECT * FROM project_links WHERE id = ?', [req.params.id]);
+    if (!link) {
+      return res.status(404).json({ error: 'Link not found' });
+    }
+
+    // Check if user can edit this project
+    if (!(await canEditProject(req.user.userId, link.project_id))) {
+      return res.status(403).json({ error: 'You do not have permission to edit this link' });
+    }
+
+    const { label, url, display_order } = req.body;
+
+    await dbRun(
+      'UPDATE project_links SET label = ?, url = ?, display_order = ? WHERE id = ?',
+      [label, url, display_order, req.params.id]
+    );
+
+    await logAudit(req.user, 'UPDATE', 'project_links', req.params.id,
+      { label: link.label, url: link.url, display_order: link.display_order },
+      { label, url, display_order },
+      `Updated link "${label}"`,
+      req.ip
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete a project link
+app.delete('/api/project-links/:id', authenticateToken, async (req, res) => {
+  try {
+    const link = await dbGet('SELECT * FROM project_links WHERE id = ?', [req.params.id]);
+    if (!link) {
+      return res.status(404).json({ error: 'Link not found' });
+    }
+
+    // Check if user can edit this project
+    if (!(await canEditProject(req.user.userId, link.project_id))) {
+      return res.status(403).json({ error: 'You do not have permission to delete this link' });
+    }
+
+    await dbRun('DELETE FROM project_links WHERE id = ?', [req.params.id]);
+
+    await logAudit(req.user, 'DELETE', 'project_links', req.params.id,
+      { label: link.label, url: link.url },
+      null,
+      `Deleted link "${link.label}"`,
+      req.ip
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ===== METRICS =====
 app.get('/api/projects/:projectId/metrics', async (req, res) => {
   try {
@@ -1336,6 +1443,25 @@ app.listen(PORT, async () => {
     console.log('✅ Added tolerance columns to metrics table');
   } catch (err) {
     // Columns already exist, that's fine
+  }
+
+  // Migration: Create project_links table
+  try {
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS project_links (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        label TEXT NOT NULL,
+        url TEXT NOT NULL,
+        display_order INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+      )
+    `);
+    await dbRun(`CREATE INDEX IF NOT EXISTS idx_project_links_project ON project_links(project_id)`);
+    console.log('✅ Created project_links table');
+  } catch (err) {
+    // Table already exists, that's fine
   }
 
   // Create default admin user if none exists

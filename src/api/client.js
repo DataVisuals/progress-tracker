@@ -83,6 +83,12 @@ export const api = {
   getProjectPermissions: (projectId) => client.get(`/projects/${projectId}/permissions`),
   grantProjectPermission: (projectId, userId) => client.post(`/projects/${projectId}/permissions`, { user_id: userId }),
   revokeProjectPermission: (projectId, userId) => client.delete(`/projects/${projectId}/permissions/${userId}`),
+
+  // Project Links
+  getProjectLinks: (projectId) => client.get(`/projects/${projectId}/links`),
+  createProjectLink: (projectId, data) => client.post(`/projects/${projectId}/links`, data),
+  updateProjectLink: (id, data) => client.put(`/project-links/${id}`, data),
+  deleteProjectLink: (id) => client.delete(`/project-links/${id}`),
 };
 
 export default api;

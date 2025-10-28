@@ -29,6 +29,9 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
   const [metrics, setMetrics] = useState([
     { name: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0 }
   ]);
+  const [links, setLinks] = useState([
+    { label: '', url: '' }
+  ]);
 
   const addMetric = () => {
     setMetrics([...metrics, { name: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0 }]);
@@ -42,6 +45,20 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
     const newMetrics = [...metrics];
     newMetrics[index][field] = value;
     setMetrics(newMetrics);
+  };
+
+  const addLink = () => {
+    setLinks([...links, { label: '', url: '' }]);
+  };
+
+  const removeLink = (index) => {
+    setLinks(links.filter((_, i) => i !== index));
+  };
+
+  const updateLink = (index, field, value) => {
+    const newLinks = [...links];
+    newLinks[index][field] = value;
+    setLinks(newLinks);
   };
 
   const handleSubmit = async () => {
@@ -89,7 +106,18 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
         // The backend will automatically generate periods based on the metric configuration
       }
 
-      // 3. Complete setup
+      // 3. Create project links
+      const validLinks = links.filter(l => l.label.trim() && l.url.trim());
+      for (let i = 0; i < validLinks.length; i++) {
+        const link = validLinks[i];
+        await api.createProjectLink(projectId, {
+          label: link.label,
+          url: link.url,
+          display_order: i
+        });
+      }
+
+      // 4. Complete setup
       onComplete(projectId);
     } catch (err) {
       console.error('Failed to create project:', err);
@@ -267,6 +295,51 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
           • Exponential (Back-loaded): Slow start, then rapid acceleration at the end<br/>
           • S-curve: Slow start, fast middle, slow end<br/>
           • Logarithmic (Front-loaded): Fast start, gradually slowing down
+        </p>
+      </div>
+
+      <div className="setup-section">
+        <div className="section-header">
+          <h3>External Links (Optional)</h3>
+          <button className="add-metric-btn" onClick={addLink}>
+            + Add Link
+          </button>
+        </div>
+        <div className="metrics-list">
+          {links.map((link, index) => (
+            <div key={index} className="link-row">
+              <div className="form-group">
+                <label>Label</label>
+                <input
+                  type="text"
+                  value={link.label}
+                  onChange={(e) => updateLink(index, 'label', e.target.value)}
+                  placeholder="e.g., JIRA, Confluence, SharePoint"
+                />
+              </div>
+              <div className="form-group">
+                <label>URL</label>
+                <input
+                  type="url"
+                  value={link.url}
+                  onChange={(e) => updateLink(index, 'url', e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+              {links.length > 1 && (
+                <button
+                  className="remove-metric-btn"
+                  onClick={() => removeLink(index)}
+                  title="Remove link"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        <p className="help-text">
+          <strong>External Links:</strong> Add links to external tools like JIRA, Confluence, or SharePoint. These will appear as buttons at the top of the project view.
         </p>
       </div>
 

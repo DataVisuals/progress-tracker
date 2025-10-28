@@ -81,6 +81,17 @@ CREATE TABLE IF NOT EXISTS craids (
   FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
+-- Project Links (external links like JIRA, Confluence, etc.)
+CREATE TABLE IF NOT EXISTS project_links (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER NOT NULL,
+  label TEXT NOT NULL,
+  url TEXT NOT NULL,
+  display_order INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+
 -- Project Permissions (who can edit which projects)
 CREATE TABLE IF NOT EXISTS project_permissions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -114,6 +125,7 @@ CREATE INDEX IF NOT EXISTS idx_metrics_project ON metrics(project_id);
 CREATE INDEX IF NOT EXISTS idx_comments_period ON comments(period_id);
 CREATE INDEX IF NOT EXISTS idx_craids_project ON craids(project_id);
 CREATE INDEX IF NOT EXISTS idx_craids_period ON craids(period_id);
+CREATE INDEX IF NOT EXISTS idx_project_links_project ON project_links(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_permissions_project ON project_permissions(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_permissions_user ON project_permissions(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id);

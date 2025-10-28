@@ -32,6 +32,7 @@ function App() {
   const [showAdminDropdown, setShowAdminDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [timeTravelTimestamp, setTimeTravelTimestamp] = useState(null);
+  const [projectLinks, setProjectLinks] = useState([]);
 
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
@@ -48,6 +49,7 @@ function App() {
   useEffect(() => {
     if (selectedProject) {
       loadProjectData();
+      loadProjectLinks();
     }
   }, [selectedProject]);
 
@@ -78,6 +80,16 @@ function App() {
       setProjectData(response.data);
     } catch (err) {
       console.error('Failed to load project data:', err);
+    }
+  };
+
+  const loadProjectLinks = async () => {
+    try {
+      const response = await api.getProjectLinks(selectedProject);
+      setProjectLinks(response.data);
+    } catch (err) {
+      console.error('Failed to load project links:', err);
+      setProjectLinks([]);
     }
   };
 
@@ -425,6 +437,34 @@ function App() {
                   >
                     {projectName}
                   </h2>
+                )}
+                {projectLinks.length > 0 && (
+                  <div className="project-links" style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {projectLinks.map((link) => (
+                      <a
+                        key={link.id}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="project-link-btn"
+                        style={{
+                          backgroundColor: '#00aeef',
+                          color: 'white',
+                          padding: '6px 14px',
+                          borderRadius: '6px',
+                          textDecoration: 'none',
+                          fontSize: '13px',
+                          fontWeight: '500',
+                          transition: 'background-color 0.2s',
+                          display: 'inline-block'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#003c71'}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#00aeef'}
+                      >
+                        {link.label}
+                      </a>
+                    ))}
+                  </div>
                 )}
               </div>
               <p className="report-meta">
