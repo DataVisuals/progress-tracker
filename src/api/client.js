@@ -36,6 +36,7 @@ export const api = {
   login: (email, password) => client.post('/auth/login', { email, password }),
   register: (email, name, password) => client.post('/auth/register', { email, name, password }),
   changePassword: (currentPassword, newPassword) => client.post('/auth/change-password', { currentPassword, newPassword }),
+  updateProfile: (name, email) => client.put('/auth/profile', { name, email }),
 
   // Projects
   getProjects: () => client.get('/projects'),
@@ -56,6 +57,7 @@ export const api = {
   createPeriod: (data) => client.post('/metric-periods', data),
   updatePeriod: (id, data) => client.put(`/metric-periods/${id}`, data),
   patchPeriod: (id, data) => client.patch(`/metric-periods/${id}`, data),
+  deletePeriod: (id) => client.delete(`/metric-periods/${id}`),
 
   // Comments
   getPeriodComments: (periodId) => client.get(`/periods/${periodId}/comments`),

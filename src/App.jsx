@@ -10,6 +10,7 @@ import UserManagement from './components/UserManagement';
 import ProjectSetup from './components/ProjectSetup';
 import ProjectLinksEditor from './components/ProjectLinksEditor';
 import PasswordChange from './components/PasswordChange';
+import UserProfile from './components/UserProfile';
 import TimeTravel from './components/TimeTravel';
 import { api } from './api/client';
 import { MdShowChart, MdArrowDropDown } from 'react-icons/md';
@@ -612,9 +613,11 @@ function App() {
         />
       )}
 
-      {showPasswordChange && (
-        <PasswordChange
+      {showPasswordChange && currentUser && (
+        <UserProfile
+          currentUser={currentUser}
           onClose={() => setShowPasswordChange(false)}
+          onUpdate={(updatedUser) => setCurrentUser(updatedUser)}
         />
       )}
     </div>

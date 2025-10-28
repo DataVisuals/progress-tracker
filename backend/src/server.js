@@ -142,6 +142,53 @@ app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
   }
 });
 
+app.put('/api/auth/profile', authenticateToken, async (req, res) => {
+  try {
+    const { name, email } = req.body;
+    const userId = req.user.userId;
+
+    // Validate input
+    if (!name || !email) {
+      return res.status(400).json({ error: 'Name and email are required' });
+    }
+
+    // Get current user info
+    const user = await dbGet('SELECT * FROM users WHERE id = ?', [userId]);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if email is already taken by another user
+    if (email !== user.email) {
+      const existingUser = await dbGet('SELECT id FROM users WHERE email = ? AND id != ?', [email, userId]);
+      if (existingUser) {
+        return res.status(400).json({ error: 'Email already in use by another account' });
+      }
+    }
+
+    // Update profile
+    await dbRun('UPDATE users SET name = ?, email = ? WHERE id = ?', [name, email, userId]);
+
+    // Log audit entry
+    await logAudit(
+      { id: userId, email: user.email },
+      'UPDATE',
+      'users',
+      userId,
+      { name: user.name, email: user.email },
+      { name, email },
+      `User updated profile`,
+      req.ip
+    );
+
+    // Return updated user info
+    res.json({ id: userId, name, email, role: user.role });
+  } catch (err) {
+    console.error('Profile update error:', err);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
 // ===== PROJECTS =====
 app.get('/api/projects', async (req, res) => {
   try {

@@ -151,8 +151,17 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
     });
   };
 
-  const handleDeleteRow = (id) => {
-    setEditedData(prev => prev.filter(row => row.id !== id));
+  const handleDeleteRow = async (id) => {
+    try {
+      // Call API to delete the period from the database
+      await api.deletePeriod(id);
+
+      // Update local state to remove the row
+      setEditedData(prev => prev.filter(row => row.id !== id));
+    } catch (err) {
+      console.error('Failed to delete period:', err);
+      alert(`Failed to delete period: ${err.response?.data?.error || err.message}`);
+    }
   };
 
   const handleCreateMetric = async () => {
