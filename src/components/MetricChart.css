@@ -204,6 +204,25 @@
   transform: scale(1.2);
 }
 
+.edit-comment-btn {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+  transition: all 0.2s;
+}
+
+.edit-comment-btn:hover {
+  color: #2563eb;
+  opacity: 1;
+  transform: scale(1.2);
+}
+
 .comment-author {
   color: #9ca3af;
   font-style: italic;

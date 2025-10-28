@@ -174,6 +174,8 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
   const [selectedDate, setSelectedDate] = useState('');
   const [newCommentText, setNewCommentText] = useState('');
   const [comments, setComments] = useState({});
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingCommentText, setEditingCommentText] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [draggedPoint, setDraggedPoint] = useState(null);
   const chartContainerRef = useRef(null);
@@ -316,6 +318,40 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
       console.error('Failed to delete comment:', err);
       alert('Failed to delete comment');
     }
+  };
+
+  const handleEditComment = (comment) => {
+    setEditingCommentId(comment.id);
+    setEditingCommentText(comment.comment_text);
+  };
+
+  const handleSaveComment = async (commentId, periodId) => {
+    if (!editingCommentText.trim()) {
+      alert('Comment cannot be empty');
+      return;
+    }
+
+    try {
+      await api.updateComment(commentId, { comment_text: editingCommentText });
+
+      // Reload comments for this period
+      const response = await api.getPeriodComments(periodId);
+      setComments(prev => ({
+        ...prev,
+        [periodId]: response.data
+      }));
+
+      setEditingCommentId(null);
+      setEditingCommentText('');
+    } catch (err) {
+      console.error('Failed to update comment:', err);
+      alert('Failed to update comment');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setEditingCommentText('');
   };
 
   const handleCancelAdd = () => {
@@ -674,24 +710,65 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
                   key={comment.id}
                   className={`commentary-item ${index === 0 ? 'latest-comment' : ''} ${comment.is_system ? 'system-commentary' : ''}`}
                 >
-                  <div style={{ flex: 1 }}>
-                    <strong>{comment.reporting_date}:</strong>{' '}
-                    {comment.comment_text}
-                    {comment.created_by_name && !comment.is_system && (
-                      <span className="comment-author"> — {comment.created_by_name}</span>
-                    )}
-                    {comment.is_system && (
-                      <span className="comment-author"> — System</span>
-                    )}
-                  </div>
-                  {!comment.is_system && canEdit && (
-                    <button
-                      className="delete-comment-btn"
-                      onClick={() => handleDeleteComment(comment.id, comment.period_id)}
-                      title="Delete comment"
-                    >
-                      ×
-                    </button>
+                  {editingCommentId === comment.id ? (
+                    <>
+                      <div style={{ flex: 1 }}>
+                        <strong>{comment.reporting_date}:</strong>
+                        <textarea
+                          value={editingCommentText}
+                          onChange={(e) => setEditingCommentText(e.target.value)}
+                          style={{ width: '100%', marginTop: '8px', padding: '8px', fontSize: '14px', minHeight: '60px' }}
+                          autoFocus
+                        />
+                      </div>
+                      <button
+                        className="edit-comment-btn"
+                        onClick={() => handleSaveComment(comment.id, comment.period_id)}
+                        title="Save comment"
+                        style={{ marginRight: '4px' }}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        className="delete-comment-btn"
+                        onClick={handleCancelEdit}
+                        title="Cancel editing"
+                      >
+                        ×
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ flex: 1 }}>
+                        <strong>{comment.reporting_date}:</strong>{' '}
+                        {comment.comment_text}
+                        {comment.created_by_name && !comment.is_system && (
+                          <span className="comment-author"> — {comment.created_by_name}</span>
+                        )}
+                        {comment.is_system && (
+                          <span className="comment-author"> — System</span>
+                        )}
+                      </div>
+                      {!comment.is_system && canEdit && (
+                        <>
+                          <button
+                            className="edit-comment-btn"
+                            onClick={() => handleEditComment(comment)}
+                            title="Edit comment"
+                            style={{ marginRight: '4px' }}
+                          >
+                            ✎
+                          </button>
+                          <button
+                            className="delete-comment-btn"
+                            onClick={() => handleDeleteComment(comment.id, comment.period_id)}
+                            title="Delete comment"
+                          >
+                            ×
+                          </button>
+                        </>
+                      )}
+                    </>
                   )}
                 </div>
               ))
