@@ -1,165 +1,187 @@
 # Progress Tracker
 
-A modern, comprehensive web application for tracking project metrics, milestones, and progress across multiple initiatives with intelligent automation and role-based access control.
+**Understand where your project stands using numbers, not words.**
 
-## Overview
-
-Progress Tracker provides a powerful yet intuitive platform for project managers and teams to monitor project health, track key metrics, manage risks, and visualize progress over time. Built with modern web technologies, it offers real-time updates, smart progression curves, comprehensive audit logging, and data consistency validation.
+A modern web application for tracking project metrics and progress across multiple initiatives. Define how your key metrics should evolve and track their trajectory over time with intelligent automation and role-based access control.
 
 ![Progress Tracker Screenshot](screenshot.png)
 
 *Interactive dashboard showing project metrics, progress charts, and real-time tracking*
 
-## Latest Features
+## 🌐 Live Demo
 
-### 🔍 Data Consistency Reports (Admin Only)
+Visit our [showcase site](https://datavisuals.github.io/progress-tracker/) to explore all features.
+
+## Core Value Proposition
+
+Stop relying on vague status updates like "we're making good progress." Progress Tracker helps you:
+
+- **Define Expected Trajectories**: Set expected, target, and actual values for each metric
+- **Visualize the Gap**: See instantly when reality diverges from your plan
+- **Track Over Time**: Monitor how metrics evolve across weekly, monthly, or quarterly periods
+- **Act on Data**: Make informed decisions based on quantitative progress indicators
+
+## ✨ Latest Features
+
+### 📥 **Excel Import** (Admin/PM)
+Bulk import project data to quickly set up or update multiple projects:
+- **Prescriptive Template**: Download Excel template with examples and instructions
+- **Comprehensive Validation**: Detailed error reporting with row/column identification
+- **Smart Upsert**: Create new projects or update existing ones (no deletions)
+- **Auto-Detection**: Automatically detects metric frequency from date intervals
+- **Import Results**: See exactly what was created/updated with statistics
+
+### 🔍 **Data Consistency Reports** (Admin)
 Automated data quality analysis to identify potential issues:
-- **Vacation Month Growth Detection**: Flags unusual progress during January (December work) and August (July/August work)
-- **Back-Loaded Growth Patterns**: Identifies projects where all metrics show disproportionate second-half progress
-- **Single Metric Projects**: Highlights projects with only one tracking metric
-- **Severity Levels**: High, Warning, and Info classifications with color-coded badges
-- **Clickable Navigation**: Jump directly to flagged projects for review
-- **Initiative Manager Tracking**: See which PM owns each flagged project
+- **Vacation Month Detection**: Flags unusual progress during January and December
+- **Front-Loaded Growth**: Identifies rapid early progress patterns
+- **Back-Loaded Growth**: Detects disproportionate end-of-project progress
+- **Single Metric Projects**: Highlights projects with insufficient tracking
+- **Severity Levels**: High, Warning, and Info classifications
+- **Direct Navigation**: Click to jump to flagged projects
 
-### 🔗 Project Links
+### 🔗 **Project Links**
 Organize external resources and documentation:
-- **Unlimited Links Per Project**: Add as many reference links as needed
+- **Unlimited Links**: Add as many reference links as needed
 - **Custom Labels**: Name each link descriptively
-- **Display Order Control**: Organize links in your preferred sequence
-- **Quick Access**: One-click navigation to external tools, docs, and dashboards
-- **Inline Management**: Add, edit, and delete links without leaving project view
+- **Display Order**: Organize links in your preferred sequence
+- **Quick Access**: One-click navigation to tools, docs, and dashboards
 
-### 👤 User Profile Management
+### 👤 **User Profile Management**
 Self-service account management:
-- **Update Profile**: Change your name and email address
-- **Password Changes**: Secure password updates with current password verification
-- **Session Persistence**: Stay logged in across password changes
-- **Dropdown Menu Access**: Convenient access from header user menu
+- **Update Profile**: Change name and email address
+- **Password Changes**: Secure updates with current password verification
+- **Session Persistence**: Stay logged in across changes
 
-## Key Features
+## 🎯 Key Features
 
-### 🎯 Project Management
-- **Multi-Project Dashboard**: Track unlimited projects with individual metrics and timelines
-- **Streamlined Project Setup**: Single-screen project creation capturing all details at once
-  - Project metadata (name, manager, description)
-  - Reporting schedule (start/end dates, frequency: weekly/monthly/quarterly)
-  - Multiple metrics with individual targets
-  - Progression curve selection per metric
-- **Intelligent Progression Curves**:
-  - **Linear**: Equal progress each period
-  - **Exponential (S-curve)**: Slow start, rapid middle, slow finish - ideal for adoption/transformation
-  - **Logarithmic (Front-loaded)**: Fast initial progress, gradual completion - ideal for research/development
-- **Project Permissions**: Granular access control for admins and project managers
+### Project Management
+- **Multi-Project Dashboard**: Track unlimited projects with individual metrics
+- **Streamlined Setup**: Single-screen project creation capturing all details
+- **Project Permissions**: Granular access control for teams
+- **Initiative Manager Tracking**: Assign ownership and accountability
 
-### 📊 Visual Analytics
+### Visual Analytics
 - **Interactive Progress Charts**:
-  - Stacked bars showing completed (blue) vs remaining (gray) work
+  - Stacked bars showing completed vs remaining work
   - Expected progress line (green) with draggable adjustment points
   - Actual progress tracking with variance indicators
-  - Current period highlighting with amber background
+  - Current period highlighting
   - Target line showing scope changes over time
-- **Intelligent Date Formatting**: Automatically displays month names for monthly data
-- **Scope Change Visualization**: Track and display target adjustments with clear labels
-- **Real-time Updates**: Charts refresh dynamically as data changes
+- **Smart Date Formatting**: Automatically displays month names for monthly data
+- **Real-Time Updates**: Charts refresh dynamically as data changes
 
-### ✏️ Data Management
+### Progression Curves
+
+Choose from three progression models when creating metrics:
+
+#### 1. **Linear** - Equal Progress Each Period
+- **Formula**: `y = x`
+- **Pattern**: Steady, predictable increments
+- **Best for**: Manufacturing, routine tasks, predictable work
+- **Example**: Complete 10 units per month for 10 months = 100 units
+
+#### 2. **S-Curve** - Slow/Fast/Slow Growth
+- **Formula**: `y = 1/(1 + e^(-10(x-0.5)))` (Sigmoid/Logistic)
+- **Pattern**: Slow ramp-up → rapid growth → gradual plateau
+- **Best for**: Technology adoption, organizational transformation, learning curves
+- **Example**: Software rollout - pilot phase (slow), mass adoption (fast), stabilization (slow)
+- **Note**: This is a **sigmoid curve**, not exponential. Exponential curves grow continuously without plateau.
+
+#### 3. **Front-Loaded** - Fast Start, Gradual Finish
+- **Formula**: `y = √x` (Square root/Logarithmic)
+- **Pattern**: Fast initial progress → diminishing returns
+- **Best for**: Research, initial development, quick wins, bug fixing
+- **Example**: Bug fixing - many easy bugs fixed early, harder bugs take longer
+
+**Note**: The Data Consistency Report detects **back-loaded** growth patterns (opposite of front-loaded), which may indicate end-of-period gaming or unrealistic early projections.
+
+### Data Management
 - **Smart Data Grid**:
   - Inline editing for all metrics
-  - Target value propagation - change once, update all subsequent periods automatically
+  - Target value propagation - change once, update all periods
   - Bulk period creation with configurable frequency
   - Add/remove periods on the fly
   - Metric renaming with live updates
-- **Flexible Data Entry**: Support for expected values, targets, and completion tracking
-- **Draggable Expected Line**: Adjust expected values directly on the chart with visual feedback
+- **Draggable Expected Line**: Adjust expected values directly on charts
+- **Flexible Data Entry**: Support for expected, target, and completion tracking
 
-### 💬 Commentary System
+### Commentary System
 - **Period-Specific Notes**: Add contextual commentary to any reporting period
-- **Visual Highlighting**: Latest comments marked with blue indicators
-- **Chronological Sorting**: Most recent updates appear first
-- **Inline Editing**: Update commentary directly from the chart view
+- **Visual Highlighting**: Latest comments marked with indicators
+- **Chronological Sorting**: Most recent updates first
+- **Inline Editing**: Update commentary from chart view
 
-### ⚠️ CRAID Management
-Track project challenges, risks, actions, issues, and dependencies with comprehensive details:
-- **Priority Levels**: Critical, High, Medium, Low with color-coded indicators
-- **Status Tracking**: Open, In Progress, Closed with visual status badges
-- **Age-Based Alerts**: Automatic highlighting of stale items requiring attention
-- **Rich Details**: Title, description, owner, due dates, and resolution tracking
-- **Organized Views**: Filter and sort by type, priority, or status
+### CRAID Management
+Track Concerns, Risks, Assumptions, Issues, and Dependencies:
+- **Priority Levels**: Critical, High, Medium, Low with color coding
+- **Status Tracking**: Open, In Progress, Closed with visual badges
+- **Age-Based Alerts**: Automatic highlighting of stale items
+- **Rich Details**: Title, description, owner, due dates, resolution tracking
 
-### 🔐 Authentication & Security
-- **Role-Based Access Control (RBAC)**:
-  - **Admin**: Full system access, user management, audit log viewing, data consistency reports
-  - **Project Manager (PM)**: Create projects, manage assigned projects, edit data
-  - **Viewer**: Read-only access to all projects
-- **Secure Authentication**: JWT-based authentication with bcrypt password hashing
-- **Session Management**: Automatic token refresh and secure logout
-- **User Profile Management**: Update name and email address
-- **Password Management**: Secure password changes with current password verification
-- **Enhanced Login UX**: Clear error feedback with visual animations
+### Authentication & Security
+**Role-Based Access Control (RBAC)**:
+- **Admin**: Full system access, user management, audit logs, consistency reports
+- **Project Manager (PM)**: Create projects, manage assigned projects, edit data, bulk import
+- **Viewer**: Read-only access to all projects
 
-### 📋 Audit & Compliance
-- **Comprehensive Audit Log**: Track all system changes with:
-  - User identification (email and ID)
-  - Action type (CREATE, UPDATE, DELETE)
-  - Affected table and record ID
-  - Old and new values (JSON diff)
-  - Descriptive change summaries
-  - IP address and timestamp
-- **Historic Edit Protection**: Safeguard data integrity with automatic controls:
-  - Completion values for past periods (after end date) can only be changed by admins
-  - Historic edits are clearly marked with ⚠️ HISTORIC EDIT in the audit log
-  - Non-admin users receive clear error messages when attempting historic edits
+**Security Features**:
+- JWT-based authentication with bcrypt password hashing
+- Secure session management
+- User profile and password management
+- Enhanced login UX with clear error feedback
+
+### Audit & Compliance
+- **Comprehensive Audit Log**: Track all changes with user, action, timestamp, and IP
+- **Historic Edit Protection**: Safeguard data integrity
+  - Completion values for past periods (after end date) restricted to admins
+  - Historic edits marked with ⚠️ HISTORIC EDIT in audit log
   - Prevents retroactive manipulation while allowing authorized corrections
-- **Time Travel Feature** (Admin/PM only): View historical project state at any point in time
-  - Reconstructs complete data state from audit log replay
-  - Shows exact completion values, commentary, and variance indicators as they appeared
-  - Interactive timeline slider for exploring project history
-  - Perfect for retrospectives and historical analysis
-- **Filterable History**: Search and filter audit events
-- **Admin-Only Access**: Audit log and time travel restricted to authorized users
+- **Time Travel Feature** (Admin/PM): View historical project state
+  - Reconstructs complete data state from audit log
+  - Shows exact values and commentary as they appeared
+  - Interactive timeline for exploring project history
+- **Filterable History**: Search and filter audit events by user, action, date
 
-### 📤 Data Export
+### Data Export & Import
 - **Automated Excel Exports**: Daily scheduled exports at midnight GMT
 - **Manual Export**: On-demand export via API
-- **Comprehensive Data**: All projects, metrics, periods, and CRAIDs in structured sheets
+- **Bulk Import**: Upload Excel files to create/update projects (see Latest Features)
+- **Comprehensive Data**: All projects, metrics, periods, and CRAIDs
 
-### 🎨 User Experience
-- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile
-- **Modern UI**: Clean, professional interface with intuitive navigation
-- **Real-time Feedback**: Instant visual confirmation of all actions
-- **Error Handling**: Clear, helpful error messages with suggested fixes
-- **Loading States**: Smooth transitions and loading indicators
+### User Experience
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Modern UI**: Clean, professional interface
+- **Real-Time Feedback**: Instant visual confirmation
+- **Error Handling**: Clear, helpful error messages
+- **Loading States**: Smooth transitions
 
-## Tech Stack
+## 🛠 Tech Stack
 
 ### Frontend
-- **React 18**: Modern component-based architecture with hooks
-- **Vite**: Lightning-fast build tool and dev server
-- **Recharts**: Powerful, composable charting library
-- **Axios**: Promise-based HTTP client with interceptors
-- **React Icons**: Comprehensive icon library
-- **React Select**: Advanced select components with search
+- **React 18** - Component-based architecture with hooks
+- **Vite** - Fast build tool and dev server
+- **Recharts** - Composable charting library
+- **Axios** - HTTP client with interceptors
+- **React Icons** - Icon library
+- **React Select** - Advanced select components
 
 ### Backend
-- **Node.js**: JavaScript runtime for scalable server-side applications
-- **Express**: Fast, minimalist web framework
-- **SQLite**: Embedded relational database with zero configuration
-- **JWT (jsonwebtoken)**: Industry-standard token-based authentication
-- **bcrypt**: Secure password hashing with salt rounds
-- **node-cron**: Task scheduler for automated exports
-- **ExcelJS**: Excel file generation for data exports
+- **Node.js** - JavaScript runtime
+- **Express** - Web framework
+- **SQLite** - Embedded relational database
+- **JWT** - Token-based authentication
+- **bcrypt** - Secure password hashing
+- **node-cron** - Task scheduler
+- **ExcelJS** - Excel file generation and parsing
+- **multer** - File upload handling
 
-### Development Tools
-- **ES6+ JavaScript**: Modern syntax with async/await
-- **Git**: Version control with comprehensive commit history
-- **GitHub**: Code hosting and collaboration
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 - Node.js 16 or higher
-- npm or yarn package manager
-- Modern web browser (Chrome, Firefox, Safari, Edge)
+- npm or yarn
+- Modern web browser
 
 ### Installation
 
@@ -169,314 +191,166 @@ git clone https://github.com/DataVisuals/progress-tracker.git
 cd progress-tracker
 ```
 
-2. **Install backend dependencies:**
+2. **Install dependencies:**
 ```bash
+# Backend
 cd backend
 npm install
-```
 
-3. **Install frontend dependencies:**
-```bash
+# Frontend
 cd ..
 npm install
 ```
 
-4. **Initialize the database with sample data:**
+3. **Initialize database with sample data:**
 ```bash
 cd backend
 node src/migrate-mock-data.js
 ```
 
-This creates:
-- Default admin user (admin@example.com / admin123)
-- Sample project manager (pm@example.com / pm123)
-- Sample viewer (viewer@example.com / viewer123)
-- Demo project with multiple metrics
+This creates default users:
+- **Admin**: admin@example.com / admin123
+- **PM**: pm@example.com / pm123
+- **Viewer**: viewer@example.com / viewer123
 
 ### Running the Application
 
-1. **Start the backend server** (from backend directory):
+1. **Start backend** (from backend directory):
 ```bash
 node src/server.js
 ```
 - Backend API: http://localhost:3001
-- Features automatic database initialization
-- Starts daily export scheduler
+- Automatic database initialization
+- Daily export scheduler starts
 
-2. **Start the frontend development server** (from root directory):
+2. **Start frontend** (from root directory):
 ```bash
 npm run dev
 ```
-- Frontend app: http://localhost:5174
+- Frontend: http://localhost:5173
 - Hot module replacement enabled
-- Automatic browser refresh
 
-3. **Login with default credentials:**
+3. **Login** with credentials above
 
-**Admin Access:**
-- Email: admin@example.com
-- Password: admin123
-- Full system access
-
-**Project Manager Access:**
-- Email: pm@example.com
-- Password: pm123
-- Create and manage projects
-
-**Viewer Access:**
-- Email: viewer@example.com
-- Password: viewer123
-- Read-only viewing
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 progress-tracker/
 ├── backend/
-│   ├── data/                     # SQLite database storage
-│   │   └── progress-tracker.db
+│   ├── data/                     # SQLite database
 │   ├── exports/                  # Daily Excel exports
-│   ├── src/
-│   │   ├── server.js            # Express API server with auth
-│   │   ├── db.js                # Database connection & utilities
-│   │   ├── permissions.js       # RBAC permission checks
-│   │   ├── scheduler.js         # Automated export scheduling
-│   │   ├── migrate-mock-data.js # Sample data seeding
-│   │   ├── populate-test-data.js # Additional test data
-│   │   └── schema-v2.sql        # Normalized database schema
-│   └── package.json
+│   ├── uploads/                  # Temporary import uploads
+│   └── src/
+│       ├── server.js            # Express API with routes
+│       ├── db.js                # Database utilities
+│       ├── permissions.js       # RBAC checks
+│       ├── scheduler.js         # Export automation
+│       ├── exportService.js     # Excel export logic
+│       ├── importService.js     # Excel import & validation
+│       └── migrate-mock-data.js # Sample data seeding
 ├── src/
-│   ├── components/
-│   │   ├── AuditLog.jsx         # Audit history viewer
-│   │   ├── CRAIDs.jsx           # Risk/issue management
-│   │   ├── DataGrid.jsx         # Inline data editor
-│   │   ├── Login.jsx            # Authentication form
-│   │   ├── MetricChart.jsx      # Interactive progress chart
-│   │   ├── MetricTabs.jsx       # Metric navigation
-│   │   ├── ProjectSelector.jsx  # Project dropdown
-│   │   ├── ProjectSetup.jsx     # Project creation wizard
-│   │   ├── UserManagement.jsx   # User admin interface
-│   │   └── SelectStyles.js      # Consistent select styling
-│   ├── api/
-│   │   └── client.js            # Axios HTTP client with auth
-│   ├── App.jsx                  # Main application component
-│   ├── App.css                  # Global styles
-│   └── main.jsx                 # Application entry point
-├── index.html                    # HTML template
-├── demo.mov                      # Application demo video
-├── screenshot.png                # UI screenshot
-├── package.json                  # Frontend dependencies
-└── README.md                     # This file
+│   ├── components/              # React components
+│   │   ├── ImportData.jsx      # Import modal
+│   │   ├── ConsistencyReport.jsx # Data quality reports
+│   │   ├── MetricChart.jsx     # Interactive charts
+│   │   ├── DataGrid.jsx        # Inline editor
+│   │   ├── ProjectSetup.jsx    # Project wizard
+│   │   └── ...
+│   ├── api/client.js           # Axios HTTP client
+│   ├── App.jsx                 # Main application
+│   └── App.css                 # Global styles
+├── docs/                        # GitHub Pages site
+│   ├── index.html              # Landing page
+│   ├── features.html           # Feature showreel
+│   └── assets/                 # CSS, JS, images
+├── import-template.xlsx         # Excel import template
+└── README.md
 ```
 
-## Database Schema
+## 📊 Database Schema
 
 ### Core Tables
+- **users**: Authentication and roles
+- **projects**: Project definitions
+- **project_permissions**: PM access control (many-to-many)
+- **project_links**: External resource links
+- **metrics**: Metric definitions with schedules
+- **metric_periods**: Time-series data points
+- **comments**: Period commentary
+- **craids**: Risks, issues, dependencies
+- **audit_log**: System change tracking
 
-**users**: User accounts and authentication
-- id, email, password_hash, name, role (admin/pm/viewer)
-
-**projects**: Project definitions
-- id, name, description, initiative_manager, created_at
-
-**project_permissions**: PM access control
-- project_id, user_id (many-to-many relationship)
-
-**metrics**: Metric definitions with schedule
-- id, project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target
-
-**metric_periods**: Time-series data points
-- id, metric_id, reporting_date, expected, target, complete
-
-**comments**: Period commentary
-- id, period_id, user_id, comment, created_at
-
-**craids**: Challenges, risks, actions, issues, dependencies
-- id, project_id, type, title, description, priority, status, owner, due_date, age_days, resolution
-
-**audit_log**: System change tracking
-- id, user_id, user_email, action, table_name, record_id, old_values, new_values, description, ip_address, created_at
-
-## API Endpoints
+## 🔑 API Endpoints
 
 ### Authentication
-- `POST /api/auth/login` - User login with JWT token generation
-- `POST /api/auth/logout` - User logout (client-side token removal)
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - New user registration
+- `POST /api/auth/change-password` - Password update
+- `PUT /api/auth/profile` - Update profile
 
 ### Projects
-- `GET /api/projects` - List all accessible projects
-- `POST /api/projects` - Create new project (admin/PM)
-- `PUT /api/projects/:id` - Update project details (admin/PM)
-- `DELETE /api/projects/:id` - Delete project (admin/PM)
+- `GET /api/projects` - List accessible projects
+- `POST /api/projects` - Create project (Admin/PM)
+- `PUT /api/projects/:id` - Update project
+- `DELETE /api/projects/:id` - Delete project
 
-### Metrics
-- `GET /api/projects/:projectId/data` - Get all metrics and periods
-- `POST /api/projects/:projectId/metrics` - Create metric with auto-generated periods
-- `PUT /api/metrics/:id` - Update metric name
-- `DELETE /api/metrics/:id` - Delete metric
+### Data
+- `GET /api/projects/:id/data` - Get metrics and periods
+- `GET /api/projects/:id/data/time-travel` - Historical state
+- `POST /api/metric-periods` - Create period
+- `PUT /api/metric-periods/:id` - Update period
+- `PATCH /api/metric-periods/:id` - Partial update
 
-### Periods
-- `POST /api/periods` - Create new period
-- `PUT /api/periods/:id` - Update period (expected, target, complete)
-- `PATCH /api/periods/:id` - Partial update (commentary)
-- `DELETE /api/periods/:id` - Delete period
-
-### CRAIDs
-- `GET /api/projects/:projectId/craids` - List project CRAIDs
-- `POST /api/projects/:projectId/craids` - Create CRAID
-- `PUT /api/craids/:id` - Update CRAID
-- `DELETE /api/craids/:id` - Delete CRAID
-
-### Users (Admin only)
-- `GET /api/users` - List all users
-- `POST /api/users` - Create new user
-- `PUT /api/users/:id` - Update user
-- `DELETE /api/users/:id` - Delete user
-
-### Audit (Admin only)
-- `GET /api/audit-log` - Fetch audit log with filters
-
-### Export
+### Import/Export
+- `GET /api/import/template` - Download import template (Admin/PM)
+- `POST /api/import` - Upload import file (Admin/PM)
 - `GET /api/export` - Generate Excel export
 
-## Key Features Explained
+### Admin
+- `GET /api/users` - List users
+- `PUT /api/users/:id/role` - Update user role
+- `DELETE /api/users/:id` - Delete user
+- `GET /api/audit` - Audit log with filters
+- `GET /api/admin/consistency-report` - Data quality report
 
-### Progression Curves
-
-When creating metrics, choose from three progression models:
-
-1. **Linear** - `y = x`
-   - Equal increment each period
-   - Best for: Steady, predictable work (e.g., manufacturing, routine tasks)
-   - Example: Complete 10 units per month for 10 months = 100 units
-
-2. **Exponential (S-Curve)** - `y = 1/(1 + e^(-10(x-0.5)))`
-   - Slow ramp-up, rapid growth, gradual plateau
-   - Best for: Technology adoption, organizational transformation, learning curves
-   - Example: Software rollout - pilot (slow), mass adoption (fast), stabilization (slow)
-
-3. **Logarithmic (Front-loaded)** - `y = √x`
-   - Fast initial progress, diminishing returns
-   - Best for: Research, initial development, quick wins
-   - Example: Bug fixing - many easy bugs fixed early, harder bugs take longer
+## 🎓 Key Concepts
 
 ### Target Propagation
-
-When editing target values in the Data Grid:
-1. Change any period's target value
-2. All subsequent periods automatically update to match
-3. Eliminates tedious copy/paste operations
-4. Maintains data consistency across timeline
+When editing target values:
+1. Change any period's target
+2. All subsequent periods update automatically
+3. Maintains consistency across timeline
 
 ### Draggable Expected Line
-
-Adjust expected values directly on charts:
-1. Hover over green expected line dots
-2. Click and drag up/down to adjust value
+Adjust expected values on charts:
+1. Hover over green dots
+2. Drag up/down
 3. Visual feedback shows new value
-4. Release to save changes
-5. Chart updates immediately without page reload
+4. Release to save
 
-### Role-Based Permissions
+### Historic Edit Protection
+- Completion values for past periods locked to admins
+- Prevents retroactive manipulation
+- Audit trail marks historic edits
+- Ensures data integrity
 
-Access is controlled at multiple levels:
+## 🤝 Contributing
 
-**Admins can:**
-- Create/edit/delete any project
-- Manage all users
-- View complete audit log
-- Access time travel feature
-- Make historic edits to past period completion values
-- Access all system features
-
-**Project Managers can:**
-- Create new projects
-- Edit projects they own or are assigned to
-- View all projects (read-only for unassigned)
-- Access time travel feature
-- Edit current and future periods (historic edits blocked)
-- Cannot manage users or view audit log
-
-**Viewers can:**
-- View all projects and metrics
-- Cannot create, edit, or delete anything
-- Read-only access to CRAIDs and commentary
-- No time travel access
-
-## Development
-
-### Adding New Features
-
-1. **Frontend Components**: Add to `src/components/`
-2. **API Endpoints**: Add to `backend/src/server.js`
-3. **Database Changes**: Update `backend/src/schema-v2.sql`
-4. **Permissions**: Update `backend/src/permissions.js`
-
-### Database Migrations
-
-When modifying the schema:
-1. Update `schema-v2.sql`
-2. Increment version in schema
-3. Update migration script if needed
-4. Test with fresh database
-
-### Testing
-
-Manual testing checklist:
-- [ ] User login/logout
-- [ ] Project creation with curves
-- [ ] Metric editing and dragging
-- [ ] Target propagation
-- [ ] CRAID management
-- [ ] Export generation
-- [ ] Permission boundaries
-- [ ] Audit log recording
-
-## Troubleshooting
-
-### Backend won't start
-- Check if port 3001 is already in use
-- Verify Node.js version (16+)
-- Delete `backend/data/progress-tracker.db` and reinitialize
-
-### Frontend won't connect
-- Ensure backend is running on port 3001
-- Check browser console for CORS errors
-- Verify API base URL in `src/api/client.js`
-
-### Login fails
-- Check credentials (case-sensitive)
-- Verify database has users (run migrate-mock-data.js)
-- Check browser console for network errors
-
-### Charts not displaying
-- Verify data exists for selected project
-- Check browser console for errors
-- Ensure metric has periods with data
-
-## Contributing
-
-Contributions are welcome! Please:
+Contributions welcome! Please:
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+4. Submit a pull request
 
-## License
+## 📄 License
 
-MIT License - feel free to use this project for personal or commercial purposes.
+MIT License - free for personal and commercial use.
 
-## Support
+## 💬 Support
 
-For issues, questions, or suggestions:
-- Open an issue on GitHub
-- Check existing issues for solutions
-- Review this README for troubleshooting tips
-
-## Acknowledgments
-
-Built with modern web technologies and best practices for project management visibility.
+- **Issues**: Open on GitHub
+- **Documentation**: Check this README
+- **Live Demo**: https://datavisuals.github.io/progress-tracker/
 
 ---
 
