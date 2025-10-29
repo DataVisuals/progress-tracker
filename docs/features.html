@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Features - Progress Tracker</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="nav-logo">Progress Tracker</a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="features.html" class="active">Features</a>
+                <a href="https://github.com/DataVisuals/progress-tracker" target="_blank">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Features Hero -->
+    <section class="features-hero">
+        <div class="container">
+            <h1>Feature Showreel</h1>
+            <p>Everything you need to track project progress with confidence</p>
+        </div>
+    </section>
+
+    <!-- Feature: Visual Metrics -->
+    <section class="feature-detail">
+        <div class="container">
+            <div class="feature-content">
+                <div class="feature-text">
+                    <span class="feature-badge">Core Feature</span>
+                    <h2>Visual Metric Tracking</h2>
+                    <p class="feature-description">
+                        See all your project metrics at a glance with color-coded status indicators.
+                        Track Expected vs Target vs Actual values for each period.
+                    </p>
+                    <ul class="feature-list">
+                        <li>📊 Interactive metric charts with trend lines</li>
+                        <li>🎨 Color-coded status indicators (Green/Amber/Red)</li>
+                        <li>📈 Weekly, monthly, and quarterly reporting frequencies</li>
+                        <li>💬 Add context with comments on specific periods</li>
+                    </ul>
+                </div>
+                <div class="feature-demo">
+                    <div class="demo-box">
+                        <div class="demo-header">Active Users - Weekly</div>
+                        <div class="demo-metrics">
+                            <div class="demo-metric">
+                                <span class="demo-label">Expected</span>
+                                <span class="demo-value">1,100</span>
+                            </div>
+                            <div class="demo-metric">
+                                <span class="demo-label">Target</span>
+                                <span class="demo-value">1,100</span>
+                            </div>
+                            <div class="demo-metric highlight">
+                                <span class="demo-label">Complete</span>
+                                <span class="demo-value">1,080</span>
+                            </div>
+                        </div>
+                        <div class="demo-status green">✓ On Track (1.8% below)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature: Time Travel -->
+    <section class="feature-detail alt">
+        <div class="container">
+            <div class="feature-content reverse">
+                <div class="feature-text">
+                    <span class="feature-badge">Historical Analysis</span>
+                    <h2>Time Travel</h2>
+                    <p class="feature-description">
+                        Review historical data to understand how metrics evolved over time.
+                        See exactly when values changed and who made the updates.
+                    </p>
+                    <ul class="feature-list">
+                        <li>⏱️ View project state at any point in time</li>
+                        <li>📅 Full audit trail of all changes</li>
+                        <li>👤 Track who made each update</li>
+                        <li>🔍 Compare past projections to actual outcomes</li>
+                    </ul>
+                </div>
+                <div class="feature-demo">
+                    <div class="demo-box">
+                        <div class="demo-header">Time Travel Mode</div>
+                        <div class="demo-content">
+                            <div class="demo-date-picker">
+                                <span class="date-icon">📅</span>
+                                <span class="date-text">Viewing data as of: 2025-01-15</span>
+                            </div>
+                            <div class="demo-change">
+                                <div class="change-item">
+                                    <span class="change-user">👤 alice@example.com</span>
+                                    <span class="change-desc">Updated Complete value: 950 → 1,080</span>
+                                    <span class="change-time">2025-01-20 14:30</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature: Excel Import -->
+    <section class="feature-detail">
+        <div class="container">
+            <div class="feature-content">
+                <div class="feature-text">
+                    <span class="feature-badge">Bulk Operations</span>
+                    <h2>Excel Import</h2>
+                    <p class="feature-description">
+                        Import project data from Excel templates to quickly set up multiple projects,
+                        metrics, and historical data points.
+                    </p>
+                    <ul class="feature-list">
+                        <li>📥 Prescriptive Excel template with examples</li>
+                        <li>✅ Comprehensive validation with detailed error reporting</li>
+                        <li>🔄 Upsert logic (create or update, no deletions)</li>
+                        <li>🤖 Auto-detects metric frequency from date intervals</li>
+                        <li>📊 Import results summary with statistics</li>
+                    </ul>
+                </div>
+                <div class="feature-demo">
+                    <div class="demo-box">
+                        <div class="demo-header">Import Results</div>
+                        <div class="demo-results">
+                            <div class="result-row">
+                                <span class="result-label">Projects Created</span>
+                                <span class="result-number">3</span>
+                            </div>
+                            <div class="result-row">
+                                <span class="result-label">Metrics Created</span>
+                                <span class="result-number">5</span>
+                            </div>
+                            <div class="result-row">
+                                <span class="result-label">Periods Created</span>
+                                <span class="result-number">12</span>
+                            </div>
+                        </div>
+                        <div class="demo-status green">✓ Import Completed Successfully</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature: Consistency Reports -->
+    <section class="feature-detail alt">
+        <div class="container">
+            <div class="feature-content reverse">
+                <div class="feature-text">
+                    <span class="feature-badge">Data Quality</span>
+                    <h2>Data Consistency Reports</h2>
+                    <p class="feature-description">
+                        Automatically detect common data quality issues like vacation months,
+                        back-loaded growth patterns, and metrics with insufficient data points.
+                    </p>
+                    <ul class="feature-list">
+                        <li>🏖️ Detect vacation month periods (January & December)</li>
+                        <li>📈 Identify back-loaded growth (end-of-period spikes)</li>
+                        <li>📊 Flag metrics with only one data point</li>
+                        <li>✅ See which metrics are healthy and on track</li>
+                    </ul>
+                </div>
+                <div class="feature-demo">
+                    <div class="demo-box">
+                        <div class="demo-header">Consistency Report</div>
+                        <div class="demo-issues">
+                            <div class="issue-item warning">
+                                <span class="issue-icon">⚠️</span>
+                                <div class="issue-text">
+                                    <strong>Vacation Month Detected</strong>
+                                    <p>Active Users has data in December</p>
+                                </div>
+                            </div>
+                            <div class="issue-item warning">
+                                <span class="issue-icon">📈</span>
+                                <div class="issue-text">
+                                    <strong>Back-Loaded Growth</strong>
+                                    <p>Revenue shows end-of-period spike</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature: CRAIDs & Links -->
+    <section class="feature-detail">
+        <div class="container">
+            <div class="feature-content">
+                <div class="feature-text">
+                    <span class="feature-badge">Risk Management</span>
+                    <h2>CRAIDs & Project Links</h2>
+                    <p class="feature-description">
+                        Track concerns, risks, assumptions, issues, and dependencies (CRAIDs) for each project.
+                        Add unlimited external links for quick access to documentation and resources.
+                    </p>
+                    <ul class="feature-list">
+                        <li>⚠️ Categorize items as Concern, Risk, Assumption, Issue, or Dependency</li>
+                        <li>📝 Add descriptions and track mitigation strategies</li>
+                        <li>🔗 Attach unlimited project links with custom labels</li>
+                        <li>🎯 Prioritize and organize with display order</li>
+                    </ul>
+                </div>
+                <div class="feature-demo">
+                    <div class="demo-box">
+                        <div class="demo-header">Project CRAIDs</div>
+                        <div class="craids-list">
+                            <div class="craid-item risk">
+                                <span class="craid-badge">Risk</span>
+                                <span class="craid-text">API rate limits may impact scaling</span>
+                            </div>
+                            <div class="craid-item assumption">
+                                <span class="craid-badge">Assumption</span>
+                                <span class="craid-text">User adoption rate of 15% monthly</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature: Access Control -->
+    <section class="feature-detail alt">
+        <div class="container">
+            <div class="feature-content reverse">
+                <div class="feature-text">
+                    <span class="feature-badge">Security</span>
+                    <h2>Role-Based Access Control</h2>
+                    <p class="feature-description">
+                        Control who can view and edit projects with granular permission management.
+                        Audit logs track all changes for accountability.
+                    </p>
+                    <ul class="feature-list">
+                        <li>👥 Three roles: Admin, Project Manager, and Viewer</li>
+                        <li>🔐 Project-level permissions (view/edit access)</li>
+                        <li>📋 Complete audit trail of all changes</li>
+                        <li>🔍 Filter audit logs by user, action, and date</li>
+                    </ul>
+                </div>
+                <div class="feature-demo">
+                    <div class="demo-box">
+                        <div class="demo-header">User Roles</div>
+                        <div class="roles-list">
+                            <div class="role-item">
+                                <span class="role-badge admin">Admin</span>
+                                <span class="role-desc">Full system access</span>
+                            </div>
+                            <div class="role-item">
+                                <span class="role-badge pm">PM</span>
+                                <span class="role-desc">Create & manage projects</span>
+                            </div>
+                            <div class="role-item">
+                                <span class="role-badge viewer">Viewer</span>
+                                <span class="role-desc">Read-only access</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Additional Features Grid -->
+    <section class="more-features">
+        <div class="container">
+            <h2>And More...</h2>
+            <div class="more-features-grid">
+                <div class="more-feature-card">
+                    <div class="more-feature-icon">📤</div>
+                    <h3>Excel Export</h3>
+                    <p>Export project data to Excel for offline analysis and reporting</p>
+                </div>
+                <div class="more-feature-card">
+                    <div class="more-feature-icon">🔄</div>
+                    <h3>Daily Auto-Export</h3>
+                    <p>Scheduled daily exports ensure you always have the latest data backup</p>
+                </div>
+                <div class="more-feature-card">
+                    <div class="more-feature-icon">👤</div>
+                    <h3>User Profiles</h3>
+                    <p>Update profile information and change passwords securely</p>
+                </div>
+                <div class="more-feature-card">
+                    <div class="more-feature-icon">🎨</div>
+                    <h3>Clean UI</h3>
+                    <p>Intuitive interface designed for quick access to critical information</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+        <div class="container">
+            <h2>Ready to Get Started?</h2>
+            <p>Open source, self-hosted, and built for teams who value data-driven decision making.</p>
+            <div class="cta-buttons">
+                <a href="https://github.com/DataVisuals/progress-tracker" class="btn btn-primary" target="_blank">View on GitHub</a>
+                <a href="index.html" class="btn btn-secondary">Back to Home</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Progress Tracker. Open Source Project.</p>
+            <p>
+                <a href="https://github.com/DataVisuals/progress-tracker" target="_blank">GitHub</a> •
+                <a href="https://github.com/DataVisuals/progress-tracker/issues" target="_blank">Report Issues</a> •
+                <a href="https://github.com/DataVisuals/progress-tracker#readme" target="_blank">Documentation</a>
+            </p>
+        </div>
+    </footer>
+
+    <script src="assets/js/main.js"></script>
+</body>
+</html>
