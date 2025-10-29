@@ -10,7 +10,8 @@ import {
   Legend,
   ResponsiveContainer,
   LabelList,
-  ReferenceArea
+  ReferenceArea,
+  Cell
 } from 'recharts';
 import { api } from '../api/client';
 import './MetricChart.css';
@@ -109,7 +110,7 @@ const CustomExpectedDot = (props) => {
 };
 
 // Custom Tooltip component
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance }) => {
   if (active && payload && payload.length) {
     const date = new Date(label);
     const formattedDate = date.toLocaleDateString('en-GB', {
@@ -125,7 +126,20 @@ const CustomTooltip = ({ active, payload, label }) => {
 
     const progress = total > 0 ? ((complete / total) * 100).toFixed(1) : 0;
     const variance = complete - expected;
-    const variancePercent = expected > 0 ? ((variance / expected) * 100).toFixed(1) : 0;
+    const variancePercent = expected > 0 ? Math.abs((variance / expected) * 100).toFixed(1) : 0;
+
+    // Determine variance status
+    let varianceStatus = null;
+    let varianceIcon = null;
+    if (variance < 0) { // Behind schedule
+      if (variancePercent > redTolerance) {
+        varianceStatus = 'Red';
+        varianceIcon = '🔴';
+      } else if (variancePercent > amberTolerance) {
+        varianceStatus = 'Amber';
+        varianceIcon = '🟡';
+      }
+    }
 
     return (
       <div className="custom-tooltip">
@@ -151,9 +165,17 @@ const CustomTooltip = ({ active, payload, label }) => {
           <div className="tooltip-row">
             <span className="tooltip-label">Variance:</span>
             <span className={`tooltip-value ${variance >= 0 ? 'positive' : 'negative'}`}>
-              {variance >= 0 ? '+' : ''}{variance} ({variancePercent >= 0 ? '+' : ''}{variancePercent}%)
+              {variance >= 0 ? '+' : ''}{variance} ({variance >= 0 ? '+' : '-'}{variancePercent}%)
             </span>
           </div>
+          {varianceStatus && (
+            <div className="tooltip-row">
+              <span className="tooltip-label">Status:</span>
+              <span className={`tooltip-value ${varianceStatus.toLowerCase()}`}>
+                {varianceIcon} {varianceStatus} (tol: {varianceStatus === 'Red' ? redTolerance : amberTolerance}%)
+              </span>
+            </div>
+          )}
           <div className="tooltip-divider"></div>
           <div className="tooltip-row highlight">
             <span className="tooltip-label">Progress:</span>
@@ -493,26 +515,65 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
             tick={<CustomXAxisTick data={chartData} />}
           />
           <YAxis tick={{ fontSize: 11 }} />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip amberTolerance={amberTolerance} redTolerance={redTolerance} />} />
           <Legend
             wrapperStyle={{ fontSize: '12px' }}
+            formatter={(value) => <span style={{ color: '#000000' }}>{value}</span>}
             payload={[
-              { value: 'Complete', type: 'rect', id: 'complete', color: '#00aeef' },
+              { value: 'Green: On track or ahead of plan', type: 'rect', id: 'green', color: '#539668' },
+              { value: `Amber: >${amberTolerance}% behind plan`, type: 'rect', id: 'amber', color: '#f5ad5b' },
+              { value: `Red: >${redTolerance}% behind plan`, type: 'rect', id: 'red', color: '#D0704d' },
               { value: 'Remaining', type: 'rect', id: 'remaining', color: '#d1d5db' },
-              { value: 'Expected', type: 'line', id: 'expected', color: '#10b981' },
-              { value: 'Target', type: 'line', id: 'target', color: '#6b7280' },
-              ...(currentPeriodX1 && currentPeriodX2 ? [{ value: 'Current Period', type: 'rect', id: 'current', color: '#fde68a' }] : [])
+              { value: 'Expected', type: 'line', id: 'expected', color: '#10b981' }
             ]}
           />
-          {currentPeriodX1 && currentPeriodX2 && (
-            <ReferenceArea
-              x1={currentPeriodX1}
-              x2={currentPeriodX2}
-              fill="#fbbf24"
-              fillOpacity={0.25}
+          <Bar dataKey="complete" stackId="a" name="Complete">
+            {chartData.map((entry, index) => {
+              // Calculate variance for this period
+              const variance = entry.complete - entry.expected;
+              const variancePercent = entry.expected > 0 ? Math.abs((variance / entry.expected) * 100) : 0;
+
+              // Determine color based on variance and tolerances
+              let barColor = '#539668'; // Green - on track or ahead
+
+              // Check if period is in the past (should have data)
+              const cutoffDate = timeTravelTimestamp ? new Date(timeTravelTimestamp) : new Date();
+              const periodDate = new Date(entry.name);
+              const isPastOrCurrent = periodDate <= cutoffDate;
+
+              if (isPastOrCurrent && variance < 0) { // Behind schedule
+                if (variancePercent > redTolerance) {
+                  barColor = '#D0704d'; // Red
+                } else if (variancePercent > amberTolerance) {
+                  barColor = '#f5ad5b'; // Amber
+                }
+              }
+
+              return <Cell key={`cell-${index}`} fill={barColor} />;
+            })}
+            <LabelList
+              content={({ x, y, width, index }) => {
+                const item = chartData[index];
+                if (!item) return null;
+
+                // Check if this is the current period
+                const isCurrentPeriod = currentPeriodX1 === item.name;
+                if (!isCurrentPeriod) return null;
+
+                return (
+                  <text
+                    x={x + width / 2}
+                    y={y - 10}
+                    fill="#ef4444"
+                    textAnchor="middle"
+                    fontSize="20"
+                  >
+                    ▼
+                  </text>
+                );
+              }}
             />
-          )}
-          <Bar dataKey="complete" stackId="a" fill="#00aeef" name="Complete" />
+          </Bar>
           <Bar dataKey="remaining" stackId="a" fill="#d1d5db" name="Remaining">
             <LabelList
               content={({ x, y, width, value, index }) => {
@@ -530,23 +591,6 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
                 const cutoffDate = timeTravelTimestamp ? new Date(timeTravelTimestamp) : new Date();
                 const periodDate = new Date(item.name);
                 const isPastOrCurrent = periodDate <= cutoffDate;
-
-                // Determine variance indicator using project tolerances
-                // Only show variance for periods that have occurred (on or before cutoff date)
-                let varianceIcon = null;
-                let varianceColor = null;
-                let varianceText = null;
-                if (isPastOrCurrent && variance < 0) { // Behind schedule and period has occurred
-                  if (variancePercent > redTolerance) {
-                    varianceIcon = '🔴'; // Red circle for exceeding red tolerance
-                    varianceColor = '#ef4444';
-                    varianceText = `${variancePercent.toFixed(1)}% (tol: ${redTolerance}%)`;
-                  } else if (variancePercent > amberTolerance) {
-                    varianceIcon = '🟡'; // Amber circle for exceeding amber tolerance
-                    varianceColor = '#f59e0b';
-                    varianceText = `${variancePercent.toFixed(1)}% (tol: ${amberTolerance}%)`;
-                  }
-                }
 
                 // Show scope change if it exists
                 const scopeChange = item.scopeChange;
@@ -584,28 +628,6 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
                       >
                         {scopeLabel}
                       </text>
-                    )}
-                    {varianceIcon && (
-                      <>
-                        <text
-                          x={x + width / 2}
-                          y={y - (scopeLabel ? 48 : 36)}
-                          textAnchor="middle"
-                          fontSize={12}
-                        >
-                          {varianceIcon}
-                        </text>
-                        <text
-                          x={x + width / 2}
-                          y={y - (scopeLabel ? 36 : 24)}
-                          textAnchor="middle"
-                          fontSize={8}
-                          fill={varianceColor}
-                          fontWeight={600}
-                        >
-                          {varianceText}
-                        </text>
-                      </>
                     )}
                   </g>
                 );

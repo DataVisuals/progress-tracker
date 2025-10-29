@@ -1,0 +1,1 @@
+- launch in the sim each time we test iphone features

@@ -92,6 +92,21 @@ export const api = {
   createProjectLink: (projectId, data) => client.post(`/projects/${projectId}/links`, data),
   updateProjectLink: (id, data) => client.put(`/project-links/${id}`, data),
   deleteProjectLink: (id) => client.delete(`/project-links/${id}`),
+
+  // Consistency Report
+  getConsistencyReport: () => client.get('/admin/consistency-report'),
+
+  // Import/Export
+  downloadImportTemplate: () => client.get('/import/template', { responseType: 'blob' }),
+  importData: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return client.post('/import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 };
 
 export default api;

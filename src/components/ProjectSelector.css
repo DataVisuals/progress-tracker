@@ -23,16 +23,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
-  font-size: 15px;
+  padding: 6px 12px;
+  font-size: 13px;
   font-weight: 500;
   border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
+  border-radius: 6px;
   background-color: rgba(255, 255, 255, 0.95);
   color: #003c71;
   cursor: pointer;
   transition: all 0.2s ease;
-  height: 42px;
+  height: 32px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   user-select: none;
 }

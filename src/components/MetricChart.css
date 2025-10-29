@@ -83,6 +83,16 @@
   color: #ef4444;
 }
 
+.tooltip-value.amber {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.tooltip-value.red {
+  color: #ef4444;
+  font-weight: 600;
+}
+
 .tooltip-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, #e5e7eb, transparent);

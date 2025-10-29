@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 const { db, dbRun, dbGet, dbAll, generateMetricPeriods } = require('./db');
 const { ROLES, canEditProject, canCreateProject, isAdmin } = require('./permissions');
 const { startScheduler } = require('./scheduler');
@@ -1317,6 +1318,243 @@ app.get('/api/audit', authenticateToken, async (req, res) => {
   }
 });
 
+// ===== DATA CONSISTENCY REPORT (Admin Only) =====
+app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (!isAdmin(req.user)) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const issues = [];
+
+    // 1. Find metrics with unusual growth in January or August (vacation months)
+    // January 1 reporting indicates work done in December (vacation month)
+    // August 1 reporting indicates work done in July/August (vacation month)
+    const vacationMonthGrowth = await dbAll(`
+      WITH growth_calc AS (
+        SELECT
+          p.id as project_id,
+          p.name as project_name,
+          p.initiative_manager as pm_name,
+          m.id as metric_id,
+          m.name as metric_name,
+          mp.reporting_date,
+          mp.complete,
+          LAG(mp.complete) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as prev_complete,
+          mp.complete - LAG(mp.complete) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as growth
+        FROM metric_periods mp
+        JOIN metrics m ON mp.metric_id = m.id
+        JOIN projects p ON m.project_id = p.id
+        WHERE CAST(strftime('%m', mp.reporting_date) AS INTEGER) IN (1, 8)
+      )
+      SELECT *
+      FROM growth_calc
+      WHERE complete > COALESCE(prev_complete, 0)
+      AND growth IS NOT NULL
+      ORDER BY project_name, metric_name, reporting_date
+    `);
+
+    // Group by metric and check if growth is above average
+    const metricsWithVacationGrowth = new Map();
+    for (const row of vacationMonthGrowth) {
+      if (!row.prev_complete || row.growth === null) continue;
+
+      const key = `${row.project_id}-${row.metric_id}`;
+      if (!metricsWithVacationGrowth.has(key)) {
+        metricsWithVacationGrowth.set(key, {
+          project_id: row.project_id,
+          project_name: row.project_name,
+          pm_name: row.pm_name,
+          metric_id: row.metric_id,
+          metric_name: row.metric_name,
+          vacation_periods: []
+        });
+      }
+
+      // Get average growth for this metric
+      const avgGrowth = await dbGet(`
+        WITH growth_all AS (
+          SELECT
+            mp.complete - LAG(mp.complete) OVER (PARTITION BY mp.metric_id ORDER BY mp.reporting_date) as growth
+          FROM metric_periods mp
+          WHERE mp.metric_id = ?
+        )
+        SELECT AVG(growth) as avg_growth
+        FROM growth_all
+        WHERE growth IS NOT NULL AND growth > 0
+      `, [row.metric_id]);
+
+      if (avgGrowth && avgGrowth.avg_growth && row.growth > avgGrowth.avg_growth * 0.8) {
+        metricsWithVacationGrowth.get(key).vacation_periods.push({
+          date: row.reporting_date,
+          growth: row.growth,
+          avg_growth: avgGrowth.avg_growth
+        });
+      }
+    }
+
+    for (const [, value] of metricsWithVacationGrowth) {
+      if (value.vacation_periods.length > 0) {
+        const months = value.vacation_periods.map(p => {
+          const month = new Date(p.date).getMonth() + 1;
+          return month === 1 ? 'January (December work)' : 'August (July/August work)';
+        });
+        issues.push({
+          type: 'vacation_month_growth',
+          severity: 'warning',
+          project_id: value.project_id,
+          project_name: value.project_name,
+          pm_name: value.pm_name,
+          metric_id: value.metric_id,
+          metric_name: value.metric_name,
+          details: `Normal or accelerated growth detected during vacation months: ${months.join(', ')}. Reporting dates: ${value.vacation_periods.map(p => p.date).join(', ')}`,
+          periods: value.vacation_periods
+        });
+      }
+    }
+
+    // 2. Find projects with only back-loaded growth curves
+    const backLoadedMetrics = await dbAll(`
+      WITH period_growth AS (
+        SELECT
+          m.id as metric_id,
+          m.name as metric_name,
+          m.project_id,
+          p.name as project_name,
+          p.initiative_manager as pm_name,
+          mp.reporting_date,
+          ROW_NUMBER() OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as period_num,
+          COUNT(*) OVER (PARTITION BY m.id) as total_periods,
+          mp.complete - LAG(mp.complete, 1, 0) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as growth
+        FROM metric_periods mp
+        JOIN metrics m ON mp.metric_id = m.id
+        JOIN projects p ON m.project_id = p.id
+      ),
+      first_half_growth AS (
+        SELECT
+          metric_id,
+          metric_name,
+          project_id,
+          project_name,
+          pm_name,
+          SUM(growth) as first_half_total,
+          AVG(growth) as first_half_avg
+        FROM period_growth
+        WHERE period_num <= total_periods / 2
+        GROUP BY metric_id, metric_name, project_id, project_name, pm_name
+      ),
+      second_half_growth AS (
+        SELECT
+          metric_id,
+          SUM(growth) as second_half_total,
+          AVG(growth) as second_half_avg
+        FROM period_growth
+        WHERE period_num > total_periods / 2
+        GROUP BY metric_id
+      )
+      SELECT
+        f.project_id,
+        f.project_name,
+        f.pm_name,
+        f.metric_id,
+        f.metric_name,
+        f.first_half_total,
+        f.first_half_avg,
+        s.second_half_total,
+        s.second_half_avg
+      FROM first_half_growth f
+      JOIN second_half_growth s ON f.metric_id = s.metric_id
+      WHERE s.second_half_total > f.first_half_total * 2
+    `);
+
+    // Group by project to check if ALL metrics are back-loaded
+    const projectMetrics = new Map();
+    for (const metric of backLoadedMetrics) {
+      if (!projectMetrics.has(metric.project_id)) {
+        projectMetrics.set(metric.project_id, {
+          project_name: metric.project_name,
+          pm_name: metric.pm_name,
+          back_loaded: [],
+          total: 0
+        });
+      }
+      projectMetrics.get(metric.project_id).back_loaded.push(metric);
+    }
+
+    // Get total metric counts
+    for (const [projectId, data] of projectMetrics) {
+      const totalMetrics = await dbGet(
+        'SELECT COUNT(*) as count FROM metrics WHERE project_id = ?',
+        [projectId]
+      );
+      data.total = totalMetrics.count;
+
+      // Only flag if ALL or most metrics are back-loaded
+      if (data.back_loaded.length === data.total && data.total > 0) {
+        issues.push({
+          type: 'all_back_loaded',
+          severity: 'high',
+          project_id: projectId,
+          project_name: data.project_name,
+          pm_name: data.pm_name,
+          details: `All ${data.total} metric(s) show back-loaded growth (majority of progress in second half)`,
+          metrics: data.back_loaded.map(m => ({
+            metric_id: m.metric_id,
+            metric_name: m.metric_name,
+            first_half_avg: m.first_half_avg,
+            second_half_avg: m.second_half_avg
+          }))
+        });
+      }
+    }
+
+    // 3. Find projects with only one metric
+    const singleMetricProjects = await dbAll(`
+      WITH project_metric_counts AS (
+        SELECT
+          p.id as project_id,
+          p.name as project_name,
+          p.initiative_manager as pm_name,
+          m.id as metric_id,
+          m.name as metric_name,
+          COUNT(m.id) OVER (PARTITION BY p.id) as metric_count
+        FROM projects p
+        LEFT JOIN metrics m ON p.id = m.project_id
+      )
+      SELECT *
+      FROM project_metric_counts
+      WHERE metric_count = 1
+    `);
+
+    for (const project of singleMetricProjects) {
+      issues.push({
+        type: 'single_metric',
+        severity: 'info',
+        project_id: project.project_id,
+        project_name: project.project_name,
+        pm_name: project.pm_name,
+        metric_id: project.metric_id,
+        metric_name: project.metric_name,
+        details: 'Project has only one metric'
+      });
+    }
+
+    res.json({
+      generated_at: new Date().toISOString(),
+      total_issues: issues.length,
+      issues: issues.sort((a, b) => {
+        const severityOrder = { high: 0, warning: 1, info: 2 };
+        return severityOrder[a.severity] - severityOrder[b.severity];
+      })
+    });
+
+  } catch (err) {
+    console.error('Consistency report error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ===== TIME TRAVEL (Reconstruct historical state from audit log) =====
 app.get('/api/projects/:projectId/data/time-travel', authenticateToken, async (req, res) => {
   try {
@@ -1517,6 +1755,104 @@ app.post('/api/export', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Export error:', err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== IMPORT =====
+const multer = require('multer');
+const fs = require('fs');
+const { importDataFromFile, generateImportTemplate, ImportValidationError } = require('./importService');
+
+// Configure multer for file uploads
+const upload = multer({
+  dest: path.join(__dirname, '../uploads'),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only Excel files (.xlsx) are allowed'));
+    }
+  }
+});
+
+// Download import template
+app.get('/api/import/template', authenticateToken, async (req, res) => {
+  try {
+    // Check if user can create projects (admin or PM)
+    if (!canCreateProject(req.user)) {
+      return res.status(403).json({ error: 'Only admins and project managers can import data' });
+    }
+
+    const workbook = await generateImportTemplate();
+    const filename = 'progress-tracker-import-template.xlsx';
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('Template generation error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Import data from Excel file
+app.post('/api/import', authenticateToken, upload.single('file'), async (req, res) => {
+  let filePath = null;
+
+  try {
+    // Check if user can create projects (admin or PM)
+    if (!canCreateProject(req.user)) {
+      return res.status(403).json({ error: 'Only admins and project managers can import data' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    filePath = req.file.path;
+
+    console.log(`Processing import file: ${req.file.originalname}`);
+
+    // Process the import
+    const results = await importDataFromFile(filePath, req.user.userId);
+
+    // Log the import action
+    await logAudit(req.user, 'IMPORT', 'projects', null, null,
+      {
+        filename: req.file.originalname,
+        results: results
+      },
+      `Imported data from ${req.file.originalname}: ${results.projectsCreated} projects created, ${results.projectsUpdated} updated, ${results.metricsCreated} metrics created, ${results.periodsCreated} periods created, ${results.periodsUpdated} periods updated`,
+      req.ip
+    );
+
+    res.json({
+      success: true,
+      message: 'Import completed successfully',
+      results: results
+    });
+
+  } catch (err) {
+    console.error('Import error:', err);
+
+    if (err instanceof ImportValidationError) {
+      return res.status(400).json({
+        error: 'Import validation failed',
+        validationErrors: err.errors
+      });
+    }
+
+    res.status(500).json({ error: err.message });
+  } finally {
+    // Clean up uploaded file
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
   }
 });
 

@@ -12,6 +12,8 @@ import ProjectLinksEditor from './components/ProjectLinksEditor';
 import PasswordChange from './components/PasswordChange';
 import UserProfile from './components/UserProfile';
 import TimeTravel from './components/TimeTravel';
+import ConsistencyReport from './components/ConsistencyReport';
+import ImportData from './components/ImportData';
 import { api } from './api/client';
 import { MdShowChart, MdArrowDropDown } from 'react-icons/md';
 import './App.css';
@@ -36,6 +38,8 @@ function App() {
   const [timeTravelTimestamp, setTimeTravelTimestamp] = useState(null);
   const [projectLinks, setProjectLinks] = useState([]);
   const [showLinksEditor, setShowLinksEditor] = useState(false);
+  const [showConsistencyReport, setShowConsistencyReport] = useState(false);
+  const [showImportData, setShowImportData] = useState(false);
 
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
@@ -339,6 +343,9 @@ function App() {
                     <button onClick={() => { setShowNewProject(true); setShowProjectDropdown(false); }}>
                       New Project
                     </button>
+                    <button onClick={() => { setShowImportData(true); setShowProjectDropdown(false); }}>
+                      Import Data
+                    </button>
                     {selectedProject && (
                       <>
                         <button onClick={() => { setShowDataGrid(true); setShowProjectDropdown(false); }}>
@@ -375,6 +382,9 @@ function App() {
                     </button>
                     <button onClick={() => { setShowAuditLog(true); setShowAdminDropdown(false); }}>
                       Audit Log
+                    </button>
+                    <button onClick={() => { setShowConsistencyReport(true); setShowAdminDropdown(false); }}>
+                      Consistency Report
                     </button>
                   </div>
                 )}
@@ -583,6 +593,22 @@ function App() {
         </div>
       )}
 
+      {showConsistencyReport && (
+        <div className="modal-overlay" onClick={() => setShowConsistencyReport(false)}>
+          <div className="modal-content audit-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <button className="close-btn" onClick={() => setShowConsistencyReport(false)}>×</button>
+            </div>
+            <ConsistencyReport
+              onNavigate={(projectId) => {
+                setSelectedProject(projectId);
+                setShowConsistencyReport(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {showNewProject && (
         <div className="modal-overlay" onClick={handleProjectSetupCancel}>
           <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
@@ -618,6 +644,17 @@ function App() {
           currentUser={currentUser}
           onClose={() => setShowPasswordChange(false)}
           onUpdate={(updatedUser) => setCurrentUser(updatedUser)}
+        />
+      )}
+
+      {showImportData && (
+        <ImportData
+          onClose={() => setShowImportData(false)}
+          onSuccess={() => {
+            loadProjects();
+            loadProjectData();
+            setShowImportData(false);
+          }}
         />
       )}
     </div>
