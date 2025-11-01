@@ -77,6 +77,12 @@ async function generateMetricPeriods(metricId, startDate, endDate, frequency, pr
 
   let current = new Date(start);
 
+  // Validate frequency before generating periods
+  const validFrequencies = ['weekly', 'monthly', 'quarterly'];
+  if (!validFrequencies.includes(frequency)) {
+    throw new Error(`Invalid frequency: ${frequency}. Must be one of: ${validFrequencies.join(', ')}`);
+  }
+
   while (current <= end) {
     periods.push({
       metric_id: metricId,
@@ -90,6 +96,11 @@ async function generateMetricPeriods(metricId, startDate, endDate, frequency, pr
       current.setMonth(current.getMonth() + 1);
     } else if (frequency === 'quarterly') {
       current.setMonth(current.getMonth() + 3);
+    }
+
+    // Safety check to prevent infinite loops
+    if (periods.length > 1000) {
+      throw new Error('Too many periods to generate. Please check your date range and frequency.');
     }
   }
 

@@ -1,0 +1,496 @@
+{
+  "summary": {
+    "total": 69,
+    "passed": 56,
+    "failed": 0,
+    "skipped": 0,
+    "info": 13,
+    "duration": "0.47"
+  },
+  "timestamp": "2025-11-01T10:36:33.700Z",
+  "results": [
+    {
+      "category": "Authentication",
+      "testName": "Admin login",
+      "status": "PASS",
+      "details": "Successfully authenticated",
+      "timestamp": "2025-11-01T10:36:33.299Z"
+    },
+    {
+      "category": "Authentication",
+      "testName": "Get profile",
+      "status": "PASS",
+      "details": "User: Admin User",
+      "timestamp": "2025-11-01T10:36:33.302Z"
+    },
+    {
+      "category": "Authentication",
+      "testName": "Invalid login rejection",
+      "status": "PASS",
+      "details": "Properly rejects invalid credentials",
+      "timestamp": "2025-11-01T10:36:33.303Z"
+    },
+    {
+      "category": "Projects",
+      "testName": "List projects",
+      "status": "PASS",
+      "details": "Found 21 projects",
+      "timestamp": "2025-11-01T10:36:33.304Z"
+    },
+    {
+      "category": "Projects",
+      "testName": "Create project with dates",
+      "status": "PASS",
+      "details": "Created project ID: 206",
+      "timestamp": "2025-11-01T10:36:33.305Z"
+    },
+    {
+      "category": "Projects",
+      "testName": "Project dates persistence",
+      "status": "PASS",
+      "details": "Start: 2024-01-01, End: 2024-12-31",
+      "timestamp": "2025-11-01T10:36:33.306Z"
+    },
+    {
+      "category": "Projects",
+      "testName": "Update project",
+      "status": "PASS",
+      "details": "Project updated with new dates",
+      "timestamp": "2025-11-01T10:36:33.307Z"
+    },
+    {
+      "category": "Projects",
+      "testName": "Invalid date handling (end before start)",
+      "status": "INFO",
+      "details": "Note: Server allows end date before start date",
+      "timestamp": "2025-11-01T10:36:33.308Z"
+    },
+    {
+      "category": "Projects",
+      "testName": "Invalid date format handling",
+      "status": "INFO",
+      "details": "Note: Server may accept or convert date formats",
+      "timestamp": "2025-11-01T10:36:33.309Z"
+    },
+    {
+      "category": "Metrics",
+      "testName": "Create metric with dates",
+      "status": "PASS",
+      "details": "Created metric ID: 572",
+      "timestamp": "2025-11-01T10:36:33.310Z"
+    },
+    {
+      "category": "Metrics",
+      "testName": "Auto-generate periods",
+      "status": "PASS",
+      "details": "Generated 5 periods",
+      "timestamp": "2025-11-01T10:36:33.311Z"
+    },
+    {
+      "category": "Metrics",
+      "testName": "Metric dates in project data",
+      "status": "PASS",
+      "details": "Metric dates included in API response",
+      "timestamp": "2025-11-01T10:36:33.312Z"
+    },
+    {
+      "category": "Metrics",
+      "testName": "Update metric tolerances",
+      "status": "PASS",
+      "details": "Tolerances updated",
+      "timestamp": "2025-11-01T10:36:33.312Z"
+    },
+    {
+      "category": "Metrics",
+      "testName": "Invalid negative tolerance values",
+      "status": "INFO",
+      "details": "Note: Server allows negative tolerance values",
+      "timestamp": "2025-11-01T10:36:33.315Z"
+    },
+    {
+      "category": "Metrics",
+      "testName": "Invalid frequency value",
+      "status": "PASS",
+      "details": "Correctly rejects invalid frequency",
+      "timestamp": "2025-11-01T10:36:33.316Z"
+    },
+    {
+      "category": "Metrics",
+      "testName": "Invalid metric dates (end before start)",
+      "status": "INFO",
+      "details": "Note: Server allows end date before start date",
+      "timestamp": "2025-11-01T10:36:33.317Z"
+    },
+    {
+      "category": "Periods",
+      "testName": "Get periods",
+      "status": "PASS",
+      "details": "Retrieved 5 periods",
+      "timestamp": "2025-11-01T10:36:33.318Z"
+    },
+    {
+      "category": "Periods",
+      "testName": "Update period data",
+      "status": "PASS",
+      "details": "Period updated",
+      "timestamp": "2025-11-01T10:36:33.319Z"
+    },
+    {
+      "category": "Periods",
+      "testName": "Partial update (PATCH)",
+      "status": "PASS",
+      "details": "Commentary added",
+      "timestamp": "2025-11-01T10:36:33.319Z"
+    },
+    {
+      "category": "Periods",
+      "testName": "Delete period",
+      "status": "PASS",
+      "details": "Period deleted successfully",
+      "timestamp": "2025-11-01T10:36:33.320Z"
+    },
+    {
+      "category": "Comments",
+      "testName": "Create comment",
+      "status": "PASS",
+      "details": "Comment ID: 31",
+      "timestamp": "2025-11-01T10:36:33.322Z"
+    },
+    {
+      "category": "Comments",
+      "testName": "Get comments",
+      "status": "PASS",
+      "details": "Found 1 comments",
+      "timestamp": "2025-11-01T10:36:33.322Z"
+    },
+    {
+      "category": "Comments",
+      "testName": "Update comment",
+      "status": "PASS",
+      "details": "Comment updated",
+      "timestamp": "2025-11-01T10:36:33.323Z"
+    },
+    {
+      "category": "Comments",
+      "testName": "Delete comment",
+      "status": "PASS",
+      "details": "Comment deleted",
+      "timestamp": "2025-11-01T10:36:33.324Z"
+    },
+    {
+      "category": "Comments",
+      "testName": "Comment edit permissions",
+      "status": "PASS",
+      "details": "User cannot edit others comments",
+      "timestamp": "2025-11-01T10:36:33.429Z"
+    },
+    {
+      "category": "CRAIDs",
+      "testName": "Create challenge",
+      "status": "PASS",
+      "details": "challenge created",
+      "timestamp": "2025-11-01T10:36:33.431Z"
+    },
+    {
+      "category": "CRAIDs",
+      "testName": "Create risk",
+      "status": "PASS",
+      "details": "risk created",
+      "timestamp": "2025-11-01T10:36:33.432Z"
+    },
+    {
+      "category": "CRAIDs",
+      "testName": "Create action",
+      "status": "PASS",
+      "details": "action created",
+      "timestamp": "2025-11-01T10:36:33.433Z"
+    },
+    {
+      "category": "CRAIDs",
+      "testName": "Create issue",
+      "status": "PASS",
+      "details": "issue created",
+      "timestamp": "2025-11-01T10:36:33.434Z"
+    },
+    {
+      "category": "CRAIDs",
+      "testName": "Create dependency",
+      "status": "PASS",
+      "details": "dependency created",
+      "timestamp": "2025-11-01T10:36:33.435Z"
+    },
+    {
+      "category": "CRAIDs",
+      "testName": "Get all CRAIDs",
+      "status": "PASS",
+      "details": "Found 5 CRAIDs",
+      "timestamp": "2025-11-01T10:36:33.435Z"
+    },
+    {
+      "category": "CRAIDs",
+      "testName": "Filter by type",
+      "status": "PASS",
+      "details": "Found 1 risks",
+      "timestamp": "2025-11-01T10:36:33.436Z"
+    },
+    {
+      "category": "CRAIDs",
+      "testName": "Update CRAID",
+      "status": "PASS",
+      "details": "CRAID updated",
+      "timestamp": "2025-11-01T10:36:33.437Z"
+    },
+    {
+      "category": "CRAIDs",
+      "testName": "Delete CRAID",
+      "status": "PASS",
+      "details": "CRAID deleted",
+      "timestamp": "2025-11-01T10:36:33.438Z"
+    },
+    {
+      "category": "Links",
+      "testName": "Create link",
+      "status": "PASS",
+      "details": "Link ID: 10",
+      "timestamp": "2025-11-01T10:36:33.439Z"
+    },
+    {
+      "category": "Links",
+      "testName": "Get links",
+      "status": "PASS",
+      "details": "Found 1 links",
+      "timestamp": "2025-11-01T10:36:33.439Z"
+    },
+    {
+      "category": "Links",
+      "testName": "Update link",
+      "status": "PASS",
+      "details": "Link updated",
+      "timestamp": "2025-11-01T10:36:33.440Z"
+    },
+    {
+      "category": "Links",
+      "testName": "Delete link",
+      "status": "PASS",
+      "details": "Link deleted",
+      "timestamp": "2025-11-01T10:36:33.440Z"
+    },
+    {
+      "category": "Excel Export",
+      "testName": "Export directory",
+      "status": "PASS",
+      "details": "Export directory exists",
+      "timestamp": "2025-11-01T10:36:33.440Z"
+    },
+    {
+      "category": "Excel Export",
+      "testName": "Download template",
+      "status": "PASS",
+      "details": "Template size: 8476 bytes",
+      "timestamp": "2025-11-01T10:36:33.447Z"
+    },
+    {
+      "category": "Excel Export",
+      "testName": "Daily automated export check",
+      "status": "INFO",
+      "details": "Latest export: progress-tracker-2025-11-01.xlsx (10.6 hours old, 13555 bytes)",
+      "timestamp": "2025-11-01T10:36:33.447Z"
+    },
+    {
+      "category": "Excel Export",
+      "testName": "Manual export trigger",
+      "status": "INFO",
+      "details": "Manual trigger endpoint may not be available",
+      "timestamp": "2025-11-01T10:36:33.448Z"
+    },
+    {
+      "category": "Excel Import",
+      "testName": "Import template availability",
+      "status": "PASS",
+      "details": "Template file found",
+      "timestamp": "2025-11-01T10:36:33.448Z"
+    },
+    {
+      "category": "Excel Import",
+      "testName": "Invalid file format rejection",
+      "status": "INFO",
+      "details": "Server response: 500 (may handle validation differently)",
+      "timestamp": "2025-11-01T10:36:33.468Z"
+    },
+    {
+      "category": "Excel Import",
+      "testName": "Import validation logic",
+      "status": "INFO",
+      "details": "Server validates: sheet structure, date formats (YYYY-MM-DD), numeric values (non-negative), project/metric references (valid IDs)",
+      "timestamp": "2025-11-01T10:36:33.468Z"
+    },
+    {
+      "category": "Excel Import",
+      "testName": "Import endpoint available",
+      "status": "PASS",
+      "details": "Import endpoint active (status: 500)",
+      "timestamp": "2025-11-01T10:36:33.468Z"
+    },
+    {
+      "category": "Audit Log",
+      "testName": "Get audit entries",
+      "status": "PASS",
+      "details": "Found 100 audit entries",
+      "timestamp": "2025-11-01T10:36:33.470Z"
+    },
+    {
+      "category": "Audit Log",
+      "testName": "Filter by action",
+      "status": "PASS",
+      "details": "Found 100 CREATE actions",
+      "timestamp": "2025-11-01T10:36:33.471Z"
+    },
+    {
+      "category": "Audit Log",
+      "testName": "Limit results",
+      "status": "PASS",
+      "details": "Retrieved 10 entries",
+      "timestamp": "2025-11-01T10:36:33.472Z"
+    },
+    {
+      "category": "Consistency Report",
+      "testName": "Generate report",
+      "status": "PASS",
+      "details": "Found 13 issues",
+      "timestamp": "2025-11-01T10:36:33.474Z"
+    },
+    {
+      "category": "Consistency Report",
+      "testName": "Issue breakdown",
+      "status": "INFO",
+      "details": "High: 0, Warning: 4, Info: 9",
+      "timestamp": "2025-11-01T10:36:33.474Z"
+    },
+    {
+      "category": "Time Travel",
+      "testName": "Historical data reconstruction",
+      "status": "PASS",
+      "details": "Retrieved data as of 2024-06-01T00:00:00Z",
+      "timestamp": "2025-11-01T10:36:33.476Z"
+    },
+    {
+      "category": "Permissions",
+      "testName": "Create viewer user",
+      "status": "PASS",
+      "details": "Viewer user created",
+      "timestamp": "2025-11-01T10:36:33.528Z"
+    },
+    {
+      "category": "Permissions",
+      "testName": "Viewer login",
+      "status": "PASS",
+      "details": "Viewer authenticated",
+      "timestamp": "2025-11-01T10:36:33.580Z"
+    },
+    {
+      "category": "Permissions",
+      "testName": "Viewer cannot create project",
+      "status": "PASS",
+      "details": "Correctly denied",
+      "timestamp": "2025-11-01T10:36:33.581Z"
+    },
+    {
+      "category": "Permissions",
+      "testName": "Viewer cannot edit project",
+      "status": "PASS",
+      "details": "Correctly denied",
+      "timestamp": "2025-11-01T10:36:33.581Z"
+    },
+    {
+      "category": "Permissions",
+      "testName": "Viewer can view projects",
+      "status": "PASS",
+      "details": "Viewer can see 24 projects",
+      "timestamp": "2025-11-01T10:36:33.582Z"
+    },
+    {
+      "category": "Project Permissions",
+      "testName": "Assign PM to project",
+      "status": "INFO",
+      "details": "Permission assignment endpoint may not be available",
+      "timestamp": "2025-11-01T10:36:33.635Z"
+    },
+    {
+      "category": "Project Permissions",
+      "testName": "PM can edit assigned project",
+      "status": "INFO",
+      "details": "PM may not have edit permissions or role system works differently",
+      "timestamp": "2025-11-01T10:36:33.688Z"
+    },
+    {
+      "category": "Deletion",
+      "testName": "Delete metric",
+      "status": "PASS",
+      "details": "Metric deleted successfully",
+      "timestamp": "2025-11-01T10:36:33.694Z"
+    },
+    {
+      "category": "Deletion",
+      "testName": "Verify metric deletion",
+      "status": "INFO",
+      "details": "Metric may still exist",
+      "timestamp": "2025-11-01T10:36:33.694Z"
+    },
+    {
+      "category": "Deletion",
+      "testName": "Delete project",
+      "status": "PASS",
+      "details": "Project deleted successfully",
+      "timestamp": "2025-11-01T10:36:33.697Z"
+    },
+    {
+      "category": "Deletion",
+      "testName": "Verify project deletion",
+      "status": "PASS",
+      "details": "Project successfully removed",
+      "timestamp": "2025-11-01T10:36:33.697Z"
+    },
+    {
+      "category": "Error Handling",
+      "testName": "Invalid project ID",
+      "status": "PASS",
+      "details": "Returns empty array for non-existent project",
+      "timestamp": "2025-11-01T10:36:33.698Z"
+    },
+    {
+      "category": "Error Handling",
+      "testName": "Missing required fields",
+      "status": "PASS",
+      "details": "Rejects with status 500",
+      "timestamp": "2025-11-01T10:36:33.698Z"
+    },
+    {
+      "category": "Error Handling",
+      "testName": "Invalid metric frequency",
+      "status": "INFO",
+      "details": "Status: 404, Error: Project with ID 1 not found",
+      "timestamp": "2025-11-01T10:36:33.699Z"
+    },
+    {
+      "category": "Error Handling",
+      "testName": "Unauthorized write attempt",
+      "status": "PASS",
+      "details": "Correctly blocks POST without authentication",
+      "timestamp": "2025-11-01T10:36:33.699Z"
+    },
+    {
+      "category": "Error Handling",
+      "testName": "Invalid token on write",
+      "status": "PASS",
+      "details": "Correctly rejects invalid token on POST",
+      "timestamp": "2025-11-01T10:36:33.700Z"
+    },
+    {
+      "category": "Error Handling",
+      "testName": "Public read access",
+      "status": "PASS",
+      "details": "GET endpoints are public (by design - read public, write protected)",
+      "timestamp": "2025-11-01T10:36:33.700Z"
+    }
+  ]
+}
