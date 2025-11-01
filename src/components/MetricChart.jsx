@@ -13,8 +13,23 @@ import {
   ReferenceArea,
   Cell
 } from 'recharts';
+import html2canvas from 'html2canvas';
 import { api } from '../api/client';
 import './MetricChart.css';
+
+// Helper function to calculate if text should be white or black based on background color
+const getContrastColor = (hexColor) => {
+  // Convert hex to RGB
+  const r = parseInt(hexColor.slice(1, 3), 16);
+  const g = parseInt(hexColor.slice(3, 5), 16);
+  const b = parseInt(hexColor.slice(5, 7), 16);
+
+  // Calculate relative luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  // Return white for dark backgrounds, black for light backgrounds
+  return luminance > 0.5 ? '#000000' : '#ffffff';
+};
 
 // Custom X-Axis tick component
 const CustomXAxisTick = ({ x, y, payload, index, visibleTicksCount, data }) => {
@@ -206,6 +221,33 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
   const sortedData = [...data].sort((a, b) => {
     return new Date(a.reporting_date) - new Date(b.reporting_date);
   });
+
+  // Get metric metadata from first data point (all periods have same metric metadata)
+  const metricMetadata = sortedData.length > 0 ? {
+    start_date: sortedData[0].start_date,
+    end_date: sortedData[0].end_date,
+    frequency: sortedData[0].frequency
+  } : null;
+
+  // Calculate duration in days and months if metadata is available
+  const calculateDuration = (startDate, endDate) => {
+    if (!startDate || !endDate) return null;
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Calculate months (approximate)
+    const diffMonths = Math.round(diffDays / 30.44); // Average days per month
+
+    // Calculate weeks
+    const diffWeeks = Math.round(diffDays / 7);
+
+    return { days: diffDays, months: diffMonths, weeks: diffWeeks };
+  };
+
+  const duration = metricMetadata ? calculateDuration(metricMetadata.start_date, metricMetadata.end_date) : null;
 
   // Load comments for all periods when component mounts or data changes
   useEffect(() => {
@@ -501,13 +543,100 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
     return new Date(b.created_at) - new Date(a.created_at);
   });
 
+  // Format date for display
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  // Determine best duration display based on frequency
+  const getDurationDisplay = () => {
+    if (!duration || !metricMetadata) return '';
+
+    const { frequency } = metricMetadata;
+    const { days, months, weeks } = duration;
+
+    if (frequency === 'weekly') {
+      return `${weeks} week${weeks !== 1 ? 's' : ''} (${days} days)`;
+    } else if (frequency === 'monthly') {
+      return `${months} month${months !== 1 ? 's' : ''} (${days} days)`;
+    } else if (frequency === 'quarterly') {
+      const quarters = Math.round(months / 3);
+      return `${quarters} quarter${quarters !== 1 ? 's' : ''} (${months} months)`;
+    } else {
+      return `${days} days`;
+    }
+  };
+
+  // Export chart as image
+  const handleExportChart = async () => {
+    if (!chartContainerRef.current) return;
+
+    try {
+      const canvas = await html2canvas(chartContainerRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2, // Higher quality
+        logging: false
+      });
+
+      // Convert to blob and download
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${metricName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_chart.png`;
+        link.click();
+        URL.revokeObjectURL(url);
+      });
+    } catch (error) {
+      console.error('Failed to export chart:', error);
+    }
+  };
+
   return (
     <div className="metric-chart-container">
-      <h3 className="metric-title">{metricName}</h3>
+      <div className="metric-header">
+        <h3 className="metric-title">{metricName}</h3>
+        <button
+          className="export-chart-button"
+          onClick={handleExportChart}
+          title="Export chart as image"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 1V11M8 11L11 8M8 11L5 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M14 11V14H2V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+          Export Chart
+        </button>
+      </div>
 
-      <div ref={chartContainerRef} style={{ position: 'relative', width: '100%', height: 300 }}>
-      <ResponsiveContainer width="100%" height={300}>
-        <ComposedChart data={chartData} margin={{ top: 50, right: 20, left: 10, bottom: 50 }}>
+      {metricMetadata && (
+        <div className="metric-date-range">
+          <div className="date-range-item">
+            <span className="date-label">Metric Period:</span>
+            <span className="date-value">{formatDate(metricMetadata.start_date)}</span>
+          </div>
+          <div className="date-range-separator">→</div>
+          <div className="date-range-item">
+            <span className="date-value">{formatDate(metricMetadata.end_date)}</span>
+          </div>
+          {duration && (
+            <>
+              <div className="date-range-separator">•</div>
+              <div className="date-range-item">
+                <span className="date-value duration">{getDurationDisplay()}</span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+        <div ref={chartContainerRef} style={{ position: 'relative', flex: 1 }}>
+          <div style={{ height: 300 }}>
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={chartData} margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="name"
@@ -516,17 +645,6 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
           />
           <YAxis tick={{ fontSize: 11 }} />
           <Tooltip content={<CustomTooltip amberTolerance={amberTolerance} redTolerance={redTolerance} />} />
-          <Legend
-            wrapperStyle={{ fontSize: '12px' }}
-            formatter={(value) => <span style={{ color: '#000000' }}>{value}</span>}
-            payload={[
-              { value: 'Green: On track or ahead of plan', type: 'rect', id: 'green', color: '#539668' },
-              { value: `Amber: >${amberTolerance}% behind plan`, type: 'rect', id: 'amber', color: '#f5ad5b' },
-              { value: `Red: >${redTolerance}% behind plan`, type: 'rect', id: 'red', color: '#D0704d' },
-              { value: 'Remaining', type: 'rect', id: 'remaining', color: '#d1d5db' },
-              { value: 'Expected', type: 'line', id: 'expected', color: '#10b981' }
-            ]}
-          />
           <Bar dataKey="complete" stackId="a" name="Complete">
             {chartData.map((entry, index) => {
               // Calculate variance for this period
@@ -658,22 +776,133 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
                 }
               }
             } : false}
-          >
-            <LabelList
-              dataKey="expected"
-              position="top"
-              offset={12}
-              style={{ fontSize: 10, fill: '#059669', fontWeight: 600 }}
-              formatter={(value, entry, index) => {
-                // Always show first and last, and when value changes significantly
-                if (index === 0 || index === chartData.length - 1) return value;
-                const prevValue = chartData[index - 1]?.expected;
-                return Math.abs(value - prevValue) > (chartData[chartData.length - 1].expected * 0.1) ? value : '';
-              }}
-            />
-          </Line>
+          />
         </ComposedChart>
       </ResponsiveContainer>
+          </div>
+
+          {/* Data Table - Excel-style horizontal layout */}
+          <div className="data-table-section">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th className="row-header"></th>
+              {chartData.map((item, index) => {
+                // Format date to match chart X-axis
+                const date = new Date(item.name);
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const formattedDate = monthNames[date.getMonth()];
+
+                return (
+                  <th key={index} className="period-header">{formattedDate}</th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {/* Complete Row */}
+            <tr className="data-row">
+              <td className="row-label">Complete</td>
+              {chartData.map((item, index) => {
+                const variance = item.complete - item.expected;
+                const variancePercent = item.expected > 0 ? Math.abs((variance / item.expected) * 100) : 0;
+                const cutoffDate = timeTravelTimestamp ? new Date(timeTravelTimestamp) : new Date();
+                const periodDate = new Date(item.name);
+                const isPastOrCurrent = periodDate <= cutoffDate;
+
+                let statusClass = '';
+                if (isPastOrCurrent && variance < 0) {
+                  if (variancePercent > redTolerance) {
+                    statusClass = 'status-red';
+                  } else if (variancePercent > amberTolerance) {
+                    statusClass = 'status-amber';
+                  } else {
+                    statusClass = 'status-green';
+                  }
+                } else if (isPastOrCurrent) {
+                  statusClass = 'status-green';
+                }
+
+                return (
+                  <td key={index} className={`number-cell ${statusClass}`}>
+                    {item.complete?.toFixed(1) || '0.0'}
+                  </td>
+                );
+              })}
+            </tr>
+
+            {/* Expected Row */}
+            <tr className="data-row">
+              <td className="row-label">Expected</td>
+              {chartData.map((item, index) => (
+                <td key={index} className="number-cell">
+                  {item.expected?.toFixed(1) || '0.0'}
+                </td>
+              ))}
+            </tr>
+
+            {/* Variance Row */}
+            <tr className="data-row">
+              <td className="row-label">Variance</td>
+              {chartData.map((item, index) => {
+                const variance = item.complete - item.expected;
+
+                return (
+                  <td key={index} className={`number-cell variance-cell ${variance >= 0 ? 'positive' : 'negative'}`}>
+                    {variance >= 0 ? '+' : ''}{variance.toFixed(1)}
+                  </td>
+                );
+              })}
+            </tr>
+
+            {/* Variance % Row */}
+            <tr className="data-row">
+              <td className="row-label">Variance %</td>
+              {chartData.map((item, index) => {
+                const variance = item.complete - item.expected;
+                const variancePercent = item.expected > 0 ? ((variance / item.expected) * 100) : 0;
+
+                return (
+                  <td key={index} className={`number-cell variance-cell ${variance >= 0 ? 'positive' : 'negative'}`}>
+                    {variancePercent >= 0 ? '+' : ''}{variancePercent.toFixed(1)}%
+                  </td>
+                );
+              })}
+            </tr>
+          </tbody>
+        </table>
+          </div>
+        </div>
+
+        {/* Custom Legend */}
+        <div style={{
+          paddingTop: '60px',
+          fontSize: '12px',
+          minWidth: '200px'
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '12px', height: '12px', backgroundColor: '#539668' }}></div>
+              <span>Green: On track or ahead of plan</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '12px', height: '12px', backgroundColor: '#f5ad5b' }}></div>
+              <span>Amber: &gt;{amberTolerance}% behind plan</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '12px', height: '12px', backgroundColor: '#D0704d' }}></div>
+              <span>Red: &gt;{redTolerance}% behind plan</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '12px', height: '12px', backgroundColor: '#d1d5db' }}></div>
+              <span>Remaining</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '20px', height: '2px', backgroundColor: '#10b981' }}></div>
+              <span>Expected</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="commentary-section">

@@ -99,13 +99,92 @@
   margin: 8px 0;
 }
 
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  border-bottom: 2px solid #00aeef;
+  padding-bottom: 6px;
+}
+
 .metric-title {
   font-size: 16px;
   font-weight: 600;
   color: #003c71;
-  margin-bottom: 12px;
-  border-bottom: 2px solid #00aeef;
-  padding-bottom: 6px;
+  margin: 0;
+}
+
+.export-chart-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.export-chart-button:hover {
+  background-color: #00aeef;
+  border-color: #00aeef;
+  color: #ffffff;
+}
+
+.export-chart-button svg {
+  flex-shrink: 0;
+}
+
+.metric-date-range {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  font-size: 13px;
+  box-shadow: 0 1px 3px rgba(0, 174, 239, 0.08);
+}
+
+.date-range-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.date-label {
+  font-weight: 600;
+  color: #0c4a6e;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.date-value {
+  font-weight: 700;
+  color: #003c71;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.date-value.duration {
+  color: #00aeef;
+  font-weight: 700;
+}
+
+.date-range-separator {
+  color: #0284c7;
+  font-weight: 600;
+  font-size: 16px;
+  opacity: 0.6;
 }
 
 .commentary-section {
@@ -391,4 +470,121 @@
 
 .cancel-btn:hover {
   background-color: #4b5563;
+}
+
+/* Data Table Styles - Excel-style horizontal layout */
+.data-table-section {
+  margin: 4px 0 16px 0;
+  overflow-x: auto;
+  position: relative;
+  padding: 0 20px;
+}
+
+.data-table {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.data-table thead {
+  background: linear-gradient(135deg, #00aeef 0%, #003c71 100%);
+  color: white;
+}
+
+.data-table th {
+  padding: 6px 4px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 10px;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  white-space: nowrap;
+}
+
+.data-table th:last-child {
+  border-right: none;
+}
+
+.data-table th.row-header {
+  background: linear-gradient(135deg, #003c71 0%, #002147 100%);
+  width: 85px;
+  min-width: 85px;
+  text-align: left;
+  padding-left: 10px;
+  border-right: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.data-table th.period-header {
+  width: auto;
+}
+
+.data-table tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.data-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.data-table td {
+  padding: 6px 4px;
+  border-right: 1px solid #e5e7eb;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.data-table td:last-child {
+  border-right: none;
+}
+
+.row-label {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  font-weight: 600;
+  color: #003c71;
+  text-align: left;
+  width: 85px;
+  min-width: 85px;
+  padding-left: 10px !important;
+  border-right: 2px solid #00aeef !important;
+  font-size: 10px;
+}
+
+.number-cell {
+  color: #1f2937;
+  font-weight: 500;
+  font-size: 11px;
+}
+
+/* Status colors for Complete row cells */
+.number-cell.status-green {
+  background-color: #f0fdf4;
+  color: #166534;
+  font-weight: 600;
+}
+
+.number-cell.status-amber {
+  background-color: #fffbeb;
+  color: #92400e;
+  font-weight: 600;
+}
+
+.number-cell.status-red {
+  background-color: #fef2f2;
+  color: #991b1b;
+  font-weight: 600;
+}
+
+.variance-cell {
+  font-weight: 600;
+  font-size: 10px;
+}
+
+.variance-cell.positive {
+  color: #10b981;
+}
+
+.variance-cell.negative {
+  color: #ef4444;
 }
