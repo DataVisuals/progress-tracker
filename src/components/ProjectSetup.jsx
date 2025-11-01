@@ -23,6 +23,8 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
   const [projectName, setProjectName] = useState('');
   const [projectManager, setProjectManager] = useState('');
   const [projectDesc, setProjectDesc] = useState('');
+  const [projectStartDate, setProjectStartDate] = useState(defaultDates.start);
+  const [projectEndDate, setProjectEndDate] = useState(defaultDates.end);
   const [startDate, setStartDate] = useState(defaultDates.start);
   const [endDate, setEndDate] = useState(defaultDates.end);
   const [frequency, setFrequency] = useState('monthly');
@@ -67,12 +69,20 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
       alert('Please enter a project name');
       return;
     }
+    if (!projectStartDate || !projectEndDate) {
+      alert('Please select project start and end dates');
+      return;
+    }
+    if (new Date(projectStartDate) >= new Date(projectEndDate)) {
+      alert('Project end date must be after start date');
+      return;
+    }
     if (!startDate || !endDate) {
-      alert('Please select start and end dates');
+      alert('Please select metric start and end dates');
       return;
     }
     if (new Date(startDate) >= new Date(endDate)) {
-      alert('End date must be after start date');
+      alert('Metric end date must be after start date');
       return;
     }
     const validMetrics = metrics.filter(m => m.name.trim() && m.target);
@@ -86,7 +96,9 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
       const projectResponse = await api.createProject({
         name: projectName,
         description: projectDesc,
-        initiative_manager: projectManager
+        initiative_manager: projectManager,
+        start_date: projectStartDate,
+        end_date: projectEndDate
       });
       const projectId = projectResponse.data.id;
 
@@ -168,10 +180,36 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
       </div>
 
       <div className="setup-section">
-        <h3>Reporting Schedule</h3>
+        <h3>Project Timeline</h3>
+        <p className="section-help">Set the overall project duration</p>
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="start-date">Start Date *</label>
+            <label htmlFor="project-start-date">Project Start Date *</label>
+            <input
+              id="project-start-date"
+              type="date"
+              value={projectStartDate}
+              onChange={(e) => setProjectStartDate(e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="project-end-date">Project End Date *</label>
+            <input
+              id="project-end-date"
+              type="date"
+              value={projectEndDate}
+              onChange={(e) => setProjectEndDate(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="setup-section">
+        <h3>Metric Reporting Schedule</h3>
+        <p className="section-help">Set the reporting schedule for all metrics (can be within or match project timeline)</p>
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="start-date">Metric Start Date *</label>
             <input
               id="start-date"
               type="date"
@@ -180,7 +218,7 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="end-date">End Date *</label>
+            <label htmlFor="end-date">Metric End Date *</label>
             <input
               id="end-date"
               type="date"

@@ -25,8 +25,16 @@
   color: #374151;
   font-size: 16px;
   font-weight: 600;
+  margin-bottom: 8px;
+  margin-top: 0;
+}
+
+.section-help {
+  color: #6b7280;
+  font-size: 13px;
   margin-bottom: 16px;
   margin-top: 0;
+  font-style: italic;
 }
 
 .section-header {

@@ -12,51 +12,51 @@ node backend/src/seed-realistic-data.js
 
 ## What's Included
 
-The seed script creates 7 diverse projects showcasing all application features:
+The seed script creates 7 diverse projects showcasing all application features. All project names are prefixed with **[Test]** to clearly distinguish them from real projects:
 
-### 1. Patient Portal Modernization (Healthcare)
+### 1. [Test] Patient Portal Modernization (Healthcare)
 - **Status:** Overperforming ✅
 - **Curve:** S-Curve (slow start, rapid growth, leveling off)
 - **Frequency:** Monthly
 - **Demonstrates:** Exceeding targets, successful product launch
 - **50K user registrations target - achieved 52K by month 8**
 
-### 2. Global E-commerce Expansion
+### 2. [Test] Global E-commerce Expansion
 - **Status:** Recovered from delinquency ✅
 - **Curve:** Linear
 - **Frequency:** Monthly
 - **Demonstrates:** Delinquency → Recovery pattern, team resilience
 - **15 market launches - delayed in Q2, recovered by Q4**
 
-### 3. AI Research Platform
+### 3. [Test] AI Research Platform
 - **Status:** Completed + Continued tracking ✅
 - **Curve:** Exponential (rapid acceleration)
 - **Frequency:** Monthly
 - **Demonstrates:** Post-completion tracking, exponential growth
 - **500 models trained - exceeded goal, continuing operations**
 
-### 4. Supply Chain Optimization
+### 4. [Test] Supply Chain Optimization
 - **Status:** Diminishing returns ⚠️
 - **Curve:** Logarithmic (front-loaded wins)
 - **Frequency:** Monthly
 - **Demonstrates:** Quick wins then plateau, need for new initiatives
 - **$25M savings target - approaching saturation at $24M**
 
-### 5. Next-Gen Mobile Banking
+### 5. [Test] Next-Gen Mobile Banking
 - **Status:** Currently delinquent ⚠️
 - **Curve:** Linear
 - **Frequency:** Monthly
 - **Demonstrates:** Active problems, security delays, descoping
 - **24 features target - behind schedule due to security rework**
 
-### 6. Enterprise Data Warehouse Migration
+### 6. [Test] Enterprise Data Warehouse Migration
 - **Status:** Successfully completed ✅
 - **Curve:** Linear
 - **Frequency:** Quarterly
 - **Demonstrates:** Large-scale migration, quarterly reporting
 - **500 reports migrated - on time, on budget**
 
-### 7. AI-Powered Support Portal
+### 7. [Test] AI-Powered Support Portal
 - **Status:** In progress ✅
 - **Curve:** Linear
 - **Frequency:** Weekly

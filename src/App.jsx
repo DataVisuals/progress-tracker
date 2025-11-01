@@ -283,9 +283,34 @@ function App() {
     ? [...new Set(projectData.map(item => item.metric))]
     : [];
 
-  const projectName = selectedProject
-    ? projects.find(p => p.id === parseInt(selectedProject))?.name || ''
-    : '';
+  const currentProject = selectedProject
+    ? projects.find(p => p.id === parseInt(selectedProject))
+    : null;
+
+  const projectName = currentProject?.name || '';
+
+  // Calculate project duration if dates are available
+  const getProjectDuration = () => {
+    if (!currentProject?.start_date || !currentProject?.end_date) return null;
+
+    const start = new Date(currentProject.start_date);
+    const end = new Date(currentProject.end_date);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffMonths = Math.round(diffDays / 30.44);
+    const diffWeeks = Math.round(diffDays / 7);
+
+    return { days: diffDays, months: diffMonths, weeks: diffWeeks };
+  };
+
+  const projectDuration = getProjectDuration();
+
+  // Format date for display
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
 
   // Get metric tolerances from the selected metric's data
   const selectedMetricData = selectedMetric
@@ -443,13 +468,52 @@ function App() {
                     autoFocus
                   />
                 ) : (
-                  <h2
-                    onDoubleClick={canEdit() ? handleProjectNameDoubleClick : undefined}
-                    title={canEdit() ? "Double-click to rename" : undefined}
-                    style={{ cursor: canEdit() ? 'pointer' : 'default' }}
-                  >
-                    {projectName}
-                  </h2>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px' }}>
+                    <h2
+                      onDoubleClick={canEdit() ? handleProjectNameDoubleClick : undefined}
+                      title={canEdit() ? "Double-click to rename" : undefined}
+                      style={{ cursor: canEdit() ? 'pointer' : 'default', margin: 0 }}
+                    >
+                      {projectName}
+                    </h2>
+                    {currentProject?.start_date && currentProject?.end_date && (
+                      <div className="project-timeline-display" style={{
+                        padding: '8px 14px',
+                        background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                        border: '1px solid #bae6fd',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        fontSize: '13px',
+                        boxShadow: '0 1px 3px rgba(0, 174, 239, 0.08)',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        <span style={{ color: '#0c4a6e', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          PROJECT:
+                        </span>
+                        <span style={{ fontWeight: 600, color: '#003c71' }}>
+                          {formatDate(currentProject.start_date)}
+                        </span>
+                        <span style={{ color: '#0284c7', fontWeight: 600, opacity: 0.6 }}>→</span>
+                        <span style={{ fontWeight: 600, color: '#003c71' }}>
+                          {formatDate(currentProject.end_date)}
+                        </span>
+                        {projectDuration && (
+                          <>
+                            <span style={{ color: '#0284c7', fontWeight: 600, opacity: 0.6 }}>•</span>
+                            <span style={{ fontWeight: 700, color: '#00aeef' }}>
+                              {projectDuration.months > 1
+                                ? `${projectDuration.months} months`
+                                : projectDuration.weeks > 1
+                                ? `${projectDuration.weeks} weeks`
+                                : `${projectDuration.days} days`}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
                 <div className="project-links" style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                   {projectLinks.map((link) => (
@@ -513,6 +577,7 @@ function App() {
             {metrics.length > 0 && (
               <MetricTabs
                 metrics={metrics}
+                projectData={projectData}
                 selectedMetric={selectedMetric}
                 onMetricChange={handleMetricChange}
                 onMetricRename={handleMetricRename}

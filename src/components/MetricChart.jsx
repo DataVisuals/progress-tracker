@@ -14,8 +14,21 @@ import {
   Cell
 } from 'recharts';
 import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { api } from '../api/client';
 import './MetricChart.css';
+
+// Helper function to format numbers with commas
+const formatNumber = (num) => {
+  if (num === null || num === undefined) return '0';
+  // Check if the number is a whole number
+  const isWholeNumber = num % 1 === 0;
+  return num.toLocaleString('en-US', {
+    minimumFractionDigits: isWholeNumber ? 0 : 1,
+    maximumFractionDigits: 1
+  });
+};
 
 // Helper function to calculate if text should be white or black based on background color
 const getContrastColor = (hexColor) => {
@@ -162,25 +175,25 @@ const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance })
         <div className="tooltip-body">
           <div className="tooltip-row">
             <span className="tooltip-label">Complete:</span>
-            <span className="tooltip-value complete">{complete}</span>
+            <span className="tooltip-value complete">{formatNumber(complete)}</span>
           </div>
           <div className="tooltip-row">
             <span className="tooltip-label">Remaining:</span>
-            <span className="tooltip-value">{remaining}</span>
+            <span className="tooltip-value">{formatNumber(remaining)}</span>
           </div>
           <div className="tooltip-row">
             <span className="tooltip-label">Total Target:</span>
-            <span className="tooltip-value">{total}</span>
+            <span className="tooltip-value">{formatNumber(total)}</span>
           </div>
           <div className="tooltip-divider"></div>
           <div className="tooltip-row">
             <span className="tooltip-label">Expected:</span>
-            <span className="tooltip-value">{expected}</span>
+            <span className="tooltip-value">{formatNumber(expected)}</span>
           </div>
           <div className="tooltip-row">
             <span className="tooltip-label">Variance:</span>
             <span className={`tooltip-value ${variance >= 0 ? 'positive' : 'negative'}`}>
-              {variance >= 0 ? '+' : ''}{variance} ({variance >= 0 ? '+' : '-'}{variancePercent}%)
+              {variance >= 0 ? '+' : ''}{formatNumber(variance)} ({variance >= 0 ? '+' : '-'}{variancePercent}%)
             </span>
           </div>
           {varianceStatus && (
@@ -215,6 +228,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
   const [editingCommentText, setEditingCommentText] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [draggedPoint, setDraggedPoint] = useState(null);
+  const [highlightedSeries, setHighlightedSeries] = useState(null);
   const chartContainerRef = useRef(null);
 
   // Sort data by date always for consistency
@@ -594,41 +608,135 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
     }
   };
 
+  // Export as PDF
+  const handleExportPDF = async () => {
+    if (!chartContainerRef.current) return;
+
+    try {
+      const canvas = await html2canvas(chartContainerRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        logging: false
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('landscape', 'mm', 'a4');
+
+      // Add title
+      pdf.setFontSize(16);
+      pdf.setTextColor(0, 60, 113);
+      pdf.text(metricName, 15, 15);
+
+      // Add date range if available
+      if (metricMetadata) {
+        pdf.setFontSize(10);
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(`Period: ${formatDate(metricMetadata.start_date)} → ${formatDate(metricMetadata.end_date)}`, 15, 22);
+      }
+
+      // Add chart image
+      const imgWidth = 270;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 15, 30, imgWidth, imgHeight);
+
+      // Add data table
+      const tableData = chartData.map((item, index) => {
+        const date = new Date(item.name);
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const formattedDate = monthNames[date.getMonth()];
+        const variance = item.complete - item.expected;
+        const variancePercent = item.expected > 0 ? ((variance / item.expected) * 100) : 0;
+
+        return [
+          formattedDate,
+          item.complete?.toFixed(1) || '0.0',
+          item.expected?.toFixed(1) || '0.0',
+          `${variance >= 0 ? '+' : ''}${variance.toFixed(1)}`,
+          `${variancePercent >= 0 ? '+' : ''}${variancePercent.toFixed(1)}%`
+        ];
+      });
+
+      autoTable(pdf, {
+        startY: imgHeight + 35,
+        head: [['Period', 'Complete', 'Expected', 'Variance', 'Variance %']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [0, 174, 239],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold'
+        },
+        styles: {
+          fontSize: 9,
+          cellPadding: 3
+        },
+        columnStyles: {
+          0: { halign: 'left', fontStyle: 'bold' },
+          1: { halign: 'center' },
+          2: { halign: 'center' },
+          3: { halign: 'center' },
+          4: { halign: 'center' }
+        }
+      });
+
+      // Add tolerances info
+      const finalY = pdf.lastAutoTable?.finalY || imgHeight + 35;
+      pdf.setFontSize(9);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Tolerances: Amber >${amberTolerance}%, Red >${redTolerance}%`, 15, finalY + 10);
+
+      pdf.save(`${metricName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_report.pdf`);
+    } catch (error) {
+      console.error('Failed to export PDF:', error);
+    }
+  };
+
   return (
     <div className="metric-chart-container">
-      <div className="metric-header">
-        <h3 className="metric-title">{metricName}</h3>
-        <button
-          className="export-chart-button"
-          onClick={handleExportChart}
-          title="Export chart as image"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M8 1V11M8 11L11 8M8 11L5 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M14 11V14H2V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          Export Chart
-        </button>
-      </div>
-
       {metricMetadata && (
-        <div className="metric-date-range">
-          <div className="date-range-item">
-            <span className="date-label">Metric Period:</span>
-            <span className="date-value">{formatDate(metricMetadata.start_date)}</span>
+        <div className="metric-header-row">
+          <div className="metric-date-range">
+            <div className="date-range-item">
+              <span className="date-label">Metric Period:</span>
+              <span className="date-value">{formatDate(metricMetadata.start_date)}</span>
+            </div>
+            <div className="date-range-separator">→</div>
+            <div className="date-range-item">
+              <span className="date-value">{formatDate(metricMetadata.end_date)}</span>
+            </div>
+            {duration && (
+              <>
+                <div className="date-range-separator">•</div>
+                <div className="date-range-item">
+                  <span className="date-value duration">{getDurationDisplay()}</span>
+                </div>
+              </>
+            )}
           </div>
-          <div className="date-range-separator">→</div>
-          <div className="date-range-item">
-            <span className="date-value">{formatDate(metricMetadata.end_date)}</span>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              className="export-chart-button"
+              onClick={handleExportChart}
+              title="Export chart as PNG image"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 1V11M8 11L11 8M8 11L5 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M14 11V14H2V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              PNG
+            </button>
+            <button
+              className="export-chart-button"
+              onClick={handleExportPDF}
+              title="Export full report as PDF"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 1H10L13 4V14C13 14.5523 12.5523 15 12 15H3C2.44772 15 2 14.5523 2 14V2C2 1.44772 2.44772 1 3 1Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10 1V4H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              PDF
+            </button>
           </div>
-          {duration && (
-            <>
-              <div className="date-range-separator">•</div>
-              <div className="date-range-item">
-                <span className="date-value duration">{getDurationDisplay()}</span>
-              </div>
-            </>
-          )}
         </div>
       )}
 
@@ -636,16 +744,22 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
         <div ref={chartContainerRef} style={{ position: 'relative', flex: 1 }}>
           <div style={{ height: 300 }}>
             <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={chartData} margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
+              <ComposedChart
+                data={chartData}
+                margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+              >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="name"
             height={80}
             tick={<CustomXAxisTick data={chartData} />}
           />
-          <YAxis tick={{ fontSize: 11 }} />
+          <YAxis
+            tick={{ fontSize: 11 }}
+            tickFormatter={(value) => formatNumber(value)}
+          />
           <Tooltip content={<CustomTooltip amberTolerance={amberTolerance} redTolerance={redTolerance} />} />
-          <Bar dataKey="complete" stackId="a" name="Complete">
+          <Bar dataKey="complete" stackId="a" name="Complete" animationDuration={800} animationBegin={0}>
             {chartData.map((entry, index) => {
               // Calculate variance for this period
               const variance = entry.complete - entry.expected;
@@ -653,6 +767,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
 
               // Determine color based on variance and tolerances
               let barColor = '#539668'; // Green - on track or ahead
+              let barCategory = 'green';
 
               // Check if period is in the past (should have data)
               const cutoffDate = timeTravelTimestamp ? new Date(timeTravelTimestamp) : new Date();
@@ -662,12 +777,17 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
               if (isPastOrCurrent && variance < 0) { // Behind schedule
                 if (variancePercent > redTolerance) {
                   barColor = '#D0704d'; // Red
+                  barCategory = 'red';
                 } else if (variancePercent > amberTolerance) {
                   barColor = '#f5ad5b'; // Amber
+                  barCategory = 'amber';
                 }
               }
 
-              return <Cell key={`cell-${index}`} fill={barColor} />;
+              // Apply opacity based on highlightedSeries
+              const opacity = highlightedSeries === null || highlightedSeries === barCategory ? 1 : 0.3;
+
+              return <Cell key={`cell-${index}`} fill={barColor} fillOpacity={opacity} />;
             })}
             <LabelList
               content={({ x, y, width, index }) => {
@@ -692,14 +812,22 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
               }}
             />
           </Bar>
-          <Bar dataKey="remaining" stackId="a" fill="#d1d5db" name="Remaining">
+          <Bar
+            dataKey="remaining"
+            stackId="a"
+            fill="#d1d5db"
+            name="Remaining"
+            animationDuration={800}
+            animationBegin={200}
+            fillOpacity={highlightedSeries === null || highlightedSeries === 'remaining' ? 1 : 0.3}
+          >
             <LabelList
               content={({ x, y, width, value, index }) => {
                 const item = chartData[index];
                 if (!item) return null;
 
                 // Show target value at top of bar
-                const targetLabel = `${item.final_target}`;
+                const targetLabel = formatNumber(item.final_target);
 
                 // Calculate variance percentage
                 const variance = item.complete - item.expected;
@@ -716,10 +844,10 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
                 let scopeColor = null;
 
                 if (scopeChange > 0) {
-                  scopeLabel = `+${scopeChange}`;
+                  scopeLabel = `+${formatNumber(scopeChange)}`;
                   scopeColor = '#ef4444'; // Red for scope increase
                 } else if (scopeChange < 0) {
-                  scopeLabel = `${scopeChange}`;
+                  scopeLabel = formatNumber(scopeChange);
                   scopeColor = '#10b981'; // Green for scope decrease
                 }
 
@@ -758,6 +886,9 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
             stroke="#10b981"
             strokeWidth={2}
             name="Expected"
+            animationDuration={1000}
+            animationBegin={400}
+            strokeOpacity={highlightedSeries === null || highlightedSeries === 'expected' ? 1 : 0.3}
             dot={canEdit ? { r: 8, fill: "#10b981", stroke: "#fff", strokeWidth: 2, cursor: 'pointer' } : { r: 4 }}
             activeDot={canEdit ? {
               r: 10,
@@ -825,7 +956,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
 
                 return (
                   <td key={index} className={`number-cell ${statusClass}`}>
-                    {item.complete?.toFixed(1) || '0.0'}
+                    {formatNumber(item.complete)}
                   </td>
                 );
               })}
@@ -836,7 +967,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
               <td className="row-label">Expected</td>
               {chartData.map((item, index) => (
                 <td key={index} className="number-cell">
-                  {item.expected?.toFixed(1) || '0.0'}
+                  {formatNumber(item.expected)}
                 </td>
               ))}
             </tr>
@@ -846,10 +977,11 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
               <td className="row-label">Variance</td>
               {chartData.map((item, index) => {
                 const variance = item.complete - item.expected;
+                const arrow = variance > 0 ? '↑' : variance < 0 ? '↓' : '•';
 
                 return (
                   <td key={index} className={`number-cell variance-cell ${variance >= 0 ? 'positive' : 'negative'}`}>
-                    {variance >= 0 ? '+' : ''}{variance.toFixed(1)}
+                    <span className="variance-arrow">{arrow}</span> {variance >= 0 ? '+' : ''}{formatNumber(variance)}
                   </td>
                 );
               })}
@@ -861,10 +993,11 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
               {chartData.map((item, index) => {
                 const variance = item.complete - item.expected;
                 const variancePercent = item.expected > 0 ? ((variance / item.expected) * 100) : 0;
+                const arrow = variance > 0 ? '↑' : variance < 0 ? '↓' : '•';
 
                 return (
                   <td key={index} className={`number-cell variance-cell ${variance >= 0 ? 'positive' : 'negative'}`}>
-                    {variancePercent >= 0 ? '+' : ''}{variancePercent.toFixed(1)}%
+                    <span className="variance-arrow">{arrow}</span> {variancePercent >= 0 ? '+' : ''}{variancePercent.toFixed(1)}%
                   </td>
                 );
               })}
@@ -875,31 +1008,49 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
         </div>
 
         {/* Custom Legend */}
-        <div style={{
-          paddingTop: '60px',
-          fontSize: '12px',
-          minWidth: '200px'
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '12px', height: '12px', backgroundColor: '#539668' }}></div>
-              <span>Green: On track or ahead of plan</span>
+        <div className="custom-legend">
+          <div className="legend-title">Legend</div>
+
+          <div className="legend-items">
+            <div
+              className={`legend-item ${highlightedSeries === 'green' ? 'active' : ''}`}
+              onMouseEnter={() => setHighlightedSeries('green')}
+              onMouseLeave={() => setHighlightedSeries(null)}
+            >
+              <div className="legend-indicator" style={{ backgroundColor: '#539668' }}></div>
+              <span className="legend-text">Green: On track or ahead</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '12px', height: '12px', backgroundColor: '#f5ad5b' }}></div>
-              <span>Amber: &gt;{amberTolerance}% behind plan</span>
+            <div
+              className={`legend-item ${highlightedSeries === 'amber' ? 'active' : ''}`}
+              onMouseEnter={() => setHighlightedSeries('amber')}
+              onMouseLeave={() => setHighlightedSeries(null)}
+            >
+              <div className="legend-indicator" style={{ backgroundColor: '#f5ad5b' }}></div>
+              <span className="legend-text">Amber: &gt;{amberTolerance}% behind</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '12px', height: '12px', backgroundColor: '#D0704d' }}></div>
-              <span>Red: &gt;{redTolerance}% behind plan</span>
+            <div
+              className={`legend-item ${highlightedSeries === 'red' ? 'active' : ''}`}
+              onMouseEnter={() => setHighlightedSeries('red')}
+              onMouseLeave={() => setHighlightedSeries(null)}
+            >
+              <div className="legend-indicator" style={{ backgroundColor: '#D0704d' }}></div>
+              <span className="legend-text">Red: &gt;{redTolerance}% behind</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '12px', height: '12px', backgroundColor: '#d1d5db' }}></div>
-              <span>Remaining</span>
+            <div
+              className={`legend-item ${highlightedSeries === 'remaining' ? 'active' : ''}`}
+              onMouseEnter={() => setHighlightedSeries('remaining')}
+              onMouseLeave={() => setHighlightedSeries(null)}
+            >
+              <div className="legend-indicator" style={{ backgroundColor: '#d1d5db' }}></div>
+              <span className="legend-text">Remaining</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '20px', height: '2px', backgroundColor: '#10b981' }}></div>
-              <span>Expected</span>
+            <div
+              className={`legend-item ${highlightedSeries === 'expected' ? 'active' : ''}`}
+              onMouseEnter={() => setHighlightedSeries('expected')}
+              onMouseLeave={() => setHighlightedSeries(null)}
+            >
+              <div className="legend-indicator line" style={{ backgroundColor: '#10b981' }}></div>
+              <span className="legend-text">Expected</span>
             </div>
           </div>
         </div>

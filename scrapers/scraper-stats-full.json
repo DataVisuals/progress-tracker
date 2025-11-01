@@ -1,0 +1,12 @@
+{
+  "postcodesSearched": 0,
+  "pagesScraped": 2,
+  "totalResults": 0,
+  "uniqueNutritionists": 0,
+  "errors": [
+    {
+      "postcode": "E1W 3PG",
+      "error": "Attempted to use detached Frame '44E0D18EFDB7F58086C593ED5E13B879'."
+    }
+  ]
+}

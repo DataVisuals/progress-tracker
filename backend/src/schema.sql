@@ -13,25 +13,27 @@ CREATE TABLE IF NOT EXISTS projects (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   description TEXT,
+  start_date DATE,
+  end_date DATE,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS metrics (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   project_id INTEGER NOT NULL,
-  initiative TEXT NOT NULL,
   name TEXT NOT NULL,
-  type TEXT NOT NULL,
-  owner TEXT,
-  initiative_manager TEXT,
+  owner_id INTEGER,
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   frequency TEXT NOT NULL,
   progression_type TEXT DEFAULT 'linear',
   final_target REAL NOT NULL,
+  amber_tolerance REAL DEFAULT 5.0,
+  red_tolerance REAL DEFAULT 10.0,
+  metric_type TEXT DEFAULT 'lead' CHECK(metric_type IN ('lead', 'lag')),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-  UNIQUE(project_id, initiative, name)
+  FOREIGN KEY (owner_id) REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS metric_periods (

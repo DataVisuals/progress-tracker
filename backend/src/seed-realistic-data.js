@@ -166,7 +166,7 @@ async function seedRealisticData() {
       `INSERT INTO projects (name, description, initiative_manager, start_date, end_date, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
-        'Patient Portal Modernization',
+        '[Test] Patient Portal Modernization',
         'Comprehensive upgrade of patient-facing digital services including appointment scheduling, medical records access, and telehealth integration',
         'Dr. Sarah Chen',
         '2024-01-01',
@@ -186,9 +186,9 @@ async function seedRealisticData() {
 
     // Metric: User Registrations (S-Curve, Overperforming)
     const registrationsMetric = await dbRun(
-      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [healthcareId, 'New User Registrations', admin.id, '2024-01-31', '2024-12-31', 'monthly', 's-curve', 50000, 10, 20]
+      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [healthcareId, 'New User Registrations', admin.id, '2024-01-31', '2024-12-31', 'monthly', 's-curve', 50000, 10, 20, 'lead']
     );
     let periods = await generatePeriods(registrationsMetric.lastID, '2024-01-31', '2024-12-31', 'monthly', 's-curve', 50000);
 
@@ -215,7 +215,7 @@ async function seedRealisticData() {
       `INSERT INTO projects (name, description, initiative_manager, start_date, end_date, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
-        'Global E-commerce Expansion',
+        '[Test] Global E-commerce Expansion',
         'Launch of multi-currency, multi-language e-commerce platform targeting European and Asian markets',
         'James Liu',
         '2024-02-01',
@@ -232,9 +232,9 @@ async function seedRealisticData() {
 
     // Metric: Markets Launched (Linear, Shows Delinquency and Recovery)
     const marketsMetric = await dbRun(
-      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [ecommerceId, 'Market Launches Completed', admin.id, '2024-02-29', '2024-11-30', 'monthly', 'linear', 15, 5, 10]
+      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [ecommerceId, 'Market Launches Completed', admin.id, '2024-02-29', '2024-11-30', 'monthly', 'linear', 15, 5, 10, 'lead']
     );
     periods = await generatePeriods(marketsMetric.lastID, '2024-02-29', '2024-11-30', 'monthly', 'linear', 15);
 
@@ -264,7 +264,7 @@ async function seedRealisticData() {
       `INSERT INTO projects (name, description, initiative_manager, start_date, end_date, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
-        'AI Research Platform',
+        '[Test] AI Research Platform',
         'Development of machine learning infrastructure for pharmaceutical drug discovery, including GPU clusters and model training pipelines',
         'Dr. Priya Sharma',
         '2023-07-01',
@@ -283,9 +283,9 @@ async function seedRealisticData() {
 
     // Metric: Models Trained (Exponential, Completed Project with Continued Tracking)
     const modelsMetric = await dbRun(
-      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [aiId, 'Drug Discovery Models Trained', admin.id, '2023-07-31', '2024-09-30', 'monthly', 'exponential', 500, 8, 15]
+      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [aiId, 'Drug Discovery Models Trained', admin.id, '2023-07-31', '2024-09-30', 'monthly', 'exponential', 500, 8, 15, 'lead']
     );
     periods = await generatePeriods(modelsMetric.lastID, '2023-07-31', '2024-09-30', 'monthly', 'exponential', 500);
 
@@ -319,7 +319,7 @@ async function seedRealisticData() {
       `INSERT INTO projects (name, description, initiative_manager, start_date, end_date, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
-        'Supply Chain Optimization',
+        '[Test] Supply Chain Optimization',
         'Implementation of predictive analytics and route optimization for global logistics network, targeting 25% cost reduction',
         'Maria Rodriguez',
         '2024-03-01',
@@ -336,23 +336,23 @@ async function seedRealisticData() {
 
     // Metric: Cost Savings (Logarithmic - quick wins early)
     const savingsMetric = await dbRun(
-      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [supplyChainId, 'Cost Savings ($M)', admin.id, '2024-03-31', '2024-12-31', 'monthly', 'logarithmic', 25, 8, 15]
+      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [supplyChainId, 'Cost Savings ($M)', admin.id, '2024-03-31', '2024-12-31', 'monthly', 'logarithmic', 25, 8, 15, 'lag']
     );
     periods = await generatePeriods(savingsMetric.lastID, '2024-03-31', '2024-12-31', 'monthly', 'logarithmic', 25);
 
-    // Logarithmic - quick wins then leveling off
-    await updatePeriodPerformance(periods[0].id, 8, 'Quick wins: Consolidated shipping lanes');
-    await addComment(periods[0].id, admin.id, 'Renegotiated carrier contracts. Immediate 8M savings.', '2024-04-03T09:00:00Z');
-    await updatePeriodPerformance(periods[1].id, 14, 'Route optimization deployed in NA region');
-    await updatePeriodPerformance(periods[2].id, 18, 'Warehouse consolidation complete');
-    await updatePeriodPerformance(periods[3].id, 20, 'Incremental gains from predictive analytics');
-    await addComment(periods[3].id, admin.id, 'ML models predicting demand patterns. Reducing excess inventory.', '2024-07-02T10:30:00Z');
-    await updatePeriodPerformance(periods[4].id, 22, 'Approaching saturation on easy wins');
-    await updatePeriodPerformance(periods[5].id, 23, 'Fine-tuning existing optimizations');
-    await addComment(periods[5].id, admin.id, 'Need to identify new optimization opportunities. Low-hanging fruit exhausted.', '2024-09-04T15:00:00Z');
-    await updatePeriodPerformance(periods[6].id, 24, 'Slow progress - need new initiatives');
+    // Back-loaded pattern - savings realized when optimizations complete and stabilize
+    await updatePeriodPerformance(periods[0].id, 0, 'Planning and analysis phase');
+    await addComment(periods[0].id, admin.id, 'Mapping current supply chain. Identifying optimization opportunities.', '2024-04-03T09:00:00Z');
+    await updatePeriodPerformance(periods[1].id, 1, 'Pilot programs launched - minimal savings yet');
+    await updatePeriodPerformance(periods[2].id, 2.5, 'Route optimization deployed but still tuning');
+    await updatePeriodPerformance(periods[3].id, 4, 'Early indicators positive but not yet realized');
+    await addComment(periods[3].id, admin.id, 'Systems in place. Need full quarter of operations to measure actual savings.', '2024-07-02T10:30:00Z');
+    await updatePeriodPerformance(periods[4].id, 7, 'First quarter results - initial savings confirmed');
+    await updatePeriodPerformance(periods[5].id, 12, 'Momentum building as all optimizations activate');
+    await addComment(periods[5].id, admin.id, 'All 3 initiatives now live. Compound savings accelerating.', '2024-09-04T15:00:00Z');
+    await updatePeriodPerformance(periods[6].id, 24, 'Full year results - target achieved!');
 
     await dbRun(`INSERT INTO craids (project_id, type, title, description, status, priority) VALUES (?, ?, ?, ?, ?, ?)`,
       [supplyChainId, 'challenge', 'Data Integration', 'Consolidating data from 50+ legacy systems', 'in_progress', 'high']);
@@ -366,7 +366,7 @@ async function seedRealisticData() {
       `INSERT INTO projects (name, description, initiative_manager, start_date, end_date, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
-        'Next-Gen Mobile Banking',
+        '[Test] Next-Gen Mobile Banking',
         'Complete redesign of mobile banking application with biometric authentication, AI-powered insights, and cryptocurrency wallet',
         'Kevin Park',
         '2024-04-01',
@@ -385,9 +385,9 @@ async function seedRealisticData() {
 
     // Metric: Features Completed (Linear, Currently Delinquent)
     const featuresMetric = await dbRun(
-      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [bankingId, 'Core Features Delivered', admin.id, '2024-04-30', '2025-03-31', 'monthly', 'linear', 24, 10, 20]
+      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [bankingId, 'Core Features Delivered', admin.id, '2024-04-30', '2025-03-31', 'monthly', 'linear', 24, 10, 20, 'lead']
     );
     periods = await generatePeriods(featuresMetric.lastID, '2024-04-30', '2025-03-31', 'monthly', 'linear', 24);
 
@@ -417,7 +417,7 @@ async function seedRealisticData() {
       `INSERT INTO projects (name, description, initiative_manager, start_date, end_date, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
-        'Enterprise Data Warehouse Migration',
+        '[Test] Enterprise Data Warehouse Migration',
         'Migration from on-premise Oracle data warehouse to cloud-native Snowflake platform, supporting 500+ business intelligence reports',
         'Rachel Green',
         '2023-10-01',
@@ -434,9 +434,9 @@ async function seedRealisticData() {
 
     // Metric: Reports Migrated (Quarterly)
     const reportsMetric = await dbRun(
-      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [dataWarehouseId, 'BI Reports Migrated', admin.id, '2023-12-31', '2024-12-31', 'quarterly', 'linear', 500, 10, 20]
+      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [dataWarehouseId, 'BI Reports Migrated', admin.id, '2023-12-31', '2024-12-31', 'quarterly', 'linear', 500, 10, 20, 'lead']
     );
     periods = await generatePeriods(reportsMetric.lastID, '2023-12-31', '2024-12-31', 'quarterly', 'linear', 500);
     console.log(`Generated ${periods.length} quarterly periods`);
@@ -460,7 +460,7 @@ async function seedRealisticData() {
       `INSERT INTO projects (name, description, initiative_manager, start_date, end_date, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
-        'AI-Powered Support Portal',
+        '[Test] AI-Powered Support Portal',
         'Development of next-generation customer support platform with AI chatbot, knowledge base, and ticket automation',
         'Amanda Foster',
         '2024-06-01',
@@ -477,9 +477,9 @@ async function seedRealisticData() {
 
     // Metric: Sprint Velocity (Weekly)
     const velocityMetric = await dbRun(
-      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [supportId, 'Story Points Completed', admin.id, '2024-06-07', '2024-11-29', 'weekly', 'linear', 520, 15, 25]
+      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [supportId, 'Story Points Completed', admin.id, '2024-06-07', '2024-11-29', 'weekly', 'linear', 520, 15, 25, 'lead']
     );
     periods = await generatePeriods(velocityMetric.lastID, '2024-06-07', '2024-11-29', 'weekly', 'linear', 520);
 

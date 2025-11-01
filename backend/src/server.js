@@ -143,6 +143,21 @@ app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
   }
 });
 
+app.get('/api/auth/profile', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = await dbGet('SELECT id, email, name, role, created_at FROM users WHERE id = ?', [userId]);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.put('/api/auth/profile', authenticateToken, async (req, res) => {
   try {
     const { name, email } = req.body;
@@ -212,10 +227,10 @@ app.post('/api/projects', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'You do not have permission to create projects' });
     }
 
-    const { name, description, initiative_manager } = req.body;
+    const { name, description, initiative_manager, start_date, end_date } = req.body;
     const result = await dbRun(
-      'INSERT INTO projects (name, description, initiative_manager) VALUES (?, ?, ?)',
-      [name, description, initiative_manager || null]
+      'INSERT INTO projects (name, description, initiative_manager, start_date, end_date) VALUES (?, ?, ?, ?, ?)',
+      [name, description, initiative_manager || null, start_date || null, end_date || null]
     );
 
     // Auto-grant permission to the creating user if they are a PM
@@ -227,12 +242,12 @@ app.post('/api/projects', authenticateToken, async (req, res) => {
     }
 
     await logAudit(req.user, 'CREATE', 'projects', result.lastID, null,
-      { name, description, initiative_manager },
+      { name, description, initiative_manager, start_date, end_date },
       `Created project "${name}"`,
       req.ip
     );
 
-    res.json({ id: result.lastID, name, description, initiative_manager });
+    res.json({ id: result.lastID, name, description, initiative_manager, start_date, end_date });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -245,17 +260,17 @@ app.put('/api/projects/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'You do not have permission to edit this project' });
     }
 
-    const { name, description, initiative_manager } = req.body;
+    const { name, description, initiative_manager, start_date, end_date } = req.body;
     const oldProject = await dbGet('SELECT * FROM projects WHERE id = ?', [req.params.id]);
 
     await dbRun(
-      'UPDATE projects SET name = ?, description = ?, initiative_manager = ? WHERE id = ?',
-      [name, description, initiative_manager || null, req.params.id]
+      'UPDATE projects SET name = ?, description = ?, initiative_manager = ?, start_date = ?, end_date = ? WHERE id = ?',
+      [name, description, initiative_manager || null, start_date || null, end_date || null, req.params.id]
     );
 
     await logAudit(req.user, 'UPDATE', 'projects', req.params.id,
-      { name: oldProject.name, description: oldProject.description, initiative_manager: oldProject.initiative_manager },
-      { name, description, initiative_manager },
+      { name: oldProject.name, description: oldProject.description, initiative_manager: oldProject.initiative_manager, start_date: oldProject.start_date, end_date: oldProject.end_date },
+      { name, description, initiative_manager, start_date, end_date },
       `Renamed project from "${oldProject.name}" to "${name}"`,
       req.ip
     );
@@ -413,7 +428,7 @@ app.post('/api/projects/:projectId/metrics', authenticateToken, async (req, res)
       return res.status(403).json({ error: 'You do not have permission to add metrics to this project' });
     }
 
-    const { name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance } = req.body;
+    const { name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type } = req.body;
 
     // Verify project exists first
     const project = await dbGet('SELECT id, initiative_manager FROM projects WHERE id = ?', [req.params.projectId]);
@@ -452,9 +467,9 @@ app.post('/api/projects/:projectId/metrics', authenticateToken, async (req, res)
     });
 
     const result = await dbRun(`
-      INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [req.params.projectId, name, finalOwnerId, start_date, end_date, frequency, progression_type || 'linear', final_target, amber_tolerance || 5.0, red_tolerance || 10.0]);
+      INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [req.params.projectId, name, finalOwnerId, start_date, end_date, frequency, progression_type || 'linear', final_target, amber_tolerance || 5.0, red_tolerance || 10.0, metric_type || 'lead']);
 
     console.log('Metric created with ID:', result.lastID);
 
@@ -491,7 +506,7 @@ app.put('/api/metrics/:id', authenticateToken, async (req, res) => {
     }
 
     // Extract all editable fields from request body
-    const { name, amber_tolerance, red_tolerance, final_target, progression_type } = req.body;
+    const { name, amber_tolerance, red_tolerance, final_target, progression_type, metric_type } = req.body;
 
     // Build update query for provided fields
     const updates = [];
@@ -528,6 +543,12 @@ app.put('/api/metrics/:id', authenticateToken, async (req, res) => {
       values.push(progression_type);
       oldValues.progression_type = metric.progression_type;
       newValues.progression_type = progression_type;
+    }
+    if (metric_type !== undefined) {
+      updates.push('metric_type = ?');
+      values.push(metric_type);
+      oldValues.metric_type = metric.metric_type;
+      newValues.metric_type = metric_type;
     }
 
     if (updates.length === 0) {
@@ -593,6 +614,10 @@ app.get('/api/projects/:projectId/data', async (req, res) => {
         m.id as metric_id,
         m.amber_tolerance,
         m.red_tolerance,
+        m.start_date,
+        m.end_date,
+        m.frequency,
+        m.metric_type,
         p.name as initiative,
         u.name as owner,
         p.initiative_manager
@@ -1540,6 +1565,126 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
       });
     }
 
+    // 4. Find projects with no lead metrics (only lag metrics)
+    const projectsWithoutLeadMetrics = await dbAll(`
+      WITH project_metrics AS (
+        SELECT
+          p.id as project_id,
+          p.name as project_name,
+          p.initiative_manager as pm_name,
+          COUNT(m.id) as total_metrics,
+          SUM(CASE WHEN m.metric_type = 'lead' OR m.metric_type IS NULL THEN 1 ELSE 0 END) as lead_count,
+          SUM(CASE WHEN m.metric_type = 'lag' THEN 1 ELSE 0 END) as lag_count
+        FROM projects p
+        LEFT JOIN metrics m ON p.id = m.project_id
+        GROUP BY p.id, p.name, p.initiative_manager
+      )
+      SELECT
+        project_id,
+        project_name,
+        pm_name,
+        total_metrics,
+        lead_count,
+        lag_count
+      FROM project_metrics
+      WHERE total_metrics > 0 AND lead_count = 0
+    `);
+
+    for (const project of projectsWithoutLeadMetrics) {
+      issues.push({
+        type: 'no_lead_metrics',
+        severity: 'warning',
+        project_id: project.project_id,
+        project_name: project.project_name,
+        pm_name: project.pm_name,
+        details: `Project has ${project.lag_count} lag metric(s) but no lead metrics. Lead metrics provide early indicators of progress, while lag metrics measure outcomes at the end. Consider adding lead metrics for better progress tracking.`
+      });
+    }
+
+    // 5. Find metrics where declared type doesn't match progression pattern
+    // Lag metrics should be back-loaded (most progress in final 30% of periods)
+    // Lead metrics should show progressive change throughout
+    const metricTypeMismatches = await dbAll(`
+      WITH period_analysis AS (
+        SELECT
+          m.id as metric_id,
+          m.name as metric_name,
+          m.metric_type,
+          m.project_id,
+          p.name as project_name,
+          p.initiative_manager as pm_name,
+          ROW_NUMBER() OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as period_num,
+          COUNT(*) OVER (PARTITION BY m.id) as total_periods,
+          mp.complete - LAG(mp.complete, 1, 0) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as growth,
+          SUM(mp.complete - LAG(mp.complete, 1, 0) OVER (PARTITION BY m.id ORDER BY mp.reporting_date))
+            OVER (PARTITION BY m.id) as total_growth
+        FROM metric_periods mp
+        JOIN metrics m ON mp.metric_id = m.id
+        JOIN projects p ON m.project_id = p.id
+        WHERE mp.complete IS NOT NULL
+      ),
+      final_30_percent AS (
+        SELECT
+          metric_id,
+          metric_name,
+          metric_type,
+          project_id,
+          project_name,
+          pm_name,
+          total_periods,
+          SUM(growth) as final_30_growth,
+          MAX(total_growth) as total_growth
+        FROM period_analysis
+        WHERE period_num > (total_periods * 0.7)
+        GROUP BY metric_id, metric_name, metric_type, project_id, project_name, pm_name, total_periods
+      )
+      SELECT
+        metric_id,
+        metric_name,
+        metric_type,
+        project_id,
+        project_name,
+        pm_name,
+        total_periods,
+        final_30_growth,
+        total_growth,
+        CAST(final_30_growth AS REAL) / NULLIF(total_growth, 0) as final_30_percent
+      FROM final_30_percent
+      WHERE total_growth > 0
+        AND (
+          (metric_type = 'lag' AND (final_30_growth / NULLIF(total_growth, 0)) < 0.5)
+          OR
+          (metric_type = 'lead' AND (final_30_growth / NULLIF(total_growth, 0)) > 0.7)
+        )
+    `);
+
+    for (const metric of metricTypeMismatches) {
+      const percentInFinal = (metric.final_30_percent * 100).toFixed(1);
+      if (metric.metric_type === 'lag') {
+        issues.push({
+          type: 'metric_type_mismatch',
+          severity: 'warning',
+          project_id: metric.project_id,
+          project_name: metric.project_name,
+          pm_name: metric.pm_name,
+          metric_id: metric.metric_id,
+          metric_name: metric.metric_name,
+          details: `Metric is declared as 'lag' but shows progressive pattern with only ${percentInFinal}% of progress in final 30% of periods. Lag metrics typically have 50%+ progress concentrated at the end. Consider changing to 'lead' type.`
+        });
+      } else {
+        issues.push({
+          type: 'metric_type_mismatch',
+          severity: 'warning',
+          project_id: metric.project_id,
+          project_name: metric.project_name,
+          pm_name: metric.pm_name,
+          metric_id: metric.metric_id,
+          metric_name: metric.metric_name,
+          details: `Metric is declared as 'lead' but shows back-loaded pattern with ${percentInFinal}% of progress in final 30% of periods. Lead metrics should show progressive change throughout. Consider changing to 'lag' type.`
+        });
+      }
+    }
+
     res.json({
       generated_at: new Date().toISOString(),
       total_issues: issues.length,
@@ -1700,7 +1845,7 @@ app.get('/api/projects/:projectId/data/time-travel', authenticateToken, async (r
         .map(async (period) => {
           // Get metric and project info
           const metric = await dbGet(`
-            SELECT m.name, m.project_id, m.amber_tolerance, m.red_tolerance, p.name as initiative, p.initiative_manager
+            SELECT m.name, m.project_id, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date, m.frequency, p.name as initiative, p.initiative_manager
             FROM metrics m
             JOIN projects p ON m.project_id = p.id
             WHERE m.id = ?
@@ -1720,6 +1865,9 @@ app.get('/api/projects/:projectId/data/time-travel', authenticateToken, async (r
             metric_id: period.metric_id,
             amber_tolerance: metric?.amber_tolerance || 5.0,
             red_tolerance: metric?.red_tolerance || 10.0,
+            start_date: metric?.start_date || null,
+            end_date: metric?.end_date || null,
+            frequency: metric?.frequency || null,
             initiative: metric?.initiative || 'Unknown',
             owner: owner?.name || null,
             initiative_manager: metric?.initiative_manager || null
@@ -1905,6 +2053,15 @@ app.listen(PORT, async () => {
     console.log('✅ Created project_links table');
   } catch (err) {
     // Table already exists, that's fine
+  }
+
+  // Migration: Add start_date and end_date to projects table
+  try {
+    await dbRun(`ALTER TABLE projects ADD COLUMN start_date DATE`);
+    await dbRun(`ALTER TABLE projects ADD COLUMN end_date DATE`);
+    console.log('✅ Added date columns to projects table');
+  } catch (err) {
+    // Columns already exist, that's fine
   }
 
   // Create default admin user if none exists
