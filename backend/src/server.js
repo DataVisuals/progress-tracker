@@ -2036,6 +2036,22 @@ app.listen(PORT, async () => {
     // Columns already exist, that's fine
   }
 
+  // Migration: Add metric_type column to metrics table
+  try {
+    await dbRun(`ALTER TABLE metrics ADD COLUMN metric_type TEXT DEFAULT 'standard'`);
+    console.log('✅ Added metric_type column to metrics table');
+  } catch (err) {
+    // Column already exists, that's fine
+  }
+
+  // Migration: Add commentary column to metric_periods table
+  try {
+    await dbRun(`ALTER TABLE metric_periods ADD COLUMN commentary TEXT`);
+    console.log('✅ Added commentary column to metric_periods table');
+  } catch (err) {
+    // Column already exists, that's fine
+  }
+
   // Migration: Create project_links table
   try {
     await dbRun(`
