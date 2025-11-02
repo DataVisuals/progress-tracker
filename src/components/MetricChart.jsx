@@ -301,7 +301,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
     return {
       name: item.reporting_date,
       complete: item.complete,
-      remaining: item.final_target - item.complete,
+      remaining: Math.max(0, item.final_target - item.complete),
       expected: expectedValue,
       final_target: item.final_target,
       scopeDelta: scopeDelta,
@@ -757,6 +757,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
           <YAxis
             tick={{ fontSize: 11 }}
             tickFormatter={(value) => formatNumber(value)}
+            domain={[0, 'dataMax']}
           />
           <Tooltip content={<CustomTooltip amberTolerance={amberTolerance} redTolerance={redTolerance} />} />
           <Bar dataKey="complete" stackId="a" name="Complete" animationDuration={800} animationBegin={0}>
@@ -820,66 +821,8 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
             animationDuration={800}
             animationBegin={200}
             fillOpacity={highlightedSeries === null || highlightedSeries === 'remaining' ? 1 : 0.3}
-          >
-            <LabelList
-              content={({ x, y, width, value, index }) => {
-                const item = chartData[index];
-                if (!item) return null;
+          />
 
-                // Show target value at top of bar
-                const targetLabel = formatNumber(item.final_target);
-
-                // Calculate variance percentage
-                const variance = item.complete - item.expected;
-                const variancePercent = item.expected > 0 ? Math.abs((variance / item.expected) * 100) : 0;
-
-                // Determine the cutoff date (time travel timestamp or current date)
-                const cutoffDate = timeTravelTimestamp ? new Date(timeTravelTimestamp) : new Date();
-                const periodDate = new Date(item.name);
-                const isPastOrCurrent = periodDate <= cutoffDate;
-
-                // Show scope change if it exists
-                const scopeChange = item.scopeChange;
-                let scopeLabel = null;
-                let scopeColor = null;
-
-                if (scopeChange > 0) {
-                  scopeLabel = `+${formatNumber(scopeChange)}`;
-                  scopeColor = '#ef4444'; // Red for scope increase
-                } else if (scopeChange < 0) {
-                  scopeLabel = formatNumber(scopeChange);
-                  scopeColor = '#10b981'; // Green for scope decrease
-                }
-
-                return (
-                  <g>
-                    <text
-                      x={x + width / 2}
-                      y={y - 4}
-                      textAnchor="middle"
-                      fill="#6b7280"
-                      fontSize={10}
-                      fontWeight={600}
-                    >
-                      {targetLabel}
-                    </text>
-                    {scopeLabel && (
-                      <text
-                        x={x + width / 2}
-                        y={y - 16}
-                        textAnchor="middle"
-                        fill={scopeColor}
-                        fontSize={9}
-                        fontWeight={700}
-                      >
-                        {scopeLabel}
-                      </text>
-                    )}
-                  </g>
-                );
-              }}
-            />
-          </Bar>
           <Line
             type="monotone"
             dataKey="expected"
@@ -931,6 +874,23 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
             </tr>
           </thead>
           <tbody>
+            {/* Target Row */}
+            <tr className="data-row">
+              <td className="row-label target-label">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '4px', verticalAlign: 'middle' }}>
+                  <circle cx="6" cy="6" r="5.5" stroke="currentColor" strokeWidth="1"/>
+                  <circle cx="6" cy="6" r="3.5" stroke="currentColor" strokeWidth="1"/>
+                  <circle cx="6" cy="6" r="1.5" fill="currentColor"/>
+                </svg>
+                Target
+              </td>
+              {chartData.map((item, index) => (
+                <td key={index} className="number-cell target-cell">
+                  {formatNumber(item.final_target)}
+                </td>
+              ))}
+            </tr>
+
             {/* Complete Row */}
             <tr className="data-row">
               <td className="row-label">Complete</td>
