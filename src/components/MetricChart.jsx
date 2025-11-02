@@ -692,6 +692,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
   };
 
   return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
     <div className="metric-chart-container">
       {metricMetadata && (
         <div className="metric-header-row">
@@ -1015,8 +1016,9 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
           </div>
         </div>
       </div>
+    </div>
 
-      <div className="commentary-section">
+    <div className="commentary-section">
         <div className="commentary-header">
           <h4>Commentary</h4>
           {!isAdding && canEdit && (
@@ -1074,7 +1076,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
                 >
                   {editingCommentId === comment.id ? (
                     <>
-                      <div style={{ flex: 1 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <strong>{comment.reporting_date}:</strong>
                         <textarea
                           value={editingCommentText}
@@ -1101,7 +1103,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
                     </>
                   ) : (
                     <>
-                      <div style={{ flex: 1 }}>
+                      <div style={{ flex: 1, minWidth: 0, wordWrap: 'break-word', overflowWrap: 'break-word' }}>
                         <strong>{comment.reporting_date}:</strong>{' '}
                         {comment.comment_text}
                         {comment.created_by_name && !comment.is_system && (
