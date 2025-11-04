@@ -29,8 +29,9 @@ build-no-cache:
 run:
 	docker compose up -d
 	@echo "Application started!"
-	@echo "Backend API: http://localhost:3001"
-	@echo "Frontend: http://localhost:5173"
+	@echo "Access at: http://localhost:3001"
+	@echo "  - Frontend: http://localhost:3001"
+	@echo "  - API: http://localhost:3001/api"
 
 # Run with production profile (includes nginx)
 production:

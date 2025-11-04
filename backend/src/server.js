@@ -14,6 +14,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 app.use(cors());
 app.use(express.json());
 
+// ===== SERVE FRONTEND STATIC FILES (for Docker deployment) =====
+// Check if frontend build exists (in Docker container)
+const frontendPath = path.join(__dirname, '../../frontend/dist');
+const fs = require('fs');
+if (fs.existsSync(frontendPath)) {
+  console.log('📦 Serving frontend from:', frontendPath);
+  app.use(express.static(frontendPath));
+}
+
 // ===== HEALTH CHECK =====
 app.get('/api/health', (req, res) => {
   res.status(200).json({
@@ -1956,7 +1965,6 @@ app.post('/api/export', authenticateToken, async (req, res) => {
 
 // ===== IMPORT =====
 const multer = require('multer');
-const fs = require('fs');
 const { importDataFromFile, generateImportTemplate, ImportValidationError } = require('./importService');
 
 // Configure multer for file uploads
@@ -2051,6 +2059,18 @@ app.post('/api/import', authenticateToken, upload.single('file'), async (req, re
     }
   }
 });
+
+// ===== CATCH-ALL ROUTE (must be last) =====
+// Serve index.html for all non-API routes to support React Router
+if (fs.existsSync(frontendPath)) {
+  app.get('*', (req, res) => {
+    // Don't catch API routes
+    if (req.path.startsWith('/api')) {
+      return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+}
 
 // ===== SERVER START =====
 app.listen(PORT, async () => {
