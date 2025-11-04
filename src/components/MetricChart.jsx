@@ -481,7 +481,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
     if (!draggedPoint) return;
 
     const deltaY = draggedPoint.startY - e.clientY;
-    const chartHeight = 300; // Height of the ResponsiveContainer
+    const chartHeight = 260; // Height of the ResponsiveContainer
     const dataRange = Math.max(...sortedData.map(item => Math.max(item.final_target, item.expected)));
     const valuePerPixel = dataRange / chartHeight;
     const newValue = Math.max(0, Math.round(draggedPoint.startValue + (deltaY * valuePerPixel)));
@@ -746,7 +746,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
       {/* Chart and Legend Container */}
       <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
         <div ref={chartContainerRef} style={{ position: 'relative', flex: 1 }}>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={260}>
               <ComposedChart
                 data={chartData}
                 margin={{ top: 20, right: 20, left: 20, bottom: 5 }}
