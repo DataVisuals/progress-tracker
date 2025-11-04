@@ -183,6 +183,8 @@ function App() {
     setSelectedProject(projectId.toString());
     await loadProjectData();
     setShowNewProject(false);
+    // Open DataGrid to add schedules immediately after project creation
+    setShowDataGrid(true);
   };
 
   const handleProjectSetupCancel = () => {
@@ -652,6 +654,50 @@ function App() {
               </p>
             </div>
 
+            {metrics.length === 0 && (
+              <div className="empty-state" style={{ marginTop: '40px' }}>
+                <svg
+                  className="empty-state-icon"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+                <h3>No Metrics Defined</h3>
+                <p style={{ maxWidth: '600px', margin: '0 auto', lineHeight: '1.6' }}>
+                  Establish sensible measures for your project that measure progress continuously throughout the project (lead measures) and demonstrate the goals of the project have been met at the end (lag measures).
+                </p>
+                {canEdit() && (
+                  <button
+                    onClick={() => setShowDataGrid(true)}
+                    style={{
+                      marginTop: '20px',
+                      padding: '10px 24px',
+                      backgroundColor: '#00aeef',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#0095d1'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#00aeef'}
+                  >
+                    Add Metrics & Schedules
+                  </button>
+                )}
+              </div>
+            )}
+
             {metrics.length > 0 && (
               <MetricTabs
                 metrics={metrics}
@@ -686,7 +732,9 @@ function App() {
               />
             )}
 
-            <CRAIDs projectId={selectedProject} canEdit={canEdit()} />
+            {metrics.length > 0 && (
+              <CRAIDs projectId={selectedProject} canEdit={canEdit()} />
+            )}
           </div>
         )}
 
