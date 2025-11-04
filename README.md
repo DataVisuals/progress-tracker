@@ -176,14 +176,46 @@ Track Concerns, Risks, Assumptions, Issues, and Dependencies:
 - **ExcelJS** - Excel file generation and parsing
 - **multer** - File upload handling
 
+### Deployment
+- **Docker** - Containerization for easy deployment
+- **Docker Compose** - Multi-container orchestration
+- **Nginx** - Reverse proxy and static file serving (production)
+- **Multi-stage builds** - Optimized container images
+
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Node.js 16 or higher
 - npm or yarn
 - Modern web browser
+- **OR** Docker (for containerized deployment)
 
-### Installation
+### Quick Start with Docker 🐳
+
+The fastest way to run Progress Tracker:
+
+```bash
+# Clone and enter directory
+git clone https://github.com/DataVisuals/progress-tracker.git
+cd progress-tracker
+
+# Build and run with Docker
+make build
+make run
+
+# Access the application
+# - Backend: http://localhost:3001
+# - Frontend: http://localhost:5173
+```
+
+**Default login credentials:**
+- Admin: admin@example.com / admin123
+- PM: pm@example.com / pm123
+- Viewer: viewer@example.com / viewer123
+
+For detailed Docker documentation, see [README-DOCKER.md](./README-DOCKER.md) or [DOCKER.md](./DOCKER.md).
+
+### Installation (Local Development)
 
 1. **Clone the repository:**
 ```bash
@@ -333,6 +365,48 @@ Adjust expected values on charts:
 - Prevents retroactive manipulation
 - Audit trail marks historic edits
 - Ensures data integrity
+
+## 🐳 Docker Deployment
+
+Progress Tracker includes full Docker support for easy deployment:
+
+### Quick Deploy
+```bash
+make build    # Build Docker image
+make run      # Start application
+make logs     # View logs
+make stop     # Stop application
+```
+
+### Production Deploy with Nginx
+```bash
+make production
+# Access at http://localhost
+```
+
+### Available Commands
+- `make build` - Build Docker image
+- `make run` - Start containers
+- `make stop` - Stop containers
+- `make logs` - View logs (follow mode)
+- `make backup` - Backup database
+- `make restore` - Restore database
+- `make health` - Check container health
+- `make shell` - Access container shell
+- `make clean` - Remove containers and images
+
+### Features
+- ✅ Multi-stage builds (~200-300MB image)
+- ✅ Database persistence via volumes
+- ✅ Health checks for monitoring
+- ✅ Production-ready Nginx configuration
+- ✅ Automated daily exports
+- ✅ Easy backup and restore
+
+**Documentation:**
+- Quick start: [README-DOCKER.md](./README-DOCKER.md)
+- Detailed guide: [DOCKER.md](./DOCKER.md)
+- Cloud deployment examples included
 
 ## 🤝 Contributing
 
