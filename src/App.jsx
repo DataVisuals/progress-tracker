@@ -29,6 +29,8 @@ function App() {
   const [showNewProject, setShowNewProject] = useState(false);
   const [editingProjectName, setEditingProjectName] = useState(false);
   const [editProjectNameValue, setEditProjectNameValue] = useState('');
+  const [editingProjectDesc, setEditingProjectDesc] = useState(false);
+  const [editProjectDescValue, setEditProjectDescValue] = useState('');
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
@@ -242,6 +244,40 @@ function App() {
       await handleProjectRename(selectedProject, editProjectNameValue.trim());
     }
     setEditingProjectName(false);
+  };
+
+  const handleProjectDescClick = () => {
+    if (!canEdit()) return;
+    setEditingProjectDesc(true);
+    setEditProjectDescValue(currentProject?.description || '');
+  };
+
+  const handleProjectDescKeyDown = (e) => {
+    // Allow Shift+Enter for new lines
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSaveProjectDesc();
+    } else if (e.key === 'Escape') {
+      setEditingProjectDesc(false);
+    }
+  };
+
+  const handleSaveProjectDesc = async () => {
+    if (editProjectDescValue !== (currentProject?.description || '')) {
+      try {
+        await api.updateProject(selectedProject, {
+          name: currentProject.name,
+          description: editProjectDescValue,
+          initiative_manager: currentProject.initiative_manager
+        });
+        // Reload projects to reflect the new description
+        await loadProjects();
+      } catch (err) {
+        console.error('Failed to update project description:', err);
+        alert('Failed to update project description');
+      }
+    }
+    setEditingProjectDesc(false);
   };
 
   const handleMetricCreated = async (metricName) => {
@@ -515,6 +551,48 @@ function App() {
                     )}
                   </div>
                 )}
+                {currentProject?.description || canEdit() ? (
+                  editingProjectDesc ? (
+                    <textarea
+                      className="project-desc-input"
+                      value={editProjectDescValue}
+                      onChange={(e) => setEditProjectDescValue(e.target.value)}
+                      onKeyDown={handleProjectDescKeyDown}
+                      onBlur={handleSaveProjectDesc}
+                      placeholder="Enter project description..."
+                      rows={2}
+                      autoFocus
+                      style={{
+                        width: '100%',
+                        marginTop: '8px',
+                        padding: '8px 12px',
+                        fontSize: '14px',
+                        lineHeight: '1.5',
+                        border: '2px solid #00aeef',
+                        borderRadius: '4px',
+                        resize: 'vertical',
+                        fontFamily: 'inherit'
+                      }}
+                    />
+                  ) : (
+                    <p
+                      onClick={handleProjectDescClick}
+                      title={canEdit() ? "Click to edit description" : undefined}
+                      style={{
+                        marginTop: '8px',
+                        fontSize: '14px',
+                        lineHeight: '1.5',
+                        color: currentProject?.description ? '#374151' : '#9ca3af',
+                        cursor: canEdit() ? 'pointer' : 'default',
+                        fontStyle: currentProject?.description ? 'normal' : 'italic',
+                        padding: '4px 0',
+                        whiteSpace: 'pre-wrap'
+                      }}
+                    >
+                      {currentProject?.description || (canEdit() ? 'Click to add a description...' : '')}
+                    </p>
+                  )
+                ) : null}
                 <div className="project-links" style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                   {projectLinks.map((link) => (
                     <a
@@ -586,27 +664,26 @@ function App() {
             )}
 
             {selectedMetric && (
-              <>
-                <div className="metrics-container">
-                  <MetricChart
-                    key={selectedMetric}
-                    metricName={selectedMetric}
-                    data={projectData.filter(item => item.metric === selectedMetric)}
-                    onCommentaryChange={handleCommentaryChange}
-                    onDataChange={loadProjectData}
-                    canEdit={canEdit() && !timeTravelTimestamp}
-                    amberTolerance={amberTolerance}
-                    redTolerance={redTolerance}
-                    timeTravelTimestamp={timeTravelTimestamp}
-                  />
-                </div>
-                {canEdit() && (
-                  <TimeTravel
-                    projectId={selectedProject}
-                    onTimeTravelChange={handleTimeTravelChange}
-                  />
-                )}
-              </>
+              <div className="metrics-container">
+                <MetricChart
+                  key={selectedMetric}
+                  metricName={selectedMetric}
+                  data={projectData.filter(item => item.metric === selectedMetric)}
+                  onCommentaryChange={handleCommentaryChange}
+                  onDataChange={loadProjectData}
+                  canEdit={canEdit() && !timeTravelTimestamp}
+                  amberTolerance={amberTolerance}
+                  redTolerance={redTolerance}
+                  timeTravelTimestamp={timeTravelTimestamp}
+                />
+              </div>
+            )}
+
+            {selectedMetric && canEdit() && (
+              <TimeTravel
+                projectId={selectedProject}
+                onTimeTravelChange={handleTimeTravelChange}
+              />
             )}
 
             <CRAIDs projectId={selectedProject} canEdit={canEdit()} />

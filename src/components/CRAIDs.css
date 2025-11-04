@@ -1,11 +1,10 @@
 .craids-container {
   background: white;
   border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #e5e7eb;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  margin-top: 8px;
+  border: 1px solid #e5e7eb;
 }
 
 .craids-header {
@@ -16,10 +15,14 @@
 }
 
 .craids-header h3 {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #374151;
   margin: 0;
+}
+
+.craids-title {
+  font-size: 13px;
 }
 
 .add-craid-btn {

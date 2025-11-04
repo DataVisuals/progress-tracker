@@ -201,7 +201,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
   animation: fadeIn 0.3s ease-in;
 }
 
@@ -259,11 +259,10 @@
 }
 
 .metrics-container {
-  flex: 1;
-  overflow-y: auto;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
   gap: 16px;
+  flex-shrink: 0;
 }
 
 

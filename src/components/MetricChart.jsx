@@ -229,6 +229,8 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
   const [isDragging, setIsDragging] = useState(false);
   const [draggedPoint, setDraggedPoint] = useState(null);
   const [highlightedSeries, setHighlightedSeries] = useState(null);
+  const [isCommentaryCollapsed, setIsCommentaryCollapsed] = useState(true);
+  const [isDataTableCollapsed, setIsDataTableCollapsed] = useState(false);
   const chartContainerRef = useRef(null);
 
   // Sort data by date always for consistency
@@ -741,9 +743,9 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
         </div>
       )}
 
+      {/* Chart and Legend Container */}
       <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
         <div ref={chartContainerRef} style={{ position: 'relative', flex: 1 }}>
-          <div style={{ height: 300 }}>
             <ResponsiveContainer width="100%" height={300}>
               <ComposedChart
                 data={chartData}
@@ -854,9 +856,72 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
           />
         </ComposedChart>
       </ResponsiveContainer>
-          </div>
+        </div>
 
-          {/* Data Table - Excel-style horizontal layout */}
+        {/* Custom Legend */}
+        <div className="custom-legend">
+          <div className="legend-title">Legend</div>
+
+          <div className="legend-items">
+            <div
+              className={`legend-item ${highlightedSeries === 'green' ? 'active' : ''}`}
+              onMouseEnter={() => setHighlightedSeries('green')}
+              onMouseLeave={() => setHighlightedSeries(null)}
+            >
+              <div className="legend-indicator" style={{ backgroundColor: '#539668' }}></div>
+              <span className="legend-text">Green: On track or ahead</span>
+            </div>
+            <div
+              className={`legend-item ${highlightedSeries === 'amber' ? 'active' : ''}`}
+              onMouseEnter={() => setHighlightedSeries('amber')}
+              onMouseLeave={() => setHighlightedSeries(null)}
+            >
+              <div className="legend-indicator" style={{ backgroundColor: '#f5ad5b' }}></div>
+              <span className="legend-text">Amber: &gt;{amberTolerance}% behind</span>
+            </div>
+            <div
+              className={`legend-item ${highlightedSeries === 'red' ? 'active' : ''}`}
+              onMouseEnter={() => setHighlightedSeries('red')}
+              onMouseLeave={() => setHighlightedSeries(null)}
+            >
+              <div className="legend-indicator" style={{ backgroundColor: '#D0704d' }}></div>
+              <span className="legend-text">Red: &gt;{redTolerance}% behind</span>
+            </div>
+            <div
+              className={`legend-item ${highlightedSeries === 'remaining' ? 'active' : ''}`}
+              onMouseEnter={() => setHighlightedSeries('remaining')}
+              onMouseLeave={() => setHighlightedSeries(null)}
+            >
+              <div className="legend-indicator" style={{ backgroundColor: '#d1d5db' }}></div>
+              <span className="legend-text">Remaining</span>
+            </div>
+            <div
+              className={`legend-item ${highlightedSeries === 'expected' ? 'active' : ''}`}
+              onMouseEnter={() => setHighlightedSeries('expected')}
+              onMouseLeave={() => setHighlightedSeries(null)}
+            >
+              <div className="legend-indicator line" style={{ backgroundColor: '#10b981' }}></div>
+              <span className="legend-text">Expected</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Data Table - Excel-style horizontal layout */}
+      <div style={{ marginTop: '8px' }}>
+        <div className="data-table-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              className="collapse-toggle-btn"
+              onClick={() => setIsDataTableCollapsed(!isDataTableCollapsed)}
+              title={isDataTableCollapsed ? 'Expand data table' : 'Collapse data table'}
+            >
+              {isDataTableCollapsed ? '▶' : '▼'}
+            </button>
+            <h4>Data Table</h4>
+          </div>
+        </div>
+        {!isDataTableCollapsed && (
           <div className="data-table-section">
         <table className="data-table">
           <thead>
@@ -966,69 +1031,30 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
           </tbody>
         </table>
           </div>
-        </div>
-
-        {/* Custom Legend */}
-        <div className="custom-legend">
-          <div className="legend-title">Legend</div>
-
-          <div className="legend-items">
-            <div
-              className={`legend-item ${highlightedSeries === 'green' ? 'active' : ''}`}
-              onMouseEnter={() => setHighlightedSeries('green')}
-              onMouseLeave={() => setHighlightedSeries(null)}
-            >
-              <div className="legend-indicator" style={{ backgroundColor: '#539668' }}></div>
-              <span className="legend-text">Green: On track or ahead</span>
-            </div>
-            <div
-              className={`legend-item ${highlightedSeries === 'amber' ? 'active' : ''}`}
-              onMouseEnter={() => setHighlightedSeries('amber')}
-              onMouseLeave={() => setHighlightedSeries(null)}
-            >
-              <div className="legend-indicator" style={{ backgroundColor: '#f5ad5b' }}></div>
-              <span className="legend-text">Amber: &gt;{amberTolerance}% behind</span>
-            </div>
-            <div
-              className={`legend-item ${highlightedSeries === 'red' ? 'active' : ''}`}
-              onMouseEnter={() => setHighlightedSeries('red')}
-              onMouseLeave={() => setHighlightedSeries(null)}
-            >
-              <div className="legend-indicator" style={{ backgroundColor: '#D0704d' }}></div>
-              <span className="legend-text">Red: &gt;{redTolerance}% behind</span>
-            </div>
-            <div
-              className={`legend-item ${highlightedSeries === 'remaining' ? 'active' : ''}`}
-              onMouseEnter={() => setHighlightedSeries('remaining')}
-              onMouseLeave={() => setHighlightedSeries(null)}
-            >
-              <div className="legend-indicator" style={{ backgroundColor: '#d1d5db' }}></div>
-              <span className="legend-text">Remaining</span>
-            </div>
-            <div
-              className={`legend-item ${highlightedSeries === 'expected' ? 'active' : ''}`}
-              onMouseEnter={() => setHighlightedSeries('expected')}
-              onMouseLeave={() => setHighlightedSeries(null)}
-            >
-              <div className="legend-indicator line" style={{ backgroundColor: '#10b981' }}></div>
-              <span className="legend-text">Expected</span>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
 
     <div className="commentary-section">
         <div className="commentary-header">
-          <h4>Commentary</h4>
-          {!isAdding && canEdit && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              className="collapse-toggle-btn"
+              onClick={() => setIsCommentaryCollapsed(!isCommentaryCollapsed)}
+              title={isCommentaryCollapsed ? 'Expand commentary' : 'Collapse commentary'}
+            >
+              {isCommentaryCollapsed ? '▶' : '▼'}
+            </button>
+            <h4>Commentary</h4>
+          </div>
+          {!isAdding && canEdit && !isCommentaryCollapsed && (
             <button className="add-btn" onClick={handleStartAdd}>
               Add
             </button>
           )}
         </div>
 
-        {isAdding ? (
+        {!isCommentaryCollapsed && (isAdding ? (
           <div className="commentary-add-mode">
             <div className="commentary-item-add">
               <div className="commentary-label">Add Comment</div>
@@ -1142,7 +1168,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
               </div>
             )}
           </div>
-        )}
+        ))}
       </div>
     </div>
   );

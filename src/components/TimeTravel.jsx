@@ -108,7 +108,15 @@ const TimeTravel = ({ projectId, onTimeTravelChange }) => {
         </div>
 
         <div className="slider-info">
-          {auditTimestamps.length} historical snapshots available
+          {isAtPresent ? (
+            <span>
+              <strong>Current view</strong> • {auditTimestamps.length} historical snapshots available
+            </span>
+          ) : (
+            <span>
+              <strong>Snapshot {sliderIndex + 1} of {auditTimestamps.length}</strong> • {auditTimestamps.length} snapshots available
+            </span>
+          )}
         </div>
       </div>
 

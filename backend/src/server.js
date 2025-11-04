@@ -1366,17 +1366,25 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
           m.name as metric_name,
           mp.reporting_date,
           mp.complete,
-          LAG(mp.complete) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as prev_complete,
-          mp.complete - LAG(mp.complete) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as growth
+          LAG(mp.complete) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as prev_complete
         FROM metric_periods mp
         JOIN metrics m ON mp.metric_id = m.id
         JOIN projects p ON m.project_id = p.id
         WHERE CAST(strftime('%m', mp.reporting_date) AS INTEGER) IN (1, 8)
       )
-      SELECT *
+      SELECT
+        project_id,
+        project_name,
+        pm_name,
+        metric_id,
+        metric_name,
+        reporting_date,
+        complete,
+        prev_complete,
+        complete - prev_complete as growth
       FROM growth_calc
       WHERE complete > COALESCE(prev_complete, 0)
-      AND growth IS NOT NULL
+      AND (complete - prev_complete) IS NOT NULL
       ORDER BY project_name, metric_name, reporting_date
     `);
 
@@ -1399,11 +1407,17 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
 
       // Get average growth for this metric
       const avgGrowth = await dbGet(`
-        WITH growth_all AS (
+        WITH lag_calc AS (
           SELECT
-            mp.complete - LAG(mp.complete) OVER (PARTITION BY mp.metric_id ORDER BY mp.reporting_date) as growth
+            mp.complete,
+            LAG(mp.complete) OVER (PARTITION BY mp.metric_id ORDER BY mp.reporting_date) as prev_complete
           FROM metric_periods mp
           WHERE mp.metric_id = ?
+        ),
+        growth_all AS (
+          SELECT
+            complete - prev_complete as growth
+          FROM lag_calc
         )
         SELECT AVG(growth) as avg_growth
         FROM growth_all
@@ -1441,7 +1455,7 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
 
     // 2. Find projects with only back-loaded growth curves
     const backLoadedMetrics = await dbAll(`
-      WITH period_growth AS (
+      WITH lag_calc AS (
         SELECT
           m.id as metric_id,
           m.name as metric_name,
@@ -1449,12 +1463,24 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
           p.name as project_name,
           p.initiative_manager as pm_name,
           mp.reporting_date,
-          ROW_NUMBER() OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as period_num,
-          COUNT(*) OVER (PARTITION BY m.id) as total_periods,
-          mp.complete - LAG(mp.complete, 1, 0) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as growth
+          mp.complete,
+          LAG(mp.complete, 1, 0) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as prev_complete
         FROM metric_periods mp
         JOIN metrics m ON mp.metric_id = m.id
         JOIN projects p ON m.project_id = p.id
+      ),
+      period_growth AS (
+        SELECT
+          metric_id,
+          metric_name,
+          project_id,
+          project_name,
+          pm_name,
+          reporting_date,
+          ROW_NUMBER() OVER (PARTITION BY metric_id ORDER BY reporting_date) as period_num,
+          COUNT(*) OVER (PARTITION BY metric_id) as total_periods,
+          complete - prev_complete as growth
+        FROM lag_calc
       ),
       first_half_growth AS (
         SELECT
@@ -1605,7 +1631,7 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
     // Lag metrics should be back-loaded (most progress in final 30% of periods)
     // Lead metrics should show progressive change throughout
     const metricTypeMismatches = await dbAll(`
-      WITH period_analysis AS (
+      WITH growth_calc AS (
         SELECT
           m.id as metric_id,
           m.name as metric_name,
@@ -1613,15 +1639,27 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
           m.project_id,
           p.name as project_name,
           p.initiative_manager as pm_name,
-          ROW_NUMBER() OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as period_num,
-          COUNT(*) OVER (PARTITION BY m.id) as total_periods,
-          mp.complete - LAG(mp.complete, 1, 0) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as growth,
-          SUM(mp.complete - LAG(mp.complete, 1, 0) OVER (PARTITION BY m.id ORDER BY mp.reporting_date))
-            OVER (PARTITION BY m.id) as total_growth
+          mp.reporting_date,
+          mp.complete,
+          LAG(mp.complete, 1, 0) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as prev_complete
         FROM metric_periods mp
         JOIN metrics m ON mp.metric_id = m.id
         JOIN projects p ON m.project_id = p.id
         WHERE mp.complete IS NOT NULL
+      ),
+      period_analysis AS (
+        SELECT
+          metric_id,
+          metric_name,
+          metric_type,
+          project_id,
+          project_name,
+          pm_name,
+          ROW_NUMBER() OVER (PARTITION BY metric_id ORDER BY reporting_date) as period_num,
+          COUNT(*) OVER (PARTITION BY metric_id) as total_periods,
+          complete - prev_complete as growth,
+          SUM(complete - prev_complete) OVER (PARTITION BY metric_id) as total_growth
+        FROM growth_calc
       ),
       final_30_percent AS (
         SELECT
@@ -1696,7 +1734,8 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
 
   } catch (err) {
     console.error('Consistency report error:', err);
-    res.status(500).json({ error: err.message });
+    console.error('Error stack:', err.stack);
+    res.status(500).json({ error: err.message, details: err.toString() });
   }
 });
 
@@ -2093,3 +2132,6 @@ app.listen(PORT, async () => {
   // Start the daily export scheduler
   startScheduler();
 });
+
+// Export app for testing
+module.exports = app;

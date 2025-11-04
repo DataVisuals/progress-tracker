@@ -227,6 +227,43 @@
   margin: 0;
 }
 
+.data-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.data-table-header h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.collapse-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 14px;
+  color: #6b7280;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.collapse-toggle-btn:hover {
+  color: #1f2937;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+}
+
 .add-btn {
   background: linear-gradient(135deg, #00aeef 0%, #0891b2 100%);
   color: white;
@@ -529,7 +566,7 @@
 
 /* Data Table Styles - Excel-style horizontal layout */
 .data-table-section {
-  margin: 8px 0 16px 0;
+  margin: 0;
   overflow-x: auto;
   position: relative;
   padding: 0;
@@ -716,23 +753,24 @@
 
 /* Custom Legend Styles */
 .custom-legend {
-  padding-top: 60px;
   font-size: 12px;
   min-width: 250px;
   max-width: 270px;
+  display: flex;
+  flex-direction: column;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-radius: 10px;
-  padding: 20px;
+  padding: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   border: 1px solid #e2e8f0;
 }
 
 .legend-title {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   color: #0c4a6e;
-  margin-bottom: 14px;
-  padding-bottom: 8px;
+  margin: 0 0 6px 0;
+  padding-bottom: 4px;
   border-bottom: 2px solid #00aeef;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -741,15 +779,16 @@
 .legend-items {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 3px;
+  margin: 0;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
   background-color: white;

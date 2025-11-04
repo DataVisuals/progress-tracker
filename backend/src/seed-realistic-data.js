@@ -502,37 +502,264 @@ async function seedRealisticData() {
     console.log('✅ Created 7 diverse projects with realistic metrics\n');
 
     // Add historical audit logs for time travel
-    console.log('⏰ Adding historical audit logs for time travel...\n');
+    console.log('⏰ Adding rich historical audit logs for time travel demonstration...\n');
 
-    // Add historical changes for healthcare project
-    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', periods[3].id,
-      { complete: 11000 }, { complete: 12000 },
-      'Revised user registration count after data reconciliation',
+    // HEALTHCARE PROJECT - Multiple revisions showing iterative refinement
+    // Initial underestimate that gets corrected
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', periods[0].id,
+      { complete: 600 }, { complete: 800 },
+      'Corrected January registration count after final data validation',
+      '2024-02-02T09:00:00Z'
+    );
+
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', periods[1].id,
+      { complete: 2200 }, { complete: 2500 },
+      'Updated February numbers - initial count missed weekend registrations',
+      '2024-03-03T11:30:00Z'
+    );
+
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', periods[2].id,
+      { complete: 5500 }, { complete: 5800 },
+      'Revised March count after data reconciliation with partner systems',
+      '2024-04-05T14:15:00Z'
+    );
+
+    // Commentary evolution showing changing perspectives
+    const healthcarePeriod3 = await dbGet('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date LIMIT 1 OFFSET 3', [registrationsMetric.lastID]);
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', healthcarePeriod3.id,
+      { complete: 10500, commentary: 'Mobile app performing well' },
+      { complete: 12000, commentary: 'Mobile app launch successful' },
+      'Updated April data with final monthly counts and improved commentary',
       '2024-05-03T10:00:00Z'
     );
 
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', healthcarePeriod3.id,
+      { complete: 12000, commentary: 'Mobile app launch successful' },
+      { complete: 12000, commentary: 'iOS and Android apps both hit top 10 in health category' },
+      'Enhanced commentary with specific achievement details',
+      '2024-05-04T16:45:00Z'
+    );
+
+    // Project description evolution
     await addAuditLog(admin.id, admin.email, 'UPDATE', 'projects', healthcareId,
       { description: 'Patient portal modernization project' },
+      { description: 'Comprehensive upgrade of patient-facing digital services' },
+      'Refined project description',
+      '2024-02-15T14:00:00Z'
+    );
+
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'projects', healthcareId,
+      { description: 'Comprehensive upgrade of patient-facing digital services' },
       { description: 'Comprehensive upgrade of patient-facing digital services including appointment scheduling, medical records access, and telehealth integration' },
-      'Expanded project description with full scope',
+      'Expanded project description with full scope details',
       '2024-03-15T14:00:00Z'
     );
 
-    // Add historical changes for e-commerce project
+    // E-COMMERCE PROJECT - Shows problem tracking and resolution
     await addAuditLog(admin.id, admin.email, 'CREATE', 'craids', 1,
       null,
-      { type: 'issue', title: 'Payment Provider Delays', status: 'open' },
+      { type: 'issue', title: 'Payment Provider Delays', status: 'open', priority: 'high' },
       'Created issue for payment integration delays',
       '2024-04-20T09:00:00Z'
     );
 
     await addAuditLog(admin.id, admin.email, 'UPDATE', 'craids', 1,
-      { status: 'open' }, { status: 'resolved' },
-      'Payment provider issue resolved',
+      { status: 'open', description: 'Payment provider certification delayed' },
+      { status: 'in_progress', description: 'Payment provider certification delayed. Escalated to executive team.' },
+      'Escalated payment issue to leadership',
+      '2024-05-10T13:30:00Z'
+    );
+
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'craids', 1,
+      { status: 'in_progress' }, { status: 'resolved' },
+      'Payment provider issue resolved - certification received',
       '2024-06-15T16:30:00Z'
     );
 
-    console.log('✅ Added historical audit logs\n');
+    // Multiple updates showing recovery
+    const ecommercePeriod3 = await dbGet('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date LIMIT 1 OFFSET 2', [marketsMetric.lastID]);
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', ecommercePeriod3.id,
+      { complete: 2, commentary: 'Blocked on payment integration' },
+      { complete: 2, commentary: 'Still blocked on German payment integration' },
+      'Updated commentary to reflect ongoing blocker',
+      '2024-05-05T09:00:00Z'
+    );
+
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', ecommercePeriod3.id,
+      { complete: 2, commentary: 'Still blocked on German payment integration' },
+      { complete: 2, commentary: 'Still blocked on German payment integration. Escalated to payment provider executive team.' },
+      'Added escalation details to commentary',
+      '2024-05-05T09:30:00Z'
+    );
+
+    const ecommercePeriod4 = await dbGet('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date LIMIT 1 OFFSET 3', [marketsMetric.lastID]);
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', ecommercePeriod4.id,
+      { complete: 3, commentary: 'Germany launching this week' },
+      { complete: 4, commentary: 'Germany unblocked, launched 2 markets this month' },
+      'Updated with actual completion after Germany launch',
+      '2024-06-05T16:00:00Z'
+    );
+
+    // AI RESEARCH PROJECT - Shows data corrections and progressive updates
+    const aiPeriod3 = await dbGet('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date LIMIT 1 OFFSET 2', [modelsMetric.lastID]);
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', aiPeriod3.id,
+      { complete: 7 }, { complete: 8 },
+      'Corrected September count after duplicate removal',
+      '2023-10-05T10:00:00Z'
+    );
+
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', aiPeriod3.id,
+      { complete: 8, commentary: 'GPU cluster operational' },
+      { complete: 8, commentary: 'GPU cluster expansion complete' },
+      'Refined commentary for clarity',
+      '2023-10-08T14:20:00Z'
+    );
+
+    const aiPeriod6 = await dbGet('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date LIMIT 1 OFFSET 5', [modelsMetric.lastID]);
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', aiPeriod6.id,
+      { complete: 58 }, { complete: 60 },
+      'Final December count after late submissions',
+      '2024-01-08T09:15:00Z'
+    );
+
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', aiPeriod6.id,
+      { complete: 60, commentary: 'Research teams ramped up' },
+      { complete: 60, commentary: 'Research teams fully ramped up. All 5 teams actively using platform.' },
+      'Enhanced commentary with team details',
+      '2024-01-08T15:30:00Z'
+    );
+
+    // SUPPLY CHAIN PROJECT - Shows target adjustments and planning changes
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metrics', savingsMetric.lastID,
+      { final_target: 20 },
+      { final_target: 25 },
+      'Increased savings target after identifying additional opportunities',
+      '2024-04-15T10:00:00Z'
+    );
+
+    const supplyPeriod2 = await dbGet('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date LIMIT 1 OFFSET 1', [savingsMetric.lastID]);
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', supplyPeriod2.id,
+      { complete: 0.5 }, { complete: 1.0 },
+      'Updated May savings after quarterly reconciliation',
+      '2024-06-10T11:30:00Z'
+    );
+
+    // Commentary evolution showing learning
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', supplyPeriod2.id,
+      { complete: 1.0, commentary: 'Early pilots' },
+      { complete: 1.0, commentary: 'Pilot programs launched - minimal savings yet' },
+      'Clarified commentary to set realistic expectations',
+      '2024-06-10T14:00:00Z'
+    );
+
+    // BANKING PROJECT - Shows scope changes and realistic adjustments
+    await addAuditLog(admin.id, admin.email, 'CREATE', 'craids', null,
+      null,
+      { type: 'issue', title: 'Biometric Integration Delays', status: 'open', priority: 'high' },
+      'Created issue for Face ID edge cases',
+      '2024-06-05T11:00:00Z'
+    );
+
+    const bankingPeriod3 = await dbGet('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date LIMIT 1 OFFSET 2', [featuresMetric.lastID]);
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', bankingPeriod3.id,
+      { complete: 5 }, { complete: 4 },
+      'Revised July count after security review required feature rollback',
+      '2024-07-10T16:00:00Z'
+    );
+
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', bankingPeriod3.id,
+      { complete: 4, commentary: 'Security issues found' },
+      { complete: 4, commentary: 'Security review required rework' },
+      'Improved commentary clarity',
+      '2024-07-10T16:15:00Z'
+    );
+
+    // Scope change documentation
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metrics', featuresMetric.lastID,
+      { final_target: 28 },
+      { final_target: 24 },
+      'Descoped cryptocurrency features to phase 2, reduced target from 28 to 24 features',
+      '2024-10-05T11:00:00Z'
+    );
+
+    // DATA WAREHOUSE PROJECT - Shows milestone tracking
+    const dwPeriod2 = await dbGet('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date LIMIT 1 OFFSET 1', [reportsMetric.lastID]);
+    if (dwPeriod2) {
+      await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', dwPeriod2.id,
+        { complete: 190 }, { complete: 200 },
+        'Updated Q1 count after late report conversions completed',
+        '2024-04-10T09:00:00Z'
+      );
+
+      await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', dwPeriod2.id,
+        { complete: 200, commentary: 'Finance reports migrated' },
+        { complete: 200, commentary: 'Q1 2024: Finance and HR reports' },
+        'Improved commentary formatting',
+        '2024-04-10T14:30:00Z'
+      );
+    }
+
+    // SUPPORT PROJECT - Shows sprint planning adjustments
+    const supportPeriod3 = await dbGet('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date LIMIT 1 OFFSET 2', [velocityMetric.lastID]);
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', supportPeriod3.id,
+      { complete: 63 }, { complete: 65 },
+      'Added carry-over points from previous sprint',
+      '2024-06-24T10:00:00Z'
+    );
+
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', supportPeriod3.id,
+      { complete: 65, commentary: 'Good velocity' },
+      { complete: 65, commentary: 'Sprint 3: Steady progress' },
+      'Standardized sprint commentary format',
+      '2024-06-24T14:00:00Z'
+    );
+
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', supportPeriod3.id,
+      { complete: 65, commentary: 'Sprint 3: Steady progress' },
+      { complete: 65, commentary: 'Sprint 3: Steady progress. Team velocity stabilizing at ~23 points per sprint.' },
+      'Added velocity trend to commentary',
+      '2024-06-24T15:00:00Z'
+    );
+
+    // Add some cross-project changes to show system-wide updates
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'users', admin.id,
+      { name: 'Admin' },
+      { name: 'Admin User' },
+      'Updated admin display name',
+      '2024-03-01T09:00:00Z'
+    );
+
+    // Add changes at different times of day to show real usage patterns
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', periods[0].id,
+      { complete: 800, commentary: 'Soft launch exceeded expectations' },
+      { complete: 800, commentary: 'Soft launch exceeded expectations. Marketing campaign drove higher than expected signups.' },
+      'Enhanced commentary with context',
+      '2024-02-03T08:30:00Z'
+    );
+
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', periods[1].id,
+      { complete: 2500, commentary: 'Growth accelerating' },
+      { complete: 2500, commentary: 'Word of mouth accelerating adoption' },
+      'Refined commentary language',
+      '2024-03-05T17:45:00Z'
+    );
+
+    // Show late-night updates (emergency fixes)
+    const ecommercePeriod2 = await dbGet('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date LIMIT 1 OFFSET 1', [marketsMetric.lastID]);
+    await addAuditLog(admin.id, admin.email, 'UPDATE', 'metric_periods', ecommercePeriod2.id,
+      { complete: 2, commentary: 'Germany launch delayed' },
+      { complete: 2, commentary: 'Germany launch delayed due to payment integration' },
+      'Added specific blocker details',
+      '2024-04-03T22:15:00Z'
+    );
+
+    console.log('✅ Added 40+ historical audit log entries spanning multiple months\n');
+    console.log('   • Data corrections and reconciliations');
+    console.log('   • Commentary evolution and refinement');
+    console.log('   • Target adjustments and scope changes');
+    console.log('   • Issue tracking lifecycle');
+    console.log('   • Sprint planning adjustments');
+    console.log('   • Emergency late-night updates\n');
 
     console.log('🎉 Realistic data migration complete!\n');
     console.log('📊 Summary:');
