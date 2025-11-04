@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import './TimeTravel.css';
 
-const TimeTravel = ({ projectId, onTimeTravelChange }) => {
+const TimeTravel = ({ projectId, onTimeTravelChange, onRevert, isAdmin = false }) => {
   const [auditTimestamps, setAuditTimestamps] = useState([]);
   const [sliderIndex, setSliderIndex] = useState(-1); // -1 means "present"
   const [loading, setLoading] = useState(false);
+  const [reverting, setReverting] = useState(false);
 
   useEffect(() => {
     if (projectId) {
@@ -74,6 +75,52 @@ const TimeTravel = ({ projectId, onTimeTravelChange }) => {
 
   const isAtPresent = sliderIndex >= auditTimestamps.length;
 
+  const handleRevert = async () => {
+    const currentTimestamp = getCurrentTimestamp();
+    if (!currentTimestamp) {
+      alert('Cannot revert to present state');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to revert ALL project data to the state at ${formatTimestamp(currentTimestamp)}?\n\n` +
+      'This will:\n' +
+      '• Update all metric periods to their historical values\n' +
+      '• Restore deleted periods\n' +
+      '• Delete periods that were added after this time\n' +
+      '• Create audit log entries for all changes\n\n' +
+      'This action can be undone using Time Travel.'
+    );
+
+    if (!confirmed) return;
+
+    setReverting(true);
+    try {
+      const response = await api.revertProjectData(projectId, currentTimestamp);
+      alert(
+        `Successfully reverted to ${formatTimestamp(currentTimestamp)}\n\n` +
+        `Updated: ${response.data.changes.updated}\n` +
+        `Deleted: ${response.data.changes.deleted}\n` +
+        `Restored: ${response.data.changes.restored}\n` +
+        `Unchanged: ${response.data.changes.unchanged}`
+      );
+
+      // Call the onRevert callback to refresh the data
+      if (onRevert) {
+        await onRevert();
+      }
+
+      // Reset to present view
+      setSliderIndex(auditTimestamps.length);
+      await onTimeTravelChange(null);
+    } catch (err) {
+      console.error('Failed to revert:', err);
+      alert(`Failed to revert: ${err.response?.data?.error || err.message}`);
+    } finally {
+      setReverting(false);
+    }
+  };
+
   if (auditTimestamps.length === 0) {
     return null; // No historical data available
   }
@@ -118,6 +165,22 @@ const TimeTravel = ({ projectId, onTimeTravelChange }) => {
             </span>
           )}
         </div>
+
+        {!isAtPresent && isAdmin && (
+          <div className="revert-action">
+            <button
+              onClick={handleRevert}
+              disabled={reverting || loading}
+              className="revert-btn"
+              title="Revert all project data to this historical state (Admin only)"
+            >
+              {reverting ? 'Reverting...' : '⟲ Revert to This State'}
+            </button>
+            <p className="revert-warning">
+              This will restore all metrics to their state at this point in time
+            </p>
+          </div>
+        )}
       </div>
 
       {loading && (

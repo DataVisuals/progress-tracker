@@ -24,6 +24,7 @@ function App() {
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [projectData, setProjectData] = useState([]);
+  const [projectMetrics, setProjectMetrics] = useState([]);
   const [selectedMetric, setSelectedMetric] = useState('');
   const [showDataGrid, setShowDataGrid] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
@@ -31,6 +32,9 @@ function App() {
   const [editProjectNameValue, setEditProjectNameValue] = useState('');
   const [editingProjectDesc, setEditingProjectDesc] = useState(false);
   const [editProjectDescValue, setEditProjectDescValue] = useState('');
+  const [editingProjectDates, setEditingProjectDates] = useState(false);
+  const [editProjectStartDate, setEditProjectStartDate] = useState('');
+  const [editProjectEndDate, setEditProjectEndDate] = useState('');
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
@@ -58,19 +62,17 @@ function App() {
   useEffect(() => {
     if (selectedProject) {
       loadProjectData();
+      loadProjectMetrics();
       loadProjectLinks();
     }
   }, [selectedProject]);
 
-  // Auto-select first metric when project data loads
+  // Auto-select first metric when metrics load
   useEffect(() => {
-    if (projectData.length > 0 && !selectedMetric) {
-      const uniqueMetrics = [...new Set(projectData.map(item => item.metric))];
-      if (uniqueMetrics.length > 0) {
-        setSelectedMetric(uniqueMetrics[0]);
-      }
+    if (projectMetrics.length > 0 && !selectedMetric) {
+      setSelectedMetric(projectMetrics[0].name);
     }
-  }, [projectData]);
+  }, [projectMetrics]);
 
   const loadProjects = async () => {
     try {
@@ -89,6 +91,16 @@ function App() {
       setProjectData(response.data);
     } catch (err) {
       console.error('Failed to load project data:', err);
+    }
+  };
+
+  const loadProjectMetrics = async () => {
+    try {
+      const response = await api.getProjectMetrics(selectedProject);
+      setProjectMetrics(response.data);
+    } catch (err) {
+      console.error('Failed to load project metrics:', err);
+      setProjectMetrics([]);
     }
   };
 
@@ -167,8 +179,9 @@ function App() {
           }
         }
       }
-      // Reload project data
+      // Reload both project data and metrics list
       await loadProjectData();
+      await loadProjectMetrics();
     } catch (err) {
       console.error('Failed to update data:', err);
       // Don't show generic alert if we already showed specific historic edit message
@@ -283,8 +296,35 @@ function App() {
     setEditingProjectDesc(false);
   };
 
+  const handleSaveProjectDates = async () => {
+    if (editProjectStartDate && editProjectEndDate) {
+      // Validate dates
+      if (new Date(editProjectStartDate) >= new Date(editProjectEndDate)) {
+        alert('End date must be after start date');
+        return;
+      }
+
+      try {
+        await api.updateProject(selectedProject, {
+          name: currentProject.name,
+          description: currentProject.description,
+          initiative_manager: currentProject.initiative_manager,
+          start_date: editProjectStartDate,
+          end_date: editProjectEndDate
+        });
+        // Reload projects to reflect the new dates
+        await loadProjects();
+      } catch (err) {
+        console.error('Failed to update project dates:', err);
+        alert('Failed to update project dates');
+      }
+    }
+    setEditingProjectDates(false);
+  };
+
   const handleMetricCreated = async (metricName) => {
-    // Reload project data to include the new metric
+    // Reload both metrics list and project data
+    await loadProjectMetrics();
     await loadProjectData();
     // Select the newly created metric
     setSelectedMetric(metricName);
@@ -292,13 +332,14 @@ function App() {
 
   const handleMetricRename = async (oldName, newName) => {
     try {
-      // Find the metric ID from the project data
-      const metricData = projectData.find(item => item.metric === oldName);
-      if (!metricData) return;
+      // Find the metric ID from the project metrics
+      const metric = projectMetrics.find(m => m.name === oldName);
+      if (!metric) return;
 
-      await api.updateMetric(metricData.metric_id, { name: newName });
+      await api.updateMetric(metric.id, { name: newName });
 
-      // Reload project data
+      // Reload both metrics list and project data
+      await loadProjectMetrics();
       await loadProjectData();
 
       // Update selected metric if it was the one being renamed
@@ -317,10 +358,8 @@ function App() {
     return acc;
   }, {});
 
-  // Get unique metrics from project data
-  const metrics = selectedProject
-    ? [...new Set(projectData.map(item => item.metric))]
-    : [];
+  // Get metrics list from projectMetrics state
+  const metrics = projectMetrics.map(m => m.name);
 
   const currentProject = selectedProject
     ? projects.find(p => p.id === parseInt(selectedProject))
@@ -516,41 +555,111 @@ function App() {
                       {projectName}
                     </h2>
                     {currentProject?.start_date && currentProject?.end_date && (
-                      <div className="project-timeline-display" style={{
-                        padding: '8px 14px',
-                        background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-                        border: '1px solid #bae6fd',
-                        borderRadius: '6px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        fontSize: '13px',
-                        boxShadow: '0 1px 3px rgba(0, 174, 239, 0.08)',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        <span style={{ color: '#0c4a6e', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          PROJECT:
-                        </span>
-                        <span style={{ fontWeight: 600, color: '#003c71' }}>
-                          {formatDate(currentProject.start_date)}
-                        </span>
-                        <span style={{ color: '#0284c7', fontWeight: 600, opacity: 0.6 }}>→</span>
-                        <span style={{ fontWeight: 600, color: '#003c71' }}>
-                          {formatDate(currentProject.end_date)}
-                        </span>
-                        {projectDuration && (
-                          <>
-                            <span style={{ color: '#0284c7', fontWeight: 600, opacity: 0.6 }}>•</span>
-                            <span style={{ fontWeight: 700, color: '#00aeef' }}>
-                              {projectDuration.months > 1
-                                ? `${projectDuration.months} months`
-                                : projectDuration.weeks > 1
-                                ? `${projectDuration.weeks} weeks`
-                                : `${projectDuration.days} days`}
-                            </span>
-                          </>
-                        )}
-                      </div>
+                      editingProjectDates ? (
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input
+                            type="date"
+                            value={editProjectStartDate}
+                            onChange={(e) => setEditProjectStartDate(e.target.value)}
+                            style={{
+                              padding: '6px 8px',
+                              border: '2px solid #00aeef',
+                              borderRadius: '4px',
+                              fontSize: '13px',
+                              fontWeight: 600
+                            }}
+                            autoFocus
+                          />
+                          <span style={{ color: '#0284c7', fontWeight: 600 }}>→</span>
+                          <input
+                            type="date"
+                            value={editProjectEndDate}
+                            onChange={(e) => setEditProjectEndDate(e.target.value)}
+                            style={{
+                              padding: '6px 8px',
+                              border: '2px solid #00aeef',
+                              borderRadius: '4px',
+                              fontSize: '13px',
+                              fontWeight: 600
+                            }}
+                          />
+                          <button
+                            onClick={handleSaveProjectDates}
+                            style={{
+                              padding: '6px 12px',
+                              background: '#00aeef',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: 600
+                            }}
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingProjectDates(false)}
+                            style={{
+                              padding: '6px 12px',
+                              background: '#6b7280',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: 600
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          className="project-timeline-display"
+                          onDoubleClick={canEdit() ? () => {
+                            setEditProjectStartDate(currentProject.start_date);
+                            setEditProjectEndDate(currentProject.end_date);
+                            setEditingProjectDates(true);
+                          } : undefined}
+                          title={canEdit() ? "Double-click to edit dates" : undefined}
+                          style={{
+                            padding: '8px 14px',
+                            background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                            border: '1px solid #bae6fd',
+                            borderRadius: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            fontSize: '13px',
+                            boxShadow: '0 1px 3px rgba(0, 174, 239, 0.08)',
+                            whiteSpace: 'nowrap',
+                            cursor: canEdit() ? 'pointer' : 'default'
+                          }}>
+                          <span style={{ color: '#0c4a6e', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            PROJECT:
+                          </span>
+                          <span style={{ fontWeight: 600, color: '#003c71' }}>
+                            {formatDate(currentProject.start_date)}
+                          </span>
+                          <span style={{ color: '#0284c7', fontWeight: 600, opacity: 0.6 }}>→</span>
+                          <span style={{ fontWeight: 600, color: '#003c71' }}>
+                            {formatDate(currentProject.end_date)}
+                          </span>
+                          {projectDuration && (
+                            <>
+                              <span style={{ color: '#0284c7', fontWeight: 600, opacity: 0.6 }}>•</span>
+                              <span style={{ fontWeight: 700, color: '#00aeef' }}>
+                                {projectDuration.months > 1
+                                  ? `${projectDuration.months} months`
+                                  : projectDuration.weeks > 1
+                                  ? `${projectDuration.weeks} weeks`
+                                  : `${projectDuration.days} days`}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      )
                     )}
                   </div>
                 )}
@@ -655,7 +764,7 @@ function App() {
               </p>
             </div>
 
-            {metrics.length === 0 && (
+            {(metrics.length === 0 || (selectedMetric && projectData.filter(item => item.metric === selectedMetric).length === 0)) && (
               <div className="empty-state" style={{ marginTop: '40px' }}>
                 <svg
                   className="empty-state-icon"
@@ -671,7 +780,7 @@ function App() {
                     d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                   />
                 </svg>
-                <h3>No Metrics Defined</h3>
+                <h3>No Schedule Defined</h3>
                 <p style={{ maxWidth: '600px', margin: '0 auto', lineHeight: '1.6' }}>
                   Establish sensible measures for your project that measure progress continuously throughout the project (lead measures) and demonstrate the goals of the project have been met at the end (lag measures).
                 </p>
@@ -699,7 +808,7 @@ function App() {
               </div>
             )}
 
-            {metrics.length > 0 && (
+            {metrics.length > 0 && !(selectedMetric && projectData.filter(item => item.metric === selectedMetric).length === 0) && (
               <MetricTabs
                 metrics={metrics}
                 projectData={projectData}
@@ -710,7 +819,7 @@ function App() {
               />
             )}
 
-            {selectedMetric && (
+            {selectedMetric && projectData.filter(item => item.metric === selectedMetric).length > 0 && (
               <div className="metrics-container">
                 <MetricChart
                   key={selectedMetric}
@@ -730,6 +839,11 @@ function App() {
               <TimeTravel
                 projectId={selectedProject}
                 onTimeTravelChange={handleTimeTravelChange}
+                onRevert={async () => {
+                  await loadProjectData();
+                  await loadProjectMetrics();
+                }}
+                isAdmin={isAdmin()}
               />
             )}
 
@@ -765,10 +879,12 @@ function App() {
         <DataGrid
           data={currentProjectData}
           metrics={metrics}
+          projectMetrics={projectMetrics}
           onDataChange={handleDataGridChange}
           onClose={() => setShowDataGrid(false)}
           projectId={selectedProject}
           onMetricCreated={handleMetricCreated}
+          onPeriodDeleted={loadProjectMetrics}
         />
       )}
 

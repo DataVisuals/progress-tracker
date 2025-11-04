@@ -23,6 +23,32 @@ Stop relying on vague status updates like "we're making good progress." Progress
 
 ## ✨ Latest Features
 
+### ⏪ **Time Travel Revert** (Admin Only)
+Restore project data to any historical state:
+- **Full State Restoration**: Revert all metrics to their exact state at any point in time
+- **Comprehensive Changes**: Updates values, restores deleted periods, removes periods added after target time
+- **Admin-Only Protection**: Only administrators can perform revert operations
+- **Full Audit Trail**: All revert actions logged with detailed change counts
+- **Reversible**: Revert operations themselves are logged, allowing "undo" via time travel
+- **Smart Confirmation**: Shows exactly what will happen before reverting
+- **Change Summary**: Displays counts of updated, deleted, restored, and unchanged records
+
+### ✏️ **Enhanced Inline Editing**
+Streamlined editing experience with improved UX:
+- **Auto-Select First Metric**: Edit Data modal automatically selects first metric
+- **Compact Modal Size**: Data grid now sizes to content for better screen utilization
+- **Copy/Paste Support**: Full clipboard support in numeric fields (changed from type="number" to type="text" with inputMode="numeric")
+- **Future Period Protection**: Complete field automatically disabled for future periods (greyed out, read-only)
+- **Consolidated Headers**: Reduced vertical space by combining header sections
+- **Project Date Editing**: Double-click project timeline to edit start/end dates inline
+
+### 📊 **Improved Metric Management**
+Better handling of metrics and schedules:
+- **Orphaned Metrics Support**: Metrics without periods remain visible in UI
+- **Smart Metric Lookup**: Bulk add and single row add work correctly for metrics with no existing periods
+- **Proper Placeholder Display**: Shows "No Schedule Defined" when metric exists but has no periods
+- **Clean Error Handling**: Clear error messages when metric operations fail
+
 ### 📥 **Excel Import** (Admin/PM)
 Bulk import project data to quickly set up or update multiple projects:
 - **Prescriptive Template**: Download Excel template with examples and instructions
@@ -98,11 +124,20 @@ Choose from three progression models when creating metrics:
 
 ### Data Management
 - **Smart Data Grid**:
-  - Inline editing for all metrics
+  - Inline editing for all metrics with auto-select on open
   - Target value propagation - change once, update all periods
   - Bulk period creation with configurable frequency
-  - Add/remove periods on the fly
-  - Metric renaming with live updates
+  - Add/remove periods on the fly with immediate delete
+  - Full copy/paste support in numeric fields
+  - Future period protection - completion disabled for upcoming periods
+  - Compact, auto-sizing modal that fits content
+  - Orphaned metrics support - metrics without periods remain visible
+  - Consolidated header design for better space utilization
+- **Project Editing**:
+  - Double-click project name to rename inline
+  - Double-click project description to edit inline
+  - Double-click project timeline to edit start/end dates inline
+  - All changes validated and immediately reflected
 - **Draggable Expected Line**: Adjust expected values directly on charts
 - **Flexible Data Entry**: Support for expected, target, and completion tracking
 
@@ -137,10 +172,16 @@ Track Concerns, Risks, Assumptions, Issues, and Dependencies:
   - Completion values for past periods (after end date) restricted to admins
   - Historic edits marked with ⚠️ HISTORIC EDIT in audit log
   - Prevents retroactive manipulation while allowing authorized corrections
-- **Time Travel Feature** (Admin/PM): View historical project state
-  - Reconstructs complete data state from audit log
+- **Time Travel Feature** (Admin/PM): View and restore historical project state
+  - Reconstructs complete data state from audit log at any point in time
   - Shows exact values and commentary as they appeared
-  - Interactive timeline for exploring project history
+  - Interactive timeline slider for exploring project history
+  - **Revert to Historical State** (Admin only):
+    - Restore all project data to any previous state with one click
+    - Updates current values, restores deleted periods, removes periods added after target time
+    - Full audit trail of revert actions with change counts
+    - Reversible - revert operations can themselves be reverted via time travel
+    - Protected by admin-only permissions
 - **Filterable History**: Search and filter audit events by user, action, date
 
 ### Data Export & Import

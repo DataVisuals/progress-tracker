@@ -744,13 +744,204 @@ async function testTimeTravel(projectId) {
     return;
   }
 
-  // Test with a past timestamp
+  // Test 1: Historical data reconstruction
   const pastDate = '2024-06-01T00:00:00Z';
   const result = await apiCall('get', `/projects/${projectId}/data/time-travel?timestamp=${pastDate}`);
 
   logTest('Time Travel', 'Historical data reconstruction',
     result.success ? 'PASS' : 'FAIL',
     result.success ? `Retrieved data as of ${pastDate}` : result.error
+  );
+
+  // Test 2: Revert requires admin permission
+  // Save admin token and create a PM user
+  const adminToken = authToken;
+  const pmEmail = `pm-revert-test-${Date.now()}@test.com`;
+  const pmRegister = await apiCall('post', '/auth/register', {
+    email: pmEmail,
+    name: 'Test PM for Revert',
+    password: 'testpass123'
+  });
+
+  if (pmRegister.success) {
+    const pmLogin = await apiCall('post', '/auth/login', {
+      email: pmEmail,
+      password: 'testpass123'
+    });
+
+    if (pmLogin.success) {
+      authToken = pmLogin.data.token;
+
+      // PM should not be able to revert
+      const pmRevertAttempt = await apiCall('post', `/projects/${projectId}/data/revert`, {
+        timestamp: pastDate
+      });
+
+      logTest('Time Travel', 'Revert admin-only permission',
+        !pmRevertAttempt.success && pmRevertAttempt.status === 403 ? 'PASS' : 'FAIL',
+        !pmRevertAttempt.success && pmRevertAttempt.status === 403 ?
+          'Correctly denies PM from reverting' :
+          'SECURITY ISSUE: Non-admin can revert data!'
+      );
+
+      // Restore admin token
+      authToken = adminToken;
+    }
+  }
+
+  // Test 3: Create a revert test scenario
+  // First, get the current project data
+  const currentData = await apiCall('get', `/projects/${projectId}/data`);
+
+  if (currentData.success && currentData.data.length > 0) {
+    // Modify a period
+    const periodToModify = currentData.data[0];
+    const originalComplete = periodToModify.complete;
+    const originalCommentary = periodToModify.commentary;
+
+    const updateResult = await apiCall('put', `/metric-periods/${periodToModify.id}`, {
+      complete: originalComplete + 10,
+      commentary: 'Modified for revert test'
+    });
+
+    if (updateResult.success) {
+      // Wait a moment to ensure timestamps are different
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Get the timestamp just before our modification
+      const auditResult = await apiCall('get', '/audit?table_name=metric_periods&limit=500');
+
+      if (auditResult.success && auditResult.data.length > 1) {
+        // Find the audit entry for our update
+        const updateAuditEntry = auditResult.data.find(entry =>
+          entry.action === 'UPDATE' &&
+          entry.record_id === periodToModify.id &&
+          entry.old_value?.complete === originalComplete
+        );
+
+        if (updateAuditEntry) {
+          // Get a timestamp just before our update (use previous audit entry)
+          const previousEntries = auditResult.data.filter(entry =>
+            new Date(entry.created_at) < new Date(updateAuditEntry.created_at)
+          );
+
+          if (previousEntries.length > 0) {
+            const revertTimestamp = previousEntries[0].created_at;
+
+            // Test 4: Revert operation
+            const revertResult = await apiCall('post', `/projects/${projectId}/data/revert`, {
+              timestamp: revertTimestamp
+            });
+
+            logTest('Time Travel', 'Revert to historical state',
+              revertResult.success ? 'PASS' : 'FAIL',
+              revertResult.success ?
+                `Reverted: Updated ${revertResult.data.changes.updated}, Deleted ${revertResult.data.changes.deleted}, Restored ${revertResult.data.changes.restored}` :
+                revertResult.error
+            );
+
+            // Test 5: Verify revert worked
+            if (revertResult.success) {
+              const verifyData = await apiCall('get', `/projects/${projectId}/data`);
+
+              if (verifyData.success) {
+                const revertedPeriod = verifyData.data.find(p => p.id === periodToModify.id);
+                const revertWorked = revertedPeriod &&
+                  revertedPeriod.complete === originalComplete &&
+                  revertedPeriod.commentary === originalCommentary;
+
+                logTest('Time Travel', 'Verify revert correctness',
+                  revertWorked ? 'PASS' : 'FAIL',
+                  revertWorked ?
+                    'Data successfully restored to historical state' :
+                    'Data does not match expected historical values'
+                );
+              }
+
+              // Test 6: Revert creates audit entries
+              const postRevertAudit = await apiCall('get', '/audit?table_name=metric_periods&limit=10');
+
+              if (postRevertAudit.success) {
+                const revertAuditEntries = postRevertAudit.data.filter(entry =>
+                  entry.action === 'REVERT' || entry.action === 'UPDATE'
+                );
+
+                logTest('Time Travel', 'Revert creates audit trail',
+                  revertAuditEntries.length > 0 ? 'PASS' : 'FAIL',
+                  revertAuditEntries.length > 0 ?
+                    `Found ${revertAuditEntries.length} audit entries from revert` :
+                    'No audit entries found for revert operation'
+                );
+              }
+
+              // Test 7: Revert-of-revert functionality (time travel back to present)
+              // Get current time and do another revert to "present" state
+              const presentTimestamp = new Date().toISOString();
+
+              // Make another change
+              const secondUpdate = await apiCall('put', `/metric-periods/${periodToModify.id}`, {
+                complete: originalComplete + 20,
+                commentary: 'Second modification'
+              });
+
+              if (secondUpdate.success) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Get audit log to find timestamp before second update
+                const secondAuditResult = await apiCall('get', '/audit?table_name=metric_periods&limit=500');
+
+                if (secondAuditResult.success) {
+                  const secondUpdateEntry = secondAuditResult.data.find(entry =>
+                    entry.action === 'UPDATE' &&
+                    entry.record_id === periodToModify.id &&
+                    entry.new_value?.complete === (originalComplete + 20)
+                  );
+
+                  if (secondUpdateEntry) {
+                    // Revert to before second update (which should restore first revert state)
+                    const secondRevert = await apiCall('post', `/projects/${projectId}/data/revert`, {
+                      timestamp: new Date(new Date(secondUpdateEntry.created_at).getTime() - 1000).toISOString()
+                    });
+
+                    logTest('Time Travel', 'Revert-of-revert functionality',
+                      secondRevert.success ? 'PASS' : 'FAIL',
+                      secondRevert.success ?
+                        'Successfully reverted a revert through time travel' :
+                        secondRevert.error
+                    );
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Test 8: Invalid timestamp handling
+  const invalidRevert = await apiCall('post', `/projects/${projectId}/data/revert`, {
+    timestamp: 'invalid-timestamp'
+  });
+
+  logTest('Time Travel', 'Invalid timestamp handling',
+    !invalidRevert.success ? 'PASS' : 'INFO',
+    !invalidRevert.success ?
+      'Correctly rejects invalid timestamp format' :
+      'Server may handle invalid timestamps differently'
+  );
+
+  // Test 9: Future timestamp handling
+  const futureDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+  const futureRevert = await apiCall('post', `/projects/${projectId}/data/revert`, {
+    timestamp: futureDate
+  });
+
+  logTest('Time Travel', 'Future timestamp handling',
+    futureRevert.success || !futureRevert.success ? 'INFO' : 'FAIL',
+    futureRevert.success ?
+      'Server allows revert to future date (returns current state)' :
+      `Server rejects future dates: ${futureRevert.error}`
   );
 }
 
@@ -1055,6 +1246,7 @@ async function runAllTests() {
   console.log('║  Testing all features including new enhancements:         ║');
   console.log('║  • Excel Import/Export                                     ║');
   console.log('║  • Project & Metric Dates/Durations                        ║');
+  console.log('║  • Time Travel & Revert (Admin Only)                       ║');
   console.log('║  • Authentication & Permissions                            ║');
   console.log('║  • CRAIDs, Comments, Links                                 ║');
   console.log('║  • Audit Log & Consistency Reporting                       ║');

@@ -4,7 +4,7 @@ import { api } from '../api/client';
 import { selectStyles } from './SelectStyles';
 import './DataGrid.css';
 
-const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCreated }) => {
+const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, projectId, onMetricCreated, onPeriodDeleted }) => {
   const [selectedMetric, setSelectedMetric] = useState('');
   const [editedData, setEditedData] = useState([]);
   const [showBulkAdd, setShowBulkAdd] = useState(false);
@@ -42,6 +42,13 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
       setNewRow(prev => ({ ...prev, metric: selectedMetric }));
     }
   }, [selectedMetric]);
+
+  // Auto-select first metric when component mounts
+  useEffect(() => {
+    if (metrics.length > 0 && !selectedMetric) {
+      setSelectedMetric(metrics[0]);
+    }
+  }, [metrics, selectedMetric]);
 
   const handleCellChange = (id, field, value) => {
     setEditedData(prev => {
@@ -82,9 +89,18 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
   const handleAddRow = () => {
     if (newRow.reporting_date && newRow.metric) {
       const newId = Math.max(...editedData.map(r => r.id), 0) + 1;
+
+      // Get metric_id from editedData if available, otherwise look it up from projectMetrics
+      let metric_id = editedData.length > 0 ? editedData[0].metric_id : null;
+      if (!metric_id) {
+        const metricInfo = projectMetrics.find(m => m.name === newRow.metric);
+        metric_id = metricInfo ? metricInfo.id : null;
+      }
+
       const rowToAdd = {
         ...newRow,
         id: newId,
+        metric_id: metric_id,
         expected: parseFloat(newRow.expected) || 0,
         final_target: parseFloat(newRow.final_target) || 0,
         complete: parseFloat(newRow.complete) || 0,
@@ -108,8 +124,12 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
     const startId = Math.max(...editedData.map(r => r.id), 0) + 1;
     const startDate = new Date(bulkConfig.startDate);
 
-    // Get metric_id from the first item in editedData (they all have the same metric)
-    const metric_id = editedData.length > 0 ? editedData[0].metric_id : null;
+    // Get metric_id from editedData if available, otherwise look it up from projectMetrics
+    let metric_id = editedData.length > 0 ? editedData[0].metric_id : null;
+    if (!metric_id) {
+      const metricInfo = projectMetrics.find(m => m.name === bulkConfig.metric);
+      metric_id = metricInfo ? metricInfo.id : null;
+    }
 
     for (let i = 0; i < bulkConfig.numPeriods; i++) {
       let date = new Date(startDate);
@@ -158,6 +178,11 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
 
       // Update local state to remove the row
       setEditedData(prev => prev.filter(row => row.id !== id));
+
+      // Reload metrics list in case this was the last period for a metric
+      if (onPeriodDeleted) {
+        await onPeriodDeleted();
+      }
     } catch (err) {
       console.error('Failed to delete period:', err);
       alert(`Failed to delete period: ${err.response?.data?.error || err.message}`);
@@ -211,40 +236,29 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
         <div className="data-grid-header">
           <h2>Edit Project Data</h2>
           <div className="header-actions">
+            <Select
+              value={selectedMetric ? { value: selectedMetric, label: selectedMetric } : null}
+              onChange={(option) => setSelectedMetric(option ? option.value : '')}
+              options={metrics.map(m => ({ value: m, label: m }))}
+              styles={selectStyles}
+              placeholder="-- Select a Metric --"
+              isClearable={true}
+              className="metric-selector-inline"
+            />
+            <button className="new-metric-btn" onClick={() => setShowNewMetric(true)}>
+              + Add Metric
+            </button>
+            {selectedMetric && (
+              <button className="bulk-add-btn" onClick={() => setShowBulkAdd(!showBulkAdd)}>
+                {showBulkAdd ? 'Hide' : 'Bulk Add'}
+              </button>
+            )}
             <button className="close-btn" onClick={onClose}>✕</button>
           </div>
         </div>
 
-        <div className="metric-selector-section">
-          <div className="metric-selector-row">
-            <div className="metric-selector-control">
-              <Select
-                value={selectedMetric ? { value: selectedMetric, label: selectedMetric } : null}
-                onChange={(option) => setSelectedMetric(option ? option.value : '')}
-                options={metrics.map(m => ({ value: m, label: m }))}
-                styles={selectStyles}
-                placeholder="-- Select a Metric --"
-                isClearable={true}
-              />
-            </div>
-            <button className="new-metric-btn" onClick={() => setShowNewMetric(true)}>
-              + Add Metric
-            </button>
-          </div>
-        </div>
-
-        {selectedMetric && (
-          <div className="selected-metric-header">
-            <h3>Editing: {selectedMetric}</h3>
-            <button className="bulk-add-btn" onClick={() => setShowBulkAdd(!showBulkAdd)}>
-              {showBulkAdd ? 'Hide' : 'Bulk Add'}
-            </button>
-          </div>
-        )}
-
         {selectedMetric && showBulkAdd && (
           <div className="bulk-add-section">
-            <h3>Bulk Add Rows</h3>
             <div className="bulk-add-form">
               <div className="bulk-field">
                 <label>Start Date:</label>
@@ -268,11 +282,12 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
               <div className="bulk-field">
                 <label># Periods:</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={bulkConfig.numPeriods}
                   min="1"
                   max="52"
-                  onChange={(e) => setBulkConfig({...bulkConfig, numPeriods: parseInt(e.target.value)})}
+                  onChange={(e) => setBulkConfig({...bulkConfig, numPeriods: parseInt(e.target.value) || 1})}
                 />
               </div>
               <div className="bulk-field">
@@ -287,9 +302,10 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
               <div className="bulk-field">
                 <label>Target:</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={bulkConfig.final_target}
-                  onChange={(e) => setBulkConfig({...bulkConfig, final_target: parseInt(e.target.value)})}
+                  onChange={(e) => setBulkConfig({...bulkConfig, final_target: parseInt(e.target.value) || 0})}
                 />
               </div>
               <button className="bulk-create-btn" onClick={handleBulkAdd}>
@@ -314,7 +330,14 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
                 </tr>
               </thead>
             <tbody>
-              {editedData.map(row => (
+              {editedData.map(row => {
+                // Check if this period is in the future
+                const periodDate = new Date(row.reporting_date);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isFuture = periodDate > today;
+
+                return (
                 <tr key={row.id}>
                   <td>
                     <input
@@ -334,26 +357,31 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
                   </td>
                   <td>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       value={row.expected}
-                      onChange={(e) => handleCellChange(row.id, 'expected', parseFloat(e.target.value))}
+                      onChange={(e) => handleCellChange(row.id, 'expected', parseFloat(e.target.value) || 0)}
                       style={{width: '100%'}}
                     />
                   </td>
                   <td>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       value={row.final_target}
-                      onChange={(e) => handleCellChange(row.id, 'final_target', parseFloat(e.target.value))}
+                      onChange={(e) => handleCellChange(row.id, 'final_target', parseFloat(e.target.value) || 0)}
                       style={{width: '100%'}}
                     />
                   </td>
                   <td>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       value={row.complete}
-                      onChange={(e) => handleCellChange(row.id, 'complete', parseFloat(e.target.value))}
-                      style={{width: '100%'}}
+                      onChange={(e) => handleCellChange(row.id, 'complete', parseFloat(e.target.value) || 0)}
+                      style={{width: '100%', backgroundColor: isFuture ? '#f0f0f0' : 'transparent', cursor: isFuture ? 'not-allowed' : 'text'}}
+                      readOnly={isFuture}
+                      disabled={isFuture}
                     />
                   </td>
                   <td>
@@ -362,7 +390,8 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               <tr className="new-row">
                 <td>
                   <input
@@ -381,7 +410,8 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
                 </td>
                 <td>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="0"
                     value={newRow.expected}
                     onChange={(e) => setNewRow({ ...newRow, expected: e.target.value })}
@@ -389,7 +419,8 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
                 </td>
                 <td>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="0"
                     value={newRow.final_target}
                     onChange={(e) => setNewRow({ ...newRow, final_target: e.target.value })}
@@ -397,7 +428,8 @@ const DataGrid = ({ data, metrics, onDataChange, onClose, projectId, onMetricCre
                 </td>
                 <td>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="0"
                     value={newRow.complete}
                     onChange={(e) => setNewRow({ ...newRow, complete: e.target.value })}

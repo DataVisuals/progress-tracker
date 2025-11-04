@@ -617,6 +617,36 @@ app.delete('/api/metrics/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// ===== GET ALL METRICS FOR A PROJECT =====
+app.get('/api/projects/:projectId/metrics', async (req, res) => {
+  try {
+    const metrics = await dbAll(`
+      SELECT
+        m.id,
+        m.name,
+        m.project_id,
+        m.start_date,
+        m.end_date,
+        m.frequency,
+        m.progression_type,
+        m.final_target,
+        m.amber_tolerance,
+        m.red_tolerance,
+        m.metric_type,
+        m.owner_id,
+        u.name as owner_name
+      FROM metrics m
+      LEFT JOIN users u ON m.owner_id = u.id
+      WHERE m.project_id = ?
+      ORDER BY m.name
+    `, [req.params.projectId]);
+
+    res.json(metrics);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ===== PROJECT DATA (for grid view) =====
 app.get('/api/projects/:projectId/data', async (req, res) => {
   try {
@@ -1935,6 +1965,264 @@ app.get('/api/projects/:projectId/data/time-travel', authenticateToken, async (r
     res.json(historicalData.sort((a, b) => new Date(a.reporting_date) - new Date(b.reporting_date)));
   } catch (err) {
     console.error('Time travel error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== REVERT TO HISTORICAL STATE =====
+app.post('/api/projects/:projectId/data/revert', authenticateToken, async (req, res) => {
+  try {
+    const { timestamp } = req.body;
+    const projectId = req.params.projectId;
+    const userId = req.user.userId;
+
+    // Check permissions - only admin can revert
+    const user = await dbGet('SELECT * FROM users WHERE id = ?', [userId]);
+    if (!isAdmin(user)) {
+      return res.status(403).json({ error: 'Only admins can revert to historical states' });
+    }
+
+    if (!timestamp) {
+      return res.status(400).json({ error: 'timestamp is required' });
+    }
+
+    const targetDate = new Date(timestamp);
+    if (isNaN(targetDate.getTime())) {
+      return res.status(400).json({ error: 'Invalid timestamp format' });
+    }
+
+    // Get the historical state using the same logic as time-travel endpoint
+    // First, get all metrics for this project
+    const metrics = await dbAll('SELECT id FROM metrics WHERE project_id = ?', [projectId]);
+    const metricIds = metrics.map(m => m.id);
+
+    if (metricIds.length === 0) {
+      return res.status(400).json({ error: 'No metrics found for this project' });
+    }
+
+    // Get all current periods
+    const currentPeriods = await dbAll(`
+      SELECT id, metric_id, reporting_date, expected, target, complete, commentary
+      FROM metric_periods
+      WHERE metric_id IN (${metricIds.map(() => '?').join(',')})
+    `, metricIds);
+
+    // Get ALL audit log entries for metric_periods
+    const allAuditLogs = await dbAll(`
+      SELECT id, action, record_id, old_values, new_values, created_at
+      FROM audit_log
+      WHERE table_name = 'metric_periods'
+      ORDER BY created_at ASC, id ASC
+    `);
+
+    // Reconstruct historical state (same logic as time-travel)
+    const periodStates = {};
+
+    // First pass: Find CREATE entries
+    allAuditLogs.forEach(log => {
+      if (log.action === 'CREATE') {
+        const recordId = log.record_id;
+        const newValues = JSON.parse(log.new_values || '{}');
+        const createdAt = new Date(log.created_at);
+
+        if (metricIds.includes(newValues.metric_id)) {
+          periodStates[recordId] = {
+            id: recordId,
+            metric_id: newValues.metric_id,
+            reporting_date: newValues.reporting_date,
+            expected: newValues.expected || 0,
+            target: newValues.target || 0,
+            complete: createdAt <= targetDate ? (newValues.complete || 0) : 0,
+            commentary: createdAt <= targetDate ? (newValues.commentary || null) : null
+          };
+        }
+      }
+    });
+
+    // Add current periods that don't have CREATE audit entries
+    currentPeriods.forEach(period => {
+      if (!periodStates[period.id]) {
+        periodStates[period.id] = {
+          id: period.id,
+          metric_id: period.metric_id,
+          reporting_date: period.reporting_date,
+          expected: period.expected,
+          target: period.target,
+          complete: 0,
+          commentary: null
+        };
+      }
+    });
+
+    // Second pass: Apply UPDATE/DELETE entries up to target timestamp
+    const relevantLogs = allAuditLogs.filter(log =>
+      new Date(log.created_at) <= targetDate
+    );
+
+    relevantLogs.forEach(log => {
+      const recordId = log.record_id;
+
+      if (log.action === 'CREATE') {
+        return; // Already handled
+      } else if (log.action === 'UPDATE') {
+        if (periodStates[recordId]) {
+          const newValues = JSON.parse(log.new_values || '{}');
+          const periodReportingDate = new Date(periodStates[recordId].reporting_date);
+
+          if (newValues.complete !== undefined && periodReportingDate <= targetDate) {
+            periodStates[recordId].complete = newValues.complete;
+          }
+          if (newValues.expected !== undefined) {
+            periodStates[recordId].expected = newValues.expected;
+          }
+          if (newValues.target !== undefined) {
+            periodStates[recordId].target = newValues.target;
+          }
+          if (newValues.commentary !== undefined) {
+            periodStates[recordId].commentary = newValues.commentary;
+          }
+        }
+      } else if (log.action === 'DELETE') {
+        if (periodStates[recordId]) {
+          delete periodStates[recordId];
+        }
+      }
+    });
+
+    // Now apply the historical state to the current database
+    // This will create audit log entries for the revert action
+    let updatedCount = 0;
+    let unchangedCount = 0;
+    let deletedCount = 0;
+    let restoredCount = 0;
+
+    // Track which periods exist in historical state
+    const historicalPeriodIds = new Set(Object.keys(periodStates).map(id => parseInt(id)));
+    const currentPeriodIds = new Set(currentPeriods.map(p => p.id));
+
+    // Delete periods that don't exist in historical state but exist currently
+    for (const currentPeriod of currentPeriods) {
+      if (!historicalPeriodIds.has(currentPeriod.id)) {
+        await dbRun('DELETE FROM metric_periods WHERE id = ?', [currentPeriod.id]);
+
+        // Create audit log entry
+        await dbRun(`
+          INSERT INTO audit_log (table_name, record_id, action, old_values, new_values, user_id)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `, [
+          'metric_periods',
+          currentPeriod.id,
+          'DELETE',
+          JSON.stringify(currentPeriod),
+          null,
+          userId
+        ]);
+
+        deletedCount++;
+      }
+    }
+
+    // Update or restore periods from historical state
+    for (const [periodId, historicalState] of Object.entries(periodStates)) {
+      const currentPeriod = currentPeriods.find(p => p.id === parseInt(periodId));
+
+      if (!currentPeriod) {
+        // Period was deleted, restore it
+        await dbRun(`
+          INSERT INTO metric_periods (id, metric_id, reporting_date, expected, target, complete, commentary)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [
+          historicalState.id,
+          historicalState.metric_id,
+          historicalState.reporting_date,
+          historicalState.expected,
+          historicalState.target,
+          historicalState.complete,
+          historicalState.commentary
+        ]);
+
+        // Create audit log entry
+        await dbRun(`
+          INSERT INTO audit_log (table_name, record_id, action, old_values, new_values, user_id)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `, [
+          'metric_periods',
+          historicalState.id,
+          'CREATE',
+          null,
+          JSON.stringify(historicalState),
+          userId
+        ]);
+
+        restoredCount++;
+      } else {
+        // Check if values are different
+        const hasChanges =
+          currentPeriod.expected !== historicalState.expected ||
+          currentPeriod.target !== historicalState.target ||
+          currentPeriod.complete !== historicalState.complete ||
+          (currentPeriod.commentary || null) !== (historicalState.commentary || null);
+
+        if (hasChanges) {
+          // Update the period
+          await dbRun(`
+            UPDATE metric_periods
+            SET expected = ?, target = ?, complete = ?, commentary = ?
+            WHERE id = ?
+          `, [
+            historicalState.expected,
+            historicalState.target,
+            historicalState.complete,
+            historicalState.commentary,
+            historicalState.id
+          ]);
+
+          // Create audit log entry
+          const changedValues = {};
+          if (currentPeriod.expected !== historicalState.expected) changedValues.expected = historicalState.expected;
+          if (currentPeriod.target !== historicalState.target) changedValues.target = historicalState.target;
+          if (currentPeriod.complete !== historicalState.complete) changedValues.complete = historicalState.complete;
+          if ((currentPeriod.commentary || null) !== (historicalState.commentary || null)) {
+            changedValues.commentary = historicalState.commentary;
+          }
+
+          await dbRun(`
+            INSERT INTO audit_log (table_name, record_id, action, old_values, new_values, user_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `, [
+            'metric_periods',
+            historicalState.id,
+            'UPDATE',
+            JSON.stringify({
+              expected: currentPeriod.expected,
+              target: currentPeriod.target,
+              complete: currentPeriod.complete,
+              commentary: currentPeriod.commentary
+            }),
+            JSON.stringify(changedValues),
+            userId
+          ]);
+
+          updatedCount++;
+        } else {
+          unchangedCount++;
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Reverted to state at ${targetDate.toISOString()}`,
+      changes: {
+        updated: updatedCount,
+        deleted: deletedCount,
+        restored: restoredCount,
+        unchanged: unchangedCount
+      }
+    });
+
+  } catch (err) {
+    console.error('Revert error:', err);
     res.status(500).json({ error: err.message });
   }
 });
