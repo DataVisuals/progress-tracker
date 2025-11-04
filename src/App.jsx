@@ -181,10 +181,11 @@ function App() {
   const handleProjectSetupComplete = async (projectId) => {
     await loadProjects();
     setSelectedProject(projectId.toString());
-    await loadProjectData();
     setShowNewProject(false);
-    // Open DataGrid to add schedules immediately after project creation
-    setShowDataGrid(true);
+    // Wait a moment for state to update, then load project data
+    setTimeout(async () => {
+      await loadProjectData();
+    }, 100);
   };
 
   const handleProjectSetupCancel = () => {

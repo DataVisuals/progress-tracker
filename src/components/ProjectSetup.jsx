@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import { api } from '../api/client';
 import { selectStyles } from './SelectStyles';
@@ -21,8 +21,9 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
   const defaultDates = getDefaultDates();
 
   const [projectName, setProjectName] = useState('');
-  const [projectManager, setProjectManager] = useState('');
+  const [projectManager, setProjectManager] = useState(null);
   const [projectDesc, setProjectDesc] = useState('');
+  const [users, setUsers] = useState([]);
   const [projectStartDate, setProjectStartDate] = useState(defaultDates.start);
   const [projectEndDate, setProjectEndDate] = useState(defaultDates.end);
   const [startDate, setStartDate] = useState(defaultDates.start);
@@ -34,6 +35,19 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
   const [links, setLinks] = useState([
     { label: '', url: '' }
   ]);
+
+  // Load users on component mount
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const response = await api.getUsers();
+        setUsers(response.data);
+      } catch (err) {
+        console.error('Failed to load users:', err);
+      }
+    };
+    loadUsers();
+  }, []);
 
   const addMetric = () => {
     setMetrics([...metrics, { name: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0 }]);
@@ -96,7 +110,7 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
       const projectResponse = await api.createProject({
         name: projectName,
         description: projectDesc,
-        initiative_manager: projectManager,
+        initiative_manager: projectManager ? projectManager.label : '',
         start_date: projectStartDate,
         end_date: projectEndDate
       });
@@ -158,12 +172,14 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
           </div>
           <div className="form-group">
             <label htmlFor="project-manager">Project Manager</label>
-            <input
+            <Select
               id="project-manager"
-              type="text"
               value={projectManager}
-              onChange={(e) => setProjectManager(e.target.value)}
-              placeholder="Enter project manager name..."
+              onChange={(option) => setProjectManager(option)}
+              options={users.map(user => ({ value: user.id, label: user.name }))}
+              styles={selectStyles}
+              placeholder="Select project manager..."
+              isClearable
             />
           </div>
         </div>
