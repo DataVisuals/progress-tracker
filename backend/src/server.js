@@ -14,6 +14,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 app.use(cors());
 app.use(express.json());
 
+// ===== HEALTH CHECK =====
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 // ===== AUTH MIDDLEWARE =====
 function authenticateToken(req, res, next) {
   const token = req.headers['authorization']?.split(' ')[1];
