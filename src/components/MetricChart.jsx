@@ -754,7 +754,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="name"
-            height={80}
+            height={50}
             tick={<CustomXAxisTick data={chartData} />}
           />
           <YAxis
@@ -908,7 +908,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
       </div>
 
       {/* Data Table - Excel-style horizontal layout */}
-      <div style={{ marginTop: '4px' }}>
+      <div>
         <div className="data-table-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
