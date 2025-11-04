@@ -232,6 +232,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
   const [isCommentaryCollapsed, setIsCommentaryCollapsed] = useState(true);
   const [isDataTableCollapsed, setIsDataTableCollapsed] = useState(false);
   const chartContainerRef = useRef(null);
+  const [tableWidth, setTableWidth] = useState(null);
 
   // Sort data by date always for consistency
   const sortedData = [...data].sort((a, b) => {
@@ -335,6 +336,27 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
       currentPeriodX2 = chartData[currentPeriodIndex].name;
     }
   }
+
+  // Calculate table width to match chart
+  useEffect(() => {
+    const calculateTableWidth = () => {
+      if (!chartContainerRef.current) return;
+
+      // Get the chart container's width (this is the ResponsiveContainer)
+      const chartContainer = chartContainerRef.current;
+      const chartWidth = chartContainer.offsetWidth;
+
+      // Set table width to match the chart container
+      setTableWidth(chartWidth);
+    };
+
+    // Initial calculation
+    setTimeout(calculateTableWidth, 100);
+
+    // Recalculate on window resize
+    window.addEventListener('resize', calculateTableWidth);
+    return () => window.removeEventListener('resize', calculateTableWidth);
+  }, [chartData]);
 
   const handleStartAdd = () => {
     setIsAdding(true);
@@ -923,7 +945,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
         </div>
         {!isDataTableCollapsed && (
           <div className="data-table-section">
-        <table className="data-table">
+        <table className="data-table" style={{ width: tableWidth ? `${tableWidth}px` : 'auto' }}>
           <thead>
             <tr>
               <th className="row-header"></th>
@@ -934,29 +956,17 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
                 const formattedDate = monthNames[date.getMonth()];
 
                 return (
-                  <th key={index} className="period-header">{formattedDate}</th>
+                  <th
+                    key={index}
+                    className="period-header"
+                  >
+                    {formattedDate}
+                  </th>
                 );
               })}
             </tr>
           </thead>
           <tbody>
-            {/* Target Row */}
-            <tr className="data-row">
-              <td className="row-label target-label">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '4px', verticalAlign: 'middle' }}>
-                  <circle cx="6" cy="6" r="5.5" stroke="currentColor" strokeWidth="1"/>
-                  <circle cx="6" cy="6" r="3.5" stroke="currentColor" strokeWidth="1"/>
-                  <circle cx="6" cy="6" r="1.5" fill="currentColor"/>
-                </svg>
-                Target
-              </td>
-              {chartData.map((item, index) => (
-                <td key={index} className="number-cell target-cell">
-                  {formatNumber(item.final_target)}
-                </td>
-              ))}
-            </tr>
-
             {/* Complete Row */}
             <tr className="data-row">
               <td className="row-label">Complete</td>
@@ -981,7 +991,10 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
                 }
 
                 return (
-                  <td key={index} className={`number-cell ${statusClass}`}>
+                  <td
+                    key={index}
+                    className={`number-cell ${statusClass}`}
+                  >
                     {formatNumber(item.complete)}
                   </td>
                 );
@@ -992,41 +1005,33 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
             <tr className="data-row">
               <td className="row-label">Expected</td>
               {chartData.map((item, index) => (
-                <td key={index} className="number-cell">
+                <td
+                  key={index}
+                  className="number-cell"
+                >
                   {formatNumber(item.expected)}
                 </td>
               ))}
             </tr>
 
-            {/* Variance Row */}
+            {/* Target Row */}
             <tr className="data-row">
-              <td className="row-label">Variance</td>
-              {chartData.map((item, index) => {
-                const variance = item.complete - item.expected;
-                const arrow = variance > 0 ? '↑' : variance < 0 ? '↓' : '•';
-
-                return (
-                  <td key={index} className={`number-cell variance-cell ${variance >= 0 ? 'positive' : 'negative'}`}>
-                    <span className="variance-arrow">{arrow}</span> {variance >= 0 ? '+' : ''}{formatNumber(variance)}
-                  </td>
-                );
-              })}
-            </tr>
-
-            {/* Variance % Row */}
-            <tr className="data-row">
-              <td className="row-label">Variance %</td>
-              {chartData.map((item, index) => {
-                const variance = item.complete - item.expected;
-                const variancePercent = item.expected > 0 ? ((variance / item.expected) * 100) : 0;
-                const arrow = variance > 0 ? '↑' : variance < 0 ? '↓' : '•';
-
-                return (
-                  <td key={index} className={`number-cell variance-cell ${variance >= 0 ? 'positive' : 'negative'}`}>
-                    <span className="variance-arrow">{arrow}</span> {variancePercent >= 0 ? '+' : ''}{variancePercent.toFixed(1)}%
-                  </td>
-                );
-              })}
+              <td className="row-label target-label">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '4px', verticalAlign: 'middle' }}>
+                  <circle cx="6" cy="6" r="5.5" stroke="currentColor" strokeWidth="1"/>
+                  <circle cx="6" cy="6" r="3.5" stroke="currentColor" strokeWidth="1"/>
+                  <circle cx="6" cy="6" r="1.5" fill="currentColor"/>
+                </svg>
+                Target
+              </td>
+              {chartData.map((item, index) => (
+                <td
+                  key={index}
+                  className="number-cell target-cell"
+                >
+                  {formatNumber(item.final_target)}
+                </td>
+              ))}
             </tr>
           </tbody>
         </table>

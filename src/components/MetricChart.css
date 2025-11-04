@@ -574,7 +574,7 @@
 
 .data-table {
   display: table;
-  width: 100%;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 12px;
@@ -621,7 +621,6 @@
 }
 
 .data-table th.period-header {
-  width: auto;
   cursor: pointer;
 }
 

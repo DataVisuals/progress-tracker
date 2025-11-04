@@ -218,20 +218,200 @@
 
 .report-header {
   background: white;
-  padding: 12px 16px;
+  padding: 20px 24px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 12px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   flex-shrink: 0;
+  gap: 24px;
+}
+
+.report-header-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .report-header h2 {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   color: #003c71;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.project-timeline-display {
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  box-shadow: 0 1px 3px rgba(0, 174, 239, 0.08);
+  white-space: nowrap;
+}
+
+.project-timeline-display.editable {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.project-timeline-display.editable:hover {
+  border-color: #7dd3fc;
+  box-shadow: 0 2px 4px rgba(0, 174, 239, 0.12);
+}
+
+.project-timeline-label {
+  color: #0c4a6e;
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.project-timeline-date {
+  font-weight: 600;
+  color: #003c71;
+}
+
+.project-timeline-separator {
+  color: #0284c7;
+  font-weight: 600;
+  opacity: 0.6;
+}
+
+.project-timeline-duration {
+  font-weight: 700;
+  color: #00aeef;
+}
+
+.project-dates-editor {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.project-dates-editor input[type="date"] {
+  padding: 6px 8px;
+  border: 2px solid #00aeef;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.project-dates-editor button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.project-dates-editor button.save-btn {
+  background: #00aeef;
+  color: white;
+}
+
+.project-dates-editor button.save-btn:hover {
+  background: #0284c7;
+}
+
+.project-dates-editor button.cancel-btn {
+  background: #6b7280;
+  color: white;
+}
+
+.project-dates-editor button.cancel-btn:hover {
+  background: #4b5563;
+}
+
+.project-description {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 4px 0;
+  white-space: pre-wrap;
+}
+
+.project-description.editable {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.project-description.empty {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.project-description.filled {
+  color: #374151;
+}
+
+.project-description.editable:hover {
+  color: #00aeef;
+}
+
+.project-links {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.project-link-btn {
+  background-color: #00aeef;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  display: inline-block;
+}
+
+.project-link-btn:hover {
+  background-color: #003c71;
+}
+
+.edit-links-btn {
+  background-color: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.edit-links-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.report-meta {
+  font-size: 12px;
+  color: #9ca3af;
+  white-space: nowrap;
+  align-self: flex-start;
   margin: 0;
 }
 

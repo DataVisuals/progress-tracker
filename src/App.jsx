@@ -534,7 +534,7 @@ function App() {
         {selectedProject && (
           <div className="report-section">
             <div className="report-header">
-              <div>
+              <div className="report-header-content">
                 {editingProjectName ? (
                   <input
                     type="text"
@@ -546,110 +546,54 @@ function App() {
                     autoFocus
                   />
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px' }}>
+                  <div className="report-header-title-row">
                     <h2
                       onDoubleClick={canEdit() ? handleProjectNameDoubleClick : undefined}
                       title={canEdit() ? "Double-click to rename" : undefined}
-                      style={{ cursor: canEdit() ? 'pointer' : 'default', margin: 0 }}
+                      style={{ cursor: canEdit() ? 'pointer' : 'default' }}
                     >
                       {projectName}
                     </h2>
                     {currentProject?.start_date && currentProject?.end_date && (
                       editingProjectDates ? (
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <div className="project-dates-editor">
                           <input
                             type="date"
                             value={editProjectStartDate}
                             onChange={(e) => setEditProjectStartDate(e.target.value)}
-                            style={{
-                              padding: '6px 8px',
-                              border: '2px solid #00aeef',
-                              borderRadius: '4px',
-                              fontSize: '13px',
-                              fontWeight: 600
-                            }}
                             autoFocus
                           />
-                          <span style={{ color: '#0284c7', fontWeight: 600 }}>→</span>
+                          <span className="project-timeline-separator">→</span>
                           <input
                             type="date"
                             value={editProjectEndDate}
                             onChange={(e) => setEditProjectEndDate(e.target.value)}
-                            style={{
-                              padding: '6px 8px',
-                              border: '2px solid #00aeef',
-                              borderRadius: '4px',
-                              fontSize: '13px',
-                              fontWeight: 600
-                            }}
                           />
-                          <button
-                            onClick={handleSaveProjectDates}
-                            style={{
-                              padding: '6px 12px',
-                              background: '#00aeef',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              fontWeight: 600
-                            }}
-                          >
+                          <button onClick={handleSaveProjectDates} className="save-btn">
                             Save
                           </button>
-                          <button
-                            onClick={() => setEditingProjectDates(false)}
-                            style={{
-                              padding: '6px 12px',
-                              background: '#6b7280',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              fontWeight: 600
-                            }}
-                          >
+                          <button onClick={() => setEditingProjectDates(false)} className="cancel-btn">
                             Cancel
                           </button>
                         </div>
                       ) : (
                         <div
-                          className="project-timeline-display"
+                          className={`project-timeline-display ${canEdit() ? 'editable' : ''}`}
                           onDoubleClick={canEdit() ? () => {
                             setEditProjectStartDate(currentProject.start_date);
                             setEditProjectEndDate(currentProject.end_date);
                             setEditingProjectDates(true);
                           } : undefined}
                           title={canEdit() ? "Double-click to edit dates" : undefined}
-                          style={{
-                            padding: '8px 14px',
-                            background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-                            border: '1px solid #bae6fd',
-                            borderRadius: '6px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            fontSize: '13px',
-                            boxShadow: '0 1px 3px rgba(0, 174, 239, 0.08)',
-                            whiteSpace: 'nowrap',
-                            cursor: canEdit() ? 'pointer' : 'default'
-                          }}>
-                          <span style={{ color: '#0c4a6e', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            PROJECT:
-                          </span>
-                          <span style={{ fontWeight: 600, color: '#003c71' }}>
-                            {formatDate(currentProject.start_date)}
-                          </span>
-                          <span style={{ color: '#0284c7', fontWeight: 600, opacity: 0.6 }}>→</span>
-                          <span style={{ fontWeight: 600, color: '#003c71' }}>
-                            {formatDate(currentProject.end_date)}
-                          </span>
+                        >
+                          <span className="project-timeline-label">PROJECT:</span>
+                          <span className="project-timeline-date">{formatDate(currentProject.start_date)}</span>
+                          <span className="project-timeline-separator">→</span>
+                          <span className="project-timeline-date">{formatDate(currentProject.end_date)}</span>
                           {projectDuration && (
                             <>
-                              <span style={{ color: '#0284c7', fontWeight: 600, opacity: 0.6 }}>•</span>
-                              <span style={{ fontWeight: 700, color: '#00aeef' }}>
+                              <span className="project-timeline-separator">•</span>
+                              <span className="project-timeline-duration">
                                 {projectDuration.months > 1
                                   ? `${projectDuration.months} months`
                                   : projectDuration.weeks > 1
@@ -676,7 +620,6 @@ function App() {
                       autoFocus
                       style={{
                         width: '100%',
-                        marginTop: '8px',
                         padding: '8px 12px',
                         fontSize: '14px',
                         lineHeight: '1.5',
@@ -688,24 +631,15 @@ function App() {
                     />
                   ) : (
                     <p
+                      className={`project-description ${canEdit() ? 'editable' : ''} ${currentProject?.description ? 'filled' : 'empty'}`}
                       onClick={handleProjectDescClick}
                       title={canEdit() ? "Click to edit description" : undefined}
-                      style={{
-                        marginTop: '8px',
-                        fontSize: '14px',
-                        lineHeight: '1.5',
-                        color: currentProject?.description ? '#374151' : '#9ca3af',
-                        cursor: canEdit() ? 'pointer' : 'default',
-                        fontStyle: currentProject?.description ? 'normal' : 'italic',
-                        padding: '4px 0',
-                        whiteSpace: 'pre-wrap'
-                      }}
                     >
                       {currentProject?.description || (canEdit() ? 'Click to add a description...' : '')}
                     </p>
                   )
                 ) : null}
-                <div className="project-links" style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div className="project-links">
                   {projectLinks.map((link) => (
                     <a
                       key={link.id}
@@ -713,19 +647,6 @@ function App() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="project-link-btn"
-                      style={{
-                        backgroundColor: '#00aeef',
-                        color: 'white',
-                        padding: '6px 14px',
-                        borderRadius: '6px',
-                        textDecoration: 'none',
-                        fontSize: '13px',
-                        fontWeight: '500',
-                        transition: 'background-color 0.2s',
-                        display: 'inline-block'
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#003c71'}
-                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#00aeef'}
                     >
                       {link.label}
                     </a>
@@ -733,25 +654,7 @@ function App() {
                   {canEdit() && (
                     <button
                       onClick={() => setShowLinksEditor(true)}
-                      style={{
-                        backgroundColor: 'transparent',
-                        color: '#6b7280',
-                        border: '1px solid #d1d5db',
-                        padding: '6px 14px',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f3f4f6';
-                        e.currentTarget.style.borderColor = '#9ca3af';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.borderColor = '#d1d5db';
-                      }}
+                      className="edit-links-btn"
                       title="Edit project links"
                     >
                       {projectLinks.length === 0 ? '+ Add Links' : 'Edit Links'}
