@@ -749,7 +749,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
             <ResponsiveContainer width="100%" height={300}>
               <ComposedChart
                 data={chartData}
-                margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+                margin={{ top: 20, right: 20, left: 20, bottom: 5 }}
               >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
@@ -908,7 +908,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
       </div>
 
       {/* Data Table - Excel-style horizontal layout */}
-      <div style={{ marginTop: '8px' }}>
+      <div style={{ marginTop: '4px' }}>
         <div className="data-table-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
