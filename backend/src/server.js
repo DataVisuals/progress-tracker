@@ -1,8 +1,25 @@
 const express = require('express');
 const cors = require('cors');
-const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+
+// Promisify crypto functions
+const scrypt = promisify(crypto.scrypt);
+
+// Helper functions for password hashing
+async function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derivedKey = await scrypt(password, salt, 64);
+  return `${salt}:${derivedKey.toString('hex')}`;
+}
+
+async function comparePassword(password, hash) {
+  const [salt, key] = hash.split(':');
+  const derivedKey = await scrypt(password, salt, 64);
+  return key === derivedKey.toString('hex');
+}
 const { db, dbRun, dbGet, dbAll, generateMetricPeriods } = require('./db');
 const { ROLES, canEditProject, canCreateProject, isAdmin } = require('./permissions');
 const { startScheduler } = require('./scheduler');
@@ -73,7 +90,7 @@ app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     const user = await dbGet('SELECT * FROM users WHERE email = ?', [email]);
 
-    if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+    if (!user || !(await comparePassword(password, user.password_hash))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -87,7 +104,7 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, name, password } = req.body;
-    const hash = bcrypt.hashSync(password, 10);
+    const hash = await hashPassword(password);
     const result = await dbRun('INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)', [email, name, hash]);
 
     // Log user registration in audit log
@@ -132,12 +149,12 @@ app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
     }
 
     // Verify current password
-    if (!bcrypt.compareSync(currentPassword, user.password_hash)) {
+    if (!(await comparePassword(currentPassword, user.password_hash))) {
       return res.status(401).json({ error: 'Current password is incorrect' });
     }
 
     // Hash new password
-    const newHash = bcrypt.hashSync(newPassword, 10);
+    const newHash = await hashPassword(newPassword);
 
     // Update password
     await dbRun('UPDATE users SET password_hash = ? WHERE id = ?', [newHash, userId]);
@@ -1771,6 +1788,74 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
       }
     }
 
+    // Check for project timeline gaps (periods not covered by any metric)
+    const projectGaps = await dbAll(`
+      WITH RECURSIVE dates AS (
+        SELECT
+          p.id as project_id,
+          p.name as project_name,
+          p.initiative_manager as pm_name,
+          DATE(p.start_date) as date,
+          DATE(p.end_date) as end_date
+        FROM projects p
+        UNION ALL
+        SELECT
+          project_id,
+          project_name,
+          pm_name,
+          DATE(date, '+1 day'),
+          end_date
+        FROM dates
+        WHERE DATE(date, '+1 day') <= end_date
+      ),
+      metric_coverage AS (
+        SELECT
+          m.project_id,
+          DATE(m.start_date) as start_date,
+          DATE(m.end_date) as end_date
+        FROM metrics m
+      ),
+      uncovered_dates AS (
+        SELECT
+          d.project_id,
+          d.project_name,
+          d.pm_name,
+          d.date,
+          (SELECT COUNT(*)
+           FROM metric_coverage mc
+           WHERE mc.project_id = d.project_id
+             AND d.date >= mc.start_date
+             AND d.date <= mc.end_date) as coverage_count
+        FROM dates d
+      ),
+      gap_ranges AS (
+        SELECT
+          project_id,
+          project_name,
+          pm_name,
+          MIN(date) as gap_start,
+          MAX(date) as gap_end,
+          COUNT(*) as gap_days
+        FROM uncovered_dates
+        WHERE coverage_count = 0
+        GROUP BY project_id, project_name, pm_name
+        HAVING gap_days > 0
+      )
+      SELECT * FROM gap_ranges
+    `);
+
+    for (const gap of projectGaps) {
+      const duration = gap.gap_days === 1 ? '1 day' : `${gap.gap_days} days`;
+      issues.push({
+        type: 'timeline_gap',
+        severity: 'warning',
+        project_id: gap.project_id,
+        project_name: gap.project_name,
+        pm_name: gap.pm_name,
+        details: `Project has ${duration} not covered by any metric (${gap.gap_start} to ${gap.gap_end}). Consider adding metrics to cover this period or adjusting the project timeline.`
+      });
+    }
+
     res.json({
       generated_at: new Date().toISOString(),
       total_issues: issues.length,
@@ -2358,6 +2443,39 @@ if (fs.existsSync(frontendPath)) {
     }
     res.sendFile(path.join(frontendPath, 'index.html'));
   });
+} else {
+  // In development mode, provide helpful message
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api')) {
+      return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    const os = require('os');
+    const hostname = os.hostname();
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Progress Tracker API</title>
+          <style>
+            body { font-family: system-ui; max-width: 600px; margin: 100px auto; padding: 20px; }
+            h1 { color: #333; }
+            .info { background: #f0f0f0; padding: 15px; border-radius: 5px; margin: 20px 0; }
+            a { color: #0066cc; text-decoration: none; }
+            a:hover { text-decoration: underline; }
+          </style>
+        </head>
+        <body>
+          <h1>Progress Tracker API Server</h1>
+          <div class="info">
+            <p><strong>Status:</strong> Running ✅</p>
+            <p><strong>API Endpoint:</strong> <code>/api</code></p>
+          </div>
+          <p>The frontend application is running separately in development mode.</p>
+          <p>Access the app at: <a href="http://${hostname}:5173">http://${hostname}:5173</a></p>
+        </body>
+      </html>
+    `);
+  });
 }
 
 // ===== SERVER START =====
@@ -2439,7 +2557,7 @@ app.listen(PORT, async () => {
   // Create default admin user if none exists
   const result = await dbGet('SELECT COUNT(*) as count FROM users');
   if (result.count === 0) {
-    const hash = bcrypt.hashSync('admin123', 10);
+    const hash = await hashPassword('admin123');
     await dbRun('INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)', ['admin@example.com', 'Admin User', hash, 'admin']);
     console.log('✅ Created default admin user: admin@example.com / admin123');
   }

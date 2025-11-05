@@ -26,11 +26,8 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
   const [users, setUsers] = useState([]);
   const [projectStartDate, setProjectStartDate] = useState(defaultDates.start);
   const [projectEndDate, setProjectEndDate] = useState(defaultDates.end);
-  const [startDate, setStartDate] = useState(defaultDates.start);
-  const [endDate, setEndDate] = useState(defaultDates.end);
-  const [frequency, setFrequency] = useState('monthly');
   const [metrics, setMetrics] = useState([
-    { name: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0 }
+    { name: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0, startDate: defaultDates.start, endDate: defaultDates.end, frequency: 'monthly' }
   ]);
   const [links, setLinks] = useState([
     { label: '', url: '' }
@@ -50,7 +47,7 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
   }, []);
 
   const addMetric = () => {
-    setMetrics([...metrics, { name: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0 }]);
+    setMetrics([...metrics, { name: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0, startDate: defaultDates.start, endDate: defaultDates.end, frequency: 'monthly' }]);
   };
 
   const removeMetric = (index) => {
@@ -91,18 +88,22 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
       alert('Project end date must be after start date');
       return;
     }
-    if (!startDate || !endDate) {
-      alert('Please select metric start and end dates');
-      return;
-    }
-    if (new Date(startDate) >= new Date(endDate)) {
-      alert('Metric end date must be after start date');
-      return;
-    }
     const validMetrics = metrics.filter(m => m.name.trim() && m.target);
     if (validMetrics.length === 0) {
       alert('Please add at least one metric with a name and target value');
       return;
+    }
+    // Validate each metric has dates
+    for (let i = 0; i < validMetrics.length; i++) {
+      const metric = validMetrics[i];
+      if (!metric.startDate || !metric.endDate) {
+        alert(`Please set start and end dates for metric "${metric.name}"`);
+        return;
+      }
+      if (new Date(metric.startDate) >= new Date(metric.endDate)) {
+        alert(`End date must be after start date for metric "${metric.name}"`);
+        return;
+      }
     }
 
     try {
@@ -120,9 +121,9 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
       for (const metric of validMetrics) {
         const metricResponse = await api.createMetric(projectId, {
           name: metric.name,
-          start_date: startDate,
-          end_date: endDate,
-          frequency: frequency,
+          start_date: metric.startDate,
+          end_date: metric.endDate,
+          frequency: metric.frequency,
           progression_type: metric.progression,
           final_target: parseInt(metric.target),
           amber_tolerance: metric.amberTolerance,
@@ -221,45 +222,6 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
       </div>
 
       <div className="setup-section">
-        <h3>Metric Reporting Schedule</h3>
-        <p className="section-help">Set the reporting schedule for all metrics (can be within or match project timeline)</p>
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="start-date">Metric Start Date *</label>
-            <input
-              id="start-date"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="end-date">Metric End Date *</label>
-            <input
-              id="end-date"
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="frequency">Frequency *</label>
-            <Select
-              id="frequency"
-              value={{ value: frequency, label: frequency.charAt(0).toUpperCase() + frequency.slice(1) }}
-              onChange={(option) => setFrequency(option.value)}
-              options={[
-                { value: 'weekly', label: 'Weekly' },
-                { value: 'monthly', label: 'Monthly' },
-                { value: 'quarterly', label: 'Quarterly' }
-              ]}
-              styles={selectStyles}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="setup-section">
         <div className="section-header">
           <h3>Metrics & Targets</h3>
           <button className="add-metric-btn" onClick={addMetric}>
@@ -268,78 +230,129 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
         </div>
         <div className="metrics-list">
           {metrics.map((metric, index) => (
-            <div key={index} className="metric-row">
-              <div className="metric-number">{index + 1}</div>
-              <div className="form-group metric-name">
-                <label>Metric Name *</label>
-                <input
-                  type="text"
-                  value={metric.name}
-                  onChange={(e) => updateMetric(index, 'name', e.target.value)}
-                  placeholder="e.g., User Stories Completed"
-                />
+            <div key={index} className="metric-card">
+              <div className="metric-card-header">
+                <div className="metric-number">{index + 1}</div>
+                <div className="form-group metric-name">
+                  <label>Metric Name *</label>
+                  <input
+                    type="text"
+                    value={metric.name}
+                    onChange={(e) => updateMetric(index, 'name', e.target.value)}
+                    placeholder="e.g., User Stories Completed"
+                  />
+                </div>
+                {metrics.length > 1 && (
+                  <button
+                    className="remove-metric-btn"
+                    onClick={() => removeMetric(index)}
+                    title="Remove metric"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
-              <div className="form-group metric-target">
-                <label>Target Value *</label>
-                <input
-                  type="number"
-                  value={metric.target}
-                  onChange={(e) => updateMetric(index, 'target', e.target.value)}
-                  placeholder="e.g., 100"
-                  min="0"
-                />
+
+              <div className="metric-card-row">
+                <div className="metric-card-section">
+                  <h4>Timeline & Frequency</h4>
+                  <div className="metric-fields-row">
+                    <div className="form-group">
+                      <label>Start Date *</label>
+                      <input
+                        type="date"
+                        value={metric.startDate}
+                        onChange={(e) => updateMetric(index, 'startDate', e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>End Date *</label>
+                      <input
+                        type="date"
+                        value={metric.endDate}
+                        onChange={(e) => updateMetric(index, 'endDate', e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Frequency *</label>
+                      <Select
+                        value={{ value: metric.frequency, label: metric.frequency.charAt(0).toUpperCase() + metric.frequency.slice(1) }}
+                        onChange={(option) => updateMetric(index, 'frequency', option.value)}
+                        options={[
+                          { value: 'weekly', label: 'Weekly' },
+                          { value: 'monthly', label: 'Monthly' },
+                          { value: 'quarterly', label: 'Quarterly' }
+                        ]}
+                        styles={selectStyles}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="metric-card-section">
+                  <h4>Target & Progression</h4>
+                  <div className="metric-fields-row">
+                    <div className="form-group">
+                      <label>Target Value *</label>
+                      <input
+                        type="number"
+                        value={metric.target}
+                        onChange={(e) => updateMetric(index, 'target', e.target.value)}
+                        placeholder="e.g., 100"
+                        min="0"
+                      />
+                    </div>
+                    <div className="form-group metric-progression">
+                      <label>Progression Curve</label>
+                      <Select
+                        value={{
+                          value: metric.progression,
+                          label: metric.progression === 'linear' ? 'Linear' :
+                                 metric.progression === 'exponential' ? 'Exponential (Back-loaded)' :
+                                 metric.progression === 's-curve' ? 'S-curve' :
+                                 'Logarithmic (Front-loaded)'
+                        }}
+                        onChange={(option) => updateMetric(index, 'progression', option.value)}
+                        options={[
+                          { value: 'linear', label: 'Linear' },
+                          { value: 'exponential', label: 'Exponential (Back-loaded)' },
+                          { value: 's-curve', label: 'S-curve' },
+                          { value: 'logarithmic', label: 'Logarithmic (Front-loaded)' }
+                        ]}
+                        styles={selectStyles}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="metric-card-section">
+                  <h4>Tolerances</h4>
+                  <div className="metric-fields-row">
+                    <div className="form-group metric-tolerance">
+                      <label><span className="tolerance-indicator amber">●</span> Amber %</label>
+                      <input
+                        type="number"
+                        value={metric.amberTolerance}
+                        onChange={(e) => updateMetric(index, 'amberTolerance', parseFloat(e.target.value))}
+                        placeholder="5.0"
+                        min="0"
+                        step="0.1"
+                      />
+                    </div>
+                    <div className="form-group metric-tolerance">
+                      <label><span className="tolerance-indicator red">●</span> Red %</label>
+                      <input
+                        type="number"
+                        value={metric.redTolerance}
+                        onChange={(e) => updateMetric(index, 'redTolerance', parseFloat(e.target.value))}
+                        placeholder="10.0"
+                        min="0"
+                        step="0.1"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="form-group metric-progression">
-                <label>Progression Curve</label>
-                <Select
-                  value={{
-                    value: metric.progression,
-                    label: metric.progression === 'linear' ? 'Linear' :
-                           metric.progression === 'exponential' ? 'Exponential (Back-loaded)' :
-                           metric.progression === 's-curve' ? 'S-curve' :
-                           'Logarithmic (Front-loaded)'
-                  }}
-                  onChange={(option) => updateMetric(index, 'progression', option.value)}
-                  options={[
-                    { value: 'linear', label: 'Linear' },
-                    { value: 'exponential', label: 'Exponential (Back-loaded)' },
-                    { value: 's-curve', label: 'S-curve' },
-                    { value: 'logarithmic', label: 'Logarithmic (Front-loaded)' }
-                  ]}
-                  styles={selectStyles}
-                />
-              </div>
-              <div className="form-group metric-tolerance">
-                <label><span className="tolerance-indicator amber">●</span> Amber %</label>
-                <input
-                  type="number"
-                  value={metric.amberTolerance}
-                  onChange={(e) => updateMetric(index, 'amberTolerance', parseFloat(e.target.value))}
-                  placeholder="5.0"
-                  min="0"
-                  step="0.1"
-                />
-              </div>
-              <div className="form-group metric-tolerance">
-                <label><span className="tolerance-indicator red">●</span> Red %</label>
-                <input
-                  type="number"
-                  value={metric.redTolerance}
-                  onChange={(e) => updateMetric(index, 'redTolerance', parseFloat(e.target.value))}
-                  placeholder="10.0"
-                  min="0"
-                  step="0.1"
-                />
-              </div>
-              {metrics.length > 1 && (
-                <button
-                  className="remove-metric-btn"
-                  onClick={() => removeMetric(index)}
-                  title="Remove metric"
-                >
-                  ×
-                </button>
-              )}
             </div>
           ))}
         </div>

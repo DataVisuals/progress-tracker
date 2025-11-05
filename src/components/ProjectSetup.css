@@ -109,19 +109,45 @@
 .metrics-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   margin-bottom: 16px;
 }
 
-.metric-row {
-  display: grid;
-  grid-template-columns: 30px 2fr 1fr 1.5fr 0.8fr 0.8fr 40px;
-  gap: 12px;
-  align-items: end;
+.metric-card {
   background: white;
-  padding: 12px;
-  border-radius: 6px;
+  padding: 16px;
+  border-radius: 8px;
   border: 1px solid #e5e7eb;
+}
+
+.metric-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.metric-card-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.metric-card-section h4 {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 12px 0;
+}
+
+.metric-fields-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .link-row {
@@ -139,26 +165,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
   background: #00aeef;
   color: white;
   border-radius: 50%;
   font-weight: 600;
-  font-size: 14px;
-  margin-bottom: 8px;
+  font-size: 15px;
 }
 
 .metric-name {
-  flex: 2;
-}
-
-.metric-target {
   flex: 1;
-}
-
-.metric-progression {
-  flex: 1.5;
 }
 
 .tolerance-indicator {
@@ -185,12 +203,13 @@
   padding: 0;
   width: 32px;
   height: 32px;
+  min-width: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 4px;
   transition: all 0.2s;
-  margin-bottom: 8px;
+  margin-left: auto;
 }
 
 .remove-metric-btn:hover {
