@@ -268,8 +268,8 @@ app.post('/api/projects', authenticateToken, async (req, res) => {
       [name, description, initiative_manager || null, start_date || null, end_date || null]
     );
 
-    // Auto-grant permission to the creating user if they are a PM
-    if (req.user.role === ROLES.PM) {
+    // Auto-grant permission to the creating user if they are a PM or Editor
+    if (req.user.role === ROLES.PM || req.user.role === ROLES.EDITOR) {
       await dbRun(
         'INSERT INTO project_permissions (project_id, user_id) VALUES (?, ?)',
         [result.lastID, req.user.userId]
@@ -1185,7 +1185,7 @@ app.delete('/api/craids/:id', authenticateToken, async (req, res) => {
 });
 
 // ===== USER MANAGEMENT =====
-// Get all users (Admin only)
+// Get all users (Admin, PM, and Editor can view for project manager selection)
 app.get('/api/users', authenticateToken, async (req, res) => {
   try {
     const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
@@ -1198,8 +1198,9 @@ app.get('/api/users', authenticateToken, async (req, res) => {
       return res.status(500).json({ error: 'User role not set. Please restart the server to run migrations.' });
     }
 
-    if (!isAdmin(user)) {
-      return res.status(403).json({ error: 'Only admins can view users' });
+    // Allow admins, PMs, and editors to view users (needed for project manager selection)
+    if (user.role !== ROLES.ADMIN && user.role !== ROLES.PM && user.role !== ROLES.EDITOR) {
+      return res.status(403).json({ error: 'You do not have permission to view users' });
     }
 
     const users = await dbAll('SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC');

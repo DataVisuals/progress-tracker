@@ -408,7 +408,7 @@ function App() {
 
   // Helper functions for role checks
   const isAdmin = () => currentUser?.role === 'admin';
-  const canEdit = () => currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm');
+  const canEdit = () => currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm' || currentUser.role === 'editor');
 
   return (
     <div className="app">
