@@ -23,6 +23,30 @@
   letter-spacing: -0.02em;
 }
 
+.report-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.portfolio-filter {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+  min-width: 180px;
+}
+
+.portfolio-filter:focus {
+  outline: none;
+  border-color: #00aeef;
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.1);
+}
+
 .refresh-btn,
 .retry-btn {
   background-color: #00aeef;

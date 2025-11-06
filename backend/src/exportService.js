@@ -1,7 +1,7 @@
 const ExcelJS = require('exceljs');
 const path = require('path');
 const fs = require('fs').promises;
-const { dbAll } = require('./db');
+const { dbAll } = require('./db-sqljs');
 
 const EXPORTS_DIR = path.join(__dirname, '../exports');
 const MAX_EXPORTS = 10;

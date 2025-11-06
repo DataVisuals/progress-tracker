@@ -10,29 +10,8 @@
  * - Audit logs capture the actual timeline of data entry
  */
 
-const sqlite3 = require('sqlite3').verbose();
+const { dbRun, dbGet, dbAll, initDatabase, saveDatabase } = require('./db-sqljs');
 const path = require('path');
-
-const DB_PATH = path.join(__dirname, '../data/progress-tracker.db');
-const db = new sqlite3.Database(DB_PATH);
-
-const dbRun = (sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function(err) {
-      if (err) reject(err);
-      else resolve({ lastID: this.lastID, changes: this.changes });
-    });
-  });
-};
-
-const dbGet = (sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-};
 
 // Helper function to calculate expected value
 function calculateExpectedValue(progressionType, finalTarget, periodIndex, totalPeriods) {
@@ -87,6 +66,11 @@ async function createPeriodWithAudit(metricId, reportingDate, expected, target, 
 async function updatePeriodWithAudit(periodId, updates, userId, userEmail, description, timestamp) {
   const oldPeriod = await dbGet('SELECT * FROM metric_periods WHERE id = ?', [periodId]);
 
+  if (!oldPeriod) {
+    console.error(`Period ${periodId} not found`);
+    return;
+  }
+
   const setClauses = [];
   const values = [];
 
@@ -126,6 +110,9 @@ async function seedChronologicalData() {
   console.log('🌱 Starting chronological data migration...\n');
 
   try {
+    // Initialize database
+    await initDatabase();
+
     // Clear existing data
     console.log('🧹 Clearing existing test data...');
     await dbRun('DELETE FROM comments');
@@ -134,6 +121,7 @@ async function seedChronologicalData() {
     await dbRun('DELETE FROM craids');
     await dbRun('DELETE FROM project_links');
     await dbRun('DELETE FROM projects');
+    await dbRun('DELETE FROM portfolios');
     await dbRun('DELETE FROM audit_log');
     console.log('✅ Cleared existing data\n');
 
@@ -144,18 +132,43 @@ async function seedChronologicalData() {
       return;
     }
 
+    console.log('📂 Creating Portfolios...\n');
+
+    // Create portfolios
+    const digitalHealthResult = await dbRun(
+      `INSERT INTO portfolios (name, description, color, display_order)
+       VALUES (?, ?, ?, ?)`,
+      ['Digital Health', 'Patient-facing digital health initiatives', '#10b981', 1]
+    );
+    const digitalHealthId = digitalHealthResult.lastID;
+
+    const infrastructureResult = await dbRun(
+      `INSERT INTO portfolios (name, description, color, display_order)
+       VALUES (?, ?, ?, ?)`,
+      ['Infrastructure', 'Core technology infrastructure projects', '#3b82f6', 2]
+    );
+
+    const analyticsResult = await dbRun(
+      `INSERT INTO portfolios (name, description, color, display_order)
+       VALUES (?, ?, ?, ?)`,
+      ['Analytics & BI', 'Business intelligence and analytics initiatives', '#8b5cf6', 3]
+    );
+
+    console.log('✅ Created 3 portfolios\n');
+
     console.log('📁 Creating Healthcare Project with chronological data...\n');
 
-    // Create project - January 1, 2024
+    // Create project - January 1, 2024 (assigned to Digital Health portfolio)
     const projectResult = await dbRun(
-      `INSERT INTO projects (name, description, initiative_manager, start_date, end_date, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO projects (name, description, initiative_manager, start_date, end_date, portfolio_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         '[Test] Patient Portal Modernization',
         'Patient portal modernization project',
         'Dr. Sarah Chen',
         '2024-01-01',
         '2024-12-31',
+        digitalHealthId,
         '2024-01-01T08:00:00Z'
       ]
     );
@@ -341,7 +354,8 @@ async function seedChronologicalData() {
     console.error('❌ Error during migration:', error);
     throw error;
   } finally {
-    db.close();
+    // Save database to disk
+    saveDatabase();
   }
 }
 

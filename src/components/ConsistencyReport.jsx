@@ -6,10 +6,25 @@ const ConsistencyReport = ({ onNavigate }) => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [portfolios, setPortfolios] = useState([]);
+  const [selectedPortfolio, setSelectedPortfolio] = useState(null);
+
+  useEffect(() => {
+    loadPortfolios();
+  }, []);
 
   useEffect(() => {
     loadReport();
-  }, []);
+  }, [selectedPortfolio]);
+
+  const loadPortfolios = async () => {
+    try {
+      const response = await api.get('/portfolios');
+      setPortfolios(response.data);
+    } catch (err) {
+      console.error('Failed to load portfolios:', err);
+    }
+  };
 
   const formatNumber = (num) => {
     if (num === null || num === undefined) return '0';
@@ -20,7 +35,10 @@ const ConsistencyReport = ({ onNavigate }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.getConsistencyReport();
+      const url = selectedPortfolio
+        ? `/admin/consistency-report?portfolio_id=${selectedPortfolio}`
+        : '/admin/consistency-report';
+      const response = await api.get(url);
       setReport(response.data);
     } catch (err) {
       console.error('Failed to load consistency report:', err);
@@ -54,12 +72,31 @@ const ConsistencyReport = ({ onNavigate }) => {
     }
   };
 
+  const renderHeader = () => (
+    <div className="report-header">
+      <h2>Data Consistency Report</h2>
+      <div className="report-controls">
+        <select
+          value={selectedPortfolio || ''}
+          onChange={(e) => setSelectedPortfolio(e.target.value || null)}
+          className="portfolio-filter"
+        >
+          <option value="">All Portfolios</option>
+          {portfolios.map(portfolio => (
+            <option key={portfolio.id} value={portfolio.id}>
+              {portfolio.name}
+            </option>
+          ))}
+        </select>
+        <button onClick={loadReport} className="refresh-btn">Refresh</button>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="consistency-report">
-        <div className="report-header">
-          <h2>Data Consistency Report</h2>
-        </div>
+        {renderHeader()}
         <div className="report-content">
           <div className="loading">Loading report...</div>
         </div>
@@ -70,9 +107,7 @@ const ConsistencyReport = ({ onNavigate }) => {
   if (error) {
     return (
       <div className="consistency-report">
-        <div className="report-header">
-          <h2>Data Consistency Report</h2>
-        </div>
+        {renderHeader()}
         <div className="report-content">
           <div className="error">
             <p>Error: {error}</p>
@@ -85,10 +120,7 @@ const ConsistencyReport = ({ onNavigate }) => {
 
   return (
     <div className="consistency-report">
-      <div className="report-header">
-        <h2>Data Consistency Report</h2>
-        <button onClick={loadReport} className="refresh-btn">Refresh</button>
-      </div>
+      {renderHeader()}
 
       <div className="report-summary">
         <div className="summary-card">

@@ -25,6 +25,9 @@ FROM node:18-alpine AS backend-setup
 
 WORKDIR /app/backend
 
+# Install build dependencies for better-sqlite3 (native module)
+RUN apk add --no-cache python3 make g++
+
 # Copy backend package files
 COPY backend/package*.json ./
 

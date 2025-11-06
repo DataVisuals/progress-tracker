@@ -32,6 +32,12 @@ client.interceptors.response.use(
 );
 
 export const api = {
+  // Generic methods
+  get: (url) => client.get(url),
+  post: (url, data) => client.post(url, data),
+  put: (url, data) => client.put(url, data),
+  delete: (url) => client.delete(url),
+
   // Auth
   login: (email, password) => client.post('/auth/login', { email, password }),
   register: (email, name, password) => client.post('/auth/register', { email, name, password }),

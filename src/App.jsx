@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';
+import PortfolioSelector from './components/PortfolioSelector';
+import PortfolioManager from './components/PortfolioManager';
 import MetricChart from './components/MetricChart';
 import MetricTabs from './components/MetricTabs';
 import DataGrid from './components/DataGrid';
@@ -21,6 +23,8 @@ import './App.css';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [portfolios, setPortfolios] = useState([]);
+  const [selectedPortfolio, setSelectedPortfolio] = useState(null);
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [projectData, setProjectData] = useState([]);
@@ -46,6 +50,7 @@ function App() {
   const [showLinksEditor, setShowLinksEditor] = useState(false);
   const [showConsistencyReport, setShowConsistencyReport] = useState(false);
   const [showImportData, setShowImportData] = useState(false);
+  const [showPortfolioManager, setShowPortfolioManager] = useState(false);
 
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
@@ -55,8 +60,14 @@ function App() {
       setIsAuthenticated(true);
       setCurrentUser(JSON.parse(userStr));
     }
+    loadPortfolios();
     loadProjects();
   }, []);
+
+  // Reload projects when portfolio selection changes
+  useEffect(() => {
+    loadProjects();
+  }, [selectedPortfolio]);
 
   // Load project data when project selected
   useEffect(() => {
@@ -74,9 +85,19 @@ function App() {
     }
   }, [projectMetrics]);
 
-  const loadProjects = async () => {
+  const loadPortfolios = async () => {
     try {
-      const response = await api.getProjects();
+      const response = await api.get('/portfolios');
+      setPortfolios(response.data);
+    } catch (err) {
+      console.error('Failed to load portfolios:', err);
+    }
+  };
+
+  const loadProjects = async (portfolioFilter = selectedPortfolio) => {
+    try {
+      const url = portfolioFilter ? `/projects?portfolio_id=${portfolioFilter}` : '/projects';
+      const response = await api.get(url);
       setProjects(response.data);
     } catch (err) {
       console.error('Failed to load projects:', err);
@@ -421,6 +442,12 @@ function App() {
             </h1>
           </div>
           <div className="header-right">
+            <PortfolioSelector
+              portfolios={portfolios}
+              selectedPortfolio={selectedPortfolio}
+              onPortfolioChange={setSelectedPortfolio}
+              onManagePortfolios={isAdmin() ? () => setShowPortfolioManager(true) : null}
+            />
             <ProjectSelector
               projects={projectsObject}
               selectedProject={selectedProject}
@@ -480,6 +507,9 @@ function App() {
                 </button>
                 {showAdminDropdown && (
                   <div className="dropdown-menu">
+                    <button onClick={() => { setShowPortfolioManager(true); setShowAdminDropdown(false); }}>
+                      Manage Portfolios
+                    </button>
                     <button onClick={() => { setShowUserManagement(true); setShowAdminDropdown(false); }}>
                       Manage Users
                     </button>
@@ -840,6 +870,16 @@ function App() {
             />
           </div>
         </div>
+      )}
+
+      {showPortfolioManager && (
+        <PortfolioManager
+          onClose={() => setShowPortfolioManager(false)}
+          onPortfolioCreated={() => {
+            loadPortfolios();
+            loadProjects();
+          }}
+        />
       )}
 
       {showUserManagement && currentUser && (

@@ -20,7 +20,7 @@ async function comparePassword(password, hash) {
   const derivedKey = await scrypt(password, salt, 64);
   return key === derivedKey.toString('hex');
 }
-const { db, dbRun, dbGet, dbAll, generateMetricPeriods } = require('./db');
+const { getDb, dbRun, dbGet, dbAll, generateMetricPeriods, saveDatabase, initDatabase } = require('./db-sqljs');
 const { ROLES, canEditProject, canCreateProject, isAdmin } = require('./permissions');
 const { startScheduler } = require('./scheduler');
 
@@ -240,10 +240,143 @@ app.put('/api/auth/profile', authenticateToken, async (req, res) => {
   }
 });
 
+// ===== PORTFOLIOS =====
+app.get('/api/portfolios', async (req, res) => {
+  try {
+    const portfolios = await dbAll('SELECT * FROM portfolios ORDER BY display_order, name');
+    res.json(portfolios);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/portfolios', authenticateToken, async (req, res) => {
+  try {
+    const { name, description, color, display_order } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: 'Portfolio name is required' });
+    }
+
+    // Check if user has permission to create portfolios (admin only)
+    if (!isAdmin(req.user)) {
+      return res.status(403).json({ error: 'Only admins can create portfolios' });
+    }
+
+    const result = await dbRun(
+      'INSERT INTO portfolios (name, description, color, display_order) VALUES (?, ?, ?, ?)',
+      [name, description || null, color || '#3b82f6', display_order || 0]
+    );
+
+    await logAuditEvent(
+      req.user.id,
+      req.user.email,
+      'CREATE',
+      'portfolios',
+      result.lastID,
+      null,
+      { name, description, color, display_order },
+      `Created portfolio: ${name}`,
+      req.ip
+    );
+
+    res.status(201).json({ id: result.lastID, name, description, color, display_order });
+  } catch (err) {
+    console.error('Create portfolio error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/portfolios/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, color, display_order } = req.body;
+
+    if (!isAdmin(req.user)) {
+      return res.status(403).json({ error: 'Only admins can update portfolios' });
+    }
+
+    const oldPortfolio = await dbGet('SELECT * FROM portfolios WHERE id = ?', [id]);
+    if (!oldPortfolio) {
+      return res.status(404).json({ error: 'Portfolio not found' });
+    }
+
+    await dbRun(
+      'UPDATE portfolios SET name = ?, description = ?, color = ?, display_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [name, description, color, display_order, id]
+    );
+
+    await logAuditEvent(
+      req.user.id,
+      req.user.email,
+      'UPDATE',
+      'portfolios',
+      id,
+      oldPortfolio,
+      { name, description, color, display_order },
+      `Updated portfolio: ${name}`,
+      req.ip
+    );
+
+    res.json({ id, name, description, color, display_order });
+  } catch (err) {
+    console.error('Update portfolio error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/portfolios/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isAdmin(req.user)) {
+      return res.status(403).json({ error: 'Only admins can delete portfolios' });
+    }
+
+    const portfolio = await dbGet('SELECT * FROM portfolios WHERE id = ?', [id]);
+    if (!portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found' });
+    }
+
+    // Set portfolio_id to NULL for all projects in this portfolio
+    await dbRun('UPDATE projects SET portfolio_id = NULL WHERE portfolio_id = ?', [id]);
+
+    await dbRun('DELETE FROM portfolios WHERE id = ?', [id]);
+
+    await logAuditEvent(
+      req.user.id,
+      req.user.email,
+      'DELETE',
+      'portfolios',
+      id,
+      portfolio,
+      null,
+      `Deleted portfolio: ${portfolio.name}`,
+      req.ip
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete portfolio error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ===== PROJECTS =====
 app.get('/api/projects', async (req, res) => {
   try {
-    const projects = await dbAll('SELECT * FROM projects ORDER BY created_at DESC');
+    const { portfolio_id } = req.query;
+    let query = 'SELECT p.*, po.name as portfolio_name, po.color as portfolio_color FROM projects p LEFT JOIN portfolios po ON p.portfolio_id = po.id';
+    let params = [];
+
+    if (portfolio_id) {
+      query += ' WHERE p.portfolio_id = ?';
+      params.push(portfolio_id);
+    }
+
+    query += ' ORDER BY p.created_at DESC';
+
+    const projects = await dbAll(query, params);
     res.json(projects);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -262,10 +395,10 @@ app.post('/api/projects', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'You do not have permission to create projects' });
     }
 
-    const { name, description, initiative_manager, start_date, end_date } = req.body;
+    const { name, description, initiative_manager, start_date, end_date, portfolio_id } = req.body;
     const result = await dbRun(
-      'INSERT INTO projects (name, description, initiative_manager, start_date, end_date) VALUES (?, ?, ?, ?, ?)',
-      [name, description, initiative_manager || null, start_date || null, end_date || null]
+      'INSERT INTO projects (name, description, initiative_manager, start_date, end_date, portfolio_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, description, initiative_manager || null, start_date || null, end_date || null, portfolio_id || null]
     );
 
     // Auto-grant permission to the creating user if they are a PM or Editor
@@ -277,12 +410,12 @@ app.post('/api/projects', authenticateToken, async (req, res) => {
     }
 
     await logAudit(req.user, 'CREATE', 'projects', result.lastID, null,
-      { name, description, initiative_manager, start_date, end_date },
+      { name, description, initiative_manager, start_date, end_date, portfolio_id },
       `Created project "${name}"`,
       req.ip
     );
 
-    res.json({ id: result.lastID, name, description, initiative_manager, start_date, end_date });
+    res.json({ id: result.lastID, name, description, initiative_manager, start_date, end_date, portfolio_id });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -295,18 +428,18 @@ app.put('/api/projects/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'You do not have permission to edit this project' });
     }
 
-    const { name, description, initiative_manager, start_date, end_date } = req.body;
+    const { name, description, initiative_manager, start_date, end_date, portfolio_id } = req.body;
     const oldProject = await dbGet('SELECT * FROM projects WHERE id = ?', [req.params.id]);
 
     await dbRun(
-      'UPDATE projects SET name = ?, description = ?, initiative_manager = ?, start_date = ?, end_date = ? WHERE id = ?',
-      [name, description, initiative_manager || null, start_date || null, end_date || null, req.params.id]
+      'UPDATE projects SET name = ?, description = ?, initiative_manager = ?, start_date = ?, end_date = ?, portfolio_id = ? WHERE id = ?',
+      [name, description, initiative_manager || null, start_date || null, end_date || null, portfolio_id || null, req.params.id]
     );
 
     await logAudit(req.user, 'UPDATE', 'projects', req.params.id,
-      { name: oldProject.name, description: oldProject.description, initiative_manager: oldProject.initiative_manager, start_date: oldProject.start_date, end_date: oldProject.end_date },
-      { name, description, initiative_manager, start_date, end_date },
-      `Renamed project from "${oldProject.name}" to "${name}"`,
+      { name: oldProject.name, description: oldProject.description, initiative_manager: oldProject.initiative_manager, start_date: oldProject.start_date, end_date: oldProject.end_date, portfolio_id: oldProject.portfolio_id },
+      { name, description, initiative_manager, start_date, end_date, portfolio_id },
+      `Updated project "${name}"`,
       req.ip
     );
 
@@ -1417,6 +1550,10 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
       return res.status(403).json({ error: 'Admin access required' });
     }
 
+    const { portfolio_id } = req.query;
+    const portfolioFilter = portfolio_id ? 'AND p.portfolio_id = ?' : '';
+    const portfolioParams = portfolio_id ? [portfolio_id] : [];
+
     const issues = [];
 
     // 1. Find metrics with unusual growth in January or August (vacation months)
@@ -1437,6 +1574,7 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
         JOIN metrics m ON mp.metric_id = m.id
         JOIN projects p ON m.project_id = p.id
         WHERE CAST(strftime('%m', mp.reporting_date) AS INTEGER) IN (1, 8)
+        ${portfolioFilter}
       )
       SELECT
         project_id,
@@ -1452,7 +1590,7 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
       WHERE complete > COALESCE(prev_complete, 0)
       AND (complete - prev_complete) IS NOT NULL
       ORDER BY project_name, metric_name, reporting_date
-    `);
+    `, portfolioParams);
 
     // Group by metric and check if growth is above average
     const metricsWithVacationGrowth = new Map();
@@ -1534,6 +1672,7 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
         FROM metric_periods mp
         JOIN metrics m ON mp.metric_id = m.id
         JOIN projects p ON m.project_id = p.id
+        WHERE 1=1 ${portfolioFilter}
       ),
       period_growth AS (
         SELECT
@@ -1583,7 +1722,7 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
       FROM first_half_growth f
       JOIN second_half_growth s ON f.metric_id = s.metric_id
       WHERE s.second_half_total > f.first_half_total * 2
-    `);
+    `, portfolioParams);
 
     // Group by project to check if ALL metrics are back-loaded
     const projectMetrics = new Map();
@@ -1638,11 +1777,12 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
           COUNT(m.id) OVER (PARTITION BY p.id) as metric_count
         FROM projects p
         LEFT JOIN metrics m ON p.id = m.project_id
+        WHERE 1=1 ${portfolioFilter}
       )
       SELECT *
       FROM project_metric_counts
       WHERE metric_count = 1
-    `);
+    `, portfolioParams);
 
     for (const project of singleMetricProjects) {
       issues.push({
@@ -1669,6 +1809,7 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
           SUM(CASE WHEN m.metric_type = 'lag' THEN 1 ELSE 0 END) as lag_count
         FROM projects p
         LEFT JOIN metrics m ON p.id = m.project_id
+        WHERE 1=1 ${portfolioFilter}
         GROUP BY p.id, p.name, p.initiative_manager
       )
       SELECT
@@ -1680,7 +1821,7 @@ app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => 
         lag_count
       FROM project_metrics
       WHERE total_metrics > 0 AND lead_count = 0
-    `);
+    `, portfolioParams);
 
     for (const project of projectsWithoutLeadMetrics) {
       issues.push({
@@ -2553,6 +2694,32 @@ app.listen(PORT, async () => {
     console.log('✅ Added date columns to projects table');
   } catch (err) {
     // Columns already exist, that's fine
+  }
+
+  // Migration: Create portfolios table
+  try {
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS portfolios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT,
+        color TEXT DEFAULT '#3b82f6',
+        display_order INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Created portfolios table');
+  } catch (err) {
+    console.error('Error creating portfolios table:', err);
+  }
+
+  // Migration: Add portfolio_id to projects table
+  try {
+    await dbRun(`ALTER TABLE projects ADD COLUMN portfolio_id INTEGER REFERENCES portfolios(id)`);
+    console.log('✅ Added portfolio_id column to projects table');
+  } catch (err) {
+    // Column already exists, that's fine
   }
 
   // Create default admin user if none exists

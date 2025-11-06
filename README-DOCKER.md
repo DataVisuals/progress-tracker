@@ -120,6 +120,12 @@ lsof -ti:3001 | xargs kill
 lsof -ti:5173 | xargs kill
 ```
 
+**Build fails with better-sqlite3 errors:**
+The Docker build includes python3, make, and g++ to compile better-sqlite3. If you encounter build errors:
+1. Ensure Docker Desktop is running
+2. Try rebuilding without cache: `docker build --no-cache -t progress-tracker .`
+3. Check that your Docker version supports multi-stage builds (Docker 17.05+)
+
 **Reset everything:**
 ```bash
 make clean-all
@@ -181,9 +187,10 @@ progress-tracker/
 - **Size:** ~200-300MB (optimized with multi-stage build)
 - **Stages:**
   1. Frontend build (Vite)
-  2. Backend dependencies
+  2. Backend dependencies (with native module compilation)
   3. Runtime image
 - **Platform:** linux/amd64, linux/arm64
+- **Native Dependencies:** Includes build tools (python3, make, g++) for better-sqlite3 compilation
 
 ## Cloud Deployment
 

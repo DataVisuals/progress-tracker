@@ -6,466 +6,479 @@ A modern web application for tracking project metrics and progress across multip
 
 ![Progress Tracker Screenshot](screenshot.png)
 
-*Interactive dashboard showing project metrics, progress charts, and real-time tracking*
-
 ## 🌐 Live Demo
 
 Visit our [showcase site](https://datavisuals.github.io/progress-tracker/) to explore all features.
 
-## Core Value Proposition
+## 🚀 Quick Start
 
-Stop relying on vague status updates like "we're making good progress." Progress Tracker helps you:
+### Docker (Recommended) 🐳
 
-- **Define Expected Trajectories**: Set expected, target, and actual values for each metric
-- **Visualize the Gap**: See instantly when reality diverges from your plan
-- **Track Over Time**: Monitor how metrics evolve across weekly, monthly, or quarterly periods
-- **Act on Data**: Make informed decisions based on quantitative progress indicators
+```bash
+git clone https://github.com/DataVisuals/progress-tracker.git
+cd progress-tracker
+docker build -t progress-tracker .
+docker run -d -p 3001:3001 -v $(pwd)/backend/data:/app/backend/data progress-tracker
+# Access at http://localhost:3001
+```
 
-## ✨ Latest Features
+### Local Development 💻
 
-### ⏪ **Time Travel Revert** (Admin Only)
-Restore project data to any historical state:
-- **Full State Restoration**: Revert all metrics to their exact state at any point in time
-- **Comprehensive Changes**: Updates values, restores deleted periods, removes periods added after target time
-- **Admin-Only Protection**: Only administrators can perform revert operations
-- **Full Audit Trail**: All revert actions logged with detailed change counts
-- **Reversible**: Revert operations themselves are logged, allowing "undo" via time travel
-- **Smart Confirmation**: Shows exactly what will happen before reverting
-- **Change Summary**: Displays counts of updated, deleted, restored, and unchanged records
+```bash
+git clone https://github.com/DataVisuals/progress-tracker.git
+cd progress-tracker
 
-### ✏️ **Enhanced Inline Editing**
-Streamlined editing experience with improved UX:
-- **Auto-Select First Metric**: Edit Data modal automatically selects first metric
-- **Compact Modal Size**: Data grid now sizes to content for better screen utilization
-- **Copy/Paste Support**: Full clipboard support in numeric fields (changed from type="number" to type="text" with inputMode="numeric")
-- **Future Period Protection**: Complete field automatically disabled for future periods (greyed out, read-only)
-- **Consolidated Headers**: Reduced vertical space by combining header sections
-- **Project Date Editing**: Double-click project timeline to edit start/end dates inline
+# Install and start backend
+cd backend && npm install && node src/migrate-mock-data.js && node src/server.js &
 
-### 📊 **Improved Metric Management**
-Better handling of metrics and schedules:
-- **Orphaned Metrics Support**: Metrics without periods remain visible in UI
-- **Smart Metric Lookup**: Bulk add and single row add work correctly for metrics with no existing periods
-- **Proper Placeholder Display**: Shows "No Schedule Defined" when metric exists but has no periods
-- **Clean Error Handling**: Clear error messages when metric operations fail
+# Install and start frontend
+cd .. && npm install && npm run dev
+```
 
-### 📥 **Excel Import** (Admin/PM)
-Bulk import project data to quickly set up or update multiple projects:
-- **Prescriptive Template**: Download Excel template with examples and instructions
-- **Comprehensive Validation**: Detailed error reporting with row/column identification
-- **Smart Upsert**: Create new projects or update existing ones (no deletions)
-- **Auto-Detection**: Automatically detects metric frequency from date intervals
-- **Import Results**: See exactly what was created/updated with statistics
+**Default credentials:** admin@example.com / admin123
 
-### 🔍 **Data Consistency Reports** (Admin)
-Automated data quality analysis to identify potential issues:
-- **Vacation Month Detection**: Flags unusual progress during January and December
-- **Front-Loaded Growth**: Identifies rapid early progress patterns
-- **Back-Loaded Growth**: Detects disproportionate end-of-project progress
-- **Single Metric Projects**: Highlights projects with insufficient tracking
-- **Severity Levels**: High, Warning, and Info classifications
-- **Direct Navigation**: Click to jump to flagged projects
+---
 
-### 🔗 **Project Links**
-Organize external resources and documentation:
-- **Unlimited Links**: Add as many reference links as needed
-- **Custom Labels**: Name each link descriptively
-- **Display Order**: Organize links in your preferred sequence
-- **Quick Access**: One-click navigation to tools, docs, and dashboards
+## 📚 Documentation
 
-### 👤 **User Profile Management**
-Self-service account management:
-- **Update Profile**: Change name and email address
-- **Password Changes**: Secure updates with current password verification
-- **Session Persistence**: Stay logged in across changes
-
-## 🎯 Key Features
-
-### Project Management
-- **Multi-Project Dashboard**: Track unlimited projects with individual metrics
-- **Streamlined Setup**: Single-screen project creation capturing all details
-- **Project Permissions**: Granular access control for teams
-- **Initiative Manager Tracking**: Assign ownership and accountability
-
-### Visual Analytics
-- **Interactive Progress Charts**:
-  - Stacked bars showing completed vs remaining work
-  - Expected progress line (green) with draggable adjustment points
-  - Actual progress tracking with variance indicators
-  - Current period highlighting
-  - Target line showing scope changes over time
-- **Smart Date Formatting**: Automatically displays month names for monthly data
-- **Real-Time Updates**: Charts refresh dynamically as data changes
-
-### Progression Curves
-
-Choose from three progression models when creating metrics:
-
-#### 1. **Linear** - Equal Progress Each Period
-- **Formula**: `y = x`
-- **Pattern**: Steady, predictable increments
-- **Best for**: Manufacturing, routine tasks, predictable work
-- **Example**: Complete 10 units per month for 10 months = 100 units
-
-#### 2. **S-Curve** - Slow/Fast/Slow Growth
-- **Formula**: `y = 1/(1 + e^(-10(x-0.5)))` (Sigmoid/Logistic)
-- **Pattern**: Slow ramp-up → rapid growth → gradual plateau
-- **Best for**: Technology adoption, organizational transformation, learning curves
-- **Example**: Software rollout - pilot phase (slow), mass adoption (fast), stabilization (slow)
-- **Note**: This is a **sigmoid curve**, not exponential. Exponential curves grow continuously without plateau.
-
-#### 3. **Front-Loaded** - Fast Start, Gradual Finish
-- **Formula**: `y = √x` (Square root/Logarithmic)
-- **Pattern**: Fast initial progress → diminishing returns
-- **Best for**: Research, initial development, quick wins, bug fixing
-- **Example**: Bug fixing - many easy bugs fixed early, harder bugs take longer
-
-**Note**: The Data Consistency Report detects **back-loaded** growth patterns (opposite of front-loaded), which may indicate end-of-period gaming or unrealistic early projections.
-
-### Data Management
-- **Smart Data Grid**:
-  - Inline editing for all metrics with auto-select on open
-  - Target value propagation - change once, update all periods
-  - Bulk period creation with configurable frequency
-  - Add/remove periods on the fly with immediate delete
-  - Full copy/paste support in numeric fields
-  - Future period protection - completion disabled for upcoming periods
-  - Compact, auto-sizing modal that fits content
-  - Orphaned metrics support - metrics without periods remain visible
-  - Consolidated header design for better space utilization
-- **Project Editing**:
-  - Double-click project name to rename inline
-  - Double-click project description to edit inline
-  - Double-click project timeline to edit start/end dates inline
-  - All changes validated and immediately reflected
-- **Draggable Expected Line**: Adjust expected values directly on charts
-- **Flexible Data Entry**: Support for expected, target, and completion tracking
-
-### Commentary System
-- **Period-Specific Notes**: Add contextual commentary to any reporting period
-- **Visual Highlighting**: Latest comments marked with indicators
-- **Chronological Sorting**: Most recent updates first
-- **Inline Editing**: Update commentary from chart view
-
-### CRAID Management
-Track Concerns, Risks, Assumptions, Issues, and Dependencies:
-- **Priority Levels**: Critical, High, Medium, Low with color coding
-- **Status Tracking**: Open, In Progress, Closed with visual badges
-- **Age-Based Alerts**: Automatic highlighting of stale items
-- **Rich Details**: Title, description, owner, due dates, resolution tracking
-
-### Authentication & Security
-**Role-Based Access Control (RBAC)**:
-- **Admin**: Full system access, user management, audit logs, consistency reports
-- **Project Manager (PM)**: Create projects, manage assigned projects, edit data, bulk import
-- **Viewer**: Read-only access to all projects
-
-**Security Features**:
-- JWT-based authentication with bcrypt password hashing
-- Secure session management
-- User profile and password management
-- Enhanced login UX with clear error feedback
-
-### Audit & Compliance
-- **Comprehensive Audit Log**: Track all changes with user, action, timestamp, and IP
-- **Historic Edit Protection**: Safeguard data integrity
-  - Completion values for past periods (after end date) restricted to admins
-  - Historic edits marked with ⚠️ HISTORIC EDIT in audit log
-  - Prevents retroactive manipulation while allowing authorized corrections
-- **Time Travel Feature** (Admin/PM): View and restore historical project state
-  - Reconstructs complete data state from audit log at any point in time
-  - Shows exact values and commentary as they appeared
-  - Interactive timeline slider for exploring project history
-  - **Revert to Historical State** (Admin only):
-    - Restore all project data to any previous state with one click
-    - Updates current values, restores deleted periods, removes periods added after target time
-    - Full audit trail of revert actions with change counts
-    - Reversible - revert operations can themselves be reverted via time travel
-    - Protected by admin-only permissions
-- **Filterable History**: Search and filter audit events by user, action, date
-
-### Data Export & Import
-- **Automated Excel Exports**: Daily scheduled exports at midnight GMT
-- **Manual Export**: On-demand export via API
-- **Bulk Import**: Upload Excel files to create/update projects (see Latest Features)
-- **Comprehensive Data**: All projects, metrics, periods, and CRAIDs
-
-### User Experience
-- **Responsive Design**: Works on desktop, tablet, and mobile
-- **Modern UI**: Clean, professional interface
-- **Real-Time Feedback**: Instant visual confirmation
-- **Error Handling**: Clear, helpful error messages
-- **Loading States**: Smooth transitions
-
-## 🛠 Tech Stack
-
-### Frontend
-- **React 18** - Component-based architecture with hooks
-- **Vite** - Fast build tool and dev server
-- **Recharts** - Composable charting library
-- **Axios** - HTTP client with interceptors
-- **React Icons** - Icon library
-- **React Select** - Advanced select components
-
-### Backend
-- **Node.js** - JavaScript runtime
-- **Express** - Web framework
-- **SQLite** - Embedded relational database
-- **JWT** - Token-based authentication
-- **bcrypt** - Secure password hashing
-- **node-cron** - Task scheduler
-- **ExcelJS** - Excel file generation and parsing
-- **multer** - File upload handling
-
-### Deployment
-- **Docker** - Containerization for easy deployment
-- **Docker Compose** - Multi-container orchestration
-- **Nginx** - Reverse proxy and static file serving (production)
-- **Multi-stage builds** - Optimized container images
-
-## 🚀 Getting Started
+<details>
+<summary><strong>📖 Installation & Setup</strong></summary>
 
 ### Prerequisites
-- Node.js 16 or higher
-- npm or yarn
-- Modern web browser
-- **OR** Docker (for containerized deployment)
 
-### Quick Start with Docker 🐳
+**Docker:**
+- Docker 20.10+
+- Docker Compose 2.0+
 
-The fastest way to run Progress Tracker:
+**Local Development:**
+- Node.js 16+
+- Python 3, make, C++ compiler (for better-sqlite3)
+
+### Docker Installation
 
 ```bash
-# Clone and enter directory
+# Build
+docker build -t progress-tracker .
+docker build --no-cache -t progress-tracker .  # Clean build
+
+# Run
+docker run -d --name progress-tracker \\
+  -p 3001:3001 \\
+  -v $(pwd)/backend/data:/app/backend/data \\
+  progress-tracker
+
+# Docker Compose
+docker-compose up -d                    # Start
+docker-compose logs -f                  # Logs
+docker-compose down                     # Stop
+
+# Production with Nginx
+docker-compose --profile production up -d
+```
+
+### Local Installation
+
+```bash
+# 1. Clone
 git clone https://github.com/DataVisuals/progress-tracker.git
 cd progress-tracker
 
-# Build and run with Docker
-make build
-make run
+# 2. Install
+cd backend && npm install
+cd .. && npm install
 
-# Access the application
-# - Backend: http://localhost:3001
-# - Frontend: http://localhost:5173
+# 3. Initialize database
+cd backend && node src/migrate-mock-data.js
+
+# 4. Start services
+cd backend && node src/server.js        # Terminal 1
+npm run dev                              # Terminal 2 (from root)
 ```
 
-**Default login credentials:**
-- Admin: admin@example.com / admin123
-- PM: pm@example.com / pm123
-- Viewer: viewer@example.com / viewer123
+### Cloud Deployment
 
-For detailed Docker documentation, see [README-DOCKER.md](./README-DOCKER.md) or [DOCKER.md](./DOCKER.md).
-
-### Installation (Local Development)
-
-1. **Clone the repository:**
+**AWS ECS:**
 ```bash
-git clone https://github.com/DataVisuals/progress-tracker.git
-cd progress-tracker
+aws ecr get-login-password --region us-east-1 | \\
+  docker login --username AWS --password-stdin <account>.dkr.ecr.us-east-1.amazonaws.com
+docker build --platform linux/arm64 -t progress-tracker .
+docker tag progress-tracker <account>.dkr.ecr.us-east-1.amazonaws.com/progress-tracker:latest
+docker push <account>.dkr.ecr.us-east-1.amazonaws.com/progress-tracker:latest
 ```
 
-2. **Install dependencies:**
+**Google Cloud Run:**
 ```bash
-# Backend
-cd backend
-npm install
-
-# Frontend
-cd ..
-npm install
+gcloud builds submit --tag gcr.io/<project-id>/progress-tracker
+gcloud run deploy --image gcr.io/<project-id>/progress-tracker \\
+  --platform managed --port 3001 --allow-unauthenticated
 ```
 
-3. **Initialize database with sample data:**
+**Docker Hub:**
 ```bash
-cd backend
-node src/migrate-mock-data.js
+docker tag progress-tracker <username>/progress-tracker:latest
+docker login && docker push <username>/progress-tracker:latest
 ```
 
-This creates default users:
-- **Admin**: admin@example.com / admin123
-- **PM**: pm@example.com / pm123
-- **Viewer**: viewer@example.com / viewer123
+### Troubleshooting
 
-### Running the Application
-
-1. **Start backend** (from backend directory):
+**Port in use:**
 ```bash
-node src/server.js
+lsof -ti:3001 | xargs kill
 ```
-- Backend API: http://localhost:3001
-- Automatic database initialization
-- Daily export scheduler starts
 
-2. **Start frontend** (from root directory):
+**Build fails:**
+Ensure Docker supports multi-stage builds (17.05+). Try: `docker build --no-cache`
+
+**Container logs:**
 ```bash
-npm run dev
+docker logs -f progress-tracker
 ```
-- Frontend: http://localhost:5173
-- Hot module replacement enabled
 
-3. **Login** with credentials above
+</details>
 
-## 📁 Project Structure
+<details>
+<summary><strong>✨ Features</strong></summary>
+
+### Latest Features
+
+**⏪ Time Travel Revert** (Admin)
+- Restore project data to any historical state
+- Full audit trail with change counts
+- Reversible operations
+
+**✏️ Enhanced Inline Editing**
+- Auto-select first metric
+- Copy/paste support
+- Future period protection
+- Compact modal design
+
+**📥 Excel Import** (Admin/PM)
+- Template-based bulk import
+- Comprehensive validation
+- Smart upsert (no deletions)
+
+**🔍 Data Consistency Reports** (Admin)
+- Vacation month detection
+- Front/back-loaded growth patterns
+- Portfolio filtering
+
+**🔗 Project Links**
+- External resource organization
+- Custom labels and ordering
+
+**👤 User Profile Management**
+- Self-service updates
+- Password changes
+
+**📊 Portfolio Management**
+- Project grouping
+- Color coding
+- Dashboard views
+
+### Core Features
+
+**Project Management**
+- Multi-project dashboard
+- Streamlined setup
+- RBAC permissions
+- Portfolio organization
+
+**Visual Analytics**
+- Interactive progress charts
+- Draggable expected line
+- Real-time updates
+- PDF export
+
+**Progression Curves**
+1. **Linear** - Equal progress each period
+2. **Exponential** - Slow start, rapid end (back-loaded)
+3. **S-Curve** - Slow/fast/slow adoption pattern
+4. **Logarithmic** - Fast start, gradual finish (front-loaded)
+
+**Data Management**
+- Smart data grid with inline editing
+- Target value propagation
+- Bulk period creation
+- Copy/paste support
+- Future period protection
+
+**Commentary System**
+- Period-specific notes
+- Visual highlighting
+- Chronological sorting
+
+**CRAID Management**
+- Track Concerns, Risks, Assumptions, Issues, Dependencies
+- Priority and status tracking
+- Age-based alerts
+
+**Authentication & Security**
+- Role-based access (Admin, PM, Viewer)
+- JWT authentication
+- bcrypt password hashing
+- Audit logging
+
+**Audit & Compliance**
+- Comprehensive audit log
+- Historic edit protection
+- Time travel feature
+- Filterable history
+
+**Data Export & Import**
+- Automated daily Excel exports
+- Manual export API
+- Bulk import from Excel
+
+</details>
+
+<details>
+<summary><strong>🛠 Tech Stack</strong></summary>
+
+### Frontend
+- React 18, Vite, Recharts
+- Axios, React Icons, React Select
+
+### Backend
+- Node.js, Express
+- better-sqlite3 (requires native compilation)
+- JWT, bcrypt, node-cron, ExcelJS, multer
+
+### Deployment
+- Docker with multi-stage builds
+- Alpine Linux base (~200-300MB)
+- Nginx reverse proxy
+- Native module compilation (python3, make, g++)
+
+</details>
+
+<details>
+<summary><strong>📁 Project Structure</strong></summary>
 
 ```
 progress-tracker/
+├── Dockerfile                  # Multi-stage build
+├── docker-compose.yml          # Container orchestration
+├── nginx.conf                  # Production proxy
 ├── backend/
-│   ├── data/                     # SQLite database
-│   ├── exports/                  # Daily Excel exports
-│   ├── uploads/                  # Temporary import uploads
+│   ├── data/                  # SQLite database
+│   ├── exports/               # Excel exports
 │   └── src/
-│       ├── server.js            # Express API with routes
-│       ├── db.js                # Database utilities
-│       ├── permissions.js       # RBAC checks
-│       ├── scheduler.js         # Export automation
-│       ├── exportService.js     # Excel export logic
-│       ├── importService.js     # Excel import & validation
-│       └── migrate-mock-data.js # Sample data seeding
+│       ├── server.js         # Express API
+│       ├── db-sqljs.js       # Database utilities
+│       ├── permissions.js    # RBAC
+│       └── ...
 ├── src/
-│   ├── components/              # React components
-│   │   ├── ImportData.jsx      # Import modal
-│   │   ├── ConsistencyReport.jsx # Data quality reports
-│   │   ├── MetricChart.jsx     # Interactive charts
-│   │   ├── DataGrid.jsx        # Inline editor
-│   │   ├── ProjectSetup.jsx    # Project wizard
-│   │   └── ...
-│   ├── api/client.js           # Axios HTTP client
-│   ├── App.jsx                 # Main application
-│   └── App.css                 # Global styles
-├── docs/                        # GitHub Pages site
-│   ├── index.html              # Landing page
-│   ├── features.html           # Feature showreel
-│   └── assets/                 # CSS, JS, images
-├── import-template.xlsx         # Excel import template
-└── README.md
+│   ├── components/           # React components
+│   ├── api/client.js        # HTTP client
+│   └── App.jsx              # Main app
+├── docs/                     # GitHub Pages
+└── README.md                 # This file
 ```
 
-## 📊 Database Schema
+</details>
 
-### Core Tables
-- **users**: Authentication and roles
-- **projects**: Project definitions
-- **project_permissions**: PM access control (many-to-many)
-- **project_links**: External resource links
-- **metrics**: Metric definitions with schedules
-- **metric_periods**: Time-series data points
-- **comments**: Period commentary
-- **craids**: Risks, issues, dependencies
-- **audit_log**: System change tracking
+<details>
+<summary><strong>📊 Database Schema</strong></summary>
 
-## 🔑 API Endpoints
+### Tables
+- **users** - Authentication and roles
+- **portfolios** - Project groupings
+- **projects** - Project definitions
+- **project_permissions** - PM access control
+- **project_links** - External links
+- **metrics** - Metric definitions with progression curves
+- **metric_periods** - Time-series data (expected, target, complete)
+- **comments** - Period commentary
+- **craids** - Risks, issues, dependencies
+- **audit_log** - Change tracking
+
+### Relationships
+```
+portfolios (1) ──< (N) projects
+projects (1) ──< (N) metrics
+metrics (1) ──< (N) metric_periods
+metric_periods (1) ──< (N) comments
+users (N) ><  (N) projects (via project_permissions)
+```
+
+</details>
+
+<details>
+<summary><strong>🔑 API Endpoints</strong></summary>
 
 ### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - New user registration
-- `POST /api/auth/change-password` - Password update
+- `POST /api/auth/login` - Login
+- `POST /api/auth/register` - Register
+- `POST /api/auth/change-password` - Change password
 - `PUT /api/auth/profile` - Update profile
 
+### Portfolios
+- `GET /api/portfolios` - List
+- `POST /api/portfolios` - Create
+- `PUT /api/portfolios/:id` - Update
+- `DELETE /api/portfolios/:id` - Delete
+
 ### Projects
-- `GET /api/projects` - List accessible projects
-- `POST /api/projects` - Create project (Admin/PM)
-- `PUT /api/projects/:id` - Update project
-- `DELETE /api/projects/:id` - Delete project
+- `GET /api/projects` - List
+- `POST /api/projects` - Create
+- `PUT /api/projects/:id` - Update
+- `DELETE /api/projects/:id` - Delete
 
 ### Data
-- `GET /api/projects/:id/data` - Get metrics and periods
+- `GET /api/projects/:id/data` - Get metrics/periods
 - `GET /api/projects/:id/data/time-travel` - Historical state
+- `POST /api/projects/:id/data/revert` - Revert (Admin)
+- `POST /api/metrics` - Create metric
 - `POST /api/metric-periods` - Create period
-- `PUT /api/metric-periods/:id` - Update period
-- `PATCH /api/metric-periods/:id` - Partial update
-
-### Import/Export
-- `GET /api/import/template` - Download import template (Admin/PM)
-- `POST /api/import` - Upload import file (Admin/PM)
-- `GET /api/export` - Generate Excel export
+- `POST /api/metric-periods/bulk` - Bulk create
 
 ### Admin
 - `GET /api/users` - List users
-- `PUT /api/users/:id/role` - Update user role
-- `DELETE /api/users/:id` - Delete user
-- `GET /api/audit` - Audit log with filters
-- `GET /api/admin/consistency-report` - Data quality report
+- `PUT /api/users/:id/role` - Update role
+- `GET /api/audit` - Audit log
+- `GET /api/admin/consistency-report` - Data quality
 
-## 🎓 Key Concepts
+### Import/Export
+- `GET /api/import/template` - Download template
+- `POST /api/import` - Upload file
+- `GET /api/export` - Generate export
+
+### Health
+- `GET /api/health` - Health check
+
+</details>
+
+<details>
+<summary><strong>🎓 Key Concepts</strong></summary>
 
 ### Target Propagation
-When editing target values:
-1. Change any period's target
-2. All subsequent periods update automatically
-3. Maintains consistency across timeline
+Change any period's target → all subsequent periods update automatically
 
 ### Draggable Expected Line
-Adjust expected values on charts:
-1. Hover over green dots
-2. Drag up/down
-3. Visual feedback shows new value
-4. Release to save
+Hover over green dots → drag up/down → release to save
 
 ### Historic Edit Protection
-- Completion values for past periods locked to admins
-- Prevents retroactive manipulation
-- Audit trail marks historic edits
-- Ensures data integrity
+Past period completion values locked to admins, audit trail tracks all changes
 
-## 🐳 Docker Deployment
+### Time Travel & Revert
+View project at any historical point, admins can revert to previous state
 
-Progress Tracker includes full Docker support for easy deployment:
+### Progression Curves
+- **Linear**: Predictable increments
+- **Exponential**: Back-loaded (slow → fast)
+- **S-curve**: Adoption curve (slow → fast → slow)
+- **Logarithmic**: Front-loaded (fast → slow)
 
-### Quick Deploy
-```bash
-make build    # Build Docker image
-make run      # Start application
-make logs     # View logs
-make stop     # Stop application
+</details>
+
+<details>
+<summary><strong>🔒 Security</strong></summary>
+
+### Production Checklist
+1. Change default credentials
+2. Use strong JWT secret (32+ chars)
+3. Enable HTTPS with SSL/TLS
+4. Never commit `.env` files
+5. Regular security updates
+6. Run `docker scan progress-tracker`
+7. Set proper volume permissions
+8. Implement rate limiting
+9. Regular database backups
+
+### SSL/TLS Setup
+Update `nginx.conf`:
+```nginx
+server {
+    listen 443 ssl http2;
+    ssl_certificate /etc/nginx/ssl/cert.pem;
+    ssl_certificate_key /etc/nginx/ssl/key.pem;
+    # ... config
+}
 ```
 
-### Production Deploy with Nginx
+</details>
+
+<details>
+<summary><strong>🧪 Testing & Development</strong></summary>
+
+### Testing
 ```bash
-make production
-# Access at http://localhost
+cd backend
+npm test                # Run tests
+npm run test:watch      # Watch mode
 ```
 
-### Available Commands
-- `make build` - Build Docker image
-- `make run` - Start containers
-- `make stop` - Stop containers
-- `make logs` - View logs (follow mode)
-- `make backup` - Backup database
-- `make restore` - Restore database
-- `make health` - Check container health
-- `make shell` - Access container shell
-- `make clean` - Remove containers and images
+### Generate Test Data
+```bash
+cd backend
+node src/seed-diverse-data.js
+```
 
-### Features
-- ✅ Multi-stage builds (~200-300MB image)
-- ✅ Database persistence via volumes
-- ✅ Health checks for monitoring
-- ✅ Production-ready Nginx configuration
-- ✅ Automated daily exports
-- ✅ Easy backup and restore
+Creates 7 projects across 5 portfolios with realistic data.
 
-**Documentation:**
-- Quick start: [README-DOCKER.md](./README-DOCKER.md)
-- Detailed guide: [DOCKER.md](./DOCKER.md)
-- Cloud deployment examples included
+### Development Mode
+```bash
+cd backend && npm run dev    # Backend with auto-reload
+npm run dev                   # Frontend with HMR
+```
 
-## 🤝 Contributing
+### Build
+```bash
+npm run build               # Frontend
+docker build -t progress-tracker .  # Docker
+```
 
-Contributions welcome! Please:
+</details>
+
+<details>
+<summary><strong>🤝 Contributing</strong></summary>
+
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Make changes
+4. Commit (`git commit -m 'Add amazing feature'`)
+5. Push (`git push origin feature/amazing-feature`)
+6. Open Pull Request
 
-## 📄 License
+Follow existing code style, add tests, update docs.
 
-MIT License - free for personal and commercial use.
+</details>
 
-## 💬 Support
+<details>
+<summary><strong>📄 License & Support</strong></summary>
 
-- **Issues**: Open on GitHub
-- **Documentation**: Check this README
+### License
+MIT License - free for personal and commercial use
+
+### Support
+- **Issues**: [GitHub Issues](https://github.com/DataVisuals/progress-tracker/issues)
+- **Documentation**: This README
 - **Live Demo**: https://datavisuals.github.io/progress-tracker/
+
+### Roadmap
+- Multi-language support
+- Advanced analytics/forecasting
+- Mobile app
+- JIRA/Azure DevOps integrations
+- Real-time collaboration
+
+</details>
+
+---
+
+
+---
+
+## 📖 Additional Documentation
+
+- [README-DOCKER.md](./README-DOCKER.md) - Docker quick reference
+- [DOCKER.md](./DOCKER.md) - Detailed Docker guide
+- [SCRIPTS.md](./SCRIPTS.md) - Utility scripts
+
+**Archived Documentation** (in `docs/archive/`):
+- TIME_TRAVEL_FEATURE.md - Time travel implementation details
+- PROJECT_DESCRIPTION_FEATURE.md - Project description feature docs  
+- TEST_REPORT.md - Testing documentation
 
 ---
 

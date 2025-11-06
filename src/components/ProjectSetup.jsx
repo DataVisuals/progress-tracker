@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import { api } from '../api/client';
 import { selectStyles } from './SelectStyles';
+import InfoPopup from './InfoPopup';
+import PortfolioManager from './PortfolioManager';
 import './FormInputs.css';
 import './ProjectSetup.css';
 
@@ -23,7 +25,9 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
   const [projectName, setProjectName] = useState('');
   const [projectManager, setProjectManager] = useState(null);
   const [projectDesc, setProjectDesc] = useState('');
+  const [portfolioId, setPortfolioId] = useState(null);
   const [users, setUsers] = useState([]);
+  const [portfolios, setPortfolios] = useState([]);
   const [projectStartDate, setProjectStartDate] = useState(defaultDates.start);
   const [projectEndDate, setProjectEndDate] = useState(defaultDates.end);
   const [metrics, setMetrics] = useState([
@@ -32,19 +36,25 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
   const [links, setLinks] = useState([
     { label: '', url: '' }
   ]);
+  const [showPortfolioManager, setShowPortfolioManager] = useState(false);
 
-  // Load users on component mount
+  // Load users and portfolios on component mount
   useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        const response = await api.getUsers();
-        setUsers(response.data);
-      } catch (err) {
-        console.error('Failed to load users:', err);
-      }
-    };
-    loadUsers();
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    try {
+      const [usersResponse, portfoliosResponse] = await Promise.all([
+        api.getUsers(),
+        api.get('/portfolios')
+      ]);
+      setUsers(usersResponse.data);
+      setPortfolios(portfoliosResponse.data);
+    } catch (err) {
+      console.error('Failed to load data:', err);
+    }
+  };
 
   const addMetric = () => {
     setMetrics([...metrics, { name: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0, startDate: defaultDates.start, endDate: defaultDates.end, frequency: 'monthly' }]);
@@ -72,6 +82,19 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
     const newLinks = [...links];
     newLinks[index][field] = value;
     setLinks(newLinks);
+  };
+
+  const handlePortfolioChange = (option) => {
+    if (option && option.value === '__create__') {
+      setShowPortfolioManager(true);
+      return;
+    }
+    setPortfolioId(option ? option.value : null);
+  };
+
+  const handlePortfolioCreated = async () => {
+    await loadData();
+    setShowPortfolioManager(false);
   };
 
   const handleSubmit = async () => {
@@ -113,7 +136,8 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
         description: projectDesc,
         initiative_manager: projectManager ? projectManager.label : '',
         start_date: projectStartDate,
-        end_date: projectEndDate
+        end_date: projectEndDate,
+        portfolio_id: portfolioId
       });
       const projectId = projectResponse.data.id;
 
@@ -184,21 +208,32 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
             />
           </div>
         </div>
-        <div className="form-group">
-          <label htmlFor="project-desc">Description</label>
-          <textarea
-            id="project-desc"
-            value={projectDesc}
-            onChange={(e) => setProjectDesc(e.target.value)}
-            placeholder="Enter project description..."
-            rows={2}
-          />
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="project-desc">Description</label>
+            <textarea
+              id="project-desc"
+              value={projectDesc}
+              onChange={(e) => setProjectDesc(e.target.value)}
+              placeholder="Enter project description..."
+              rows={2}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="portfolio">Portfolio</label>
+            <Select
+              id="portfolio"
+              value={portfolioId ? { value: portfolioId, label: portfolios.find(p => p.id === portfolioId)?.name } : null}
+              onChange={handlePortfolioChange}
+              options={[
+                ...portfolios.map(p => ({ value: p.id, label: p.name })),
+                { value: '__create__', label: '+ Create New Portfolio...' }
+              ]}
+              styles={selectStyles}
+              placeholder="Select portfolio (optional)..."
+            />
+          </div>
         </div>
-      </div>
-
-      <div className="setup-section">
-        <h3>Project Timeline</h3>
-        <p className="section-help">Set the overall project duration</p>
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="project-start-date">Project Start Date *</label>
@@ -304,7 +339,18 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
                       />
                     </div>
                     <div className="form-group metric-progression">
-                      <label>Progression Curve</label>
+                      <label>
+                        Progression Curve
+                        <InfoPopup>
+                          <strong>Progression Curves:</strong>
+                          <ul>
+                            <li><strong>Linear:</strong> Equal progress in each period</li>
+                            <li><strong>Exponential (Back-loaded):</strong> Slow start, then rapid acceleration at the end</li>
+                            <li><strong>S-curve:</strong> Slow start, fast middle, slow end</li>
+                            <li><strong>Logarithmic (Front-loaded):</strong> Fast start, gradually slowing down</li>
+                          </ul>
+                        </InfoPopup>
+                      </label>
                       <Select
                         value={{
                           value: metric.progression,
@@ -357,13 +403,6 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
             </div>
           ))}
         </div>
-        <p className="help-text">
-          <strong>Progression Curves:</strong><br/>
-          • Linear: Equal progress in each period<br/>
-          • Exponential (Back-loaded): Slow start, then rapid acceleration at the end<br/>
-          • S-curve: Slow start, fast middle, slow end<br/>
-          • Logarithmic (Front-loaded): Fast start, gradually slowing down
-        </p>
       </div>
 
       <div className="setup-section">
@@ -377,7 +416,18 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
           {links.map((link, index) => (
             <div key={index} className="link-row">
               <div className="form-group">
-                <label>Label</label>
+                <label>
+                  Label
+                  {index === 0 && (
+                    <InfoPopup>
+                      <strong>External Links</strong>
+                      <p style={{ margin: '8px 0 0 0' }}>
+                        Add links to external tools like JIRA, Confluence, or SharePoint.
+                        These will appear as buttons at the top of the project view.
+                      </p>
+                    </InfoPopup>
+                  )}
+                </label>
                 <input
                   type="text"
                   value={link.label}
@@ -406,9 +456,6 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
             </div>
           ))}
         </div>
-        <p className="help-text">
-          <strong>External Links:</strong> Add links to external tools like JIRA, Confluence, or SharePoint. These will appear as buttons at the top of the project view.
-        </p>
       </div>
 
       <div className="modal-actions">
@@ -419,6 +466,17 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
           Cancel
         </button>
       </div>
+
+      {showPortfolioManager && (
+        <div className="modal-overlay" onClick={() => setShowPortfolioManager(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <PortfolioManager
+              onClose={() => setShowPortfolioManager(false)}
+              onPortfolioCreated={handlePortfolioCreated}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

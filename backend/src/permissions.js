@@ -1,4 +1,4 @@
-const { dbGet, dbAll } = require('./db');
+const { dbGet, dbAll } = require('./db-sqljs');
 
 // Role constants
 const ROLES = {

@@ -1,4 +1,4 @@
-const { dbRun, dbGet, dbAll } = require('./db');
+const { dbRun, dbGet, dbAll } = require('./db-sqljs');
 const bcrypt = require('bcrypt');
 
 async function migrateMockData() {
