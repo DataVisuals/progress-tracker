@@ -280,6 +280,7 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
                         onChange={(option) => updateMetric(index, 'frequency', option.value)}
                         options={[
                           { value: 'weekly', label: 'Weekly' },
+                          { value: 'fortnightly', label: 'Fortnightly' },
                           { value: 'monthly', label: 'Monthly' },
                           { value: 'quarterly', label: 'Quarterly' }
                         ]}

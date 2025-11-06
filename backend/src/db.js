@@ -78,7 +78,7 @@ async function generateMetricPeriods(metricId, startDate, endDate, frequency, pr
   let current = new Date(start);
 
   // Validate frequency before generating periods
-  const validFrequencies = ['weekly', 'monthly', 'quarterly'];
+  const validFrequencies = ['weekly', 'fortnightly', 'monthly', 'quarterly'];
   if (!validFrequencies.includes(frequency)) {
     throw new Error(`Invalid frequency: ${frequency}. Must be one of: ${validFrequencies.join(', ')}`);
   }
@@ -92,6 +92,8 @@ async function generateMetricPeriods(metricId, startDate, endDate, frequency, pr
     // Increment based on frequency
     if (frequency === 'weekly') {
       current.setDate(current.getDate() + 7);
+    } else if (frequency === 'fortnightly') {
+      current.setDate(current.getDate() + 14);
     } else if (frequency === 'monthly') {
       current.setMonth(current.getMonth() + 1);
     } else if (frequency === 'quarterly') {
