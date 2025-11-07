@@ -1,5 +1,15 @@
-const { dbRun, dbGet, dbAll } = require('./db-sqljs');
-const bcrypt = require('bcrypt');
+const { dbRun, dbGet, dbAll } = require('./db');
+const crypto = require('crypto');
+const { promisify } = require('util');
+
+const scrypt = promisify(crypto.scrypt);
+
+// Hash password using same method as server.js
+async function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derivedKey = await scrypt(password, salt, 64);
+  return `${salt}:${derivedKey.toString('hex')}`;
+}
 
 async function migrateMockData() {
   console.log('🔄 Starting mock data migration...');
@@ -8,7 +18,7 @@ async function migrateMockData() {
     // Ensure admin user exists
     let adminUser = await dbGet('SELECT id FROM users WHERE email = ?', ['admin@example.com']);
     if (!adminUser) {
-      const hash = bcrypt.hashSync('admin123', 10);
+      const hash = await hashPassword('admin123');
       const result = await dbRun(
         'INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)',
         ['admin@example.com', 'Admin User', hash, 'admin']

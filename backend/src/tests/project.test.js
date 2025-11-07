@@ -33,10 +33,11 @@ describe('Project Description API Tests', () => {
       .send({
         name: 'Test User',
         email: 'test@example.com',
-        password: 'testpass123'
+        password: 'testpass123',
+        role: 'admin'
       });
 
-    testUserId = registerResponse.body.user.id;
+    testUserId = registerResponse.body.id;
 
     // Login to get token
     const loginResponse = await request(app)
@@ -228,7 +229,7 @@ describe('Project Description API Tests', () => {
 
       // Check audit log
       const auditResponse = await request(app)
-        .get('/api/audit-log')
+        .get('/api/audit')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(auditResponse.status).toBe(200);

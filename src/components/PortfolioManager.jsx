@@ -14,9 +14,37 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
   });
   const [error, setError] = useState('');
 
+  const colorOptions = [
+    { value: '#3b82f6', label: 'Blue' },
+    { value: '#10b981', label: 'Green' },
+    { value: '#f59e0b', label: 'Orange' },
+    { value: '#ef4444', label: 'Red' },
+    { value: '#8b5cf6', label: 'Purple' },
+    { value: '#ec4899', label: 'Pink' },
+    { value: '#06b6d4', label: 'Cyan' },
+    { value: '#84cc16', label: 'Lime' }
+  ];
+
+  // Get first unused color
+  const getUnusedColor = () => {
+    const usedColors = portfolios.map(p => p.color);
+    const unusedColor = colorOptions.find(option => !usedColors.includes(option.value));
+    return unusedColor ? unusedColor.value : colorOptions[0].value;
+  };
+
   useEffect(() => {
     loadPortfolios();
   }, []);
+
+  // Update form color when opening new form or when portfolios change
+  useEffect(() => {
+    if (showNewForm && !editingId && portfolios.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        color: getUnusedColor()
+      }));
+    }
+  }, [showNewForm, editingId, portfolios]);
 
   const loadPortfolios = async () => {
     try {
@@ -75,23 +103,12 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
     setFormData({
       name: '',
       description: '',
-      color: '#3b82f6',
+      color: getUnusedColor(),
       display_order: 0
     });
     setEditingId(null);
     setShowNewForm(false);
   };
-
-  const colorOptions = [
-    { value: '#3b82f6', label: 'Blue' },
-    { value: '#10b981', label: 'Green' },
-    { value: '#f59e0b', label: 'Orange' },
-    { value: '#ef4444', label: 'Red' },
-    { value: '#8b5cf6', label: 'Purple' },
-    { value: '#ec4899', label: 'Pink' },
-    { value: '#06b6d4', label: 'Cyan' },
-    { value: '#84cc16', label: 'Lime' }
-  ];
 
   return (
     <div className="portfolio-manager-overlay">

@@ -9,7 +9,8 @@ const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
   const inputRef = useRef(null);
 
   const projectEntries = Object.entries(projects);
-  const selectedProjectName = selectedProject ? projects[selectedProject]?.name : '';
+  const selectedProjectData = selectedProject ? projects[selectedProject] : null;
+  const selectedProjectName = selectedProjectData?.name || '';
 
   // Filter projects based on search term
   const filteredProjects = projectEntries.filter(([_, project]) =>
@@ -94,9 +95,19 @@ const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
           aria-haspopup="listbox"
           aria-expanded={isOpen}
         >
-          <span className={selectedProject ? 'selected-text' : 'placeholder-text'}>
-            {selectedProjectName || '-- Choose a Project --'}
-          </span>
+          <div className="trigger-content">
+            {selectedProjectData?.portfolio_color && (
+              <span
+                className="project-portfolio-dot"
+                style={{
+                  backgroundColor: selectedProjectData.portfolio_color
+                }}
+              />
+            )}
+            <span className={selectedProject ? 'selected-text' : 'placeholder-text'}>
+              {selectedProjectName || '-- Choose a Project --'}
+            </span>
+          </div>
           <svg
             className={`dropdown-arrow ${isOpen ? 'open' : ''}`}
             width="12"
@@ -143,7 +154,17 @@ const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
                     role="option"
                     aria-selected={selectedProject === key}
                   >
-                    {project.name}
+                    <div className="option-content">
+                      {project.portfolio_color && (
+                        <span
+                          className="project-portfolio-dot-large"
+                          style={{
+                            backgroundColor: project.portfolio_color
+                          }}
+                        />
+                      )}
+                      <span className="option-name">{project.name}</span>
+                    </div>
                   </div>
                 ))
               ) : (

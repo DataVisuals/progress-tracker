@@ -1,7 +1,17 @@
 const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
-const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+const { promisify } = require('util');
+
+const scrypt = promisify(crypto.scrypt);
+
+// Hash password using same method as server.js
+async function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derivedKey = await scrypt(password, salt, 64);
+  return `${salt}:${derivedKey.toString('hex')}`;
+}
 
 // Helper to generate dates
 function addMonths(date, months) {
@@ -36,7 +46,7 @@ function calculateTarget(finalTarget, periodIndex, totalPeriods, progressionType
   }
 }
 
-(() => {
+(async () => {
   try {
     const dbPath = path.join(__dirname, '../data/progress-tracker.db');
     const db = new Database(dbPath);
@@ -87,7 +97,7 @@ function calculateTarget(finalTarget, periodIndex, totalPeriods, progressionType
       { name: 'David Kumar', email: 'david.kumar@example.com', role: 'user' }
     ];
 
-    const hashedPassword = bcrypt.hashSync('password123', 10);
+    const hashedPassword = await hashPassword('password123');
     const insertUser = db.prepare("INSERT INTO users (name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, datetime('now'))");
 
     for (const user of users) {

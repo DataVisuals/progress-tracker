@@ -20,7 +20,7 @@ async function comparePassword(password, hash) {
   const derivedKey = await scrypt(password, salt, 64);
   return key === derivedKey.toString('hex');
 }
-const { getDb, dbRun, dbGet, dbAll, generateMetricPeriods, saveDatabase, initDatabase } = require('./db-sqljs');
+const { getDb, dbRun, dbGet, dbAll, generateMetricPeriods } = require('./db');
 const { ROLES, canEditProject, canCreateProject, isAdmin } = require('./permissions');
 const { startScheduler } = require('./scheduler');
 
@@ -268,9 +268,8 @@ app.post('/api/portfolios', authenticateToken, async (req, res) => {
       [name, description || null, color || '#3b82f6', display_order || 0]
     );
 
-    await logAuditEvent(
-      req.user.id,
-      req.user.email,
+    await logAudit(
+      req.user,
       'CREATE',
       'portfolios',
       result.lastID,
@@ -306,9 +305,8 @@ app.put('/api/portfolios/:id', authenticateToken, async (req, res) => {
       [name, description, color, display_order, id]
     );
 
-    await logAuditEvent(
-      req.user.id,
-      req.user.email,
+    await logAudit(
+      req.user,
       'UPDATE',
       'portfolios',
       id,
@@ -343,9 +341,8 @@ app.delete('/api/portfolios/:id', authenticateToken, async (req, res) => {
 
     await dbRun('DELETE FROM portfolios WHERE id = ?', [id]);
 
-    await logAuditEvent(
-      req.user.id,
-      req.user.email,
+    await logAudit(
+      req.user,
       'DELETE',
       'portfolios',
       id,
@@ -415,7 +412,24 @@ app.post('/api/projects', authenticateToken, async (req, res) => {
       req.ip
     );
 
-    res.json({ id: result.lastID, name, description, initiative_manager, start_date, end_date, portfolio_id });
+    res.status(201).json({ id: result.lastID, name, description, initiative_manager, start_date, end_date, portfolio_id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/projects/:id', async (req, res) => {
+  try {
+    const project = await dbGet(
+      'SELECT p.*, po.name as portfolio_name, po.color as portfolio_color FROM projects p LEFT JOIN portfolios po ON p.portfolio_id = po.id WHERE p.id = ?',
+      [req.params.id]
+    );
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    res.json(project);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -893,7 +907,7 @@ app.put('/api/metric-periods/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'You do not have permission to edit this data' });
     }
 
-    const { complete, expected, target } = req.body;
+    const { complete, expected, target, reporting_date } = req.body;
 
     // Check if this is a historic edit of completion values (period end date has passed)
     const periodEndDate = new Date(periodData.reporting_date);
@@ -917,6 +931,12 @@ app.put('/api/metric-periods/:id', authenticateToken, async (req, res) => {
     const oldValues = {};
     const newValues = {};
 
+    if (reporting_date !== undefined && reporting_date !== periodData.reporting_date) {
+      updates.push('reporting_date = ?');
+      params.push(reporting_date);
+      oldValues.reporting_date = periodData.reporting_date;
+      newValues.reporting_date = reporting_date;
+    }
     if (complete !== undefined) {
       updates.push('complete = ?');
       params.push(complete);
@@ -1227,6 +1247,14 @@ app.post('/api/projects/:projectId/craids', authenticateToken, async (req, res) 
 
     const { type, title, description, status, priority, owner_id, period_id } = req.body;
 
+    // Validate required fields
+    if (!type) {
+      return res.status(400).json({ error: 'Type is required' });
+    }
+    if (!title) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+
     console.log('Creating CRAID:', {
       projectId: req.params.projectId,
       type,
@@ -1270,6 +1298,12 @@ app.put('/api/craids/:id', authenticateToken, async (req, res) => {
     }
 
     const { title, description, status, priority, owner_id } = req.body;
+
+    // Validate required fields
+    if (!title) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+
     await dbRun(`
       UPDATE craids
       SET title = ?, description = ?, status = ?, priority = ?, owner_id = ?, updated_at = CURRENT_TIMESTAMP
@@ -2621,120 +2655,123 @@ if (fs.existsSync(frontendPath)) {
 }
 
 // ===== SERVER START =====
-app.listen(PORT, async () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
+// Only start the server if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, async () => {
+    console.log(`✅ Server running on http://localhost:${PORT}`);
 
-  // Migration: Add role column if it doesn't exist
-  try {
-    await dbRun(`ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'viewer'`);
-    console.log('✅ Added role column to users table');
-  } catch (err) {
-    // Column already exists, that's fine
-  }
+    // Migration: Add role column if it doesn't exist
+    try {
+      await dbRun(`ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'viewer'`);
+      console.log('✅ Added role column to users table');
+    } catch (err) {
+      // Column already exists, that's fine
+    }
 
-  // Migration: Clean up invalid roles and convert to valid ones
-  try {
-    // Convert 'editor' to 'pm' (Project Manager is the closest equivalent)
-    await dbRun(`UPDATE users SET role = 'pm' WHERE role = 'editor'`);
-    // Set any null or empty roles to 'viewer'
-    await dbRun(`UPDATE users SET role = 'viewer' WHERE role IS NULL OR role = ''`);
-    console.log('✅ Cleaned up user roles');
-  } catch (err) {
-    console.error('Error updating user roles:', err);
-  }
+    // Migration: Clean up invalid roles and convert to valid ones
+    try {
+      // Convert 'editor' to 'pm' (Project Manager is the closest equivalent)
+      await dbRun(`UPDATE users SET role = 'pm' WHERE role = 'editor'`);
+      // Set any null or empty roles to 'viewer'
+      await dbRun(`UPDATE users SET role = 'viewer' WHERE role IS NULL OR role = ''`);
+      console.log('✅ Cleaned up user roles');
+    } catch (err) {
+      console.error('Error updating user roles:', err);
+    }
 
-  // Migration: Add tolerance columns to metrics table
-  try {
-    await dbRun(`ALTER TABLE metrics ADD COLUMN amber_tolerance REAL DEFAULT 5.0`);
-    await dbRun(`ALTER TABLE metrics ADD COLUMN red_tolerance REAL DEFAULT 10.0`);
-    console.log('✅ Added tolerance columns to metrics table');
-  } catch (err) {
-    // Columns already exist, that's fine
-  }
+    // Migration: Add tolerance columns to metrics table
+    try {
+      await dbRun(`ALTER TABLE metrics ADD COLUMN amber_tolerance REAL DEFAULT 5.0`);
+      await dbRun(`ALTER TABLE metrics ADD COLUMN red_tolerance REAL DEFAULT 10.0`);
+      console.log('✅ Added tolerance columns to metrics table');
+    } catch (err) {
+      // Columns already exist, that's fine
+    }
 
-  // Migration: Add metric_type column to metrics table
-  try {
-    await dbRun(`ALTER TABLE metrics ADD COLUMN metric_type TEXT DEFAULT 'standard'`);
-    console.log('✅ Added metric_type column to metrics table');
-  } catch (err) {
-    // Column already exists, that's fine
-  }
+    // Migration: Add metric_type column to metrics table
+    try {
+      await dbRun(`ALTER TABLE metrics ADD COLUMN metric_type TEXT DEFAULT 'standard'`);
+      console.log('✅ Added metric_type column to metrics table');
+    } catch (err) {
+      // Column already exists, that's fine
+    }
 
-  // Migration: Add commentary column to metric_periods table
-  try {
-    await dbRun(`ALTER TABLE metric_periods ADD COLUMN commentary TEXT`);
-    console.log('✅ Added commentary column to metric_periods table');
-  } catch (err) {
-    // Column already exists, that's fine
-  }
+    // Migration: Add commentary column to metric_periods table
+    try {
+      await dbRun(`ALTER TABLE metric_periods ADD COLUMN commentary TEXT`);
+      console.log('✅ Added commentary column to metric_periods table');
+    } catch (err) {
+      // Column already exists, that's fine
+    }
 
-  // Migration: Create project_links table
-  try {
-    await dbRun(`
-      CREATE TABLE IF NOT EXISTS project_links (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        project_id INTEGER NOT NULL,
-        label TEXT NOT NULL,
-        url TEXT NOT NULL,
-        display_order INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-      )
-    `);
-    await dbRun(`CREATE INDEX IF NOT EXISTS idx_project_links_project ON project_links(project_id)`);
-    console.log('✅ Created project_links table');
-  } catch (err) {
-    // Table already exists, that's fine
-  }
+    // Migration: Create project_links table
+    try {
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS project_links (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          project_id INTEGER NOT NULL,
+          label TEXT NOT NULL,
+          url TEXT NOT NULL,
+          display_order INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        )
+      `);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_project_links_project ON project_links(project_id)`);
+      console.log('✅ Created project_links table');
+    } catch (err) {
+      // Table already exists, that's fine
+    }
 
-  // Migration: Add start_date and end_date to projects table
-  try {
-    await dbRun(`ALTER TABLE projects ADD COLUMN start_date DATE`);
-    await dbRun(`ALTER TABLE projects ADD COLUMN end_date DATE`);
-    console.log('✅ Added date columns to projects table');
-  } catch (err) {
-    // Columns already exist, that's fine
-  }
+    // Migration: Add start_date and end_date to projects table
+    try {
+      await dbRun(`ALTER TABLE projects ADD COLUMN start_date DATE`);
+      await dbRun(`ALTER TABLE projects ADD COLUMN end_date DATE`);
+      console.log('✅ Added date columns to projects table');
+    } catch (err) {
+      // Columns already exist, that's fine
+    }
 
-  // Migration: Create portfolios table
-  try {
-    await dbRun(`
-      CREATE TABLE IF NOT EXISTS portfolios (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        description TEXT,
-        color TEXT DEFAULT '#3b82f6',
-        display_order INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('✅ Created portfolios table');
-  } catch (err) {
-    console.error('Error creating portfolios table:', err);
-  }
+    // Migration: Create portfolios table
+    try {
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS portfolios (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL UNIQUE,
+          description TEXT,
+          color TEXT DEFAULT '#3b82f6',
+          display_order INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('✅ Created portfolios table');
+    } catch (err) {
+      console.error('Error creating portfolios table:', err);
+    }
 
-  // Migration: Add portfolio_id to projects table
-  try {
-    await dbRun(`ALTER TABLE projects ADD COLUMN portfolio_id INTEGER REFERENCES portfolios(id)`);
-    console.log('✅ Added portfolio_id column to projects table');
-  } catch (err) {
-    // Column already exists, that's fine
-  }
+    // Migration: Add portfolio_id to projects table
+    try {
+      await dbRun(`ALTER TABLE projects ADD COLUMN portfolio_id INTEGER REFERENCES portfolios(id)`);
+      console.log('✅ Added portfolio_id column to projects table');
+    } catch (err) {
+      // Column already exists, that's fine
+    }
 
-  // Create default admin user if none exists
-  const result = await dbGet('SELECT COUNT(*) as count FROM users');
-  if (result.count === 0) {
-    const hash = await hashPassword('admin123');
-    await dbRun('INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)', ['admin@example.com', 'Admin User', hash, 'admin']);
-    console.log('✅ Created default admin user: admin@example.com / admin123');
-  }
+    // Create default admin user if none exists
+    const result = await dbGet('SELECT COUNT(*) as count FROM users');
+    if (result.count === 0) {
+      const hash = await hashPassword('admin123');
+      await dbRun('INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)', ['admin@example.com', 'Admin User', hash, 'admin']);
+      console.log('✅ Created default admin user: admin@example.com / admin123');
+    }
 
-  console.log('✅ Database ready at backend/data/progress-tracker.db');
+    console.log('✅ Database ready at backend/data/progress-tracker.db');
 
-  // Start the daily export scheduler
-  startScheduler();
-});
+    // Start the daily export scheduler
+    startScheduler();
+  });
+}
 
 // Export app for testing
 module.exports = app;

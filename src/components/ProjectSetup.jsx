@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { selectStyles } from './SelectStyles';
 import InfoPopup from './InfoPopup';
 import PortfolioManager from './PortfolioManager';
+import UserSelector from './UserSelector';
 import './FormInputs.css';
 import './ProjectSetup.css';
 
@@ -197,26 +198,24 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
           </div>
           <div className="form-group">
             <label htmlFor="project-manager">Project Manager</label>
-            <Select
-              id="project-manager"
-              value={projectManager}
-              onChange={(option) => setProjectManager(option)}
-              options={users.map(user => ({ value: user.id, label: user.name }))}
-              styles={selectStyles}
+            <UserSelector
+              users={users}
+              selectedUser={projectManager}
+              onUserChange={(option) => setProjectManager(option)}
               placeholder="Select project manager..."
-              isClearable
             />
           </div>
         </div>
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="project-desc">Description</label>
-            <textarea
+            <input
               id="project-desc"
+              type="text"
               value={projectDesc}
               onChange={(e) => setProjectDesc(e.target.value)}
               placeholder="Enter project description..."
-              rows={2}
+              maxLength={250}
             />
           </div>
           <div className="form-group">

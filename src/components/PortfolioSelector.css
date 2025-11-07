@@ -6,39 +6,180 @@
 }
 
 .portfolio-selector label {
-  font-weight: 500;
+  font-weight: 600;
   color: white;
-  font-size: 0.8125rem;
+  font-size: 11px;
   white-space: nowrap;
   text-transform: uppercase;
-  letter-spacing: 0.025em;
+  letter-spacing: 0.3px;
   opacity: 0.95;
 }
 
-.portfolio-select {
-  padding: 6px 32px 6px 10px;
+.portfolio-select-container {
+  position: relative;
+  min-width: 140px;
+  max-width: 200px;
+}
+
+.portfolio-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 5px;
-  font-size: 0.8125rem;
-  background: rgba(255, 255, 255, 0.95);
-  cursor: pointer;
-  font-family: inherit;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.95);
   color: #1f2937;
-  min-width: 160px;
-  height: 32px;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 28px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  user-select: none;
 }
 
-.portfolio-select:hover {
-  background: white;
+.trigger-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.portfolio-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.selected-text {
+  color: #1f2937;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.placeholder-text {
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.dropdown-arrow {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  color: #1f2937;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.portfolio-select-trigger:hover {
+  background-color: white;
   border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
 }
 
-.portfolio-select:focus {
+.portfolio-select-trigger:focus {
   outline: none;
+  background-color: white;
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15), 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.portfolio-select-trigger.open {
   border-color: rgba(255, 255, 255, 0.6);
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+}
+
+.portfolio-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: white;
+  border: 2px solid #00aeef;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-height: 300px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 100%;
+  max-width: calc(100vw - 32px);
+  width: max-content;
+}
+
+.portfolio-options-list {
+  overflow-y: auto;
+  max-height: 300px;
+}
+
+.portfolio-option-item {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #1f2937;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.portfolio-option-item:last-child {
+  border-bottom: none;
+}
+
+.portfolio-option-item .option-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.portfolio-color-dot-large {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.portfolio-option-item .option-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.portfolio-option-item:hover {
+  background-color: #f0f9ff;
+  color: #003c71;
+}
+
+.portfolio-option-item.selected {
+  background-color: #00aeef;
+  color: white;
+  font-weight: 600;
+}
+
+.portfolio-option-item.selected:hover {
+  background-color: #0095d1;
+}
+
+.portfolio-option-item.manage-option {
+  font-style: italic;
+  color: #6b7280;
+}
+
+.portfolio-option-item.manage-option:hover {
+  background-color: #f9fafb;
+  color: #374151;
+}
+
+.portfolio-divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 4px 0;
 }

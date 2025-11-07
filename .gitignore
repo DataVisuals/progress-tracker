@@ -38,3 +38,4 @@ Thumbs.db
 # SQLite WAL files
 *.db-shm
 *.db-wal
+node_modules
