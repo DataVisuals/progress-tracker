@@ -8,14 +8,20 @@ import {
   MdTrendingUp,
   MdFilterList,
   MdFolderSpecial,
-  MdCheckCircle
+  MdCheckCircle,
+  MdList,
+  MdEdit,
+  MdShare,
+  MdHistory,
+  MdSecurity,
+  MdAssessment
 } from 'react-icons/md';
 import './FeatureShowreel.css';
 
 const FeatureShowreel = ({ onClose }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  const features = [
+  const mainFeatures = [
     {
       icon: <MdSpeed />,
       title: "Understand Project Status Using Objective Measures",
@@ -85,19 +91,47 @@ const FeatureShowreel = ({ onClose }) => {
     }
   ];
 
+  const allFeatures = {
+    "Core Tracking": [
+      { icon: <MdSpeed />, name: "RAG Status Indicators", desc: "Visual Red/Amber/Green status on all metrics" },
+      { icon: <MdTimeline />, name: "Progress Curves", desc: "Expected vs actual progress visualization" },
+      { icon: <MdTrendingUp />, name: "Trend Analysis", desc: "Identify flat trajectories and changes" },
+      { icon: <MdEdit />, name: "Inline Editing", desc: "Double-click to rename projects and metrics" }
+    ],
+    "Data Management": [
+      { icon: <MdList />, name: "Data Grid Editor", desc: "Spreadsheet-like interface for bulk updates" },
+      { icon: <MdHistory />, name: "Time Travel", desc: "View historical data at any point in time" },
+      { icon: <MdShare />, name: "Shareable Links", desc: "Direct URLs to specific projects and metrics" },
+      { icon: <MdAssessment />, name: "Import/Export", desc: "CSV import and data export functionality" }
+    ],
+    "Organization": [
+      { icon: <MdFolderSpecial />, name: "Portfolios", desc: "Group projects with color-coded portfolios" },
+      { icon: <MdFilterList />, name: "Portfolio Filtering", desc: "View projects by portfolio" },
+      { icon: <MdCheckCircle />, name: "Consistency Reports", desc: "Automated data quality checks" }
+    ],
+    "Security & Audit": [
+      { icon: <MdSecurity />, name: "Role-Based Access", desc: "Admin, PM, Editor, and Viewer roles" },
+      { icon: <MdHistory />, name: "Audit Log", desc: "Complete history of all changes" },
+      { icon: <MdEdit />, name: "Historic Edit Protection", desc: "Prevent unauthorized changes to past data" }
+    ]
+  };
+
+  const totalSlides = mainFeatures.length + 1; // +1 for the all features page
+
   const handleNext = () => {
-    setCurrentSlide((prev) => (prev + 1) % features.length);
+    setCurrentSlide((prev) => (prev + 1) % totalSlides);
   };
 
   const handlePrev = () => {
-    setCurrentSlide((prev) => (prev - 1 + features.length) % features.length);
+    setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
   };
 
   const handleDotClick = (index) => {
     setCurrentSlide(index);
   };
 
-  const currentFeature = features[currentSlide];
+  const isAllFeaturesPage = currentSlide === mainFeatures.length;
+  const currentFeature = isAllFeaturesPage ? null : mainFeatures[currentSlide];
 
   return (
     <div className="showreel-overlay" onClick={onClose}>
@@ -107,23 +141,49 @@ const FeatureShowreel = ({ onClose }) => {
         </button>
 
         <div className="showreel-content">
-          <div className="showreel-icon">
-            {currentFeature.icon}
-          </div>
+          {isAllFeaturesPage ? (
+            <>
+              <h2 className="showreel-title">All Features</h2>
+              <div className="all-features-grid">
+                {Object.entries(allFeatures).map(([category, features]) => (
+                  <div key={category} className="feature-category">
+                    <h3 className="category-title">{category}</h3>
+                    <div className="category-features">
+                      {features.map((feature, idx) => (
+                        <div key={idx} className="feature-item">
+                          <div className="feature-item-icon">{feature.icon}</div>
+                          <div className="feature-item-content">
+                            <div className="feature-item-name">{feature.name}</div>
+                            <div className="feature-item-desc">{feature.desc}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="showreel-icon">
+                {currentFeature.icon}
+              </div>
 
-          <h2 className="showreel-title">{currentFeature.title}</h2>
+              <h2 className="showreel-title">{currentFeature.title}</h2>
 
-          <p className="showreel-description">{currentFeature.description}</p>
+              <p className="showreel-description">{currentFeature.description}</p>
 
-          <ul className="showreel-details">
-            {currentFeature.details.map((detail, index) => (
-              <li key={index}>{detail}</li>
-            ))}
-          </ul>
+              <ul className="showreel-details">
+                {currentFeature.details.map((detail, index) => (
+                  <li key={index}>{detail}</li>
+                ))}
+              </ul>
+            </>
+          )}
 
           <div className="showreel-progress">
             <span className="showreel-slide-counter">
-              {currentSlide + 1} / {features.length}
+              {currentSlide + 1} / {totalSlides}
             </span>
           </div>
         </div>
@@ -138,7 +198,7 @@ const FeatureShowreel = ({ onClose }) => {
           </button>
 
           <div className="showreel-dots">
-            {features.map((_, index) => (
+            {Array.from({ length: totalSlides }).map((_, index) => (
               <button
                 key={index}
                 className={`showreel-dot ${index === currentSlide ? 'active' : ''}`}
@@ -151,7 +211,7 @@ const FeatureShowreel = ({ onClose }) => {
           <button
             className="showreel-nav-btn"
             onClick={handleNext}
-            disabled={currentSlide === features.length - 1}
+            disabled={currentSlide === totalSlides - 1}
           >
             <MdArrowForward />
           </button>
