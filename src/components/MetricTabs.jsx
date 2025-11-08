@@ -23,7 +23,8 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
     const latest = sortedData[0];
 
     // Check if we have the necessary data
-    if (!latest.complete || !latest.expected) return null;
+    if (latest.complete === null || latest.complete === undefined ||
+        latest.expected === null || latest.expected === undefined) return null;
 
     const complete = parseFloat(latest.complete);
     const expected = parseFloat(latest.expected);
