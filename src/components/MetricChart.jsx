@@ -17,6 +17,8 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { api } from '../api/client';
+import TimeTravel from './TimeTravel';
+import CRAIDs from './CRAIDs';
 import './MetricChart.css';
 
 // Helper function to format numbers with commas
@@ -217,7 +219,7 @@ const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance })
   return null;
 };
 
-const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTolerance = 5.0, redTolerance = 10.0, timeTravelTimestamp = null }) => {
+const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTolerance = 5.0, redTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin }) => {
   console.log('MetricChart rendered with canEdit:', canEdit);
 
   const [isAdding, setIsAdding] = useState(false);
@@ -231,6 +233,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
   const [highlightedSeries, setHighlightedSeries] = useState(null);
   const [isCommentaryCollapsed, setIsCommentaryCollapsed] = useState(true);
   const [isDataTableCollapsed, setIsDataTableCollapsed] = useState(false);
+  const [activeTab, setActiveTab] = useState('table'); // 'table', 'commentary', 'timetravel', or 'dependencies'
   const chartContainerRef = useRef(null);
   const [tableWidth, setTableWidth] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -966,59 +969,80 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
         </div>
       </div>
 
-      {/* Data Table - Excel-style horizontal layout */}
-      <div>
-        <div className="data-table-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      {/* Tabbed Section - Data Table, Commentary, Time Travel, and Dependencies */}
+      <div className="tabbed-section">
+        <div className="tab-navigation">
+          <button
+            className={`tab-button ${activeTab === 'table' ? 'active' : ''}`}
+            onClick={() => setActiveTab('table')}
+          >
+            Data Table
+          </button>
+          <button
+            className={`tab-button ${activeTab === 'commentary' ? 'active' : ''}`}
+            onClick={() => setActiveTab('commentary')}
+          >
+            Commentary
+          </button>
+          {canEdit && (
             <button
-              className="collapse-toggle-btn"
-              onClick={() => setIsDataTableCollapsed(!isDataTableCollapsed)}
-              title={isDataTableCollapsed ? 'Expand data table' : 'Collapse data table'}
+              className={`tab-button ${activeTab === 'timetravel' ? 'active' : ''}`}
+              onClick={() => setActiveTab('timetravel')}
             >
-              {isDataTableCollapsed ? '▶' : '▼'}
+              Time Travel
             </button>
-            <h4>Data Table</h4>
-          </div>
-          {!isDataTableCollapsed && totalPeriods > periodsPerPage && (
-            <div className="pagination-controls">
-              <button
-                onClick={goToCurrentPeriod}
-                disabled={currentPeriodIndex < 0}
-                className="pagination-btn"
-                title="Jump to current period"
-              >
-                Current
-              </button>
-              <button
-                onClick={goToLatestPeriods}
-                disabled={currentPage === totalPages - 1}
-                className="pagination-btn"
-                title="Jump to latest periods"
-              >
-                Latest
-              </button>
-              <button
-                onClick={goToPrevPage}
-                disabled={currentPage === 0}
-                className="pagination-btn"
-              >
-                ← Prev
-              </button>
-              <span className="pagination-info">
-                {startIndex + 1}-{endIndex} of {totalPeriods}
-              </span>
-              <button
-                onClick={goToNextPage}
-                disabled={currentPage === totalPages - 1}
-                className="pagination-btn"
-              >
-                Next →
-              </button>
-            </div>
           )}
+          <button
+            className={`tab-button ${activeTab === 'dependencies' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dependencies')}
+          >
+            Dependencies
+          </button>
         </div>
-        {!isDataTableCollapsed && (
-          <div className="data-table-section">
+
+        {/* Data Table Tab Content */}
+        {activeTab === 'table' && (
+          <div className="tab-content">
+            <div className="data-table-header">
+              {totalPeriods > periodsPerPage && (
+                <div className="pagination-controls">
+                  <button
+                    onClick={goToCurrentPeriod}
+                    disabled={currentPeriodIndex < 0}
+                    className="pagination-btn"
+                    title="Jump to current period"
+                  >
+                    Current
+                  </button>
+                  <button
+                    onClick={goToLatestPeriods}
+                    disabled={currentPage === totalPages - 1}
+                    className="pagination-btn"
+                    title="Jump to latest periods"
+                  >
+                    Latest
+                  </button>
+                  <button
+                    onClick={goToPrevPage}
+                    disabled={currentPage === 0}
+                    className="pagination-btn"
+                  >
+                    ← Prev
+                  </button>
+                  <span className="pagination-info">
+                    {startIndex + 1}-{endIndex} of {totalPeriods}
+                  </span>
+                  <button
+                    onClick={goToNextPage}
+                    disabled={currentPage === totalPages - 1}
+                    className="pagination-btn"
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="data-table-section">
         <table className="data-table" style={{ width: tableWidth ? `${tableWidth}px` : 'auto' }}>
           <thead>
             <tr>
@@ -1111,31 +1135,22 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
             </tr>
           </tbody>
         </table>
+            </div>
           </div>
         )}
-      </div>
-    </div>
 
-    <div className="commentary-section">
-        <div className="commentary-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button
-              className="collapse-toggle-btn"
-              onClick={() => setIsCommentaryCollapsed(!isCommentaryCollapsed)}
-              title={isCommentaryCollapsed ? 'Expand commentary' : 'Collapse commentary'}
-            >
-              {isCommentaryCollapsed ? '▶' : '▼'}
-            </button>
-            <h4>Commentary</h4>
-          </div>
-          {!isAdding && canEdit && !isCommentaryCollapsed && (
-            <button className="add-btn" onClick={handleStartAdd}>
-              Add
-            </button>
-          )}
-        </div>
+        {/* Commentary Tab Content */}
+        {activeTab === 'commentary' && (
+          <div className="tab-content">
+            <div className="commentary-header">
+              {!isAdding && canEdit && (
+                <button className="add-btn" onClick={handleStartAdd}>
+                  Add
+                </button>
+              )}
+            </div>
 
-        {!isCommentaryCollapsed && (isAdding ? (
+            {isAdding ? (
           <div className="commentary-add-mode">
             <div className="commentary-item-add">
               <div className="commentary-label">Add Comment</div>
@@ -1249,8 +1264,30 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
               </div>
             )}
           </div>
-        ))}
+        )}
+          </div>
+        )}
+
+        {/* Time Travel Tab Content */}
+        {activeTab === 'timetravel' && canEdit && projectId && (
+          <div className="tab-content">
+            <TimeTravel
+              projectId={projectId}
+              onTimeTravelChange={onTimeTravelChange}
+              onRevert={onRevert}
+              isAdmin={isAdmin}
+            />
+          </div>
+        )}
+
+        {/* Dependencies Tab Content */}
+        {activeTab === 'dependencies' && projectId && (
+          <div className="tab-content">
+            <CRAIDs projectId={projectId} canEdit={canEdit} />
+          </div>
+        )}
       </div>
+    </div>
     </div>
   );
 };

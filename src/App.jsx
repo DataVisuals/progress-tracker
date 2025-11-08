@@ -6,13 +6,11 @@ import PortfolioManager from './components/PortfolioManager';
 import MetricChart from './components/MetricChart';
 import MetricTabs from './components/MetricTabs';
 import DataGrid from './components/DataGrid';
-import CRAIDs from './components/CRAIDs';
 import AuditLog from './components/AuditLog';
 import UserManagement from './components/UserManagement';
 import ProjectSetup from './components/ProjectSetup';
 import ProjectLinksEditor from './components/ProjectLinksEditor';
 import UserProfile from './components/UserProfile';
-import TimeTravel from './components/TimeTravel';
 import ConsistencyReport from './components/ConsistencyReport';
 import ImportData from './components/ImportData';
 import FeatureShowreel from './components/FeatureShowreel';
@@ -619,26 +617,28 @@ function App() {
         {selectedProject && (
           <div className="report-section">
             <div className="report-header">
-              <div className="report-header-content">
-                {editingProjectName ? (
-                  <input
-                    type="text"
-                    className="project-name-input"
-                    value={editProjectNameValue}
-                    onChange={(e) => setEditProjectNameValue(e.target.value)}
-                    onKeyDown={handleProjectNameKeyDown}
-                    onBlur={handleSaveProjectName}
-                    autoFocus
-                  />
-                ) : (
+              <div className="report-header-main">
+                <div className="report-header-left">
                   <div className="report-header-title-row">
-                    <h2
-                      onDoubleClick={canEdit() ? handleProjectNameDoubleClick : undefined}
-                      title={canEdit() ? "Double-click to rename" : undefined}
-                      style={{ cursor: canEdit() ? 'pointer' : 'default' }}
-                    >
-                      {projectName}
-                    </h2>
+                    {editingProjectName ? (
+                      <input
+                        type="text"
+                        className="project-name-input"
+                        value={editProjectNameValue}
+                        onChange={(e) => setEditProjectNameValue(e.target.value)}
+                        onKeyDown={handleProjectNameKeyDown}
+                        onBlur={handleSaveProjectName}
+                        autoFocus
+                      />
+                    ) : (
+                      <h2
+                        onDoubleClick={canEdit() ? handleProjectNameDoubleClick : undefined}
+                        title={canEdit() ? "Double-click to rename" : undefined}
+                        style={{ cursor: canEdit() ? 'pointer' : 'default' }}
+                      >
+                        {projectName}
+                      </h2>
+                    )}
                     {currentProject?.start_date && currentProject?.end_date && (
                       editingProjectDates ? (
                         <div className="project-dates-editor">
@@ -691,72 +691,61 @@ function App() {
                       )
                     )}
                   </div>
-                )}
-                {currentProject?.description || canEdit() ? (
-                  editingProjectDesc ? (
-                    <textarea
-                      className="project-desc-input"
-                      value={editProjectDescValue}
-                      onChange={(e) => setEditProjectDescValue(e.target.value)}
-                      onKeyDown={handleProjectDescKeyDown}
-                      onBlur={handleSaveProjectDesc}
-                      placeholder="Enter project description..."
-                      rows={2}
-                      autoFocus
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        fontSize: '14px',
-                        lineHeight: '1.5',
-                        border: '2px solid #00aeef',
-                        borderRadius: '4px',
-                        resize: 'vertical',
-                        fontFamily: 'inherit'
-                      }}
-                    />
-                  ) : (
-                    <p
-                      className={`project-description ${canEdit() ? 'editable' : ''} ${currentProject?.description ? 'filled' : 'empty'}`}
-                      onClick={handleProjectDescClick}
-                      title={canEdit() ? "Click to edit description" : undefined}
-                    >
-                      {currentProject?.description || (canEdit() ? 'Click to add a description...' : '')}
-                    </p>
-                  )
-                ) : null}
-                <div className="project-links">
-                  {projectLinks.map((link) => (
-                    <a
-                      key={link.id}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="project-link-btn"
-                    >
-                      {link.label}
-                    </a>
-                  ))}
-                  {canEdit() && (
+                  <div className="project-links">
+                    {projectLinks.map((link) => (
+                      <a
+                        key={link.id}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="project-link-btn"
+                      >
+                        {link.label}
+                      </a>
+                    ))}
+                    {canEdit() && (
+                      <button
+                        onClick={() => setShowLinksEditor(true)}
+                        className="edit-links-btn"
+                        title="Edit project links"
+                      >
+                        {projectLinks.length === 0 ? '+ Add Links' : 'Edit Links'}
+                      </button>
+                    )}
                     <button
-                      onClick={() => setShowLinksEditor(true)}
-                      className="edit-links-btn"
-                      title="Edit project links"
+                      onClick={handleShareLink}
+                      className="share-link-btn"
+                      title="Copy link to this page"
                     >
-                      {projectLinks.length === 0 ? '+ Add Links' : 'Edit Links'}
+                      <MdShare /> Share
                     </button>
-                  )}
-                  <button
-                    onClick={handleShareLink}
-                    className="share-link-btn"
-                    title="Copy link to this page"
-                  >
-                    <MdShare /> Share
-                  </button>
+                  </div>
                 </div>
+                {(currentProject?.description || canEdit()) && (
+                  <div className="report-header-right">
+                    {editingProjectDesc ? (
+                      <textarea
+                        className="project-desc-input"
+                        value={editProjectDescValue}
+                        onChange={(e) => setEditProjectDescValue(e.target.value)}
+                        onKeyDown={handleProjectDescKeyDown}
+                        onBlur={handleSaveProjectDesc}
+                        placeholder="Enter project description..."
+                        rows={3}
+                        autoFocus
+                      />
+                    ) : (
+                      <p
+                        className={`project-description ${canEdit() ? 'editable' : ''} ${currentProject?.description ? 'filled' : 'empty'}`}
+                        onClick={handleProjectDescClick}
+                        title={canEdit() ? "Click to edit description" : undefined}
+                      >
+                        {currentProject?.description || (canEdit() ? 'Click to add a description...' : '')}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
-              <p className="report-meta">
-                Generated on {new Date().toLocaleDateString()}
-              </p>
             </div>
 
             {(metrics.length === 0 || (selectedMetric && projectData.filter(item => item.metric === selectedMetric).length === 0)) && (
@@ -826,24 +815,15 @@ function App() {
                   amberTolerance={amberTolerance}
                   redTolerance={redTolerance}
                   timeTravelTimestamp={timeTravelTimestamp}
+                  projectId={selectedProject}
+                  onTimeTravelChange={handleTimeTravelChange}
+                  onRevert={async () => {
+                    await loadProjectData();
+                    await loadProjectMetrics();
+                  }}
+                  isAdmin={isAdmin()}
                 />
               </div>
-            )}
-
-            {selectedMetric && canEdit() && (
-              <TimeTravel
-                projectId={selectedProject}
-                onTimeTravelChange={handleTimeTravelChange}
-                onRevert={async () => {
-                  await loadProjectData();
-                  await loadProjectMetrics();
-                }}
-                isAdmin={isAdmin()}
-              />
-            )}
-
-            {metrics.length > 0 && (
-              <CRAIDs projectId={selectedProject} canEdit={canEdit()} />
             )}
           </div>
         )}
