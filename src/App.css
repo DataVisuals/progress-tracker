@@ -272,8 +272,8 @@
 }
 
 .report-header-right {
-  flex: 0 0 570px;
-  max-width: 570px;
+  flex: 0 0 450px;
+  max-width: 450px;
   background: #f9fafb;
   padding: 6px 8px;
   border-radius: 6px;
