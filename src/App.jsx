@@ -11,14 +11,13 @@ import AuditLog from './components/AuditLog';
 import UserManagement from './components/UserManagement';
 import ProjectSetup from './components/ProjectSetup';
 import ProjectLinksEditor from './components/ProjectLinksEditor';
-import PasswordChange from './components/PasswordChange';
 import UserProfile from './components/UserProfile';
 import TimeTravel from './components/TimeTravel';
 import ConsistencyReport from './components/ConsistencyReport';
 import ImportData from './components/ImportData';
 import FeatureShowreel from './components/FeatureShowreel';
 import { api } from './api/client';
-import { MdShowChart, MdArrowDropDown, MdHelpOutline } from 'react-icons/md';
+import { MdShowChart, MdArrowDropDown, MdHelpOutline, MdShare } from 'react-icons/md';
 import './App.css';
 
 function App() {
@@ -64,6 +63,18 @@ function App() {
     }
     loadPortfolios();
     loadProjects();
+
+    // Parse URL parameters on initial load
+    const params = new URLSearchParams(window.location.search);
+    const projectId = params.get('project');
+    const metricName = params.get('metric');
+
+    if (projectId) {
+      setSelectedProject(projectId);
+      if (metricName) {
+        setSelectedMetric(metricName);
+      }
+    }
   }, []);
 
   // Reload projects when portfolio selection changes
@@ -147,10 +158,25 @@ function App() {
   const handleProjectChange = (projectId) => {
     setSelectedProject(projectId);
     setSelectedMetric(''); // Reset metric when changing projects
+    updateURL(projectId, '');
   };
 
   const handleMetricChange = (metric) => {
     setSelectedMetric(metric);
+    updateURL(selectedProject, metric);
+  };
+
+  // Update URL without page reload
+  const updateURL = (projectId, metricName) => {
+    const params = new URLSearchParams();
+    if (projectId) {
+      params.set('project', projectId);
+      if (metricName) {
+        params.set('metric', metricName);
+      }
+    }
+    const newURL = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+    window.history.pushState({}, '', newURL);
   };
 
   const handleCommentaryChange = async (itemId, newCommentary) => {
@@ -439,6 +465,18 @@ function App() {
   const isAdmin = () => currentUser?.role === 'admin';
   const canEdit = () => currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm' || currentUser.role === 'editor');
 
+  // Copy current URL to clipboard
+  const handleShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      alert('Link copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+      // Fallback: show the URL in a prompt
+      prompt('Copy this link:', window.location.href);
+    }
+  };
+
   return (
     <div className="app">
       <header className="app-header-main">
@@ -707,6 +745,13 @@ function App() {
                       {projectLinks.length === 0 ? '+ Add Links' : 'Edit Links'}
                     </button>
                   )}
+                  <button
+                    onClick={handleShareLink}
+                    className="share-link-btn"
+                    title="Copy link to this page"
+                  >
+                    <MdShare /> Share
+                  </button>
                 </div>
               </div>
               <p className="report-meta">

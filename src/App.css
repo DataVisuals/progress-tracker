@@ -435,6 +435,26 @@
   border-color: #9ca3af;
 }
 
+.share-link-btn {
+  background-color: transparent;
+  color: #00aeef;
+  border: 1px solid #00aeef;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.share-link-btn:hover {
+  background-color: #00aeef;
+  color: white;
+}
+
 .report-meta {
   font-size: 12px;
   color: #9ca3af;
