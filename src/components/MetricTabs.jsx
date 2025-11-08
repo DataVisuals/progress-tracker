@@ -10,11 +10,16 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
     const metricDataPoints = projectData.filter(item => item.metric === metricName);
     if (metricDataPoints.length === 0) return null;
 
-    // Get the most recent data point
-    const sortedData = [...metricDataPoints].sort((a, b) =>
-      new Date(b.reporting_date) - new Date(a.reporting_date)
-    );
-    const latest = sortedData[0];
+    // Get the current period (most recent date <= today)
+    const today = new Date();
+    const currentPeriodData = [...metricDataPoints]
+      .filter(item => new Date(item.reporting_date) <= today)
+      .sort((a, b) => new Date(b.reporting_date) - new Date(a.reporting_date));
+
+    // If no current period data, use the most recent available
+    const latest = currentPeriodData.length > 0
+      ? currentPeriodData[0]
+      : [...metricDataPoints].sort((a, b) => new Date(b.reporting_date) - new Date(a.reporting_date))[0];
 
     // Check if we have the necessary data
     if (latest.complete === null || latest.complete === undefined ||
