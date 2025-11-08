@@ -42,7 +42,8 @@ describe('Project Description API Tests', () => {
       .send({
         name: 'Test User',
         email: 'test@example.com',
-        password: 'testpass123'
+        password: 'testpass123',
+        role: 'admin'
       });
 
     testUserId = registerResponse.body.id;

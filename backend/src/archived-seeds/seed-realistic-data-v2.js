@@ -10,7 +10,7 @@
  * - Audit logs capture the actual timeline of data entry
  */
 
-const { dbRun, dbGet, dbAll, initDatabase, saveDatabase } = require('./db-sqljs');
+const { dbRun, dbGet, dbAll, initDatabase, saveDatabase } = require('./db');
 const path = require('path');
 
 // Helper function to calculate expected value

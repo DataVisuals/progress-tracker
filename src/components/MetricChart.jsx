@@ -233,6 +233,8 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
   const [isDataTableCollapsed, setIsDataTableCollapsed] = useState(false);
   const chartContainerRef = useRef(null);
   const [tableWidth, setTableWidth] = useState(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [periodsPerPage] = useState(12); // Show 12 periods at a time
 
   // Sort data by date always for consistency
   const sortedData = [...data].sort((a, b) => {
@@ -340,6 +342,37 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
       currentPeriodX2 = chartData[currentPeriodIndex].name;
     }
   }
+
+  // Pagination calculations for data table
+  const totalPeriods = chartData.length;
+  const totalPages = Math.ceil(totalPeriods / periodsPerPage);
+  const startIndex = currentPage * periodsPerPage;
+  const endIndex = Math.min(startIndex + periodsPerPage, totalPeriods);
+  const paginatedChartData = chartData.slice(startIndex, endIndex);
+
+  // Pagination helper functions
+  const goToNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const goToLatestPeriods = () => {
+    setCurrentPage(totalPages - 1);
+  };
+
+  const goToCurrentPeriod = () => {
+    if (currentPeriodIndex >= 0) {
+      const pageContainingCurrentPeriod = Math.floor(currentPeriodIndex / periodsPerPage);
+      setCurrentPage(pageContainingCurrentPeriod);
+    }
+  };
 
   // Calculate table width to match chart
   useEffect(() => {
@@ -799,12 +832,11 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
               let barColor = '#539668'; // Green - on track or ahead
               let barCategory = 'green';
 
-              // Check if period is in the past (should have data)
-              const cutoffDate = timeTravelTimestamp ? new Date(timeTravelTimestamp) : new Date();
-              const periodDate = new Date(entry.name);
-              const isPastOrCurrent = periodDate <= cutoffDate;
+              // Check if period has actual completion data
+              const hasData = entry.complete !== null && entry.complete !== undefined && entry.complete > 0;
 
-              if (isPastOrCurrent && variance < 0) { // Behind schedule
+              // Apply color logic if there's data and we're behind schedule
+              if (hasData && variance < 0) { // Behind schedule
                 if (variancePercent > redTolerance) {
                   barColor = '#D0704d'; // Red
                   barCategory = 'red';
@@ -861,13 +893,14 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
             animationDuration={1000}
             animationBegin={400}
             strokeOpacity={highlightedSeries === null || highlightedSeries === 'expected' ? 1 : 0.3}
-            dot={canEdit ? { r: 8, fill: "#10b981", stroke: "#fff", strokeWidth: 2, cursor: 'pointer' } : { r: 4 }}
+            dot={canEdit ? { r: 5, fill: "#10b981", stroke: "#fff", strokeWidth: 2, cursor: 'pointer' } : { r: 4 }}
             activeDot={canEdit ? {
-              r: 10,
+              r: 12,
               fill: "#10b981",
               stroke: "#fff",
-              strokeWidth: 3,
+              strokeWidth: 2,
               cursor: 'ns-resize',
+              fillOpacity: 0.3,
               onMouseDown: (e, payload) => {
                 console.log('activeDot clicked!', payload);
                 if (payload && payload.payload) {
@@ -946,6 +979,43 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
             </button>
             <h4>Data Table</h4>
           </div>
+          {!isDataTableCollapsed && totalPeriods > periodsPerPage && (
+            <div className="pagination-controls">
+              <button
+                onClick={goToCurrentPeriod}
+                disabled={currentPeriodIndex < 0}
+                className="pagination-btn"
+                title="Jump to current period"
+              >
+                Current
+              </button>
+              <button
+                onClick={goToLatestPeriods}
+                disabled={currentPage === totalPages - 1}
+                className="pagination-btn"
+                title="Jump to latest periods"
+              >
+                Latest
+              </button>
+              <button
+                onClick={goToPrevPage}
+                disabled={currentPage === 0}
+                className="pagination-btn"
+              >
+                ← Prev
+              </button>
+              <span className="pagination-info">
+                {startIndex + 1}-{endIndex} of {totalPeriods}
+              </span>
+              <button
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages - 1}
+                className="pagination-btn"
+              >
+                Next →
+              </button>
+            </div>
+          )}
         </div>
         {!isDataTableCollapsed && (
           <div className="data-table-section">
@@ -953,11 +1023,13 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
           <thead>
             <tr>
               <th className="row-header"></th>
-              {chartData.map((item, index) => {
-                // Format date to match chart X-axis
+              {paginatedChartData.map((item, index) => {
+                // Format date for table header
                 const date = new Date(item.name);
-                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                const formattedDate = monthNames[date.getMonth()];
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                const formattedDate = `${day}/${month}/${year}`;
 
                 return (
                   <th
@@ -974,7 +1046,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
             {/* Complete Row */}
             <tr className="data-row">
               <td className="row-label">Complete</td>
-              {chartData.map((item, index) => {
+              {paginatedChartData.map((item, index) => {
                 const variance = item.complete - item.expected;
                 const variancePercent = item.expected > 0 ? Math.abs((variance / item.expected) * 100) : 0;
                 const cutoffDate = timeTravelTimestamp ? new Date(timeTravelTimestamp) : new Date();
@@ -1008,7 +1080,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
             {/* Expected Row */}
             <tr className="data-row">
               <td className="row-label">Expected</td>
-              {chartData.map((item, index) => (
+              {paginatedChartData.map((item, index) => (
                 <td
                   key={index}
                   className="number-cell"
@@ -1028,7 +1100,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
                 </svg>
                 Target
               </td>
-              {chartData.map((item, index) => (
+              {paginatedChartData.map((item, index) => (
                 <td
                   key={index}
                   className="number-cell target-cell"

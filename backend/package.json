@@ -14,7 +14,6 @@
   "license": "ISC",
   "dependencies": {
     "@libsql/client": "^0.15.15",
-    "bcrypt": "^6.0.0",
     "better-sqlite3": "^11.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -23,7 +22,6 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
-    "sql.js": "^1.13.0",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {

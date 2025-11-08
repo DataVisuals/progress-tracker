@@ -184,10 +184,12 @@ function App() {
           });
         } else if (original.complete !== item.complete ||
                    original.expected !== item.expected ||
-                   original.final_target !== item.final_target) {
+                   original.final_target !== item.final_target ||
+                   original.reporting_date !== item.reporting_date) {
           // This is an existing period - update it
           try {
             await api.updatePeriod(item.id, {
+              reporting_date: item.reporting_date,
               complete: item.complete,
               expected: item.expected,
               target: item.final_target
@@ -377,7 +379,11 @@ function App() {
 
   // Convert projects array to object format for ProjectSelector
   const projectsObject = projects.reduce((acc, project) => {
-    acc[project.id] = { name: project.name };
+    acc[project.id] = {
+      name: project.name,
+      portfolio_name: project.portfolio_name,
+      portfolio_color: project.portfolio_color
+    };
     return acc;
   }, {});
 
@@ -452,12 +458,14 @@ function App() {
           </div>
           <div className="header-right">
             <PortfolioSelector
+              key={`portfolio-${portfolios.length}`} // Force re-render when portfolios list changes
               portfolios={portfolios}
               selectedPortfolio={selectedPortfolio}
               onPortfolioChange={setSelectedPortfolio}
               onManagePortfolios={isAdmin() ? () => setShowPortfolioManager(true) : null}
             />
             <ProjectSelector
+              key={`project-${projects.length}`} // Force re-render when projects list changes
               projects={projectsObject}
               selectedProject={selectedProject}
               onProjectChange={handleProjectChange}

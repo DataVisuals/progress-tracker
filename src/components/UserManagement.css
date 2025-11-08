@@ -61,6 +61,11 @@
   white-space: nowrap;
 }
 
+/* Allow the Actions column to overflow so dropdowns aren't clipped */
+.users-table td:nth-child(4) {
+  overflow: visible;
+}
+
 .users-table th:nth-child(1),
 .users-table td:nth-child(1) {
   width: 25%;
@@ -91,6 +96,10 @@
 .users-table tbody tr {
   cursor: pointer;
   transition: background-color 0.2s;
+}
+
+.users-table tbody {
+  overflow: visible;
 }
 
 .users-table tbody tr:hover {

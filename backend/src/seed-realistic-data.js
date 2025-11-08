@@ -15,9 +15,19 @@
  */
 
 const sqlite3 = require('sqlite3').verbose();
-const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+const { promisify } = require('util');
 const path = require('path');
 const fs = require('fs');
+
+const scrypt = promisify(crypto.scrypt);
+
+// Hash password using same method as server.js
+async function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derivedKey = await scrypt(password, salt, 64);
+  return `${salt}:${derivedKey.toString('hex')}`;
+}
 
 const DB_PATH = path.join(__dirname, '../data/progress-tracker.db');
 

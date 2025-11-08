@@ -1,0 +1,157 @@
+.user-selector {
+  position: relative;
+  width: 100%;
+}
+
+.user-select-container {
+  position: relative;
+  width: 100%;
+}
+
+.user-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 7px;
+  font-size: 0.6875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background-color: white;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+  height: 32px;
+}
+
+.user-select-trigger:hover {
+  border-color: #00aeef;
+}
+
+.user-select-trigger:focus {
+  outline: none;
+  border-color: #00aeef;
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.1);
+}
+
+.user-select-trigger.open {
+  border-color: #00aeef;
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.1);
+}
+
+.selected-text {
+  color: #374151;
+}
+
+.placeholder-text {
+  color: #9ca3af;
+}
+
+.dropdown-arrow {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  color: #6b7280;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.user-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: white;
+  border: 2px solid #00aeef;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  max-height: 300px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 100%;
+  max-width: min(400px, calc(100vw - 32px));
+  width: max-content;
+}
+
+.search-container {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 2px solid #d1d5db;
+  border-radius: 6px;
+  background-color: white;
+  color: #1f2937;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #00aeef;
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.1);
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.options-list {
+  overflow-y: auto;
+  max-height: 240px;
+}
+
+.option-item {
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #1f2937;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.option-item:last-child {
+  border-bottom: none;
+}
+
+.option-item:hover,
+.option-item.highlighted {
+  background-color: #f0f9ff;
+  color: #003c71;
+}
+
+.option-item.selected {
+  background-color: #00aeef;
+  color: white;
+  font-weight: 600;
+}
+
+.option-item.selected:hover {
+  background-color: #0095d1;
+}
+
+.clear-option {
+  font-style: italic;
+  color: #6b7280;
+}
+
+.option-item:has(.clear-option):hover {
+  background-color: #fef2f2;
+  color: #991b1b;
+}
+
+.no-results {
+  padding: 24px 16px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+  font-style: italic;
+}

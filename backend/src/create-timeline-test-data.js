@@ -1,6 +1,16 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+const { promisify } = require('util');
+
+const scrypt = promisify(crypto.scrypt);
+
+// Hash password using same method as server.js
+async function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derivedKey = await scrypt(password, salt, 64);
+  return `${salt}:${derivedKey.toString('hex')}`;
+}
 
 const DB_PATH = path.join(__dirname, '../data/progress-tracker.db');
 const db = new sqlite3.Database(DB_PATH);
@@ -48,7 +58,7 @@ async function createTimelineTestData() {
     // Get or create admin user
     let admin = await dbGet('SELECT * FROM users WHERE email = ?', ['admin@example.com']);
     if (!admin) {
-      const hash = bcrypt.hashSync('admin123', 10);
+      const hash = await hashPassword('admin123');
       const result = await dbRun(
         'INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)',
         ['admin@example.com', 'Admin User', hash, 'admin']

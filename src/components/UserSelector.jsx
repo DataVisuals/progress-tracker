@@ -1,20 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
-import './ProjectSelector.css';
+import './UserSelector.css';
 
-const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
+const UserSelector = ({ users, selectedUser, onUserChange, placeholder = 'Select user...', label }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
 
-  const projectEntries = Object.entries(projects);
-  const selectedProjectData = selectedProject ? projects[selectedProject] : null;
-  const selectedProjectName = selectedProjectData?.name || '';
+  const selectedUserData = users.find(u => u.id === selectedUser?.value || u.id === selectedUser);
 
-  // Filter projects based on search term
-  const filteredProjects = projectEntries.filter(([_, project]) =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filter users based on search term
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Close dropdown when clicking outside
@@ -38,8 +36,8 @@ const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
     }
   }, [isOpen]);
 
-  const handleSelect = (key) => {
-    onProjectChange(key);
+  const handleSelect = (user) => {
+    onUserChange(user ? { value: user.id, label: user.name } : null);
     setIsOpen(false);
     setSearchTerm('');
     setHighlightedIndex(-1);
@@ -58,7 +56,7 @@ const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
       case 'ArrowDown':
         e.preventDefault();
         setHighlightedIndex((prev) =>
-          prev < filteredProjects.length - 1 ? prev + 1 : prev
+          prev < filteredUsers.length - 1 ? prev + 1 : prev
         );
         break;
       case 'ArrowUp':
@@ -67,8 +65,8 @@ const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
         break;
       case 'Enter':
         e.preventDefault();
-        if (highlightedIndex >= 0 && filteredProjects[highlightedIndex]) {
-          handleSelect(filteredProjects[highlightedIndex][0]);
+        if (highlightedIndex >= 0 && filteredUsers[highlightedIndex]) {
+          handleSelect(filteredUsers[highlightedIndex]);
         }
         break;
       case 'Escape':
@@ -83,11 +81,10 @@ const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
   };
 
   return (
-    <div className="project-selector" ref={dropdownRef}>
-      <label className="selector-label">Select Project:</label>
-      <div className="custom-select-container">
+    <div className="user-selector" ref={dropdownRef}>
+      <div className="user-select-container">
         <div
-          className={`custom-select-trigger ${isOpen ? 'open' : ''}`}
+          className={`user-select-trigger ${isOpen ? 'open' : ''}`}
           onClick={() => setIsOpen(!isOpen)}
           onKeyDown={handleKeyDown}
           tabIndex={0}
@@ -95,19 +92,9 @@ const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
           aria-haspopup="listbox"
           aria-expanded={isOpen}
         >
-          <div className="trigger-content">
-            {selectedProjectData?.portfolio_color && (
-              <span
-                className="project-portfolio-dot"
-                style={{
-                  backgroundColor: selectedProjectData.portfolio_color
-                }}
-              />
-            )}
-            <span className={selectedProject ? 'selected-text' : 'placeholder-text'}>
-              {selectedProjectName || '-- Choose a Project --'}
-            </span>
-          </div>
+          <span className={selectedUserData ? 'selected-text' : 'placeholder-text'}>
+            {selectedUserData?.name || placeholder}
+          </span>
           <svg
             className={`dropdown-arrow ${isOpen ? 'open' : ''}`}
             width="12"
@@ -118,7 +105,7 @@ const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
           >
             <path
               d="M1 1.5L6 6.5L11 1.5"
-              stroke="#003c71"
+              stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -127,13 +114,13 @@ const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
         </div>
 
         {isOpen && (
-          <div className="custom-select-dropdown" role="listbox">
+          <div className="user-select-dropdown" role="listbox">
             <div className="search-container">
               <input
                 ref={inputRef}
                 type="text"
                 className="search-input"
-                placeholder="Search projects..."
+                placeholder="Search users..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -143,32 +130,32 @@ const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
               />
             </div>
             <div className="options-list">
-              {filteredProjects.length > 0 ? (
-                filteredProjects.map(([key, project], index) => (
+              {/* Clear option */}
+              <div
+                className={`option-item ${!selectedUserData ? 'selected' : ''} ${highlightedIndex === -1 ? 'highlighted' : ''}`}
+                onClick={() => handleSelect(null)}
+                role="option"
+                aria-selected={!selectedUserData}
+              >
+                <span className="option-name clear-option">Clear selection</span>
+              </div>
+
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((user, index) => (
                   <div
-                    key={key}
+                    key={user.id}
                     className={`option-item ${
-                      selectedProject === key ? 'selected' : ''
+                      selectedUserData?.id === user.id ? 'selected' : ''
                     } ${highlightedIndex === index ? 'highlighted' : ''}`}
-                    onClick={() => handleSelect(key)}
+                    onClick={() => handleSelect(user)}
                     role="option"
-                    aria-selected={selectedProject === key}
+                    aria-selected={selectedUserData?.id === user.id}
                   >
-                    <div className="option-content">
-                      {project.portfolio_color && (
-                        <span
-                          className="project-portfolio-dot-large"
-                          style={{
-                            backgroundColor: project.portfolio_color
-                          }}
-                        />
-                      )}
-                      <span className="option-name">{project.name}</span>
-                    </div>
+                    <span className="option-name">{user.name}</span>
                   </div>
                 ))
               ) : (
-                <div className="no-results">No projects found</div>
+                <div className="no-results">No users found</div>
               )}
             </div>
           </div>
@@ -178,4 +165,4 @@ const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
   );
 };
 
-export default ProjectSelector;
+export default UserSelector;
