@@ -807,6 +807,7 @@ app.get('/api/projects/:projectId/data', async (req, res) => {
         m.name as metric,
         mp.expected,
         mp.target as final_target,
+        m.final_target as metric_final_target,
         mp.complete,
         mp.commentary,
         m.id as metric_id,
@@ -2159,7 +2160,7 @@ app.get('/api/projects/:projectId/data/time-travel', authenticateToken, async (r
         .map(async (period) => {
           // Get metric and project info
           const metric = await dbGet(`
-            SELECT m.name, m.project_id, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date, m.frequency, p.name as initiative, p.initiative_manager
+            SELECT m.name, m.project_id, m.final_target, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date, m.frequency, m.metric_type, p.name as initiative, p.initiative_manager
             FROM metrics m
             JOIN projects p ON m.project_id = p.id
             WHERE m.id = ?
@@ -2172,8 +2173,8 @@ app.get('/api/projects/:projectId/data/time-travel', authenticateToken, async (r
             reporting_date: period.reporting_date,
             metric: metric?.name || 'Unknown',
             expected: period.expected,
-            target: period.target,
-            final_target: period.target, // Use target as final_target for consistency
+            final_target: period.target, // Period target (cumulative expected for this period)
+            metric_final_target: metric?.final_target || period.target, // Metric's overall final target
             complete: period.complete,
             commentary: period.commentary,
             metric_id: period.metric_id,
@@ -2182,6 +2183,7 @@ app.get('/api/projects/:projectId/data/time-travel', authenticateToken, async (r
             start_date: metric?.start_date || null,
             end_date: metric?.end_date || null,
             frequency: metric?.frequency || null,
+            metric_type: metric?.metric_type || 'lead',
             initiative: metric?.initiative || 'Unknown',
             owner: owner?.name || null,
             initiative_manager: metric?.initiative_manager || null
@@ -2620,10 +2622,8 @@ if (fs.existsSync(frontendPath)) {
   });
 }
 
-// ===== SERVER START =====
-app.listen(PORT, async () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
-
+// ===== DATABASE MIGRATION FUNCTION =====
+async function runMigrations() {
   // Migration: Add role column if it doesn't exist
   try {
     await dbRun(`ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'viewer'`);
@@ -2731,10 +2731,23 @@ app.listen(PORT, async () => {
   }
 
   console.log('✅ Database ready at backend/data/progress-tracker.db');
+}
 
-  // Start the daily export scheduler
-  startScheduler();
+// ===== SERVER START =====
+// Run migrations immediately
+runMigrations().catch(err => {
+  console.error('Error running migrations:', err);
 });
+
+// Only start server if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`✅ Server running on http://localhost:${PORT}`);
+
+    // Start the daily export scheduler
+    startScheduler();
+  });
+}
 
 // Export app for testing
 module.exports = app;

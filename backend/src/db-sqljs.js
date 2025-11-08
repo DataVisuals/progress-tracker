@@ -2,7 +2,8 @@ const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, '../data/progress-tracker.db');
+// Allow override via environment variable (useful for testing)
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, '../data/progress-tracker.db');
 
 // Ensure data directory exists
 if (!fs.existsSync(path.dirname(DB_PATH))) {

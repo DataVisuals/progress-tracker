@@ -72,3 +72,53 @@
   outline: none;
   min-width: 120px;
 }
+
+/* RAG Status Markers */
+.metric-rag-marker {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.metric-rag-marker.green {
+  background-color: #539668;
+}
+
+.metric-rag-marker.amber {
+  background-color: #f5ad5b;
+}
+
+.metric-rag-marker.red {
+  background-color: #D0704d;
+}
+
+.metric-rag-marker.grey {
+  background-color: #9ca3af;
+}
+
+/* Pulse animation for red status */
+.metric-rag-marker.red {
+  animation: pulse-red 2s ease-in-out infinite;
+}
+
+@keyframes pulse-red {
+  0%, 100% {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(208, 112, 77, 0.6);
+  }
+}
+
+/* Hover effect on active tab */
+.metric-tab.active .metric-rag-marker {
+  transform: scale(1.2);
+}
+
+.metric-tab:hover .metric-rag-marker {
+  transform: scale(1.15);
+}

@@ -15,6 +15,12 @@ describe('Project Description API Tests', () => {
   let testProjectId;
 
   beforeAll(async () => {
+    // Ensure test data directory exists
+    const testDir = path.dirname(TEST_DB_PATH);
+    if (!fs.existsSync(testDir)) {
+      fs.mkdirSync(testDir, { recursive: true });
+    }
+
     // Clean up test database if it exists
     if (fs.existsSync(TEST_DB_PATH)) {
       fs.unlinkSync(TEST_DB_PATH);
@@ -27,6 +33,9 @@ describe('Project Description API Tests', () => {
     // Import app after setting environment
     app = require('../server');
 
+    // Wait for database migrations to complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     // Create test user and get auth token
     const registerResponse = await request(app)
       .post('/api/auth/register')
@@ -36,9 +45,15 @@ describe('Project Description API Tests', () => {
         password: 'testpass123'
       });
 
-    testUserId = registerResponse.body.user.id;
+    testUserId = registerResponse.body.id;
 
-    // Login to get token
+    // Upgrade user to admin role for testing
+    const Database = require('better-sqlite3');
+    const testDb = new Database(TEST_DB_PATH);
+    testDb.prepare('UPDATE users SET role = ? WHERE id = ?').run('admin', testUserId);
+    testDb.close();
+
+    // Login to get token (with admin role now)
     const loginResponse = await request(app)
       .post('/api/auth/login')
       .send({
@@ -74,7 +89,7 @@ describe('Project Description API Tests', () => {
           end_date: '2024-12-31'
         });
 
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('id');
       testProjectId = response.body.id;
     });
@@ -90,7 +105,7 @@ describe('Project Description API Tests', () => {
           end_date: '2024-12-31'
         });
 
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('id');
     });
 
@@ -228,7 +243,7 @@ describe('Project Description API Tests', () => {
 
       // Check audit log
       const auditResponse = await request(app)
-        .get('/api/audit-log')
+        .get('/api/audit')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(auditResponse.status).toBe(200);

@@ -301,10 +301,14 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
       ? draggedPoint.currentValue
       : item.expected;
 
+    // Use metric_final_target if available (the metric's overall final target),
+    // otherwise fall back to final_target (period target)
+    const metricFinalTarget = item.metric_final_target || item.final_target;
+
     return {
       name: item.reporting_date,
       complete: item.complete,
-      remaining: Math.max(0, item.final_target - item.complete),
+      remaining: Math.max(0, metricFinalTarget - item.complete),
       expected: expectedValue,
       final_target: item.final_target,
       scopeDelta: scopeDelta,
@@ -845,7 +849,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
             name="Remaining"
             animationDuration={800}
             animationBegin={200}
-            fillOpacity={highlightedSeries === null || highlightedSeries === 'remaining' ? 1 : 0.3}
+            fillOpacity={highlightedSeries === null || highlightedSeries === 'remaining' ? 0.6 : 0.2}
           />
 
           <Line

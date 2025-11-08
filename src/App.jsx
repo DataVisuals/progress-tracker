@@ -16,8 +16,9 @@ import UserProfile from './components/UserProfile';
 import TimeTravel from './components/TimeTravel';
 import ConsistencyReport from './components/ConsistencyReport';
 import ImportData from './components/ImportData';
+import FeatureShowreel from './components/FeatureShowreel';
 import { api } from './api/client';
-import { MdShowChart, MdArrowDropDown } from 'react-icons/md';
+import { MdShowChart, MdArrowDropDown, MdHelpOutline } from 'react-icons/md';
 import './App.css';
 
 function App() {
@@ -51,6 +52,7 @@ function App() {
   const [showConsistencyReport, setShowConsistencyReport] = useState(false);
   const [showImportData, setShowImportData] = useState(false);
   const [showPortfolioManager, setShowPortfolioManager] = useState(false);
+  const [showFeatureShowreel, setShowFeatureShowreel] = useState(false);
 
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
@@ -440,6 +442,13 @@ function App() {
               <MdShowChart className="app-logo" />
               Progress Tracker
             </h1>
+            <button
+              className="help-icon-btn"
+              onClick={() => setShowFeatureShowreel(true)}
+              title="Learn about features"
+            >
+              <MdHelpOutline />
+            </button>
           </div>
           <div className="header-right">
             <PortfolioSelector
@@ -905,6 +914,12 @@ function App() {
             loadProjectData();
             setShowImportData(false);
           }}
+        />
+      )}
+
+      {showFeatureShowreel && (
+        <FeatureShowreel
+          onClose={() => setShowFeatureShowreel(false)}
         />
       )}
     </div>

@@ -11,6 +11,63 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
     return metricData?.metric_type || 'lead';
   };
 
+  // Helper to calculate RAG status for a metric
+  const getRAGStatus = (metricName) => {
+    const metricDataPoints = projectData.filter(item => item.metric === metricName);
+    if (metricDataPoints.length === 0) return null;
+
+    // Get the most recent data point
+    const sortedData = [...metricDataPoints].sort((a, b) =>
+      new Date(b.reporting_date) - new Date(a.reporting_date)
+    );
+    const latest = sortedData[0];
+
+    // Check if we have the necessary data
+    if (!latest.complete || !latest.expected) return null;
+
+    const complete = parseFloat(latest.complete);
+    const expected = parseFloat(latest.expected);
+
+    // Calculate variance percentage
+    const variance = expected - complete;
+    const variancePercent = Math.abs((variance / expected) * 100);
+
+    // Get tolerances from the first data point that has them, or use defaults
+    const amberTolerance = parseFloat(latest.amber_tolerance) || 5.0;
+    const redTolerance = parseFloat(latest.red_tolerance) || 10.0;
+
+    // Determine RAG status
+    if (expected === 0) return 'grey'; // No expected value
+    if (variance < 0) return 'green'; // Ahead of schedule
+    if (variancePercent > redTolerance) return 'red';
+    if (variancePercent > amberTolerance) return 'amber';
+    return 'green';
+  };
+
+  // Helper to detect if trajectory is flat (no significant change)
+  const isFlatTrajectory = (metricName) => {
+    const metricDataPoints = projectData.filter(item => item.metric === metricName);
+    if (metricDataPoints.length < 3) return false; // Need at least 3 points
+
+    // Get the last 3 data points
+    const sortedData = [...metricDataPoints]
+      .sort((a, b) => new Date(b.reporting_date) - new Date(a.reporting_date))
+      .slice(0, 3);
+
+    // Calculate the change between consecutive points
+    const changes = [];
+    for (let i = 0; i < sortedData.length - 1; i++) {
+      const curr = parseFloat(sortedData[i].complete) || 0;
+      const prev = parseFloat(sortedData[i + 1].complete) || 0;
+      if (prev !== 0) {
+        changes.push(Math.abs(((curr - prev) / prev) * 100));
+      }
+    }
+
+    // If all changes are less than 2%, consider it flat
+    return changes.length > 0 && changes.every(change => change < 2);
+  };
+
   // Helper to get metric type icon and title
   const getMetricIcon = (metricName) => {
     const metricType = getMetricType(metricName);
@@ -68,6 +125,12 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
       <div className="metric-tabs">
         {metrics.map((metric) => {
           const { icon, title } = getMetricIcon(metric);
+          const ragStatus = getRAGStatus(metric);
+          const isFlat = isFlatTrajectory(metric);
+
+          // Override RAG status to grey if trajectory is flat
+          const displayStatus = isFlat ? 'grey' : ragStatus;
+
           return (
             <div key={metric} className="metric-tab-wrapper">
               {editingMetric === metric ? (
@@ -87,6 +150,18 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
                   onDoubleClick={() => handleDoubleClick(metric)}
                   title={canEdit ? `${title}\nDouble-click to rename` : title}
                 >
+                  {displayStatus && (
+                    <span
+                      className={`metric-rag-marker ${displayStatus}`}
+                      title={
+                        isFlat ? 'Flat trajectory (minimal change)' :
+                        displayStatus === 'green' ? 'On track or ahead' :
+                        displayStatus === 'amber' ? 'At risk' :
+                        displayStatus === 'red' ? 'Behind schedule' :
+                        'No data'
+                      }
+                    />
+                  )}
                   <span className="metric-tab-icon">{icon}</span>
                   <span className="metric-tab-name">{metric}</span>
                 </button>
