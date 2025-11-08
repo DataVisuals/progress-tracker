@@ -632,8 +632,9 @@ function App() {
                       />
                     ) : (
                       <h2
+                        className={projectName.length > 40 ? 'long-title' : ''}
                         onDoubleClick={canEdit() ? handleProjectNameDoubleClick : undefined}
-                        title={canEdit() ? "Double-click to rename" : undefined}
+                        title={projectName.length > 40 ? projectName : (canEdit() ? "Double-click to rename" : undefined)}
                         style={{ cursor: canEdit() ? 'pointer' : 'default' }}
                       >
                         {projectName}
