@@ -814,7 +814,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             <ResponsiveContainer width="100%" height={260}>
               <ComposedChart
                 data={chartData}
-                margin={{ top: 20, right: 20, left: 20, bottom: 5 }}
+                margin={{ top: 10, right: 20, left: 20, bottom: 5 }}
               >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
