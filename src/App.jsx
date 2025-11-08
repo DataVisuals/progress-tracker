@@ -811,7 +811,8 @@ function App() {
                   data={projectData.filter(item => item.metric === selectedMetric)}
                   onCommentaryChange={handleCommentaryChange}
                   onDataChange={loadProjectData}
-                  canEdit={canEdit() && !timeTravelTimestamp}
+                  canEdit={canEdit()}
+                  canEditData={canEdit() && !timeTravelTimestamp}
                   amberTolerance={amberTolerance}
                   redTolerance={redTolerance}
                   timeTravelTimestamp={timeTravelTimestamp}

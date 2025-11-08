@@ -219,8 +219,11 @@ const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance })
   return null;
 };
 
-const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTolerance = 5.0, redTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin }) => {
-  console.log('MetricChart rendered with canEdit:', canEdit);
+const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance = 5.0, redTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin }) => {
+  console.log('MetricChart rendered with canEdit:', canEdit, 'canEditData:', canEditData);
+  // canEditData is for commentary/data changes (blocked during time travel)
+  // If not provided, default to canEdit for backwards compatibility
+  const allowDataEdits = canEditData !== undefined ? canEditData : canEdit;
 
   const [isAdding, setIsAdding] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
@@ -984,7 +987,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
           >
             Commentary
           </button>
-          {canEdit && (
+          {projectId && onTimeTravelChange && (
             <button
               className={`tab-button ${activeTab === 'timetravel' ? 'active' : ''}`}
               onClick={() => setActiveTab('timetravel')}
@@ -1143,7 +1146,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
         {activeTab === 'commentary' && (
           <div className="tab-content">
             <div className="commentary-header">
-              {!isAdding && canEdit && (
+              {!isAdding && allowDataEdits && (
                 <button className="add-btn" onClick={handleStartAdd}>
                   Add
                 </button>
@@ -1235,7 +1238,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
                           <span className="comment-author"> — System</span>
                         )}
                       </div>
-                      {!comment.is_system && canEdit && (
+                      {!comment.is_system && allowDataEdits && (
                         <>
                           <button
                             className="edit-comment-btn"
@@ -1269,7 +1272,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
         )}
 
         {/* Time Travel Tab Content */}
-        {activeTab === 'timetravel' && canEdit && projectId && (
+        {activeTab === 'timetravel' && projectId && onTimeTravelChange && (
           <div className="tab-content">
             <TimeTravel
               projectId={projectId}
@@ -1283,7 +1286,7 @@ const MetricChart = ({ metricName, data, canEdit = false, onDataChange, amberTol
         {/* Dependencies Tab Content */}
         {activeTab === 'dependencies' && projectId && (
           <div className="tab-content">
-            <CRAIDs projectId={projectId} canEdit={canEdit} />
+            <CRAIDs projectId={projectId} canEdit={allowDataEdits} />
           </div>
         )}
       </div>
