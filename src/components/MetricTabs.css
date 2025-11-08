@@ -26,7 +26,7 @@
 .metric-tabs {
   display: inline-flex;
   background-color: #e5e7eb;
-  padding: 2px;
+  padding: 3px;
   border-radius: 8px;
   gap: 2px;
   width: fit-content;
@@ -34,7 +34,7 @@
 }
 
 .metric-tab {
-  padding: 4px 10px;
+  padding: 8px 16px;
   border: none;
   background-color: transparent;
   color: #6b7280;
