@@ -186,21 +186,16 @@ const CRAIDs = ({ projectId, canEdit = false }) => {
 
   return (
     <div className="craids-container">
-      <div className="craids-header">
-        <h3 className="craids-title">Dependencies</h3>
-        {canEdit && (
+      {canEdit && (
+        <div className="craids-header">
           <button className="add-craid-btn" onClick={handleStartAdd}>
             Add
           </button>
-        )}
-      </div>
+        </div>
+      )}
       <div className="craids-grid">
         {Object.entries(filteredGroupedCRAIDs).map(([type, items]) => (
           <div key={type} className="craids-section">
-            <h4 className="craids-section-title">
-              <CRAIDIcon type={type} />
-              {typeLabels[type] || type}
-            </h4>
             <div className="craids-list">
               {items.map((craid) => (
                 <div key={craid.id} className={`craid-item craid-${craid.status} priority-${craid.priority} ${isAged(craid) ? 'aged' : ''}`}>
