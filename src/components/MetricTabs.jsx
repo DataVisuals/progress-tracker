@@ -23,9 +23,9 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
     const complete = parseFloat(latest.complete);
     const expected = parseFloat(latest.expected);
 
-    // Calculate variance percentage
-    const variance = expected - complete;
-    const variancePercent = Math.abs((variance / expected) * 100);
+    // Calculate variance percentage (complete - expected, matches MetricChart.jsx)
+    const variance = complete - expected;
+    const variancePercent = expected > 0 ? Math.abs((variance / expected) * 100) : 0;
 
     // Get tolerances from the first data point that has them, or use defaults
     const amberTolerance = parseFloat(latest.amber_tolerance) || 5.0;
@@ -33,7 +33,7 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
 
     // Determine RAG status
     if (expected === 0) return 'grey'; // No expected value
-    if (variance < 0) return 'green'; // Ahead of schedule
+    if (variance >= 0) return 'green'; // On track or ahead of schedule
     if (variancePercent > redTolerance) return 'red';
     if (variancePercent > amberTolerance) return 'amber';
     return 'green';
