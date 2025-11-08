@@ -9,20 +9,9 @@
 
 .craids-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: 8px;
-}
-
-.craids-header h3 {
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-  margin: 0;
-}
-
-.craids-title {
-  font-size: 13px;
 }
 
 .add-craid-btn {

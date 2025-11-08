@@ -127,11 +127,6 @@ const TimeTravel = ({ projectId, onTimeTravelChange, onRevert, isAdmin = false }
 
   return (
     <div className={`time-travel-slider-container ${!isAtPresent ? 'active' : ''}`}>
-      <div className="time-travel-header">
-        <span className="time-travel-icon">⏱️</span>
-        <span className="time-travel-title">Time Travel</span>
-      </div>
-
       <div className="time-travel-slider-section">
         <div className="time-travel-timestamp">
           {formatTimestamp(getCurrentTimestamp())}

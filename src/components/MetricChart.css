@@ -1,7 +1,7 @@
 .metric-chart-container {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 12px;
-  padding: 20px;
+  padding: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
@@ -104,7 +104,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 4px;
   gap: 16px;
 }
 
@@ -112,7 +112,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 6px 12px;
   background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
   border: 1px solid #d1d5db;
   border-radius: 8px;
@@ -150,7 +150,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 10px 16px;
+  padding: 6px 12px;
   background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
   border: 1px solid #0891b2;
   border-radius: 8px;
@@ -198,7 +198,7 @@
 
 /* Tabbed Section */
 .tabbed-section {
-  margin-top: 12px;
+  margin-top: 8px;
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -216,7 +216,7 @@
 
 .tab-button {
   flex: 1;
-  padding: 10px 20px;
+  padding: 8px 16px;
   background: transparent;
   border: none;
   border-bottom: 3px solid transparent;
@@ -241,7 +241,7 @@
 }
 
 .tab-content {
-  padding: 12px;
+  padding: 4px 8px;
 }
 
 .commentary-section {
@@ -261,7 +261,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
 }
 
 .commentary-header h4 {
@@ -385,15 +385,15 @@
 }
 
 .commentary-item {
-  padding: 10px 14px;
+  padding: 4px 8px;
   background-color: transparent;
   border-radius: 0;
-  line-height: 1.5;
+  line-height: 1.3;
   color: #4b5563;
   font-size: 13px;
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 6px;
   position: relative;
   border-bottom: 1px solid #f0f0f0;
   word-wrap: break-word;

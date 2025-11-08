@@ -1,6 +1,6 @@
 .metric-tabs-container {
   flex-shrink: 0;
-  margin-bottom: 12px;
+  margin-bottom: 4px;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
@@ -26,7 +26,7 @@
 .metric-tabs {
   display: inline-flex;
   background-color: #e5e7eb;
-  padding: 3px;
+  padding: 2px;
   border-radius: 8px;
   gap: 2px;
   width: fit-content;
@@ -34,7 +34,7 @@
 }
 
 .metric-tab {
-  padding: 6px 14px;
+  padding: 4px 10px;
   border: none;
   background-color: transparent;
   color: #6b7280;
