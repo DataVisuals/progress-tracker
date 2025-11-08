@@ -739,7 +739,7 @@ function App() {
                       <p
                         className={`project-description ${canEdit() ? 'editable' : ''} ${currentProject?.description ? 'filled' : 'empty'}`}
                         onClick={handleProjectDescClick}
-                        title={canEdit() ? "Click to edit description" : undefined}
+                        title={currentProject?.description ? currentProject.description : (canEdit() ? "Click to edit description" : undefined)}
                       >
                         {currentProject?.description || (canEdit() ? 'Click to add a description...' : '')}
                       </p>
