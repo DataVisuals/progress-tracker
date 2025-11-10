@@ -20,9 +20,10 @@ async function comparePassword(password, hash) {
   const derivedKey = await scrypt(password, salt, 64);
   return key === derivedKey.toString('hex');
 }
-const { getDb, dbRun, dbGet, dbAll, generateMetricPeriods, saveDatabase, initDatabase } = require('./db-sqljs');
+const { dbRun, dbGet, dbAll } = require('./db');
 const { ROLES, canEditProject, canCreateProject, isAdmin } = require('./permissions');
 const { startScheduler } = require('./scheduler');
+const logger = require('./logger');
 
 const app = express();
 const PORT = 3001;
@@ -52,10 +53,17 @@ app.get('/api/health', (req, res) => {
 // ===== AUTH MIDDLEWARE =====
 function authenticateToken(req, res, next) {
   const token = req.headers['authorization']?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'No token provided' });
+  if (!token) {
+    logger.auth.tokenValidation(false, null, 'No token provided');
+    return res.status(401).json({ error: 'No token provided' });
+  }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Invalid token' });
+    if (err) {
+      logger.auth.tokenValidation(false, null, err.message);
+      return res.status(403).json({ error: 'Invalid token' });
+    }
+    logger.auth.tokenValidation(true, user.userId);
     req.user = user;
     next();
   });
@@ -88,15 +96,30 @@ async function logAudit(user, action, tableName, recordId, oldValues, newValues,
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    // Log login attempt
+    logger.auth.loginAttempt(email, req.ip);
+
     const user = await dbGet('SELECT * FROM users WHERE email = ?', [email]);
 
-    if (!user || !(await comparePassword(password, user.password_hash))) {
+    if (!user) {
+      logger.auth.loginFailure(email, 'User not found', req.ip);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    const passwordValid = await comparePassword(password, user.password_hash);
+    if (!passwordValid) {
+      logger.auth.loginFailure(email, 'Invalid password', req.ip);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Login successful
+    logger.auth.loginSuccess(user, req.ip);
 
     const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, userId: user.id, email: user.email, name: user.name, role: user.role } });
   } catch (err) {
+    logger.error('AUTH', 'Login error', { error: err.message, stack: err.stack });
     res.status(500).json({ error: err.message });
   }
 });
@@ -387,15 +410,22 @@ app.post('/api/projects', authenticateToken, async (req, res) => {
   try {
     // Verify user is authenticated
     if (!req.user) {
+      logger.warn('PROJECT', 'Project creation attempt without authentication');
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    const { name, description, initiative_manager, start_date, end_date, portfolio_id } = req.body;
+    const projectData = { name, description, initiative_manager, start_date, end_date, portfolio_id };
+
+    // Log project creation attempt
+    logger.project.createAttempt(req.user, projectData);
+
     // Check if user can create projects (using role from JWT token)
     if (!canCreateProject(req.user)) {
+      logger.project.createFailure(req.user, projectData, 'Permission denied - insufficient role');
       return res.status(403).json({ error: 'You do not have permission to create projects' });
     }
 
-    const { name, description, initiative_manager, start_date, end_date, portfolio_id } = req.body;
     const result = await dbRun(
       'INSERT INTO projects (name, description, initiative_manager, start_date, end_date, portfolio_id) VALUES (?, ?, ?, ?, ?, ?)',
       [name, description, initiative_manager || null, start_date || null, end_date || null, portfolio_id || null]
@@ -407,6 +437,7 @@ app.post('/api/projects', authenticateToken, async (req, res) => {
         'INSERT INTO project_permissions (project_id, user_id) VALUES (?, ?)',
         [result.lastID, req.user.userId]
       );
+      logger.debug('PROJECT', `Auto-granted permission to user ${req.user.email} for project ${result.lastID}`);
     }
 
     await logAudit(req.user, 'CREATE', 'projects', result.lastID, null,
@@ -415,8 +446,12 @@ app.post('/api/projects', authenticateToken, async (req, res) => {
       req.ip
     );
 
+    // Log successful creation
+    logger.project.createSuccess(req.user, result.lastID, projectData);
+
     res.json({ id: result.lastID, name, description, initiative_manager, start_date, end_date, portfolio_id });
   } catch (err) {
+    logger.project.createFailure(req.user, req.body, err.message);
     res.status(500).json({ error: err.message });
   }
 });
