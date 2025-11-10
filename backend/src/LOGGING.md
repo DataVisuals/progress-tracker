@@ -15,6 +15,8 @@ Logging is controlled via environment variables:
 | `LOG_TO_FILE` | Write logs to file in addition to console | `false` | `true` or `false` |
 | `LOG_DIR` | Directory for log files | `backend/src/logs` | Any valid path |
 | `LOG_FILE_NAME` | Name of the log file | `app.log` | Any valid filename |
+| `MAX_LOG_SIZE_MB` | Maximum log file size before rotation (MB) | `10` | Any number (megabytes) |
+| `MAX_LOG_FILES` | Number of rotated log files to keep | `5` | Any number |
 
 ### Example Configuration
 
@@ -23,10 +25,12 @@ Logging is controlled via environment variables:
 export DETAILED_LOGGING=true
 export LOG_LEVEL=debug
 
-# Enable file logging
+# Enable file logging with rotation
 export LOG_TO_FILE=true
 export LOG_DIR=/var/log/progress-tracker
 export LOG_FILE_NAME=app.log
+export MAX_LOG_SIZE_MB=50        # Rotate when file reaches 50MB
+export MAX_LOG_FILES=10          # Keep last 10 rotated files
 
 # Start the server
 npm start
@@ -40,6 +44,8 @@ LOG_LEVEL=info
 LOG_TO_FILE=true
 LOG_DIR=./logs
 LOG_FILE_NAME=app.log
+MAX_LOG_SIZE_MB=10
+MAX_LOG_FILES=5
 ```
 
 ## Log Levels
@@ -314,9 +320,34 @@ if (logger.isEnabled()) {
 
 ## Log Rotation
 
-For production use, implement log rotation using tools like:
+### Built-in Rotation (Default)
 
-### Linux (logrotate)
+The logger includes **automatic log rotation** to prevent disk space issues:
+
+- **Automatic**: Rotation happens automatically when the log file size exceeds the limit
+- **Size-based**: Default 10MB per file (configurable via `MAX_LOG_SIZE_MB`)
+- **File retention**: Keeps the last 5 rotated files by default (configurable via `MAX_LOG_FILES`)
+- **Naming**: Rotated files are named `app.log.1`, `app.log.2`, etc.
+
+**How it works:**
+1. When `app.log` reaches the size limit (e.g., 10MB)
+2. Existing backups are renamed: `app.log.4` → `app.log.5`, `app.log.3` → `app.log.4`, etc.
+3. Current log is renamed: `app.log` → `app.log.1`
+4. A new `app.log` file is created
+5. The oldest file (`app.log.5` if `MAX_LOG_FILES=5`) is deleted
+
+**Example with custom rotation:**
+```bash
+# Larger files, more retention for high-volume production
+export MAX_LOG_SIZE_MB=100   # 100MB per file
+export MAX_LOG_FILES=20      # Keep 20 files = 2GB total max
+```
+
+### External Log Rotation Tools (Optional)
+
+For more advanced rotation strategies, you can also use external tools:
+
+#### Linux (logrotate)
 
 Create `/etc/logrotate.d/progress-tracker`:
 
@@ -332,7 +363,7 @@ Create `/etc/logrotate.d/progress-tracker`:
 }
 ```
 
-### PM2
+#### PM2
 
 If using PM2, it has built-in log rotation:
 
@@ -342,6 +373,11 @@ pm2 set pm2-logrotate:max_size 10M
 pm2 set pm2-logrotate:retain 7
 ```
 
-### Docker
+#### Docker
 
 Use a log aggregation service or mount the log directory as a volume with external rotation.
+
+**Note:** If using external rotation tools, you may want to disable built-in rotation by setting very high limits:
+```bash
+export MAX_LOG_SIZE_MB=999999  # Effectively disable built-in rotation
+```

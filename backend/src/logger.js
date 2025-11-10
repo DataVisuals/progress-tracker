@@ -7,7 +7,10 @@ const config = {
   logLevel: process.env.LOG_LEVEL || 'info', // 'debug', 'info', 'warn', 'error'
   logToFile: process.env.LOG_TO_FILE === 'true',
   logDir: process.env.LOG_DIR || path.join(__dirname, 'logs'),
-  logFileName: process.env.LOG_FILE_NAME || 'app.log'
+  logFileName: process.env.LOG_FILE_NAME || 'app.log',
+  // Log rotation settings
+  maxLogSize: parseInt(process.env.MAX_LOG_SIZE_MB || '10') * 1024 * 1024, // Default 10MB
+  maxLogFiles: parseInt(process.env.MAX_LOG_FILES || '5') // Keep last 5 log files
 };
 
 // Log levels with numeric values for filtering
@@ -45,12 +48,54 @@ function formatLogEntry(level, category, message, details = null) {
 }
 
 /**
+ * Rotate log files when size limit is exceeded
+ */
+function rotateLogFiles() {
+  try {
+    const logPath = path.join(config.logDir, config.logFileName);
+
+    // Check if current log file exists and exceeds size limit
+    if (!fs.existsSync(logPath)) return;
+
+    const stats = fs.statSync(logPath);
+    if (stats.size < config.maxLogSize) return;
+
+    // Rotate existing backup files
+    for (let i = config.maxLogFiles - 1; i >= 1; i--) {
+      const oldFile = path.join(config.logDir, `${config.logFileName}.${i}`);
+      const newFile = path.join(config.logDir, `${config.logFileName}.${i + 1}`);
+
+      if (fs.existsSync(oldFile)) {
+        if (i === config.maxLogFiles - 1) {
+          // Delete oldest file
+          fs.unlinkSync(oldFile);
+        } else {
+          // Rename to higher number
+          fs.renameSync(oldFile, newFile);
+        }
+      }
+    }
+
+    // Rename current log to .1
+    const backupPath = path.join(config.logDir, `${config.logFileName}.1`);
+    fs.renameSync(logPath, backupPath);
+
+    console.log(`[Logger] Rotated log file. Current size was ${(stats.size / 1024 / 1024).toFixed(2)}MB`);
+  } catch (err) {
+    console.error('Failed to rotate log files:', err);
+  }
+}
+
+/**
  * Write log entry to file
  */
 function writeToFile(entry) {
   if (!config.logToFile) return;
 
   try {
+    // Check if rotation is needed before writing
+    rotateLogFiles();
+
     const logPath = path.join(config.logDir, config.logFileName);
     const logLine = JSON.stringify(entry) + '\n';
     fs.appendFileSync(logPath, logLine);
