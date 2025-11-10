@@ -60,6 +60,7 @@ When you set `LOG_LEVEL`, only messages at that level or higher will be logged.
 - **Login Attempts**: Every login attempt is logged with email and IP address
 - **Login Success**: Successful logins include user ID, email, role, and IP address
 - **Login Failures**: Failed logins include the reason (user not found vs. invalid password)
+- **Logout Events**: User logout events are tracked with user ID and email
 - **Token Validation**: Token verification results (debug level only)
 
 Example log entry:
@@ -78,6 +79,20 @@ Example log entry:
 }
 ```
 
+Logout example:
+```json
+{
+  "timestamp": "2025-11-10T15:45:12.456Z",
+  "level": "INFO",
+  "category": "AUTH",
+  "message": "User logged out: admin@example.com",
+  "details": {
+    "userId": 1,
+    "email": "admin@example.com"
+  }
+}
+```
+
 ### Project Creation Events
 
 - **Creation Attempts**: Logs when a user attempts to create a project
@@ -85,7 +100,22 @@ Example log entry:
 - **Creation Failures**: Logs failures with error details
 - **Permission Grants**: Logs when auto-permissions are granted (debug level)
 
-Example log entry:
+### Asset Creation Events
+
+All asset types are tracked including:
+- **Project Links**: Link additions to projects
+- **Metrics**: Metric creation with all configuration data
+- **CRAIDs**: Challenges, Risks, Assumptions, Issues, and Dependencies
+- **Comments**: Comments added to metric periods
+- **Portfolios**: Portfolio creation and management
+
+Each asset creation logs:
+- User who created it (email and user ID)
+- Asset type (project_link, metric, CRAID_risk, etc.)
+- Asset data (sanitized for sensitive fields)
+- Parent ID (project or period the asset belongs to)
+
+Example project creation log:
 ```json
 {
   "timestamp": "2025-11-10T15:35:12.456Z",
@@ -106,6 +136,62 @@ Example log entry:
   }
 }
 ```
+
+Example asset creation log:
+```json
+{
+  "timestamp": "2025-11-10T15:40:22.789Z",
+  "level": "INFO",
+  "category": "ASSET",
+  "message": "project_link created by admin@example.com",
+  "details": {
+    "userId": 1,
+    "email": "admin@example.com",
+    "assetType": "project_link",
+    "assetData": {
+      "label": "Project Documentation",
+      "url": "https://docs.example.com",
+      "display_order": 0
+    },
+    "parentId": "42"
+  }
+}
+```
+
+### Exception Logging
+
+**IMPORTANT**: All exceptions are ALWAYS logged, regardless of the `DETAILED_LOGGING` setting. This ensures critical errors are never missed.
+
+Exceptions include:
+- Full error message
+- Complete stack trace
+- Contextual information (user ID, request data, etc.)
+- Category of the operation that failed
+
+Example exception log:
+```json
+{
+  "timestamp": "2025-11-10T15:50:30.123Z",
+  "level": "ERROR",
+  "category": "METRIC",
+  "message": "Error creating metric",
+  "details": {
+    "error": "Invalid date format",
+    "stack": "Error: Invalid date format\n    at createMetric (/app/server.js:650:15)\n    ...",
+    "projectId": "42",
+    "requestBody": {
+      "name": "Sales Metric",
+      "start_date": "invalid-date"
+    }
+  }
+}
+```
+
+### Import/Export Operations
+
+- **Export Success**: Logs successful data exports with filename
+- **Import Errors**: Always logged with full exception details
+- **Export Errors**: Always logged with full exception details
 
 ## Security Features
 
@@ -162,11 +248,21 @@ const logger = require('./logger');
 logger.auth.loginAttempt(email, ipAddress);
 logger.auth.loginSuccess(user, ipAddress);
 logger.auth.loginFailure(email, reason, ipAddress);
+logger.auth.logout(userId, email);
 
 // Project logging
 logger.project.createAttempt(user, projectData);
 logger.project.createSuccess(user, projectId, projectData);
 logger.project.createFailure(user, projectData, error);
+
+// Asset logging
+logger.asset.create(user, 'project_link', linkData, projectId);
+logger.asset.createFailure(user, 'metric', metricData, error, projectId);
+logger.asset.update(user, 'portfolio', portfolioId, oldData, newData);
+logger.asset.delete(user, 'comment', commentId, commentText);
+
+// Exception logging (ALWAYS logs regardless of DETAILED_LOGGING)
+logger.exception('CATEGORY', 'Error message', errorObject, { contextData });
 
 // Generic logging
 logger.debug('CATEGORY', 'Debug message', { details });
@@ -183,6 +279,7 @@ if (logger.isEnabled()) {
 ## Performance Considerations
 
 - When `DETAILED_LOGGING=false`, logging operations are no-ops with minimal overhead
+- **Exception logging ALWAYS runs** to ensure critical errors are captured
 - Debug-level logs are only processed when `LOG_LEVEL=debug`
 - File I/O is synchronous but only occurs when logging is enabled
 - Sensitive data sanitization only runs on objects that will be logged

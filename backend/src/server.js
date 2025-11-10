@@ -151,6 +151,18 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
+app.post('/api/auth/logout', authenticateToken, async (req, res) => {
+  try {
+    // Log the logout event
+    logger.auth.logout(req.user.userId, req.user.email);
+
+    res.json({ success: true, message: 'Logged out successfully' });
+  } catch (err) {
+    logger.exception('AUTH', 'Error during logout', err, { userId: req.user?.userId });
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -303,9 +315,11 @@ app.post('/api/portfolios', authenticateToken, async (req, res) => {
       req.ip
     );
 
+    logger.asset.create(req.user, 'portfolio', { name, description, color }, null);
+
     res.status(201).json({ id: result.lastID, name, description, color, display_order });
   } catch (err) {
-    console.error('Create portfolio error:', err);
+    logger.exception('PORTFOLIO', 'Error creating portfolio', err, { requestBody: req.body });
     res.status(500).json({ error: err.message });
   }
 });
@@ -535,6 +549,8 @@ app.post('/api/projects/:projectId/links', authenticateToken, async (req, res) =
       return res.status(400).json({ error: 'Label and URL are required' });
     }
 
+    const linkData = { label, url, display_order };
+
     const result = await dbRun(
       'INSERT INTO project_links (project_id, label, url, display_order) VALUES (?, ?, ?, ?)',
       [req.params.projectId, label, url, display_order]
@@ -547,8 +563,11 @@ app.post('/api/projects/:projectId/links', authenticateToken, async (req, res) =
       req.ip
     );
 
+    logger.asset.create(req.user, 'project_link', linkData, req.params.projectId);
+
     res.json({ success: true, id: result.lastID });
   } catch (err) {
+    logger.asset.createFailure(req.user, 'project_link', req.body, err.message, req.params.projectId);
     res.status(500).json({ error: err.message });
   }
 });
@@ -688,9 +707,11 @@ app.post('/api/projects/:projectId/metrics', authenticateToken, async (req, res)
       req.ip
     );
 
+    logger.asset.create(req.user, 'metric', { name, owner_id: finalOwnerId, start_date, end_date, frequency, final_target }, req.params.projectId);
+
     res.json({ id: result.lastID });
   } catch (err) {
-    console.error('Error creating metric:', err);
+    logger.exception('METRIC', 'Error creating metric', err, { projectId: req.params.projectId, requestBody: req.body });
     res.status(500).json({ error: err.message });
   }
 });
@@ -1141,8 +1162,11 @@ app.post('/api/periods/:periodId/comments', authenticateToken, async (req, res) 
       req.ip
     );
 
+    logger.asset.create(req.user, 'comment', { comment_text }, req.params.periodId);
+
     res.json({ id: result.lastID });
   } catch (err) {
+    logger.exception('COMMENT', 'Error creating comment', err, { periodId: req.params.periodId, requestBody: req.body });
     res.status(500).json({ error: err.message });
   }
 });
@@ -1285,9 +1309,11 @@ app.post('/api/projects/:projectId/craids', authenticateToken, async (req, res) 
       req.ip
     );
 
+    logger.asset.create(req.user, `CRAID_${type}`, { title, description, status, priority }, req.params.projectId);
+
     res.json({ id: result.lastID });
   } catch (err) {
-    console.error('Error creating CRAID:', err);
+    logger.exception('CRAID', 'Error creating CRAID', err, { projectId: req.params.projectId, requestBody: req.body });
     res.status(500).json({ error: err.message });
   }
 });
@@ -2505,12 +2531,18 @@ app.post('/api/export', authenticateToken, async (req, res) => {
     const filepath = await exportAllData();
     const filename = require('path').basename(filepath);
 
+    logger.info('EXPORT', 'Export completed successfully', {
+      userId: req.user.userId,
+      email: req.user.email,
+      filename
+    });
+
     res.json({
       message: 'Export completed successfully',
       filename: filename
     });
   } catch (err) {
-    console.error('Export error:', err);
+    logger.exception('EXPORT', 'Error exporting data', err, { userId: req.user.userId });
     res.status(500).json({ error: err.message });
   }
 });
@@ -2594,7 +2626,10 @@ app.post('/api/import', authenticateToken, upload.single('file'), async (req, re
     });
 
   } catch (err) {
-    console.error('Import error:', err);
+    logger.exception('IMPORT', 'Error importing data', err, {
+      filename: req.file?.originalname,
+      userId: req.user.userId
+    });
 
     if (err instanceof ImportValidationError) {
       return res.status(400).json({

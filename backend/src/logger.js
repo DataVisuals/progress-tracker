@@ -145,6 +145,55 @@ const logger = {
   },
 
   /**
+   * Log asset creation events (metrics, links, craids, etc.)
+   */
+  asset: {
+    create: (user, assetType, assetData, parentId = null) => {
+      log('info', 'ASSET', `${assetType} created by ${user.email}`, {
+        userId: user.userId,
+        email: user.email,
+        assetType,
+        assetData: sanitize(assetData),
+        parentId
+      });
+    },
+
+    createFailure: (user, assetType, assetData, error, parentId = null) => {
+      log('error', 'ASSET', `${assetType} creation failed for ${user.email}: ${error}`, {
+        userId: user.userId,
+        email: user.email,
+        assetType,
+        assetData: sanitize(assetData),
+        error: error.toString(),
+        parentId
+      });
+    },
+
+    update: (user, assetType, assetId, oldData, newData) => {
+      log('info', 'ASSET', `${assetType} ${assetId} updated by ${user.email}`, {
+        userId: user.userId,
+        email: user.email,
+        assetType,
+        assetId,
+        changes: {
+          old: sanitize(oldData),
+          new: sanitize(newData)
+        }
+      });
+    },
+
+    delete: (user, assetType, assetId, assetName = null) => {
+      log('warn', 'ASSET', `${assetType} ${assetId} deleted by ${user.email}`, {
+        userId: user.userId,
+        email: user.email,
+        assetType,
+        assetId,
+        assetName
+      });
+    }
+  },
+
+  /**
    * Log project-related events
    */
   project: {
@@ -204,6 +253,26 @@ const logger = {
         projectId,
         projectName
       });
+    }
+  },
+
+  /**
+   * Log exceptions - ALWAYS logs regardless of DETAILED_LOGGING setting
+   */
+  exception: (category, message, error, details = null) => {
+    const entry = formatLogEntry('error', category, message, {
+      error: error.message,
+      stack: error.stack,
+      ...details
+    });
+
+    // Always log exceptions to console
+    console.error(`[${entry.timestamp}] [${entry.level}] [${entry.category}] ${entry.message}`,
+                  '\n' + JSON.stringify(entry.details, null, 2));
+
+    // Always write exceptions to file if file logging is enabled
+    if (config.logToFile) {
+      writeToFile(entry);
     }
   },
 
