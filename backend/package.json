@@ -6,8 +6,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest --testTimeout=10000",
-    "test:watch": "jest --watch"
+    "test": "jest --testTimeout=10000 --runInBand",
+    "test:watch": "jest --watch",
+    "test:report": "jest --testTimeout=10000 --runInBand --reporters=./src/tests/custom-reporter.js --silent"
   },
   "keywords": [],
   "author": "",

@@ -15,12 +15,6 @@ describe('Project Description API Tests', () => {
   let testProjectId;
 
   beforeAll(async () => {
-    // Ensure test data directory exists
-    const testDir = path.dirname(TEST_DB_PATH);
-    if (!fs.existsSync(testDir)) {
-      fs.mkdirSync(testDir, { recursive: true });
-    }
-
     // Clean up test database if it exists
     if (fs.existsSync(TEST_DB_PATH)) {
       fs.unlinkSync(TEST_DB_PATH);
@@ -33,26 +27,20 @@ describe('Project Description API Tests', () => {
     // Import app after setting environment
     app = require('../server');
 
-    // Wait for database migrations to complete
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
     // Create test user and get auth token
     const registerResponse = await request(app)
       .post('/api/auth/register')
       .send({
         name: 'Test User',
         email: 'test@example.com',
-        password: 'testpass123',
-        role: 'admin'
+        password: 'testpass123'
       });
 
     testUserId = registerResponse.body.id;
 
-    // Upgrade user to admin role for testing
-    const Database = require('better-sqlite3');
-    const testDb = new Database(TEST_DB_PATH);
-    testDb.prepare('UPDATE users SET role = ? WHERE id = ?').run('admin', testUserId);
-    testDb.close();
+    // Upgrade user to admin role for testing using the db module
+    const { dbRun } = require('../db');
+    await dbRun('UPDATE users SET role = ? WHERE id = ?', ['admin', testUserId]);
 
     // Login to get token (with admin role now)
     const loginResponse = await request(app)

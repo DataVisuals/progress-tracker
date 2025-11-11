@@ -186,7 +186,7 @@ describe('CRAIDs API Tests', () => {
         .put(`/api/craids/${testCraidId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          type: 'risk',
+          title: '',  // Empty title should be rejected
           description: 'Missing title'
         });
 

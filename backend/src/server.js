@@ -127,6 +127,12 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, name, password } = req.body;
+
+    // Validate required fields
+    if (!email || !name || !password) {
+      return res.status(400).json({ error: 'Email, name, and password are required' });
+    }
+
     const hash = await hashPassword(password);
     const result = await dbRun('INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)', [email, name, hash]);
 
@@ -147,7 +153,12 @@ app.post('/api/auth/register', async (req, res) => {
 
     res.json({ id: result.lastID, email, name });
   } catch (err) {
-    res.status(400).json({ error: 'User already exists' });
+    // Check if it's a duplicate key error
+    if (err.message && err.message.includes('UNIQUE constraint failed')) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+    console.error('Registration error:', err);
+    res.status(400).json({ error: err.message || 'Registration failed' });
   }
 });
 
@@ -1284,6 +1295,14 @@ app.post('/api/projects/:projectId/craids', authenticateToken, async (req, res) 
 
     const { type, title, description, status, priority, owner_id, period_id } = req.body;
 
+    // Validate required fields
+    if (!type) {
+      return res.status(400).json({ error: 'Type is required' });
+    }
+    if (!title || !title.trim()) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+
     console.log('Creating CRAID:', {
       projectId: req.params.projectId,
       type,
@@ -1329,6 +1348,12 @@ app.put('/api/craids/:id', authenticateToken, async (req, res) => {
     }
 
     const { title, description, status, priority, owner_id } = req.body;
+
+    // Validate title if provided
+    if (title !== undefined && (!title || !title.trim())) {
+      return res.status(400).json({ error: 'Title cannot be empty' });
+    }
+
     await dbRun(`
       UPDATE craids
       SET title = ?, description = ?, status = ?, priority = ?, owner_id = ?, updated_at = CURRENT_TIMESTAMP
