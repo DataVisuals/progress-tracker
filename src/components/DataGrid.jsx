@@ -107,6 +107,17 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
         metric_id = metricInfo ? metricInfo.id : null;
       }
 
+      if (!metric_id) {
+        console.error('Failed to add row: metric_id is null', {
+          selectedMetric,
+          newRow,
+          projectMetrics,
+          editedData
+        });
+        alert('Error: Could not determine metric ID. Please try reopening the Data Grid.');
+        return;
+      }
+
       const rowToAdd = {
         ...newRow,
         id: newId,

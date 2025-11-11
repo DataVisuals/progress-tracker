@@ -199,13 +199,28 @@ function App() {
 
         if (!original) {
           // This is a new period - create it
-          await api.createPeriod({
+          console.log('Creating new period:', {
             metric_id: item.metric_id,
             reporting_date: item.reporting_date,
             expected: item.expected,
             target: item.final_target,
             complete: item.complete
           });
+
+          if (!item.metric_id) {
+            console.error('Cannot create period without metric_id', item);
+            alert('Error: Period is missing metric ID and cannot be saved.');
+            throw new Error('Missing metric_id');
+          }
+
+          const response = await api.createPeriod({
+            metric_id: item.metric_id,
+            reporting_date: item.reporting_date,
+            expected: item.expected,
+            target: item.final_target,
+            complete: item.complete
+          });
+          console.log('Period created successfully:', response.data);
         } else if (original.complete !== item.complete ||
                    original.expected !== item.expected ||
                    original.final_target !== item.final_target ||
@@ -229,8 +244,10 @@ function App() {
         }
       }
       // Reload both project data and metrics list
+      console.log('Reloading project data after save...');
       await loadProjectData();
       await loadProjectMetrics();
+      console.log('Project data reloaded, new count:', projectData.length);
     } catch (err) {
       console.error('Failed to update data:', err);
       // Don't show generic alert if we already showed specific historic edit message
