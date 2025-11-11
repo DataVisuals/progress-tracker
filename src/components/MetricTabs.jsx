@@ -10,20 +10,51 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
     const metricDataPoints = projectData.filter(item => item.metric === metricName);
     if (metricDataPoints.length === 0) return null;
 
-    // Get the current period (most recent date <= today)
-    const today = new Date();
-    const currentPeriodData = [...metricDataPoints]
-      .filter(item => new Date(item.reporting_date) <= today)
-      .sort((a, b) => new Date(b.reporting_date) - new Date(a.reporting_date));
+    // Sort all periods by date
+    const sortedPeriods = [...metricDataPoints].sort((a, b) =>
+      new Date(a.reporting_date) - new Date(b.reporting_date)
+    );
 
-    // If no current period data, use the most recent available
-    const latest = currentPeriodData.length > 0
-      ? currentPeriodData[0]
-      : [...metricDataPoints].sort((a, b) => new Date(b.reporting_date) - new Date(a.reporting_date))[0];
+    // Find the current period (period has started but next period hasn't started yet)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let currentPeriodIndex = -1;
+    for (let i = 0; i < sortedPeriods.length; i++) {
+      const periodStart = new Date(sortedPeriods[i].reporting_date);
+      periodStart.setHours(0, 0, 0, 0);
+
+      // Check if this period has started
+      if (periodStart <= today) {
+        // Check if next period has started
+        if (i + 1 < sortedPeriods.length) {
+          const nextPeriodStart = new Date(sortedPeriods[i + 1].reporting_date);
+          nextPeriodStart.setHours(0, 0, 0, 0);
+          if (today < nextPeriodStart) {
+            // We're in this period (started but next hasn't started)
+            currentPeriodIndex = i;
+            break;
+          }
+        } else {
+          // This is the last period and it has started
+          currentPeriodIndex = i;
+        }
+      }
+    }
+
+    // If no current period found (all periods are in the future), return null
+    if (currentPeriodIndex === -1) return null;
+
+    const latest = sortedPeriods[currentPeriodIndex];
 
     // Check if we have the necessary data
     if (latest.complete === null || latest.complete === undefined ||
-        latest.expected === null || latest.expected === undefined) return null;
+        latest.expected === null || latest.expected === undefined) {
+      // If we're still in the current period (next period hasn't started), don't show red
+      const isInCurrentPeriod = currentPeriodIndex === sortedPeriods.length - 1 ||
+        today < new Date(sortedPeriods[currentPeriodIndex + 1].reporting_date);
+      return isInCurrentPeriod ? 'grey' : null;
+    }
 
     const complete = parseFloat(latest.complete);
     const expected = parseFloat(latest.expected);

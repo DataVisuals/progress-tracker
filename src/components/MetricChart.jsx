@@ -841,8 +841,21 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               // Check if period has actual completion data
               const hasData = entry.complete !== null && entry.complete !== undefined && entry.complete > 0;
 
-              // Apply color logic if there's data and we're behind schedule
-              if (hasData && variance < 0) { // Behind schedule
+              // Check if this period has ended (next period has started)
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const periodDate = new Date(entry.name);
+              periodDate.setHours(0, 0, 0, 0);
+
+              // Get next period date if it exists
+              const nextPeriod = chartData[index + 1];
+              const periodHasEnded = nextPeriod
+                ? today >= new Date(nextPeriod.name)
+                : false; // Last period is considered ongoing
+
+              // Only apply red/amber if period has ended OR if there's data showing we're behind
+              // If period is still ongoing and no data, keep it green (grey would be better but we don't have that option for bars)
+              if (hasData && variance < 0) { // Behind schedule with data
                 if (variancePercent > redTolerance) {
                   barColor = '#D0704d'; // Red
                   barCategory = 'red';
@@ -850,6 +863,10 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                   barColor = '#f5ad5b'; // Amber
                   barCategory = 'amber';
                 }
+              } else if (!hasData && periodHasEnded) {
+                // Period has ended but no data - mark as red
+                barColor = '#D0704d';
+                barCategory = 'red';
               }
 
               // Apply opacity based on highlightedSeries
