@@ -303,9 +303,8 @@ app.post('/api/portfolios', authenticateToken, async (req, res) => {
       [name, description || null, color || '#3b82f6', display_order || 0]
     );
 
-    await logAuditEvent(
-      req.user.id,
-      req.user.email,
+    await logAudit(
+      req.user,
       'CREATE',
       'portfolios',
       result.lastID,
@@ -343,9 +342,8 @@ app.put('/api/portfolios/:id', authenticateToken, async (req, res) => {
       [name, description, color, display_order, id]
     );
 
-    await logAuditEvent(
-      req.user.id,
-      req.user.email,
+    await logAudit(
+      req.user,
       'UPDATE',
       'portfolios',
       id,
@@ -380,9 +378,8 @@ app.delete('/api/portfolios/:id', authenticateToken, async (req, res) => {
 
     await dbRun('DELETE FROM portfolios WHERE id = ?', [id]);
 
-    await logAuditEvent(
-      req.user.id,
-      req.user.email,
+    await logAudit(
+      req.user,
       'DELETE',
       'portfolios',
       id,

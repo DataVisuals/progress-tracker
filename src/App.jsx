@@ -259,11 +259,9 @@ function App() {
 
     const project = projects.find(p => p.id === parseInt(selectedProject));
     if (!confirm(`Are you sure you want to delete "${project?.name}"? This will delete all metrics and data.`)) {
-      setShowProjectDropdown(false);
       return;
     }
 
-    setShowProjectDropdown(false);
     try {
       await api.deleteProject(selectedProject);
       setSelectedProject('');
@@ -459,7 +457,6 @@ function App() {
     localStorage.removeItem('user');
     setIsAuthenticated(false);
     setCurrentUser(null);
-    setShowUserDropdown(false);
   };
 
   // Helper functions for role checks
@@ -526,18 +523,18 @@ function App() {
                 </button>
                 {showProjectDropdown && (
                   <div className="dropdown-menu">
-                    <button onClick={() => { setShowNewProject(true); setTimeout(() => setShowProjectDropdown(false), 0); }}>
+                    <button onMouseDown={() => { setShowNewProject(true); setShowProjectDropdown(false); }}>
                       New Project
                     </button>
-                    <button onClick={() => { setShowImportData(true); setTimeout(() => setShowProjectDropdown(false), 0); }}>
+                    <button onMouseDown={() => { setShowImportData(true); setShowProjectDropdown(false); }}>
                       Import Data
                     </button>
                     {selectedProject && (
                       <>
-                        <button onClick={() => { setShowDataGrid(true); setTimeout(() => setShowProjectDropdown(false), 0); }}>
+                        <button onMouseDown={() => { setShowDataGrid(true); setShowProjectDropdown(false); }}>
                           Edit Data
                         </button>
-                        <button onClick={handleDeleteProject}>
+                        <button onMouseDown={() => { handleDeleteProject(); setShowProjectDropdown(false); }}>
                           Delete Project
                         </button>
                       </>
@@ -563,16 +560,16 @@ function App() {
                 </button>
                 {showAdminDropdown && (
                   <div className="dropdown-menu">
-                    <button onClick={() => { setShowPortfolioManager(true); setTimeout(() => setShowAdminDropdown(false), 0); }}>
+                    <button onMouseDown={() => { setShowPortfolioManager(true); setShowAdminDropdown(false); }}>
                       Manage Portfolios
                     </button>
-                    <button onClick={() => { setShowUserManagement(true); setTimeout(() => setShowAdminDropdown(false), 0); }}>
+                    <button onMouseDown={() => { setShowUserManagement(true); setShowAdminDropdown(false); }}>
                       Manage Users
                     </button>
-                    <button onClick={() => { setShowAuditLog(true); setTimeout(() => setShowAdminDropdown(false), 0); }}>
+                    <button onMouseDown={() => { setShowAuditLog(true); setShowAdminDropdown(false); }}>
                       Audit Log
                     </button>
-                    <button onClick={() => { setShowConsistencyReport(true); setTimeout(() => setShowAdminDropdown(false), 0); }}>
+                    <button onMouseDown={() => { setShowConsistencyReport(true); setShowAdminDropdown(false); }}>
                       Consistency Report
                     </button>
                   </div>
@@ -596,10 +593,10 @@ function App() {
                 </button>
                 {showUserDropdown && (
                   <div className="dropdown-menu">
-                    <button onClick={() => { setShowPasswordChange(true); setTimeout(() => setShowUserDropdown(false), 0); }}>
+                    <button onMouseDown={() => { setShowPasswordChange(true); setShowUserDropdown(false); }}>
                       Change Password
                     </button>
-                    <button onClick={handleLogout}>
+                    <button onMouseDown={() => { handleLogout(); setShowUserDropdown(false); }}>
                       Logout
                     </button>
                   </div>
