@@ -119,7 +119,7 @@ describe('Project Permissions API Tests', () => {
       const response = await request(app)
         .post(`/api/projects/${testProjectId}/permissions`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ userId: editorUserId });
+        .send({ user_id: editorUserId });
 
       expect(response.status).toBe(201);
       expect(response.body.message).toContain('granted');
@@ -137,7 +137,7 @@ describe('Project Permissions API Tests', () => {
       const response = await request(app)
         .post(`/api/projects/${testProjectId}/permissions`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ userId: editorUserId });
+        .send({ user_id: editorUserId });
 
       expect(response.status).toBe(400);
       expect(response.body.error).toContain('already');
@@ -147,7 +147,7 @@ describe('Project Permissions API Tests', () => {
       const response = await request(app)
         .post(`/api/projects/${testProjectId}/permissions`)
         .set('Authorization', `Bearer ${editorToken}`)
-        .send({ userId: viewerUserId });
+        .send({ user_id: viewerUserId });
 
       expect(response.status).toBe(403);
     });
@@ -226,7 +226,7 @@ describe('Project Permissions API Tests', () => {
       await request(app)
         .post(`/api/projects/${testProjectId}/permissions`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ userId: viewerUserId });
+        .send({ user_id: viewerUserId });
 
       const response = await request(app)
         .put(`/api/projects/${testProjectId}`)

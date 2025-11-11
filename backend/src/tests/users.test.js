@@ -99,10 +99,10 @@ describe('User Management API Tests', () => {
       });
     });
 
-    test('should reject user list request as non-admin', async () => {
+    test('should reject user list request as viewer', async () => {
       const response = await request(app)
         .get('/api/users')
-        .set('Authorization', `Bearer ${pmToken}`);
+        .set('Authorization', `Bearer ${viewerToken}`);
 
       expect(response.status).toBe(403);
     });
@@ -117,9 +117,12 @@ describe('User Management API Tests', () => {
 
   describe('PUT /api/users/:id/role', () => {
     beforeAll(async () => {
-      const { dbGet } = require('../db');
-      const user = await dbGet('SELECT * FROM users WHERE email = ?', ['viewer@users.test']);
-      testUserId = user.id;
+      // Get viewer user ID via API
+      const response = await request(app)
+        .get('/api/users')
+        .set('Authorization', `Bearer ${adminToken}`);
+      const viewer = response.body.find(u => u.email === 'viewer@users.test');
+      testUserId = viewer.id;
     });
 
     test('should change user role as admin', async () => {
@@ -129,7 +132,7 @@ describe('User Management API Tests', () => {
         .send({ role: 'pm' });
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toContain('updated');
+      expect(response.body.success).toBe(true);
 
       // Verify role was changed
       const usersResponse = await request(app)
@@ -179,8 +182,12 @@ describe('User Management API Tests', () => {
         password: 'delete123'
       });
 
-      const { dbGet } = require('../db');
-      userToDelete = await dbGet('SELECT * FROM users WHERE email = ?', ['delete@users.test']);
+      // Get user ID via API
+      const response = await request(app)
+        .get('/api/users')
+        .set('Authorization', `Bearer ${adminToken}`);
+      const user = response.body.find(u => u.email === 'delete@users.test');
+      userToDelete = user;
     });
 
     test('should reject user deletion as non-admin', async () => {

@@ -21,7 +21,6 @@ async function comparePassword(password, hash) {
   return key === derivedKey.toString('hex');
 }
 const { initializeDatabase, generateMetricPeriods, calculateExpectedValue } = require('./db');
-const { ROLES, canEditProject, canCreateProject, isAdmin } = require('./permissions');
 const { startScheduler } = require('./scheduler');
 const logger = require('./logger');
 
@@ -29,6 +28,50 @@ const logger = require('./logger');
 function createApp(dbPath) {
   // Initialize database with provided path
   const { db, dbRun, dbGet, dbAll } = initializeDatabase(dbPath);
+
+  // Define permission functions with access to this database instance
+  const ROLES = {
+    ADMIN: 'admin',
+    PM: 'pm',
+    EDITOR: 'editor', // Legacy role - treat as PM
+    VIEWER: 'viewer'
+  };
+
+  // Check if user can edit a project
+  async function canEditProject(userId, projectId) {
+    const user = await dbGet('SELECT role FROM users WHERE id = ?', [userId]);
+
+    // Admins can edit anything
+    if (user.role === ROLES.ADMIN) {
+      return true;
+    }
+
+    // Viewers can't edit anything
+    if (user.role === ROLES.VIEWER) {
+      return false;
+    }
+
+    // PMs and Editors can edit if they have permission
+    if (user.role === ROLES.PM || user.role === ROLES.EDITOR) {
+      const permission = await dbGet(
+        'SELECT id FROM project_permissions WHERE user_id = ? AND project_id = ?',
+        [userId, projectId]
+      );
+      return !!permission;
+    }
+
+    return false;
+  }
+
+  // Check if user can create projects
+  function canCreateProject(user) {
+    return user.role === ROLES.ADMIN || user.role === ROLES.PM || user.role === ROLES.EDITOR;
+  }
+
+  // Check if user is admin
+  function isAdmin(user) {
+    return user.role === ROLES.ADMIN;
+  }
 
   const app = express();
   const PORT = 3001;
@@ -1499,7 +1542,11 @@ function createApp(dbPath) {
       if (!targetUser) {
         return res.status(404).json({ error: 'User not found' });
       }
-  
+
+      // Clear user_id from audit_log to prevent foreign key constraint error
+      // We keep the audit log entries but anonymize them
+      await dbRun('UPDATE audit_log SET user_id = NULL WHERE user_id = ?', [req.params.id]);
+
       await dbRun('DELETE FROM users WHERE id = ?', [req.params.id]);
   
       await logAudit(req.user, 'DELETE', 'users', req.params.id,
@@ -1547,8 +1594,11 @@ function createApp(dbPath) {
       if (!isAdmin(user)) {
         return res.status(403).json({ error: 'Only admins can grant project permissions' });
       }
-  
+
       const { user_id } = req.body;
+      if (!user_id) {
+        return res.status(400).json({ error: 'user_id is required' });
+      }
   
       // Check if target user exists and is a PM or Editor
       const targetUser = await dbGet('SELECT * FROM users WHERE id = ?', [user_id]);
@@ -1581,8 +1631,11 @@ function createApp(dbPath) {
         `Granted ${targetUser.email} permission to project "${project.name}"`,
         req.ip
       );
-  
-      res.json({ success: true });
+
+      res.status(201).json({
+        success: true,
+        message: `Permission granted to ${targetUser.email} for project "${project.name}"`
+      });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -1595,10 +1648,19 @@ function createApp(dbPath) {
       if (!isAdmin(user)) {
         return res.status(403).json({ error: 'Only admins can revoke project permissions' });
       }
-  
+
+      // Check if permission exists
+      const permission = await dbGet(
+        'SELECT id FROM project_permissions WHERE project_id = ? AND user_id = ?',
+        [req.params.projectId, req.params.userId]
+      );
+      if (!permission) {
+        return res.status(404).json({ error: 'Permission not found' });
+      }
+
       const targetUser = await dbGet('SELECT * FROM users WHERE id = ?', [req.params.userId]);
       const project = await dbGet('SELECT name FROM projects WHERE id = ?', [req.params.projectId]);
-  
+
       await dbRun(
         'DELETE FROM project_permissions WHERE project_id = ? AND user_id = ?',
         [req.params.projectId, req.params.userId]
@@ -1620,9 +1682,15 @@ function createApp(dbPath) {
   // ===== AUDIT LOG =====
   app.get('/api/audit', authenticateToken, async (req, res) => {
     try {
+      // Admin only
+      const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
+      if (!isAdmin(user)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
       const { limit = 100, offset = 0, table_name, user_id, action } = req.query;
-  
-      let query = 'SELECT * FROM audit_log WHERE 1=1';
+
+      let query = 'SELECT *, created_at as timestamp FROM audit_log WHERE 1=1';
       const params = [];
   
       if (table_name) {

@@ -126,7 +126,7 @@ describe('Audit Log API Tests', () => {
 
     test('should filter audit log by table_name', async () => {
       const response = await request(app)
-        .get('/api/audit?table=projects')
+        .get('/api/audit?table_name=projects')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
