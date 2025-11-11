@@ -73,6 +73,11 @@ function createApp(dbPath) {
     return user.role === ROLES.ADMIN;
   }
 
+  // Check if user can edit historic data (admin or PM/editor)
+  function canEditHistoricData(user) {
+    return user.role === ROLES.ADMIN || user.role === ROLES.PM || user.role === ROLES.EDITOR;
+  }
+
   const app = express();
   const PORT = 3001;
   const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -1030,13 +1035,13 @@ function createApp(dbPath) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const isHistoricEdit = periodEndDate < today && complete !== undefined;
-  
-      // Only admins can make historic edits
+
+      // Only admins and PMs can make historic edits
       if (isHistoricEdit) {
         const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
-        if (!isAdmin(user)) {
+        if (!canEditHistoricData(user)) {
           return res.status(403).json({
-            error: 'Historic edits of completion values are restricted to administrators only',
+            error: 'Historic edits of completion values are restricted to administrators and project managers only',
             isHistoricEdit: true
           });
         }
@@ -1115,13 +1120,13 @@ function createApp(dbPath) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const isHistoricEdit = periodEndDate < today && complete !== undefined;
-  
-      // Only admins can make historic edits
+
+      // Only admins and PMs can make historic edits
       if (isHistoricEdit) {
         const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
-        if (!isAdmin(user)) {
+        if (!canEditHistoricData(user)) {
           return res.status(403).json({
-            error: 'Historic edits of completion values are restricted to administrators only',
+            error: 'Historic edits of completion values are restricted to administrators and project managers only',
             isHistoricEdit: true
           });
         }
