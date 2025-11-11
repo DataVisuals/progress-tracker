@@ -1,12 +1,21 @@
 .metric-chart-container {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 12px;
-  padding: 16px;
+  padding: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
   min-height: 0;
+  flex: 1;
   border: 1px solid #e2e8f0;
+}
+
+/* Chart area wrapper - should not grow or shrink */
+.chart-and-legend-wrapper {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-shrink: 0;
 }
 
 /* Custom Tooltip Styles */
@@ -104,8 +113,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
-  gap: 16px;
+  margin-bottom: 2px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .export-chart-button {
@@ -157,6 +167,7 @@
   font-size: 13px;
   box-shadow: 0 2px 6px rgba(0, 174, 239, 0.15);
   flex: 1;
+  flex-shrink: 0;
 }
 
 .date-range-item {
@@ -198,12 +209,16 @@
 
 /* Tabbed Section */
 .tabbed-section {
-  margin-top: 8px;
+  margin-top: 4px;
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
   border: 1px solid #e2e8f0;
   overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .tab-navigation {
@@ -212,16 +227,17 @@
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-bottom: 2px solid #e2e8f0;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .tab-button {
   flex: 1;
-  padding: 8px 16px;
+  padding: 6px 12px;
   background: transparent;
   border: none;
   border-bottom: 3px solid transparent;
   color: #6b7280;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -242,19 +258,25 @@
 
 .tab-content {
   padding: 4px 8px;
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
 }
 
 .commentary-section {
-  margin-top: 12px;
-  padding: 12px;
-  flex-shrink: 0;
+  margin-top: 8px;
+  padding: 10px;
   width: 100%;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   clear: both;
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
   border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
 }
 
 .commentary-header {
@@ -262,6 +284,7 @@
   justify-content: flex-end;
   align-items: center;
   margin-bottom: 4px;
+  flex-shrink: 0;
 }
 
 .commentary-header h4 {
@@ -278,6 +301,7 @@
   justify-content: flex-end;
   align-items: center;
   margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .data-table-header h4 {
@@ -374,7 +398,8 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  max-height: 300px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   background: white;
@@ -651,9 +676,11 @@
 .data-table-section {
   margin: 0;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: auto;
   position: relative;
   padding: 0;
+  flex: 1;
+  min-height: 0;
   /* Improve scrolling on webkit browsers */
   -webkit-overflow-scrolling: touch;
   /* Add scrollbar styling for better visibility */

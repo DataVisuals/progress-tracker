@@ -809,7 +809,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       )}
 
       {/* Chart and Legend Container */}
-      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+      <div className="chart-and-legend-wrapper">
         <div ref={chartContainerRef} style={{ position: 'relative', flex: 1 }}>
             <ResponsiveContainer width="100%" height={260}>
               <ComposedChart
