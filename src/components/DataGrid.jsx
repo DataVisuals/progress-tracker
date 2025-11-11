@@ -476,7 +476,7 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
 
         {showNewMetric && (
           <div className="modal-overlay" onClick={() => setShowNewMetric(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="modal-content metric-creation-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '16px' }}>
               <h2>Create New Metric</h2>
 
               <div className="form-group">
@@ -516,15 +516,18 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="new-metric-frequency">Frequency: *</label>
-                  <select
+                  <Select
                     id="new-metric-frequency"
-                    value={newMetricConfig.frequency}
-                    onChange={(e) => setNewMetricConfig({...newMetricConfig, frequency: e.target.value})}
-                  >
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="quarterly">Quarterly</option>
-                  </select>
+                    value={{ value: newMetricConfig.frequency, label: newMetricConfig.frequency.charAt(0).toUpperCase() + newMetricConfig.frequency.slice(1) }}
+                    onChange={(option) => setNewMetricConfig({...newMetricConfig, frequency: option.value})}
+                    options={[
+                      { value: 'weekly', label: 'Weekly' },
+                      { value: 'fortnightly', label: 'Fortnightly' },
+                      { value: 'monthly', label: 'Monthly' },
+                      { value: 'quarterly', label: 'Quarterly' }
+                    ]}
+                    styles={selectStyles}
+                  />
                 </div>
 
                 <div className="form-group">
@@ -542,14 +545,24 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="new-metric-progression">Progression: *</label>
-                  <select
+                  <Select
                     id="new-metric-progression"
-                    value={newMetricConfig.progression_type}
-                    onChange={(e) => setNewMetricConfig({...newMetricConfig, progression_type: e.target.value})}
-                  >
-                    <option value="linear">Linear</option>
-                    <option value="s-curve">S-Curve</option>
-                  </select>
+                    value={{
+                      value: newMetricConfig.progression_type,
+                      label: newMetricConfig.progression_type === 'linear' ? 'Linear' :
+                             newMetricConfig.progression_type === 'exponential' ? 'Exponential (Back-loaded)' :
+                             newMetricConfig.progression_type === 's-curve' ? 'S-curve' :
+                             'Logarithmic (Front-loaded)'
+                    }}
+                    onChange={(option) => setNewMetricConfig({...newMetricConfig, progression_type: option.value})}
+                    options={[
+                      { value: 'linear', label: 'Linear' },
+                      { value: 'exponential', label: 'Exponential (Back-loaded)' },
+                      { value: 's-curve', label: 'S-curve' },
+                      { value: 'logarithmic', label: 'Logarithmic (Front-loaded)' }
+                    ]}
+                    styles={selectStyles}
+                  />
                 </div>
               </div>
 
