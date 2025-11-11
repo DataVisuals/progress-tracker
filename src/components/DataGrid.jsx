@@ -92,6 +92,15 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
   };
 
   const handleSave = () => {
+    console.log('DataGrid.handleSave - Saving', editedData.length, 'periods');
+    console.log('Periods being saved:', editedData.map(d => ({
+      id: d.id,
+      date: d.reporting_date,
+      metric: d.metric,
+      metric_id: d.metric_id,
+      expected: d.expected,
+      complete: d.complete
+    })));
     onDataChange(editedData);
     onClose();
   };
@@ -126,6 +135,7 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
         final_target: parseFloat(newRow.final_target) || 0,
         complete: parseFloat(newRow.complete) || 0,
       };
+      console.log('DataGrid.handleAddRow - Adding new row:', rowToAdd);
       setEditedData([...editedData, rowToAdd]);
       setNewRow({
         reporting_date: '',

@@ -120,6 +120,7 @@ function App() {
       const response = timestamp
         ? await api.getProjectDataTimeTravel(selectedProject, timestamp)
         : await api.getProjectData(selectedProject);
+      console.log('loadProjectData received', response.data.length, 'periods:', response.data);
       setProjectData(response.data);
     } catch (err) {
       console.error('Failed to load project data:', err);
@@ -193,6 +194,10 @@ function App() {
 
   const handleDataGridChange = async (updatedData) => {
     try {
+      console.log('handleDataGridChange called with', updatedData.length, 'periods');
+      console.log('Current projectData has', projectData.length, 'periods');
+      console.log('Updated data:', updatedData.map(d => ({ id: d.id, date: d.reporting_date, metric_id: d.metric_id })));
+
       // Separate new and existing periods
       for (const item of updatedData) {
         const original = projectData.find(p => p.id === item.id);
