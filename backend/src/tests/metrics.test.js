@@ -14,8 +14,9 @@ describe('Metrics API Tests', () => {
     }
 
     process.env.NODE_ENV = 'test';
-    process.env.DB_PATH = TEST_DB_PATH;
-    app = require('../server');
+    const { createApp } = require('../server');
+    const { app: testApp, dbRun, dbGet } = createApp(TEST_DB_PATH);
+    app = testApp;
 
     // Create admin user
     await request(app).post('/api/auth/register').send({
@@ -23,8 +24,6 @@ describe('Metrics API Tests', () => {
       email: 'admin@metrics.test',
       password: 'admin123'
     });
-
-    const { dbRun, dbGet } = require('../db');
     const adminUser = await dbGet('SELECT * FROM users WHERE email = ?', ['admin@metrics.test']);
     await dbRun('UPDATE users SET role = ? WHERE id = ?', ['admin', adminUser.id]);
 

@@ -15,10 +15,9 @@ describe('Project Permissions API Tests', () => {
     }
 
     process.env.NODE_ENV = 'test';
-    process.env.DB_PATH = TEST_DB_PATH;
-    app = require('../server');
-
-    const { dbRun, dbGet } = require('../db');
+    const { createApp } = require('../server');
+    const { app: testApp, dbRun, dbGet } = createApp(TEST_DB_PATH);
+    app = testApp;
 
     // Create admin user
     await request(app).post('/api/auth/register').send({

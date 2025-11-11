@@ -14,8 +14,9 @@ describe('Portfolio Management API Tests', () => {
     }
 
     process.env.NODE_ENV = 'test';
-    process.env.DB_PATH = TEST_DB_PATH;
-    app = require('../server');
+    const { createApp } = require('../server');
+    const { app: testApp, dbRun, dbGet } = createApp(TEST_DB_PATH);
+    app = testApp;
 
     // Create admin user
     await request(app).post('/api/auth/register').send({
@@ -25,7 +26,6 @@ describe('Portfolio Management API Tests', () => {
     });
 
     // Set admin role in database manually (as register doesn't set role)
-    const { dbRun, dbGet } = require('../db');
     const adminUser = await dbGet('SELECT * FROM users WHERE email = ?', ['admin@portfolio.test']);
     await dbRun('UPDATE users SET role = ? WHERE id = ?', ['admin', adminUser.id]);
 

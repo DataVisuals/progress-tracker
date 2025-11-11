@@ -2,48 +2,61 @@ const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, '../data/progress-tracker.db');
+// Default database path
+const DEFAULT_DB_PATH = process.env.DB_PATH || path.join(__dirname, '../data/progress-tracker.db');
 
-// Ensure data directory exists
-if (!fs.existsSync(path.dirname(DB_PATH))) {
-  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+// Initialize database with given path
+function initializeDatabase(dbPath = DEFAULT_DB_PATH) {
+  // Ensure data directory exists
+  if (!fs.existsSync(path.dirname(dbPath))) {
+    fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+  }
+
+  const db = new sqlite3.Database(dbPath);
+
+  // Initialize schema v2 (normalized)
+  const schema = fs.readFileSync(path.join(__dirname, 'schema-v2.sql'), 'utf8');
+  db.exec(schema, (err) => {
+    if (err) console.error('Schema initialization error:', err);
+  });
+
+  // Promisify database operations for easier use
+  const dbRun = (sql, params = []) => {
+    return new Promise((resolve, reject) => {
+      db.run(sql, params, function(err) {
+        if (err) reject(err);
+        else resolve({ lastID: this.lastID, changes: this.changes });
+      });
+    });
+  };
+
+  const dbGet = (sql, params = []) => {
+    return new Promise((resolve, reject) => {
+      db.get(sql, params, (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+  };
+
+  const dbAll = (sql, params = []) => {
+    return new Promise((resolve, reject) => {
+      db.all(sql, params, (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+  };
+
+  return { db, dbRun, dbGet, dbAll };
 }
 
-const db = new sqlite3.Database(DB_PATH);
-
-// Initialize schema v2 (normalized)
-const schema = fs.readFileSync(path.join(__dirname, 'schema-v2.sql'), 'utf8');
-db.exec(schema, (err) => {
-  if (err) console.error('Schema initialization error:', err);
-});
-
-// Promisify database operations for easier use
-const dbRun = (sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function(err) {
-      if (err) reject(err);
-      else resolve({ lastID: this.lastID, changes: this.changes });
-    });
-  });
-};
-
-const dbGet = (sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-};
-
-const dbAll = (sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
-};
+// Create default instance for backward compatibility
+const defaultDb = initializeDatabase();
+const db = defaultDb.db;
+const dbRun = defaultDb.dbRun;
+const dbGet = defaultDb.dbGet;
+const dbAll = defaultDb.dbAll;
 
 // Helper function to calculate expected value based on progression type
 function calculateExpectedValue(progressionType, finalTarget, periodIndex, totalPeriods) {
@@ -70,7 +83,7 @@ function calculateExpectedValue(progressionType, finalTarget, periodIndex, total
 }
 
 // Generate periods when metric is created
-async function generateMetricPeriods(metricId, startDate, endDate, frequency, progressionType, finalTarget) {
+async function generateMetricPeriods(metricId, startDate, endDate, frequency, progressionType, finalTarget, dbRunFunc = dbRun) {
   const periods = [];
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -112,9 +125,9 @@ async function generateMetricPeriods(metricId, startDate, endDate, frequency, pr
   for (let index = 0; index < periods.length; index++) {
     const period = periods[index];
     const expected = calculateExpectedValue(progressionType, finalTarget, index + 1, totalPeriods);
-    await dbRun(`INSERT INTO metric_periods (metric_id, reporting_date, expected, target, complete) VALUES (?, ?, ?, ?, 0)`,
+    await dbRunFunc(`INSERT INTO metric_periods (metric_id, reporting_date, expected, target, complete) VALUES (?, ?, ?, ?, 0)`,
       [period.metric_id, period.reporting_date, expected, finalTarget]);
   }
 }
 
-module.exports = { db, dbRun, dbGet, dbAll, generateMetricPeriods, calculateExpectedValue };
+module.exports = { db, dbRun, dbGet, dbAll, generateMetricPeriods, calculateExpectedValue, initializeDatabase };

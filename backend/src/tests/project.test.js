@@ -22,10 +22,11 @@ describe('Project Description API Tests', () => {
 
     // Set test environment
     process.env.NODE_ENV = 'test';
-    process.env.DB_PATH = TEST_DB_PATH;
 
-    // Import app after setting environment
-    app = require('../server');
+    // Create app with test database path
+    const { createApp } = require('../server');
+    const { app: testApp, dbRun } = createApp(TEST_DB_PATH);
+    app = testApp;
 
     // Create test user and get auth token
     const registerResponse = await request(app)
@@ -39,7 +40,6 @@ describe('Project Description API Tests', () => {
     testUserId = registerResponse.body.id;
 
     // Upgrade user to admin role for testing using the db module
-    const { dbRun } = require('../db');
     await dbRun('UPDATE users SET role = ? WHERE id = ?', ['admin', testUserId]);
 
     // Login to get token (with admin role now)

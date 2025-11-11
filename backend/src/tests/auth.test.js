@@ -22,14 +22,10 @@ describe('Authentication API Tests', () => {
 
     // Set test environment
     process.env.NODE_ENV = 'test';
-    process.env.DB_PATH = TEST_DB_PATH;
 
-    // Clear require cache to ensure fresh server instance
-    delete require.cache[require.resolve('../server')];
-    delete require.cache[require.resolve('../db')];
-
-    // Import app after setting environment
-    app = require('../server');
+    // Create app with test database path
+    const { createApp } = require('../server');
+    app = createApp(TEST_DB_PATH).app;
 
     // Wait a bit for database initialization
     await new Promise(resolve => setTimeout(resolve, 100));
