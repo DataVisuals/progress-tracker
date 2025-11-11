@@ -418,21 +418,38 @@ function createApp(dbPath) {
       const { portfolio_id } = req.query;
       let query = 'SELECT p.*, po.name as portfolio_name, po.color as portfolio_color FROM projects p LEFT JOIN portfolios po ON p.portfolio_id = po.id';
       let params = [];
-  
+
       if (portfolio_id) {
         query += ' WHERE p.portfolio_id = ?';
         params.push(portfolio_id);
       }
-  
+
       query += ' ORDER BY p.created_at DESC';
-  
+
       const projects = await dbAll(query, params);
       res.json(projects);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
   });
-  
+
+  app.get('/api/projects/:id', authenticateToken, async (req, res) => {
+    try {
+      const project = await dbGet(
+        'SELECT p.*, po.name as portfolio_name, po.color as portfolio_color FROM projects p LEFT JOIN portfolios po ON p.portfolio_id = po.id WHERE p.id = ?',
+        [req.params.id]
+      );
+
+      if (!project) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+
+      res.json(project);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.post('/api/projects', authenticateToken, async (req, res) => {
     try {
       // Verify user is authenticated
@@ -1533,13 +1550,13 @@ function createApp(dbPath) {
   
       const { user_id } = req.body;
   
-      // Check if target user exists and is a PM
+      // Check if target user exists and is a PM or Editor
       const targetUser = await dbGet('SELECT * FROM users WHERE id = ?', [user_id]);
       if (!targetUser) {
         return res.status(404).json({ error: 'User not found' });
       }
-      if (targetUser.role !== 'pm') {
-        return res.status(400).json({ error: 'Can only grant permissions to PM users' });
+      if (targetUser.role !== 'pm' && targetUser.role !== 'editor') {
+        return res.status(400).json({ error: 'Can only grant permissions to PM or Editor users' });
       }
   
       // Check if permission already exists

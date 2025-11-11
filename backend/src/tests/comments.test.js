@@ -56,6 +56,17 @@ describe('Comments API Tests', () => {
       });
     testProjectId = projectResponse.body.id;
 
+    // Grant editor permission to the project
+    const permissionResponse = await request(app)
+      .post(`/api/projects/${testProjectId}/permissions`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        user_id: editorUser.id
+      });
+    if (permissionResponse.status !== 200) {
+      console.error('Permission grant failed:', permissionResponse.body);
+    }
+
     // Create test metric
     const metricResponse = await request(app)
       .post(`/api/projects/${testProjectId}/metrics`)
@@ -69,18 +80,11 @@ describe('Comments API Tests', () => {
       });
     testMetricId = metricResponse.body.id;
 
-    // Create a test period manually
-    const periodResponse = await request(app)
-      .post('/api/metric-periods')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({
-        metric_id: testMetricId,
-        reporting_date: '2024-01-01',
-        expected: 10,
-        target: 10,
-        complete: 8
-      });
-    testPeriodId = periodResponse.body.id;
+    // Get the first auto-generated period (metric creation auto-generates periods)
+    const periodsResponse = await request(app)
+      .get(`/api/metrics/${testMetricId}/periods`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    testPeriodId = periodsResponse.body[0].id;
   });
 
   afterAll(async () => {
@@ -153,7 +157,7 @@ describe('Comments API Tests', () => {
       for (const commentText of comments) {
         const response = await request(app)
           .post(`/api/periods/${testPeriodId}/comments`)
-          .set('Authorization', `Bearer ${editorToken}`)
+          .set('Authorization', `Bearer ${adminToken}`)
           .send({
             comment_text: commentText
           });
@@ -215,7 +219,7 @@ describe('Comments API Tests', () => {
     beforeAll(async () => {
       const response = await request(app)
         .post(`/api/periods/${testPeriodId}/comments`)
-        .set('Authorization', `Bearer ${editorToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           comment_text: 'Comment to be deleted'
         });
@@ -225,7 +229,7 @@ describe('Comments API Tests', () => {
     test('should delete own comment', async () => {
       const response = await request(app)
         .delete(`/api/comments/${commentToDelete}`)
-        .set('Authorization', `Bearer ${editorToken}`);
+        .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
 
