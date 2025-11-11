@@ -242,12 +242,10 @@ function App() {
 
   const handleProjectSetupComplete = async (projectId) => {
     await loadProjects();
-    setSelectedProject(projectId.toString());
     setShowNewProject(false);
-    // Wait a moment for state to update, then load project data
-    setTimeout(async () => {
-      await loadProjectData();
-    }, 100);
+    // Reset metric selection and set project (triggers useEffect to load data)
+    setSelectedMetric('');
+    setSelectedProject(projectId.toString());
   };
 
   const handleProjectSetupCancel = () => {
