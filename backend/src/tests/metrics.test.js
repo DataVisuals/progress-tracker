@@ -316,6 +316,84 @@ describe('Metrics API Tests', () => {
       expect(periods.length).toBeGreaterThanOrEqual(4);
       expect(periods.length).toBeLessThanOrEqual(5);
     });
+
+    test('should support adding interim periods with off-schedule dates', async () => {
+      // Create a metric with monthly frequency
+      const metricResponse = await request(app)
+        .post(`/api/projects/${testProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Monthly Metric with Interim Periods',
+          start_date: '2024-01-01',
+          end_date: '2024-03-31',
+          frequency: 'monthly',
+          progression_type: 'linear',
+          final_target: 100
+        });
+
+      expect(metricResponse.status).toBe(200);
+      const metricId = metricResponse.body.id;
+
+      // Get the auto-generated periods (should be Jan 1, Feb 1, Mar 1)
+      const { createApp } = require('../server');
+      const { dbAll } = createApp(TEST_DB_PATH);
+      const initialPeriods = await dbAll('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date', [metricId]);
+      const initialCount = initialPeriods.length;
+      expect(initialCount).toBeGreaterThanOrEqual(3);
+
+      // Add an interim period on Jan 15th (off-schedule)
+      const interimPeriodResponse = await request(app)
+        .post('/api/metric-periods')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          metric_id: metricId,
+          reporting_date: '2024-01-15',
+          expected: 50,
+          target: 100,
+          complete: 45
+        });
+
+      expect(interimPeriodResponse.status).toBe(200);
+      const interimPeriodId = interimPeriodResponse.body.id;
+
+      // Verify the interim period was created
+      const periodsAfterInterim = await dbAll('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date', [metricId]);
+      expect(periodsAfterInterim.length).toBe(initialCount + 1);
+
+      // Verify the interim period exists with correct date
+      const interimPeriod = periodsAfterInterim.find(p => p.reporting_date === '2024-01-15');
+      expect(interimPeriod).toBeDefined();
+      expect(interimPeriod.expected).toBe(50);
+      expect(interimPeriod.complete).toBe(45);
+
+      // Verify it appears in the project data endpoint (this is what the frontend uses)
+      const projectDataResponse = await request(app)
+        .get(`/api/projects/${testProjectId}/data`);
+
+      expect(projectDataResponse.status).toBe(200);
+      const projectData = projectDataResponse.body;
+
+      // Find the interim period in project data
+      const interimInProjectData = projectData.find(item =>
+        item.metric === 'Monthly Metric with Interim Periods' &&
+        item.reporting_date === '2024-01-15'
+      );
+
+      expect(interimInProjectData).toBeDefined();
+      expect(interimInProjectData.expected).toBe(50);
+      expect(interimInProjectData.complete).toBe(45);
+
+      // Verify the metric's periods endpoint includes the interim period
+      const metricPeriodsResponse = await request(app)
+        .get(`/api/metrics/${metricId}/periods`);
+
+      expect(metricPeriodsResponse.status).toBe(200);
+      const metricPeriods = metricPeriodsResponse.body;
+      expect(metricPeriods.length).toBe(initialCount + 1);
+
+      const interimInMetricPeriods = metricPeriods.find(p => p.reporting_date === '2024-01-15');
+      expect(interimInMetricPeriods).toBeDefined();
+    });
   });
 
   describe('GET /api/projects/:projectId/metrics', () => {
