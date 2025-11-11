@@ -4,7 +4,7 @@ import './Login.css';
 
 const Login = ({ onLogin }) => {
   const [showModal, setShowModal] = useState(false);
-  const [email, setEmail] = useState('admin@example.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

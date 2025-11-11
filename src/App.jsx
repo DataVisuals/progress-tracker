@@ -816,7 +816,7 @@ function App() {
                   redTolerance={redTolerance}
                   timeTravelTimestamp={timeTravelTimestamp}
                   projectId={selectedProject}
-                  onTimeTravelChange={isAuthenticated ? handleTimeTravelChange : null}
+                  onTimeTravelChange={handleTimeTravelChange}
                   onRevert={async () => {
                     await loadProjectData();
                     await loadProjectMetrics();
