@@ -18,7 +18,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { api } from '../api/client';
 import TimeTravel from './TimeTravel';
-import CRAIDs from './CRAIDs';
+// import CRAIDs from './CRAIDs'; // DISABLED: CRAIDs feature hidden
 import './MetricChart.css';
 
 // Helper function to format numbers with commas
@@ -995,12 +995,14 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               Time Travel
             </button>
           )}
+          {/* DISABLED: CRAIDs/Dependencies feature hidden
           <button
             className={`tab-button ${activeTab === 'dependencies' ? 'active' : ''}`}
             onClick={() => setActiveTab('dependencies')}
           >
             Dependencies
           </button>
+          */}
         </div>
 
         {/* Data Table Tab Content */}
@@ -1283,12 +1285,13 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           </div>
         )}
 
-        {/* Dependencies Tab Content */}
+        {/* DISABLED: CRAIDs/Dependencies feature hidden
         {activeTab === 'dependencies' && projectId && (
           <div className="tab-content">
             <CRAIDs projectId={projectId} canEdit={allowDataEdits} />
           </div>
         )}
+        */}
       </div>
     </div>
     </div>

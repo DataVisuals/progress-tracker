@@ -79,7 +79,7 @@ const AuditLog = () => {
     { value: 'metrics', label: 'Metrics' },
     { value: 'metric_periods', label: 'Metric Periods' },
     { value: 'comments', label: 'Comments' },
-    { value: 'craids', label: 'CRAIDs' }
+    // { value: 'craids', label: 'CRAIDs' } // DISABLED: CRAIDs feature hidden
   ];
 
   const actionOptions = [
