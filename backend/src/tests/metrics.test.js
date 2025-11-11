@@ -184,6 +184,138 @@ describe('Metrics API Tests', () => {
 
       expect(periods.length).toBe(4); // Q1, Q2, Q3, Q4
     });
+
+    test('should create metric with exponential progression type', async () => {
+      const response = await request(app)
+        .post(`/api/projects/${testProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Exponential Metric',
+          start_date: '2024-01-01',
+          end_date: '2024-06-30',
+          frequency: 'monthly',
+          progression_type: 'exponential',
+          final_target: 100
+        });
+
+      expect(response.status).toBe(200);
+
+      const newMetricId = response.body.id;
+
+      // Verify the metric was created with exponential progression
+      const { createApp } = require('../server');
+      const { dbGet, dbAll } = createApp(TEST_DB_PATH);
+
+      const metric = await dbGet('SELECT * FROM metrics WHERE id = ?', [newMetricId]);
+      expect(metric.progression_type).toBe('exponential');
+
+      // Verify periods have exponential growth pattern (back-loaded)
+      const periods = await dbAll('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date', [newMetricId]);
+      expect(periods.length).toBeGreaterThan(0);
+
+      // Check that expected values increase exponentially (later values > earlier values)
+      if (periods.length >= 2) {
+        const firstExpected = parseFloat(periods[0].expected);
+        const lastExpected = parseFloat(periods[periods.length - 1].expected);
+        expect(lastExpected).toBeGreaterThan(firstExpected);
+      }
+    });
+
+    test('should create metric with logarithmic progression type', async () => {
+      const response = await request(app)
+        .post(`/api/projects/${testProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Logarithmic Metric',
+          start_date: '2024-01-01',
+          end_date: '2024-06-30',
+          frequency: 'monthly',
+          progression_type: 'logarithmic',
+          final_target: 100
+        });
+
+      expect(response.status).toBe(200);
+
+      const newMetricId = response.body.id;
+
+      // Verify the metric was created with logarithmic progression
+      const { createApp } = require('../server');
+      const { dbGet, dbAll } = createApp(TEST_DB_PATH);
+
+      const metric = await dbGet('SELECT * FROM metrics WHERE id = ?', [newMetricId]);
+      expect(metric.progression_type).toBe('logarithmic');
+
+      // Verify periods have logarithmic growth pattern (front-loaded)
+      const periods = await dbAll('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date', [newMetricId]);
+      expect(periods.length).toBeGreaterThan(0);
+
+      // Check that expected values increase logarithmically
+      if (periods.length >= 2) {
+        const firstExpected = parseFloat(periods[0].expected);
+        const lastExpected = parseFloat(periods[periods.length - 1].expected);
+        expect(lastExpected).toBeGreaterThan(firstExpected);
+      }
+    });
+
+    test('should create metric with fortnightly frequency', async () => {
+      const response = await request(app)
+        .post(`/api/projects/${testProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Fortnightly Metric',
+          start_date: '2024-01-01',
+          end_date: '2024-03-31',
+          frequency: 'fortnightly',
+          progression_type: 'linear',
+          final_target: 100
+        });
+
+      expect(response.status).toBe(200);
+
+      const newMetricId = response.body.id;
+
+      // Verify the metric was created with fortnightly frequency
+      const { createApp } = require('../server');
+      const { dbGet, dbAll } = createApp(TEST_DB_PATH);
+
+      const metric = await dbGet('SELECT * FROM metrics WHERE id = ?', [newMetricId]);
+      expect(metric.frequency).toBe('fortnightly');
+
+      // Verify periods were auto-generated fortnightly (approximately 6-7 periods in 3 months)
+      const periods = await dbAll('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date', [newMetricId]);
+      expect(periods.length).toBeGreaterThanOrEqual(6);
+      expect(periods.length).toBeLessThanOrEqual(7);
+    });
+
+    test('should create metric with weekly frequency', async () => {
+      const response = await request(app)
+        .post(`/api/projects/${testProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Weekly Metric',
+          start_date: '2024-01-01',
+          end_date: '2024-01-31',
+          frequency: 'weekly',
+          progression_type: 'linear',
+          final_target: 100
+        });
+
+      expect(response.status).toBe(200);
+
+      const newMetricId = response.body.id;
+
+      // Verify the metric was created with weekly frequency
+      const { createApp } = require('../server');
+      const { dbGet, dbAll } = createApp(TEST_DB_PATH);
+
+      const metric = await dbGet('SELECT * FROM metrics WHERE id = ?', [newMetricId]);
+      expect(metric.frequency).toBe('weekly');
+
+      // Verify periods were auto-generated weekly (approximately 4-5 weeks in January)
+      const periods = await dbAll('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date', [newMetricId]);
+      expect(periods.length).toBeGreaterThanOrEqual(4);
+      expect(periods.length).toBeLessThanOrEqual(5);
+    });
   });
 
   describe('GET /api/projects/:projectId/metrics', () => {
