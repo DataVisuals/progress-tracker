@@ -394,6 +394,168 @@ describe('Metrics API Tests', () => {
       const interimInMetricPeriods = metricPeriods.find(p => p.reporting_date === '2024-01-15');
       expect(interimInMetricPeriods).toBeDefined();
     });
+
+    test('should handle multiple interim periods on same metric', async () => {
+      // Create a metric with monthly frequency
+      const metricResponse = await request(app)
+        .post(`/api/projects/${testProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Metric with Multiple Interim Periods',
+          start_date: '2024-01-01',
+          end_date: '2024-03-31',
+          frequency: 'monthly',
+          progression_type: 'linear',
+          final_target: 100
+        });
+
+      expect(metricResponse.status).toBe(200);
+      const metricId = metricResponse.body.id;
+
+      const { createApp } = require('../server');
+      const { dbAll } = createApp(TEST_DB_PATH);
+      const initialPeriods = await dbAll('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date', [metricId]);
+      const initialCount = initialPeriods.length;
+
+      // Add multiple interim periods (mid-month checks)
+      const interimDates = ['2024-01-15', '2024-02-15', '2024-03-15'];
+
+      for (const date of interimDates) {
+        const response = await request(app)
+          .post('/api/metric-periods')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({
+            metric_id: metricId,
+            reporting_date: date,
+            expected: 50,
+            target: 100,
+            complete: 40
+          });
+
+        expect(response.status).toBe(200);
+      }
+
+      // Verify all interim periods were created
+      const finalPeriods = await dbAll('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date', [metricId]);
+      expect(finalPeriods.length).toBe(initialCount + 3);
+
+      // Verify each interim period exists
+      for (const date of interimDates) {
+        const period = finalPeriods.find(p => p.reporting_date === date);
+        expect(period).toBeDefined();
+        expect(period.expected).toBe(50);
+      }
+
+      // Verify proper chronological ordering when returned via API
+      const metricPeriodsResponse = await request(app)
+        .get(`/api/metrics/${metricId}/periods`);
+
+      const periods = metricPeriodsResponse.body;
+
+      // Check that periods are in chronological order
+      for (let i = 0; i < periods.length - 1; i++) {
+        const currentDate = new Date(periods[i].reporting_date);
+        const nextDate = new Date(periods[i + 1].reporting_date);
+        expect(currentDate.getTime()).toBeLessThanOrEqual(nextDate.getTime());
+      }
+    });
+
+    test('should distinguish interim periods across different metrics with similar IDs', async () => {
+      // This test verifies the bug fix where period IDs could collide across metrics
+      // Create two metrics
+      const metric1Response = await request(app)
+        .post(`/api/projects/${testProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'First Metric',
+          start_date: '2024-01-01',
+          end_date: '2024-03-31',
+          frequency: 'monthly',
+          progression_type: 'linear',
+          final_target: 100
+        });
+
+      const metric2Response = await request(app)
+        .post(`/api/projects/${testProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Second Metric',
+          start_date: '2024-01-01',
+          end_date: '2024-03-31',
+          frequency: 'monthly',
+          progression_type: 'linear',
+          final_target: 200
+        });
+
+      expect(metric1Response.status).toBe(200);
+      expect(metric2Response.status).toBe(200);
+
+      const metric1Id = metric1Response.body.id;
+      const metric2Id = metric2Response.body.id;
+
+      const { createApp } = require('../server');
+      const { dbAll } = createApp(TEST_DB_PATH);
+
+      // Add interim period to first metric
+      const interim1Response = await request(app)
+        .post('/api/metric-periods')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          metric_id: metric1Id,
+          reporting_date: '2024-01-15',
+          expected: 50,
+          target: 100,
+          complete: 45
+        });
+
+      expect(interim1Response.status).toBe(200);
+
+      // Add interim period to second metric with same date
+      const interim2Response = await request(app)
+        .post('/api/metric-periods')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          metric_id: metric2Id,
+          reporting_date: '2024-01-15',
+          expected: 100,
+          target: 200,
+          complete: 90
+        });
+
+      expect(interim2Response.status).toBe(200);
+
+      // Verify both interim periods exist independently
+      const metric1Periods = await dbAll('SELECT * FROM metric_periods WHERE metric_id = ? AND reporting_date = ?',
+        [metric1Id, '2024-01-15']);
+      const metric2Periods = await dbAll('SELECT * FROM metric_periods WHERE metric_id = ? AND reporting_date = ?',
+        [metric2Id, '2024-01-15']);
+
+      expect(metric1Periods.length).toBe(1);
+      expect(metric2Periods.length).toBe(1);
+
+      // Verify they have different values (proving they're distinct)
+      expect(metric1Periods[0].expected).toBe(50);
+      expect(metric1Periods[0].complete).toBe(45);
+      expect(metric2Periods[0].expected).toBe(100);
+      expect(metric2Periods[0].complete).toBe(90);
+
+      // Verify project data endpoint returns both interim periods
+      const projectDataResponse = await request(app)
+        .get(`/api/projects/${testProjectId}/data`);
+
+      const projectData = projectDataResponse.body;
+      const interim1InData = projectData.find(p =>
+        p.metric === 'First Metric' && p.reporting_date === '2024-01-15'
+      );
+      const interim2InData = projectData.find(p =>
+        p.metric === 'Second Metric' && p.reporting_date === '2024-01-15'
+      );
+
+      expect(interim1InData).toBeDefined();
+      expect(interim2InData).toBeDefined();
+      expect(interim1InData.complete).toBe(45);
+      expect(interim2InData.complete).toBe(90);
+    });
   });
 
   describe('GET /api/projects/:projectId/metrics', () => {
