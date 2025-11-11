@@ -10,6 +10,16 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
   const [showBulkAdd, setShowBulkAdd] = useState(false);
   const [showNewMetric, setShowNewMetric] = useState(false);
   const [newMetricName, setNewMetricName] = useState('');
+  const [newMetricConfig, setNewMetricConfig] = useState({
+    name: '',
+    start_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+    end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year from now
+    frequency: 'monthly',
+    progression_type: 'linear',
+    final_target: 100,
+    amber_tolerance: 5.0,
+    red_tolerance: 10.0
+  });
   const [bulkConfig, setBulkConfig] = useState({
     startDate: '2024-01-31',
     numPeriods: 10,
@@ -190,34 +200,43 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
   };
 
   const handleCreateMetric = async () => {
-    if (!newMetricName.trim()) {
+    if (!newMetricConfig.name.trim()) {
       alert('Please enter a metric name');
       return;
     }
 
+    if (!newMetricConfig.start_date || !newMetricConfig.end_date) {
+      alert('Please enter start and end dates');
+      return;
+    }
+
+    if (newMetricConfig.final_target <= 0) {
+      alert('Please enter a valid final target value');
+      return;
+    }
+
     try {
-      // Create the metric in the database
-      // Note: We need start_date, end_date, frequency, and final_target
-      // For now, use defaults - the user can configure these later
       console.log('Creating metric with projectId:', projectId);
-      const response = await api.createMetric(projectId, {
-        name: newMetricName,
-        start_date: new Date().toISOString().split('T')[0],
-        end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year from now
-        frequency: 'monthly',
-        progression_type: 'linear',
-        final_target: 100
-      });
+      const response = await api.createMetric(projectId, newMetricConfig);
 
       console.log('Metric created successfully:', response);
 
-      // Close the modal and notify parent
-      setNewMetricName('');
+      // Reset form and close modal
+      setNewMetricConfig({
+        name: '',
+        start_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        frequency: 'monthly',
+        progression_type: 'linear',
+        final_target: 100,
+        amber_tolerance: 5.0,
+        red_tolerance: 10.0
+      });
       setShowNewMetric(false);
 
       // Call the callback to refresh data and select the new metric
       if (onMetricCreated) {
-        onMetricCreated(newMetricName);
+        onMetricCreated(newMetricConfig.name);
       }
 
       // Close the data grid to show the new metric
@@ -457,22 +476,112 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
 
         {showNewMetric && (
           <div className="modal-overlay" onClick={() => setShowNewMetric(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
               <h2>Create New Metric</h2>
+
               <div className="form-group">
-                <label htmlFor="new-metric-name">Metric Name:</label>
+                <label htmlFor="new-metric-name">Metric Name: *</label>
                 <input
                   id="new-metric-name"
                   type="text"
-                  value={newMetricName}
-                  onChange={(e) => setNewMetricName(e.target.value)}
+                  value={newMetricConfig.name}
+                  onChange={(e) => setNewMetricConfig({...newMetricConfig, name: e.target.value})}
                   placeholder="Enter metric name..."
                   autoFocus
                 />
               </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="new-metric-start-date">Start Date: *</label>
+                  <input
+                    id="new-metric-start-date"
+                    type="date"
+                    value={newMetricConfig.start_date}
+                    onChange={(e) => setNewMetricConfig({...newMetricConfig, start_date: e.target.value})}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="new-metric-end-date">End Date: *</label>
+                  <input
+                    id="new-metric-end-date"
+                    type="date"
+                    value={newMetricConfig.end_date}
+                    onChange={(e) => setNewMetricConfig({...newMetricConfig, end_date: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="new-metric-frequency">Frequency: *</label>
+                  <select
+                    id="new-metric-frequency"
+                    value={newMetricConfig.frequency}
+                    onChange={(e) => setNewMetricConfig({...newMetricConfig, frequency: e.target.value})}
+                  >
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="new-metric-target">Final Target: *</label>
+                  <input
+                    id="new-metric-target"
+                    type="number"
+                    value={newMetricConfig.final_target}
+                    onChange={(e) => setNewMetricConfig({...newMetricConfig, final_target: parseFloat(e.target.value) || 0})}
+                    placeholder="100"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="new-metric-progression">Progression: *</label>
+                  <select
+                    id="new-metric-progression"
+                    value={newMetricConfig.progression_type}
+                    onChange={(e) => setNewMetricConfig({...newMetricConfig, progression_type: e.target.value})}
+                  >
+                    <option value="linear">Linear</option>
+                    <option value="s-curve">S-Curve</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="new-metric-amber-tolerance">Amber Tolerance (%):</label>
+                  <input
+                    id="new-metric-amber-tolerance"
+                    type="number"
+                    step="0.1"
+                    value={newMetricConfig.amber_tolerance}
+                    onChange={(e) => setNewMetricConfig({...newMetricConfig, amber_tolerance: parseFloat(e.target.value) || 5.0})}
+                    placeholder="5.0"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="new-metric-red-tolerance">Red Tolerance (%):</label>
+                  <input
+                    id="new-metric-red-tolerance"
+                    type="number"
+                    step="0.1"
+                    value={newMetricConfig.red_tolerance}
+                    onChange={(e) => setNewMetricConfig({...newMetricConfig, red_tolerance: parseFloat(e.target.value) || 10.0})}
+                    placeholder="10.0"
+                  />
+                </div>
+              </div>
+
               <div className="modal-actions">
                 <button className="save-btn" onClick={handleCreateMetric}>
-                  Create
+                  Create Metric
                 </button>
                 <button className="cancel-btn" onClick={() => setShowNewMetric(false)}>
                   Cancel

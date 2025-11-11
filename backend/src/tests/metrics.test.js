@@ -102,6 +102,88 @@ describe('Metrics API Tests', () => {
 
       expect(response.status).toBe(404);
     });
+
+    test('should create metric with all schedule parameters and auto-generate periods', async () => {
+      const response = await request(app)
+        .post(`/api/projects/${testProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Comprehensive Metric',
+          start_date: '2024-01-31',
+          end_date: '2024-06-30',
+          frequency: 'monthly',
+          progression_type: 's-curve',
+          final_target: 200,
+          amber_tolerance: 8.0,
+          red_tolerance: 12.0,
+          metric_type: 'lag'
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('id');
+
+      const newMetricId = response.body.id;
+
+      // Verify the metric was created with all parameters
+      const { createApp } = require('../server');
+      const { dbGet, dbAll } = createApp(TEST_DB_PATH);
+
+      const metric = await dbGet('SELECT * FROM metrics WHERE id = ?', [newMetricId]);
+      expect(metric.name).toBe('Comprehensive Metric');
+      expect(metric.start_date).toBe('2024-01-31');
+      expect(metric.end_date).toBe('2024-06-30');
+      expect(metric.frequency).toBe('monthly');
+      expect(metric.progression_type).toBe('s-curve');
+      expect(metric.final_target).toBe(200);
+      expect(metric.amber_tolerance).toBe(8.0);
+      expect(metric.red_tolerance).toBe(12.0);
+      expect(metric.metric_type).toBe('lag');
+
+      // Verify periods were auto-generated
+      const periods = await dbAll('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date', [newMetricId]);
+      expect(periods.length).toBeGreaterThan(0);
+      // Start date 01-31 generates: Jan, Feb, Mar, Apr, May - 5 periods ending May 31
+      // The end date is 06-30, so we get one more period for June
+      expect(periods.length).toBe(5);
+
+      // Verify first and last periods
+      expect(periods[0].reporting_date).toBe('2024-01-31');
+      // Last period should be close to end_date
+      const lastPeriodDate = periods[periods.length - 1].reporting_date;
+      expect(lastPeriodDate).toMatch(/2024-0[56]-/); // May or June
+
+      // Verify all periods have expected and target values
+      periods.forEach(period => {
+        expect(period.expected).toBeGreaterThan(0);
+        expect(period.target).toBe(200);
+        expect(period.complete).toBe(0);
+      });
+    });
+
+    test('should create metric with quarterly frequency and correct period count', async () => {
+      const response = await request(app)
+        .post(`/api/projects/${testProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Quarterly Metric',
+          start_date: '2024-01-01',
+          end_date: '2024-12-31',
+          frequency: 'quarterly',
+          progression_type: 'linear',
+          final_target: 80
+        });
+
+      expect(response.status).toBe(200);
+
+      const newMetricId = response.body.id;
+
+      // Verify periods were auto-generated quarterly
+      const { createApp } = require('../server');
+      const { dbAll } = createApp(TEST_DB_PATH);
+      const periods = await dbAll('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date', [newMetricId]);
+
+      expect(periods.length).toBe(4); // Q1, Q2, Q3, Q4
+    });
   });
 
   describe('GET /api/projects/:projectId/metrics', () => {
