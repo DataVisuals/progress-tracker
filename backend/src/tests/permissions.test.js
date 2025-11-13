@@ -239,4 +239,177 @@ describe('Project Permissions API Tests', () => {
       expect(response.status).toBe(403);
     });
   });
+
+  describe('Historic Data Edit Permissions', () => {
+    let testMetricId, historicPeriodId;
+
+    beforeAll(async () => {
+      // Create a metric with a period that's in the past
+      const metricResponse = await request(app)
+        .post(`/api/projects/${testProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Historic Edit Test Metric',
+          start_date: '2020-01-01',
+          end_date: '2020-12-31',
+          frequency: 'monthly',
+          progression_type: 'linear',
+          final_target: 100
+        });
+
+      testMetricId = metricResponse.body.id;
+
+      // Create a historic period (in the past)
+      const periodResponse = await request(app)
+        .post('/api/metric-periods')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          metric_id: testMetricId,
+          reporting_date: '2020-06-01', // Date in the past
+          expected: 50,
+          target: 100,
+          complete: 40
+        });
+
+      historicPeriodId = periodResponse.body.id;
+    });
+
+    test('should reject historic edit from viewer (403, not 401)', async () => {
+      // Grant permission to viewer so they can access the project
+      // Note: viewer gets 403 because viewers can't edit at all, not specifically for historic edits
+      await request(app)
+        .post(`/api/projects/${testProjectId}/permissions`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ user_id: viewerUserId });
+
+      const response = await request(app)
+        .put(`/api/metric-periods/${historicPeriodId}`)
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .send({ complete: 45 });
+
+      // Should get 403 (not authorized), not 401 (not authenticated)
+      expect(response.status).toBe(403);
+      // Viewers get rejected before the historic edit check, so error won't mention historic edits
+      expect(response.body.error).toContain('do not have permission');
+
+      // Verify user token is still valid (didn't get logged out)
+      const profileCheck = await request(app)
+        .get('/api/auth/profile')
+        .set('Authorization', `Bearer ${viewerToken}`);
+
+      expect(profileCheck.status).toBe(200);
+      expect(profileCheck.body.email).toBe('viewer@perms.test');
+    });
+
+    test('should allow historic edit from PM user', async () => {
+      // Grant PM user permission to the project
+      await request(app)
+        .post(`/api/projects/${testProjectId}/permissions`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ user_id: pmUserId });
+
+      const response = await request(app)
+        .put(`/api/metric-periods/${historicPeriodId}`)
+        .set('Authorization', `Bearer ${pmToken}`)
+        .send({ complete: 50 });
+
+      expect(response.status).toBe(200);
+
+      // Verify the edit was saved
+      const { createApp } = require('../server');
+      const { dbGet } = createApp(TEST_DB_PATH);
+      const period = await dbGet('SELECT * FROM metric_periods WHERE id = ?', [historicPeriodId]);
+
+      expect(period.complete).toBe(50);
+    });
+
+    test('should allow historic edit from editor user', async () => {
+      // Grant permission to editor
+      await request(app)
+        .post(`/api/projects/${testProjectId}/permissions`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ user_id: editorUserId });
+
+      const response = await request(app)
+        .put(`/api/metric-periods/${historicPeriodId}`)
+        .set('Authorization', `Bearer ${editorToken}`)
+        .send({ complete: 55 });
+
+      expect(response.status).toBe(200);
+
+      // Verify the edit was saved
+      const { createApp } = require('../server');
+      const { dbGet } = createApp(TEST_DB_PATH);
+      const period = await dbGet('SELECT * FROM metric_periods WHERE id = ?', [historicPeriodId]);
+
+      expect(period.complete).toBe(55);
+    });
+
+    test('should allow historic edit from admin user', async () => {
+      const response = await request(app)
+        .put(`/api/metric-periods/${historicPeriodId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ complete: 60 });
+
+      expect(response.status).toBe(200);
+
+      // Verify the edit was saved
+      const { createApp } = require('../server');
+      const { dbGet } = createApp(TEST_DB_PATH);
+      const period = await dbGet('SELECT * FROM metric_periods WHERE id = ?', [historicPeriodId]);
+
+      expect(period.complete).toBe(60);
+    });
+
+    test('should allow non-historic edits from all users with permissions', async () => {
+      // Create a future period
+      const futurePeriodResponse = await request(app)
+        .post('/api/metric-periods')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          metric_id: testMetricId,
+          reporting_date: '2099-12-01', // Far in the future
+          expected: 90,
+          target: 100,
+          complete: 80
+        });
+
+      const futurePeriodId = futurePeriodResponse.body.id;
+
+      // Even viewer should be able to edit future periods (if they had edit permission via role)
+      // But viewers can't edit regardless, so test with editor
+      const response = await request(app)
+        .put(`/api/metric-periods/${futurePeriodId}`)
+        .set('Authorization', `Bearer ${editorToken}`)
+        .send({ complete: 85 });
+
+      expect(response.status).toBe(200);
+    });
+
+    test('should log historic edits clearly in audit trail', async () => {
+      // Make a historic edit
+      await request(app)
+        .put(`/api/metric-periods/${historicPeriodId}`)
+        .set('Authorization', `Bearer ${pmToken}`)
+        .send({ complete: 70 });
+
+      // Check audit log
+      const auditResponse = await request(app)
+        .get('/api/audit')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(auditResponse.status).toBe(200);
+
+      // Find the historic edit in audit log
+      const historicEdit = auditResponse.body.find(log =>
+        log.table_name === 'metric_periods' &&
+        log.record_id === historicPeriodId &&
+        log.description.includes('HISTORIC EDIT')
+      );
+
+      expect(historicEdit).toBeDefined();
+      expect(historicEdit.description).toContain('⚠️ HISTORIC EDIT');
+      expect(historicEdit.user_email).toBe('pm@perms.test');
+    });
+  });
 });
