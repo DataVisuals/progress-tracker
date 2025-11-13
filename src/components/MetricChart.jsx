@@ -309,9 +309,11 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       ? draggedPoint.currentValue
       : item.expected;
 
-    // Use metric_final_target if available (the metric's overall final target),
-    // otherwise fall back to final_target (period target)
-    const metricFinalTarget = item.metric_final_target || item.final_target;
+    // Use the period's specific target for gray bar calculation
+    // This allows targets to change over time (scope changes)
+    // item.final_target = period's specific target (from metric_periods.target)
+    // item.metric_final_target = metric's overall target (from metrics.final_target)
+    const metricFinalTarget = item.final_target;
 
     return {
       name: item.reporting_date,

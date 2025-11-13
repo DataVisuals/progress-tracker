@@ -672,4 +672,219 @@ describe('Metrics API Tests', () => {
       expect(response.status).toBe(401);
     });
   });
+
+  describe('Metric Target Changes Over Time (Gray Bar Visualization)', () => {
+    let scopeChangeProjectId, scopeChangeMetricId;
+
+    beforeAll(async () => {
+      // Create a dedicated project for testing scope changes
+      const projectResponse = await request(app)
+        .post('/api/projects')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Scope Change Test Project',
+          description: 'Testing changing targets over time'
+        });
+      scopeChangeProjectId = projectResponse.body.id;
+
+      // Create a metric with initial target of 100
+      const metricResponse = await request(app)
+        .post(`/api/projects/${scopeChangeProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Changing Target Metric',
+          start_date: '2024-01-01',
+          end_date: '2024-06-30',
+          frequency: 'monthly',
+          progression_type: 'linear',
+          final_target: 100,
+          amber_tolerance: 5.0,
+          red_tolerance: 10.0
+        });
+
+      scopeChangeMetricId = metricResponse.body.id;
+      expect(metricResponse.status).toBe(200);
+    });
+
+    test('should correctly reflect target changes in period data for gray bars', async () => {
+      // Get the auto-generated periods
+      const periodsResponse = await request(app)
+        .get(`/api/metrics/${scopeChangeMetricId}/periods`);
+
+      expect(periodsResponse.status).toBe(200);
+      const periods = periodsResponse.body;
+      expect(periods.length).toBe(6); // 6 months
+
+      // Update complete values for first 3 periods (Jan, Feb, Mar)
+      await request(app)
+        .put(`/api/metric-periods/${periods[0].id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ complete: 15 }); // Jan: 15/100
+
+      await request(app)
+        .put(`/api/metric-periods/${periods[1].id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ complete: 30 }); // Feb: 30/100
+
+      await request(app)
+        .put(`/api/metric-periods/${periods[2].id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ complete: 50 }); // Mar: 50/100
+
+      // Now change the metric's final target to 150 (scope increase)
+      await request(app)
+        .put(`/api/metrics/${scopeChangeMetricId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ final_target: 150 });
+
+      // Update complete values for last 3 periods (Apr, May, Jun) with new target
+      await request(app)
+        .put(`/api/metric-periods/${periods[3].id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          complete: 70,
+          target: 150 // Explicitly set new target
+        });
+
+      await request(app)
+        .put(`/api/metric-periods/${periods[4].id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          complete: 100,
+          target: 150
+        });
+
+      await request(app)
+        .put(`/api/metric-periods/${periods[5].id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          complete: 140,
+          target: 150
+        });
+
+      // Retrieve project data (what the chart uses)
+      const projectDataResponse = await request(app)
+        .get(`/api/projects/${scopeChangeProjectId}/data`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(projectDataResponse.status).toBe(200);
+      const projectData = projectDataResponse.body;
+
+      // Find our metric's periods in the data
+      const metricPeriods = projectData.filter(p => p.metric_id === scopeChangeMetricId);
+      expect(metricPeriods.length).toBe(6);
+
+      // Sort by date to ensure correct order
+      metricPeriods.sort((a, b) => a.reporting_date.localeCompare(b.reporting_date));
+
+      // Verify first 3 periods have original target (100)
+      expect(metricPeriods[0].final_target).toBe(100);
+      expect(metricPeriods[0].complete).toBe(15);
+      // Gray bar should be: 100 - 15 = 85
+      const grayBar1 = metricPeriods[0].final_target - metricPeriods[0].complete;
+      expect(grayBar1).toBe(85);
+
+      expect(metricPeriods[1].final_target).toBe(100);
+      expect(metricPeriods[1].complete).toBe(30);
+      const grayBar2 = metricPeriods[1].final_target - metricPeriods[1].complete;
+      expect(grayBar2).toBe(70);
+
+      expect(metricPeriods[2].final_target).toBe(100);
+      expect(metricPeriods[2].complete).toBe(50);
+      const grayBar3 = metricPeriods[2].final_target - metricPeriods[2].complete;
+      expect(grayBar3).toBe(50);
+
+      // Verify last 3 periods have new target (150)
+      expect(metricPeriods[3].final_target).toBe(150);
+      expect(metricPeriods[3].complete).toBe(70);
+      // Gray bar should be: 150 - 70 = 80
+      const grayBar4 = metricPeriods[3].final_target - metricPeriods[3].complete;
+      expect(grayBar4).toBe(80);
+
+      expect(metricPeriods[4].final_target).toBe(150);
+      expect(metricPeriods[4].complete).toBe(100);
+      const grayBar5 = metricPeriods[4].final_target - metricPeriods[4].complete;
+      expect(grayBar5).toBe(50);
+
+      expect(metricPeriods[5].final_target).toBe(150);
+      expect(metricPeriods[5].complete).toBe(140);
+      const grayBar6 = metricPeriods[5].final_target - metricPeriods[5].complete;
+      expect(grayBar6).toBe(10);
+
+      // Key assertion: Gray bars should change when targets change
+      // Before target change: gray bars were 85, 70, 50
+      // After target change: gray bars are 80, 50, 10
+      // This proves that the gray bars correctly reflect the changing target
+      expect(grayBar1).toBeGreaterThan(grayBar4); // 85 > 80 (different despite progress)
+      expect(grayBar4).toBeGreaterThan(grayBar5); // 80 > 50 (gray bars shrinking as work completes)
+    });
+
+    test('should handle target decreases (scope reduction)', async () => {
+      // Create another metric for testing scope reduction
+      const metricResponse = await request(app)
+        .post(`/api/projects/${scopeChangeProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Scope Reduction Metric',
+          start_date: '2024-01-01',
+          end_date: '2024-04-30',
+          frequency: 'monthly',
+          progression_type: 'linear',
+          final_target: 200,
+          amber_tolerance: 5.0,
+          red_tolerance: 10.0
+        });
+
+      const metricId = metricResponse.body.id;
+
+      // Get periods
+      const periodsResponse = await request(app)
+        .get(`/api/metrics/${metricId}/periods`);
+      const periods = periodsResponse.body;
+      expect(periods.length).toBe(4);
+
+      // Set initial progress with target of 200
+      await request(app)
+        .put(`/api/metric-periods/${periods[0].id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ complete: 50 }); // Jan: 50/200 (remaining: 150)
+
+      // Reduce scope to 120
+      await request(app)
+        .put(`/api/metrics/${metricId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ final_target: 120 });
+
+      // Update later periods with reduced target
+      await request(app)
+        .put(`/api/metric-periods/${periods[1].id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          complete: 70,
+          target: 120 // Feb: 70/120 (remaining: 50)
+        });
+
+      // Get project data
+      const projectDataResponse = await request(app)
+        .get(`/api/projects/${scopeChangeProjectId}/data`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      const metricPeriods = projectDataResponse.body
+        .filter(p => p.metric_id === metricId)
+        .sort((a, b) => a.reporting_date.localeCompare(b.reporting_date));
+
+      // Verify target change is reflected
+      expect(metricPeriods[0].final_target).toBe(200);
+      const grayBarBefore = metricPeriods[0].final_target - metricPeriods[0].complete;
+      expect(grayBarBefore).toBe(150); // 200 - 50
+
+      expect(metricPeriods[1].final_target).toBe(120);
+      const grayBarAfter = metricPeriods[1].final_target - metricPeriods[1].complete;
+      expect(grayBarAfter).toBe(50); // 120 - 70
+
+      // Gray bar should decrease significantly due to scope reduction
+      expect(grayBarBefore).toBeGreaterThan(grayBarAfter);
+      expect(grayBarBefore - grayBarAfter).toBe(100); // Scope reduced by 80, but also completed 20 more
+    });
+  });
 });
