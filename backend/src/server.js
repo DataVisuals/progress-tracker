@@ -2854,7 +2854,27 @@ function createApp(dbPath) {
     } catch (err) {
       // Column already exists, that's fine
     }
-  
+
+    // Migration: Add target column to metric_periods table for scope change tracking
+    try {
+      await dbRun(`ALTER TABLE metric_periods ADD COLUMN target REAL`);
+      console.log('✅ Added target column to metric_periods table');
+
+      // Populate target column with metric's final_target for existing periods
+      await dbRun(`
+        UPDATE metric_periods
+        SET target = (
+          SELECT m.final_target
+          FROM metrics m
+          WHERE m.id = metric_periods.metric_id
+        )
+        WHERE target IS NULL
+      `);
+      console.log('✅ Populated target values from metrics.final_target');
+    } catch (err) {
+      // Column already exists, that's fine
+    }
+
     // Migration: Create project_links table
     try {
       await dbRun(`
