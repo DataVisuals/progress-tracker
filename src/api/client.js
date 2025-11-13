@@ -22,7 +22,10 @@ client.interceptors.response.use(
     // Don't redirect on login failures - let the login component handle it
     const isLoginRequest = error.config?.url?.includes('/auth/login');
 
-    if (!isLoginRequest && (error.response?.status === 401 || error.response?.status === 403)) {
+    // Only logout on 401 (not authenticated), not on 403 (not authorized)
+    // 401 = token expired/invalid -> logout
+    // 403 = user doesn't have permission -> show error but stay logged in
+    if (!isLoginRequest && error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/';
