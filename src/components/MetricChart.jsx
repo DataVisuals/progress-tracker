@@ -744,19 +744,19 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       // Add title
       pdf.setFontSize(16);
       pdf.setTextColor(0, 60, 113);
-      pdf.text(metricName, 15, 15);
+      pdf.text(metricName, 15, 12);
 
       // Add date range if available
       if (metricMetadata) {
         pdf.setFontSize(10);
         pdf.setTextColor(100, 100, 100);
-        pdf.text(`Period: ${formatDate(metricMetadata.start_date)} - ${formatDate(metricMetadata.end_date)}`, 15, 22);
+        pdf.text(`Period: ${formatDate(metricMetadata.start_date)} - ${formatDate(metricMetadata.end_date)}`, 15, 18);
       }
 
       // Add chart image
       const imgWidth = 270;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 15, 30, imgWidth, imgHeight);
+      pdf.addImage(imgData, 'PNG', 15, 24, imgWidth, imgHeight);
 
       // Add data table
       const tableData = chartData.map((item, index) => {
@@ -809,18 +809,20 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       });
 
       autoTable(pdf, {
-        startY: imgHeight + 35,
+        startY: imgHeight + 28,
         head: [['Period', 'Complete', 'Expected', 'Variance', 'Variance %', 'Latest Comment']],
         body: tableData,
         theme: 'grid',
         headStyles: {
           fillColor: [0, 174, 239],
           textColor: [255, 255, 255],
-          fontStyle: 'bold'
+          fontStyle: 'bold',
+          cellPadding: 1
         },
         styles: {
-          fontSize: 9,
-          cellPadding: 3
+          fontSize: 8,
+          cellPadding: 1,
+          minCellHeight: 5
         },
         columnStyles: {
           0: { halign: 'left', fontStyle: 'bold', cellWidth: 25 },
@@ -833,10 +835,10 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       });
 
       // Add tolerances info
-      const finalY = pdf.lastAutoTable?.finalY || imgHeight + 35;
+      const finalY = pdf.lastAutoTable?.finalY || imgHeight + 28;
       pdf.setFontSize(9);
       pdf.setTextColor(100, 100, 100);
-      pdf.text(`Tolerances: Amber >${amberTolerance}%, Red >${redTolerance}%`, 15, finalY + 10);
+      pdf.text(`Tolerances: Amber >${amberTolerance}%, Red >${redTolerance}%`, 15, finalY + 6);
 
       pdf.save(`${metricName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_report.pdf`);
     } catch (error) {
