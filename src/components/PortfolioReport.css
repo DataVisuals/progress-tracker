@@ -97,22 +97,23 @@
 
 .report-content .close-btn {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 30px;
+  right: 30px;
   background: none;
   border: none;
-  font-size: 32px;
+  font-size: 28px;
   color: #9ca3af;
   cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
+  padding: 4px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 4px;
   transition: all 0.2s;
   z-index: 10;
+  line-height: 1;
 }
 
 .report-content .close-btn:hover {
