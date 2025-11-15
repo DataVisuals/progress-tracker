@@ -225,12 +225,6 @@ const Feedback = ({ currentUser }) => {
                   </div>
                 </div>
               )}
-
-              {item.status === 'resolved' && item.resolver_name && (
-                <div className="thread-footer">
-                  Resolved by {item.resolver_name} on {formatDate(item.resolved_at)}
-                </div>
-              )}
             </div>
           ))}
         </div>
