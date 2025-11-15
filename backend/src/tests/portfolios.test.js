@@ -219,4 +219,163 @@ describe('Portfolio Management API Tests', () => {
       expect(response.status).toBe(404);
     });
   });
+
+  describe('GET /api/portfolios/:id/report', () => {
+    let reportPortfolioId, testProjectId, testMetricId;
+
+    beforeAll(async () => {
+      // Create a portfolio for report testing
+      const portfolioResponse = await request(app)
+        .post('/api/portfolios')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Report Test Portfolio',
+          description: 'Testing portfolio reports',
+          color: '#ff9900'
+        });
+      reportPortfolioId = portfolioResponse.body.id;
+
+      // Create a project in this portfolio
+      const projectResponse = await request(app)
+        .post('/api/projects')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Test Project',
+          description: 'Test project for report',
+          portfolio_id: reportPortfolioId,
+          initiative_manager: 'Test Manager',
+          start_date: '2025-01-01',
+          end_date: '2025-12-31'
+        });
+      testProjectId = projectResponse.body.id;
+
+      // Create a metric for this project
+      const metricResponse = await request(app)
+        .post('/api/metrics')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          projectId: testProjectId,
+          name: 'Test Metric',
+          start_date: '2025-01-01',
+          end_date: '2025-06-30',
+          frequency: 'monthly',
+          progression_type: 'linear',
+          final_target: 100,
+          amber_tolerance: 5,
+          red_tolerance: 10
+        });
+      testMetricId = metricResponse.body.id;
+    });
+
+    test('should return portfolio report with summary and projects', async () => {
+      const response = await request(app)
+        .get(`/api/portfolios/${reportPortfolioId}/report`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('portfolio');
+      expect(response.body).toHaveProperty('summary');
+      expect(response.body).toHaveProperty('redProjects');
+      expect(response.body).toHaveProperty('amberProjects');
+      expect(response.body).toHaveProperty('greenProjects');
+
+      expect(response.body.portfolio.id).toBe(reportPortfolioId);
+      expect(response.body.portfolio.name).toBe('Report Test Portfolio');
+      expect(response.body.summary).toHaveProperty('totalProjects');
+      expect(response.body.summary).toHaveProperty('totalMetrics');
+      expect(response.body.summary).toHaveProperty('redCount');
+      expect(response.body.summary).toHaveProperty('amberCount');
+      expect(response.body.summary).toHaveProperty('greenCount');
+    });
+
+    test('should return 404 for non-existent portfolio', async () => {
+      const response = await request(app)
+        .get('/api/portfolios/99999/report');
+
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('Portfolio not found');
+    });
+
+    test('should include metrics sorted by variance (most delinquent first)', async () => {
+      const response = await request(app)
+        .get(`/api/portfolios/${reportPortfolioId}/report`);
+
+      expect(response.status).toBe(200);
+
+      // Check if projects have metrics array
+      const allProjects = [
+        ...response.body.redProjects,
+        ...response.body.amberProjects,
+        ...response.body.greenProjects
+      ];
+
+      if (allProjects.length > 0 && allProjects[0].metrics.length > 1) {
+        const metrics = allProjects[0].metrics;
+        // Verify metrics are sorted by variance (ascending = most negative first)
+        for (let i = 0; i < metrics.length - 1; i++) {
+          expect(metrics[i].variance).toBeLessThanOrEqual(metrics[i + 1].variance);
+        }
+      }
+    });
+
+    test('should be accessible without authentication', async () => {
+      // Test without any auth token
+      const response = await request(app)
+        .get(`/api/portfolios/${reportPortfolioId}/report`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('portfolio');
+    });
+
+    test('should calculate RAG status correctly', async () => {
+      const response = await request(app)
+        .get(`/api/portfolios/${reportPortfolioId}/report`);
+
+      expect(response.status).toBe(200);
+
+      const allProjects = [
+        ...response.body.redProjects,
+        ...response.body.amberProjects,
+        ...response.body.greenProjects
+      ];
+
+      allProjects.forEach(project => {
+        project.metrics.forEach(metric => {
+          expect(['red', 'amber', 'green', 'grey']).toContain(metric.ragStatus);
+          expect(metric).toHaveProperty('variance');
+          expect(metric).toHaveProperty('variancePercent');
+          expect(metric).toHaveProperty('complete');
+          expect(metric).toHaveProperty('expected');
+        });
+      });
+    });
+
+    test('should only include latest comment for red and amber metrics', async () => {
+      const response = await request(app)
+        .get(`/api/portfolios/${reportPortfolioId}/report`);
+
+      expect(response.status).toBe(200);
+
+      response.body.redProjects.forEach(project => {
+        project.metrics.forEach(metric => {
+          expect(metric.ragStatus).toBe('red');
+          // Red metrics should have latestComment property (can be null)
+          expect(metric).toHaveProperty('latestComment');
+        });
+      });
+
+      response.body.amberProjects.forEach(project => {
+        project.metrics.forEach(metric => {
+          expect(metric.ragStatus).toBe('amber');
+          // Amber metrics should have latestComment property (can be null)
+          expect(metric).toHaveProperty('latestComment');
+        });
+      });
+
+      response.body.greenProjects.forEach(project => {
+        project.metrics.forEach(metric => {
+          expect(['green', 'grey']).toContain(metric.ragStatus);
+        });
+      });
+    });
+  });
 });
