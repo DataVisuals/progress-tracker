@@ -1011,6 +1011,12 @@ function App() {
         <PortfolioReport
           portfolioId={selectedPortfolio}
           onClose={() => setShowPortfolioReport(false)}
+          onMetricClick={(projectId, metricName) => {
+            setSelectedProject(projectId.toString());
+            setSelectedMetric(metricName);
+            updateURL(projectId.toString(), metricName);
+            setShowPortfolioReport(false);
+          }}
         />
       )}
 

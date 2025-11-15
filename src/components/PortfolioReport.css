@@ -21,6 +21,7 @@
   overflow-y: auto;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   padding: 30px;
+  position: relative;
 }
 
 .report-content.loading {
@@ -94,10 +95,32 @@
   box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
 }
 
-.report-header {
+.report-content .close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.report-content .close-btn:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.report-header {
   margin-bottom: 30px;
   padding-bottom: 20px;
   border-bottom: 2px solid #e5e7eb;
@@ -113,27 +136,6 @@
   margin: 0;
   color: #6b7280;
   font-size: 14px;
-}
-
-.report-header .close-btn {
-  background: none;
-  border: none;
-  font-size: 32px;
-  color: #9ca3af;
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.report-header .close-btn:hover {
-  background-color: #f3f4f6;
-  color: #374151;
 }
 
 /* Summary Section */
@@ -292,6 +294,17 @@
 .metric-name {
   font-weight: 600;
   color: #1f2937;
+}
+
+.metric-link {
+  color: #003c71;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.metric-link:hover {
+  color: #00aeef;
 }
 
 .metric-status {

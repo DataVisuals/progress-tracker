@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import './PortfolioReport.css';
 
-const PortfolioReport = ({ portfolioId, onClose }) => {
+const PortfolioReport = ({ portfolioId, onClose, onMetricClick }) => {
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -55,7 +55,7 @@ const PortfolioReport = ({ portfolioId, onClose }) => {
       <div className="report-section">
         <h3 className="report-section-title" style={{ color: getRAGColor(ragStatus) }}>
           <span className="rag-indicator" style={{ backgroundColor: getRAGColor(ragStatus) }}></span>
-          {title} ({projects.length})
+          {title}
         </h3>
         {projects.map(project => (
           <div key={project.id} className="report-project">
@@ -84,7 +84,15 @@ const PortfolioReport = ({ portfolioId, onClose }) => {
                 <tbody>
                   {project.metrics.map(metric => (
                     <tr key={metric.id}>
-                      <td className="metric-name">{metric.name}</td>
+                      <td className="metric-name">
+                        <span
+                          className="metric-link"
+                          onClick={() => onMetricClick(project.id, metric.name)}
+                          title="View this metric"
+                        >
+                          {metric.name}
+                        </span>
+                      </td>
                       <td className="metric-status">
                         <span
                           className="status-badge"
@@ -154,12 +162,12 @@ const PortfolioReport = ({ portfolioId, onClose }) => {
   return (
     <div className="portfolio-report-modal" onClick={onClose}>
       <div className="report-content" onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} className="close-btn" title="Close">×</button>
         <div className="report-header">
           <div>
             <h2>{portfolio.name} - Portfolio Status Report</h2>
             {portfolio.description && <p className="portfolio-description">{portfolio.description}</p>}
           </div>
-          <button onClick={onClose} className="close-btn" title="Close">×</button>
         </div>
 
         {/* Summary Section */}

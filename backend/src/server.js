@@ -591,6 +591,9 @@ function createApp(dbPath) {
 
         // Only include projects that have metrics
         if (metricsWithStatus.length > 0) {
+          // Sort metrics by variance (ascending, so most negative/worst first)
+          metricsWithStatus.sort((a, b) => a.variance - b.variance);
+
           projectsWithMetrics.push({
             id: project.id,
             name: project.name,
