@@ -426,6 +426,28 @@ function App() {
     }
   };
 
+  const handleMetricDelete = async (metricName) => {
+    try {
+      const metric = projectMetrics.find(m => m.name === metricName);
+      if (!metric) return;
+
+      await api.deleteMetric(metric.id);
+
+      // Reload both metrics list and project data
+      await loadProjectMetrics();
+      await loadProjectData();
+
+      // If the deleted metric was selected, select the first available metric
+      if (selectedMetric === metricName) {
+        const remainingMetrics = projectMetrics.filter(m => m.name !== metricName);
+        setSelectedMetric(remainingMetrics.length > 0 ? remainingMetrics[0].name : '');
+      }
+    } catch (err) {
+      console.error('Failed to delete metric:', err);
+      alert('Failed to delete metric: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
   // Convert projects array to object format for ProjectSelector
   const projectsObject = projects.reduce((acc, project) => {
     acc[project.id] = {
@@ -825,6 +847,7 @@ function App() {
                 selectedMetric={selectedMetric}
                 onMetricChange={handleMetricChange}
                 onMetricRename={handleMetricRename}
+                onMetricDelete={handleMetricDelete}
                 canEdit={canEdit()}
               />
             )}

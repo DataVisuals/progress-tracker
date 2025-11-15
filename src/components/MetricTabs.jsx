@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './MetricTabs.css';
 
-const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMetricRename, canEdit }) => {
+const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMetricRename, onMetricDelete, canEdit }) => {
   const [editingMetric, setEditingMetric] = useState(null);
   const [editValue, setEditValue] = useState('');
+  const [showDropdown, setShowDropdown] = useState(null);
+  const dropdownRef = useRef(null);
 
   // Helper to calculate RAG status for a metric
   const getRAGStatus = (metricName) => {
@@ -122,6 +124,36 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
     setEditingMetric(null);
   };
 
+  const handleDelete = async (metricName) => {
+    if (!onMetricDelete) return;
+
+    const confirmed = window.confirm(`Are you sure you want to delete the metric "${metricName}"? This will also delete all associated data and cannot be undone.`);
+    if (confirmed) {
+      await onMetricDelete(metricName);
+    }
+    setShowDropdown(null);
+  };
+
+  const handleRename = (metricName) => {
+    setEditingMetric(metricName);
+    setEditValue(metricName);
+    setShowDropdown(null);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(null);
+      }
+    };
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showDropdown]);
+
   return (
     <div className="metric-tabs-container">
       <div className="metric-tabs">
@@ -145,26 +177,55 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
                   autoFocus
                 />
               ) : (
-                <button
-                  className={`metric-tab ${selectedMetric === metric ? 'active' : ''}`}
-                  onClick={() => onMetricChange(metric)}
-                  onDoubleClick={() => handleDoubleClick(metric)}
-                  title={canEdit ? 'Double-click to rename' : ''}
-                >
-                  {displayStatus && (
-                    <span
-                      className={`metric-rag-marker ${displayStatus}`}
-                      title={
-                        isFlat ? 'Flat trajectory (minimal change)' :
-                        displayStatus === 'green' ? 'On track or ahead' :
-                        displayStatus === 'amber' ? 'At risk' :
-                        displayStatus === 'red' ? 'Behind schedule' :
-                        'No data'
-                      }
-                    />
+                <>
+                  <button
+                    className={`metric-tab ${selectedMetric === metric ? 'active' : ''}`}
+                    onClick={() => onMetricChange(metric)}
+                    onDoubleClick={() => handleDoubleClick(metric)}
+                    title={canEdit ? 'Double-click to rename' : ''}
+                  >
+                    {displayStatus && (
+                      <span
+                        className={`metric-rag-marker ${displayStatus}`}
+                        title={
+                          isFlat ? 'Flat trajectory (minimal change)' :
+                          displayStatus === 'green' ? 'On track or ahead' :
+                          displayStatus === 'amber' ? 'At risk' :
+                          displayStatus === 'red' ? 'Behind schedule' :
+                          'No data'
+                        }
+                      />
+                    )}
+                    <span className="metric-tab-name">{metric}</span>
+                  </button>
+                  {canEdit && (
+                    <div className="metric-tab-menu">
+                      <button
+                        className="metric-menu-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowDropdown(showDropdown === metric ? null : metric);
+                        }}
+                        title="Metric options"
+                      >
+                        ⋮
+                      </button>
+                      {showDropdown === metric && (
+                        <div className="metric-dropdown" ref={dropdownRef}>
+                          <button onMouseDown={() => handleRename(metric)}>
+                            Rename Metric
+                          </button>
+                          <button
+                            onMouseDown={() => handleDelete(metric)}
+                            className="delete-option"
+                          >
+                            Delete Metric
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
-                  <span className="metric-tab-name">{metric}</span>
-                </button>
+                </>
               )}
             </div>
           );
