@@ -761,22 +761,55 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       const tableData = chartData.map((item, index) => {
         const date = new Date(item.name);
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const formattedDate = monthNames[date.getMonth()];
+
+        // Format date based on frequency
+        let formattedDate;
+        const frequency = metricMetadata?.frequency || 'monthly';
+
+        if (frequency === 'weekly' || frequency === 'fortnightly') {
+          // For weekly/fortnightly: show "DD MMM" format
+          const day = String(date.getDate()).padStart(2, '0');
+          const month = monthNames[date.getMonth()];
+          formattedDate = `${day} ${month}`;
+        } else if (frequency === 'monthly') {
+          // For monthly: show month name
+          formattedDate = monthNames[date.getMonth()];
+        } else if (frequency === 'quarterly') {
+          // For quarterly: show "Q1", "Q2", etc.
+          const quarter = Math.floor(date.getMonth() / 3) + 1;
+          formattedDate = `Q${quarter} ${date.getFullYear()}`;
+        } else {
+          // Default to month name
+          formattedDate = monthNames[date.getMonth()];
+        }
+
         const variance = item.complete - item.expected;
         const variancePercent = item.expected > 0 ? ((variance / item.expected) * 100) : 0;
+
+        // Get latest comment for this period
+        const periodComments = comments[item.id] || [];
+        const latestComment = periodComments.length > 0
+          ? periodComments[periodComments.length - 1].comment_text
+          : '';
+
+        // Truncate comment if too long
+        const truncatedComment = latestComment.length > 80
+          ? latestComment.substring(0, 77) + '...'
+          : latestComment;
 
         return [
           formattedDate,
           item.complete?.toFixed(1) || '0.0',
           item.expected?.toFixed(1) || '0.0',
           `${variance >= 0 ? '+' : ''}${variance.toFixed(1)}`,
-          `${variancePercent >= 0 ? '+' : ''}${variancePercent.toFixed(1)}%`
+          `${variancePercent >= 0 ? '+' : ''}${variancePercent.toFixed(1)}%`,
+          truncatedComment
         ];
       });
 
       autoTable(pdf, {
         startY: imgHeight + 35,
-        head: [['Period', 'Complete', 'Expected', 'Variance', 'Variance %']],
+        head: [['Period', 'Complete', 'Expected', 'Variance', 'Variance %', 'Latest Comment']],
         body: tableData,
         theme: 'grid',
         headStyles: {
@@ -789,11 +822,12 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           cellPadding: 3
         },
         columnStyles: {
-          0: { halign: 'left', fontStyle: 'bold' },
-          1: { halign: 'center' },
-          2: { halign: 'center' },
-          3: { halign: 'center' },
-          4: { halign: 'center' }
+          0: { halign: 'left', fontStyle: 'bold', cellWidth: 25 },
+          1: { halign: 'center', cellWidth: 22 },
+          2: { halign: 'center', cellWidth: 22 },
+          3: { halign: 'center', cellWidth: 22 },
+          4: { halign: 'center', cellWidth: 25 },
+          5: { halign: 'left', cellWidth: 'auto' }
         }
       });
 
