@@ -18,6 +18,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { api } from '../api/client';
 import TimeTravel from './TimeTravel';
+import Feedback from './Feedback';
 // import CRAIDs from './CRAIDs'; // DISABLED: CRAIDs feature hidden
 import './MetricChart.css';
 
@@ -219,7 +220,7 @@ const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance })
   return null;
 };
 
-const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange }) => {
+const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange, currentUser }) => {
   console.log('MetricChart rendered with canEdit:', canEdit, 'canEditData:', canEditData);
   // canEditData is for commentary/data changes (blocked during time travel)
   // If not provided, default to canEdit for backwards compatibility
@@ -285,7 +286,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   const [highlightedSeries, setHighlightedSeries] = useState(null);
   const [isCommentaryCollapsed, setIsCommentaryCollapsed] = useState(true);
   const [isDataTableCollapsed, setIsDataTableCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState('table'); // 'table', 'commentary', 'timetravel', or 'dependencies'
+  const [activeTab, setActiveTab] = useState('table'); // 'table', 'commentary', 'feedback', 'timetravel', or 'dependencies'
   const chartContainerRef = useRef(null);
   const [tableWidth, setTableWidth] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -1139,9 +1140,17 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             className={`tab-button ${activeTab === 'commentary' ? 'active' : ''}`}
             onClick={() => setActiveTab('commentary')}
           >
-            Commentary
+            PM Commentary
           </button>
-          {projectId && onTimeTravelChange && (
+          {currentUser && (
+            <button
+              className={`tab-button ${activeTab === 'feedback' ? 'active' : ''}`}
+              onClick={() => setActiveTab('feedback')}
+            >
+              Feedback
+            </button>
+          )}
+          {projectId && onTimeTravelChange && currentUser && (
             <button
               className={`tab-button ${activeTab === 'timetravel' ? 'active' : ''}`}
               onClick={() => setActiveTab('timetravel')}
@@ -1427,8 +1436,15 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           </div>
         )}
 
+        {/* Feedback Tab Content */}
+        {activeTab === 'feedback' && currentUser && (
+          <div className="tab-content">
+            <Feedback currentUser={currentUser} />
+          </div>
+        )}
+
         {/* Time Travel Tab Content */}
-        {activeTab === 'timetravel' && projectId && onTimeTravelChange && (
+        {activeTab === 'timetravel' && projectId && onTimeTravelChange && currentUser && (
           <div className="tab-content">
             <TimeTravel
               projectId={projectId}

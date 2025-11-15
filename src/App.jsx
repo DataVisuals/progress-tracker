@@ -905,6 +905,7 @@ function App() {
                     await loadProjectMetrics();
                   }}
                   isAdmin={isAdmin()}
+                  currentUser={currentUser}
                 />
               </div>
             )}

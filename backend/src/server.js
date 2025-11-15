@@ -73,6 +73,11 @@ function createApp(dbPath) {
     return user.role === ROLES.ADMIN;
   }
 
+  // Check if user is PM or above (PM or admin)
+  function isPMOrAbove(user) {
+    return user.role === ROLES.ADMIN || user.role === ROLES.PM;
+  }
+
   // Check if user can edit historic data (admin or PM/editor)
   function canEditHistoricData(user) {
     return user.role === ROLES.ADMIN || user.role === ROLES.PM || user.role === ROLES.EDITOR;
@@ -636,6 +641,198 @@ function createApp(dbPath) {
       });
     } catch (err) {
       console.error('Portfolio report error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ===== FEEDBACK =====
+  app.get('/api/feedback', async (req, res) => {
+    try {
+      const { status } = req.query;
+      let query = `
+        SELECT f.*,
+               u.name as user_name,
+               u.email as user_email,
+               r.name as responder_name,
+               s.name as resolver_name
+        FROM feedback f
+        LEFT JOIN users u ON f.user_id = u.id
+        LEFT JOIN users r ON f.responded_by = r.id
+        LEFT JOIN users s ON f.resolved_by = s.id
+      `;
+      let params = [];
+
+      if (status) {
+        query += ' WHERE f.status = ?';
+        params.push(status);
+      }
+
+      query += ' ORDER BY f.created_at DESC';
+
+      const feedback = await dbAll(query, params);
+      res.json(feedback);
+    } catch (err) {
+      console.error('Get feedback error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/feedback', authenticateToken, async (req, res) => {
+    try {
+      const { text } = req.body;
+
+      if (!text || !text.trim()) {
+        return res.status(400).json({ error: 'Feedback text is required' });
+      }
+
+      const result = await dbRun(
+        `INSERT INTO feedback (user_id, text, status)
+         VALUES (?, ?, 'open')`,
+        [req.user.userId, text.trim()]
+      );
+
+      const newFeedback = await dbGet(
+        `SELECT f.*,
+                u.name as user_name,
+                u.email as user_email
+         FROM feedback f
+         LEFT JOIN users u ON f.user_id = u.id
+         WHERE f.id = ?`,
+        [result.lastID]
+      );
+
+      await logAudit(
+        req.user,
+        'CREATE',
+        'feedback',
+        result.lastID,
+        null,
+        newFeedback,
+        `Created feedback: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`,
+        req.ip
+      );
+
+      res.status(201).json(newFeedback);
+    } catch (err) {
+      console.error('Create feedback error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put('/api/feedback/:id/respond', authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { pm_response } = req.body;
+
+      if (!isPMOrAbove(req.user)) {
+        return res.status(403).json({ error: 'Only PMs and admins can respond to feedback' });
+      }
+
+      if (!pm_response) {
+        return res.status(400).json({ error: 'Response text is required' });
+      }
+
+      const feedback = await dbGet('SELECT * FROM feedback WHERE id = ?', [id]);
+      if (!feedback) {
+        return res.status(404).json({ error: 'Feedback not found' });
+      }
+
+      await dbRun(
+        `UPDATE feedback
+         SET pm_response = ?,
+             responded_by = ?,
+             responded_at = CURRENT_TIMESTAMP,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [pm_response, req.user.userId, id]
+      );
+
+      const updatedFeedback = await dbGet(
+        `SELECT f.*,
+                u.name as user_name,
+                u.email as user_email,
+                r.name as responder_name
+         FROM feedback f
+         LEFT JOIN users u ON f.user_id = u.id
+         LEFT JOIN users r ON f.responded_by = r.id
+         WHERE f.id = ?`,
+        [id]
+      );
+
+      await logAudit(
+        req.user,
+        'UPDATE',
+        'feedback',
+        id,
+        feedback,
+        updatedFeedback,
+        `Responded to feedback: ${feedback.title}`,
+        req.ip
+      );
+
+      res.json(updatedFeedback);
+    } catch (err) {
+      console.error('Respond to feedback error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put('/api/feedback/:id/resolve', authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { resolved } = req.body; // true to resolve, false to reopen
+
+      if (!isPMOrAbove(req.user)) {
+        return res.status(403).json({ error: 'Only PMs and admins can resolve feedback' });
+      }
+
+      const feedback = await dbGet('SELECT * FROM feedback WHERE id = ?', [id]);
+      if (!feedback) {
+        return res.status(404).json({ error: 'Feedback not found' });
+      }
+
+      const newStatus = resolved ? 'resolved' : 'open';
+      const resolvedBy = resolved ? req.user.userId : null;
+      const resolvedAt = resolved ? 'CURRENT_TIMESTAMP' : null;
+
+      await dbRun(
+        `UPDATE feedback
+         SET status = ?,
+             resolved_by = ?,
+             resolved_at = ${resolvedAt ? resolvedAt : 'NULL'},
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [newStatus, resolvedBy, id]
+      );
+
+      const updatedFeedback = await dbGet(
+        `SELECT f.*,
+                u.name as user_name,
+                u.email as user_email,
+                r.name as responder_name,
+                s.name as resolver_name
+         FROM feedback f
+         LEFT JOIN users u ON f.user_id = u.id
+         LEFT JOIN users r ON f.responded_by = r.id
+         LEFT JOIN users s ON f.resolved_by = s.id
+         WHERE f.id = ?`,
+        [id]
+      );
+
+      await logAudit(
+        req.user,
+        'UPDATE',
+        'feedback',
+        id,
+        feedback,
+        updatedFeedback,
+        `${resolved ? 'Resolved' : 'Reopened'} feedback: ${feedback.title}`,
+        req.ip
+      );
+
+      res.json(updatedFeedback);
+    } catch (err) {
+      console.error('Resolve feedback error:', err);
       res.status(500).json({ error: err.message });
     }
   });
@@ -3108,7 +3305,102 @@ function createApp(dbPath) {
     } catch (err) {
       // Column already exists, that's fine
     }
-  
+
+    // Migration: Create feedback table
+    try {
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS feedback (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          status TEXT DEFAULT 'open',
+          pm_response TEXT,
+          responded_by INTEGER,
+          responded_at DATETIME,
+          resolved_by INTEGER,
+          resolved_at DATETIME,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id),
+          FOREIGN KEY (responded_by) REFERENCES users(id),
+          FOREIGN KEY (resolved_by) REFERENCES users(id)
+        )
+      `);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_feedback_status ON feedback(status)`);
+      console.log('✅ Created feedback table');
+    } catch (err) {
+      console.error('Error creating feedback table:', err);
+    }
+
+    // Migration: Convert feedback to text-only (combine title and description into text)
+    try {
+      const feedbackCols = await dbAll(`PRAGMA table_info(feedback)`);
+      const hasTextColumn = feedbackCols.some(col => col.name === 'text');
+      const hasTitleColumn = feedbackCols.some(col => col.name === 'title');
+
+      if (hasTitleColumn && !hasTextColumn) {
+        // Step 1: Add text column
+        await dbRun(`ALTER TABLE feedback ADD COLUMN text TEXT`);
+
+        // Step 2: Migrate existing data
+        await dbRun(`
+          UPDATE feedback
+          SET text = CASE
+            WHEN title IS NOT NULL AND description IS NOT NULL
+            THEN title || ': ' || description
+            WHEN title IS NOT NULL THEN title
+            WHEN description IS NOT NULL THEN description
+            ELSE ''
+          END
+        `);
+
+        // Step 3: Create new table without title/description
+        await dbRun(`
+          CREATE TABLE feedback_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            text TEXT,
+            status TEXT DEFAULT 'open',
+            pm_response TEXT,
+            responded_by INTEGER,
+            responded_at DATETIME,
+            resolved_by INTEGER,
+            resolved_at DATETIME,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (responded_by) REFERENCES users(id),
+            FOREIGN KEY (resolved_by) REFERENCES users(id)
+          )
+        `);
+
+        // Step 4: Copy all data to new table
+        await dbRun(`
+          INSERT INTO feedback_new (id, user_id, text, status, pm_response, responded_by,
+                                     responded_at, resolved_by, resolved_at, created_at, updated_at)
+          SELECT id, user_id, text, status, pm_response, responded_by,
+                 responded_at, resolved_by, resolved_at, created_at, updated_at
+          FROM feedback
+        `);
+
+        // Step 5: Drop old table
+        await dbRun(`DROP TABLE feedback`);
+
+        // Step 6: Rename new table
+        await dbRun(`ALTER TABLE feedback_new RENAME TO feedback`);
+
+        // Step 7: Recreate indexes
+        await dbRun(`CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id)`);
+        await dbRun(`CREATE INDEX IF NOT EXISTS idx_feedback_status ON feedback(status)`);
+
+        console.log('✅ Migrated feedback to text-only format');
+      }
+    } catch (err) {
+      console.error('Error migrating feedback to text-only:', err);
+    }
+
     // Create default admin user if none exists
     const result = await dbGet('SELECT COUNT(*) as count FROM users');
     if (result.count === 0) {
