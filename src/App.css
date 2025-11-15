@@ -81,7 +81,8 @@
 .edit-data-btn,
 .audit-log-btn,
 .manage-users-btn,
-.logout-btn {
+.logout-btn,
+.portfolio-report-btn {
   background-color: rgba(255, 255, 255, 0.2);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -96,6 +97,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
 }
 
 .new-project-btn:hover,
@@ -103,7 +105,8 @@
 .edit-data-btn:hover,
 .audit-log-btn:hover,
 .manage-users-btn:hover,
-.logout-btn:hover {
+.logout-btn:hover,
+.portfolio-report-btn:hover {
   background-color: rgba(255, 255, 255, 0.3);
   border-color: rgba(255, 255, 255, 0.5);
 }

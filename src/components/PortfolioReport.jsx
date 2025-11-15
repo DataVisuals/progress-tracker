@@ -1,0 +1,208 @@
+import React, { useState, useEffect } from 'react';
+import { api } from '../api/client';
+import './PortfolioReport.css';
+
+const PortfolioReport = ({ portfolioId, onClose }) => {
+  const [reportData, setReportData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (portfolioId) {
+      loadReport();
+    }
+  }, [portfolioId]);
+
+  const loadReport = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/portfolios/${portfolioId}/report`);
+      setReportData(response.data);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to load portfolio report:', err);
+      setError('Failed to load portfolio report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  const formatVariance = (variance, variancePercent) => {
+    const sign = variance >= 0 ? '+' : '';
+    return `${sign}${variance.toFixed(1)} (${sign}${variancePercent.toFixed(1)}%)`;
+  };
+
+  const getRAGColor = (status) => {
+    switch (status) {
+      case 'red': return '#D0704d';
+      case 'amber': return '#f5ad5b';
+      case 'green': return '#539668';
+      default: return '#9ca3af';
+    }
+  };
+
+  const renderProjectSection = (projects, title, ragStatus, showComments = false) => {
+    if (projects.length === 0) return null;
+
+    return (
+      <div className="report-section">
+        <h3 className="report-section-title" style={{ color: getRAGColor(ragStatus) }}>
+          <span className="rag-indicator" style={{ backgroundColor: getRAGColor(ragStatus) }}></span>
+          {title} ({projects.length})
+        </h3>
+        {projects.map(project => (
+          <div key={project.id} className="report-project">
+            <div className="project-header">
+              <h4>{project.name}</h4>
+              {project.initiative_manager && (
+                <span className="project-manager">PM: {project.initiative_manager}</span>
+              )}
+            </div>
+            {project.description && (
+              <p className="project-description">{project.description}</p>
+            )}
+            <div className="project-metrics">
+              <table className="metrics-table">
+                <thead>
+                  <tr>
+                    <th>Metric</th>
+                    <th>Status</th>
+                    <th>Complete</th>
+                    <th>Expected</th>
+                    <th>Variance</th>
+                    <th>As of</th>
+                    {showComments && <th>Latest Comment</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {project.metrics.map(metric => (
+                    <tr key={metric.id}>
+                      <td className="metric-name">{metric.name}</td>
+                      <td className="metric-status">
+                        <span
+                          className="status-badge"
+                          style={{ backgroundColor: getRAGColor(metric.ragStatus) }}
+                        >
+                          {metric.ragStatus.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="metric-value">{metric.complete?.toFixed(1) || '0.0'}</td>
+                      <td className="metric-value">{metric.expected?.toFixed(1) || '0.0'}</td>
+                      <td className={`metric-variance ${metric.variance >= 0 ? 'positive' : 'negative'}`}>
+                        {formatVariance(metric.variance, metric.variancePercent)}
+                      </td>
+                      <td className="metric-date">{formatDate(metric.reporting_date)}</td>
+                      {showComments && (
+                        <td className="metric-comment">
+                          {metric.latestComment ? (
+                            <div className="comment-box">
+                              <p>{metric.latestComment.comment_text}</p>
+                              <span className="comment-meta">
+                                {formatDate(metric.latestComment.created_at)} - {metric.latestComment.created_by}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="no-comment">No comments</span>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="portfolio-report-modal">
+        <div className="report-content loading">
+          <p>Loading report...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="portfolio-report-modal">
+        <div className="report-content error">
+          <p>{error}</p>
+          <button onClick={onClose} className="close-btn">Close</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!reportData) return null;
+
+  const { portfolio, summary, redProjects, amberProjects, greenProjects } = reportData;
+
+  return (
+    <div className="portfolio-report-modal" onClick={onClose}>
+      <div className="report-content" onClick={(e) => e.stopPropagation()}>
+        <div className="report-header">
+          <div>
+            <h2>{portfolio.name} - Portfolio Status Report</h2>
+            {portfolio.description && <p className="portfolio-description">{portfolio.description}</p>}
+          </div>
+          <button onClick={onClose} className="close-btn" title="Close">×</button>
+        </div>
+
+        {/* Summary Section */}
+        <div className="report-summary">
+          <h3>Summary</h3>
+          <div className="summary-cards">
+            <div className="summary-card">
+              <div className="card-value">{summary.totalProjects}</div>
+              <div className="card-label">Total Projects</div>
+            </div>
+            <div className="summary-card">
+              <div className="card-value">{summary.totalMetrics}</div>
+              <div className="card-label">Total Metrics</div>
+            </div>
+            <div className="summary-card red">
+              <div className="card-value">{summary.redCount}</div>
+              <div className="card-label">Red Projects</div>
+            </div>
+            <div className="summary-card amber">
+              <div className="card-value">{summary.amberCount}</div>
+              <div className="card-label">Amber Projects</div>
+            </div>
+            <div className="summary-card green">
+              <div className="card-value">{summary.greenCount}</div>
+              <div className="card-label">Green Projects</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Red Projects Section */}
+        {renderProjectSection(redProjects, 'Red Projects - Immediate Attention Required', 'red', true)}
+
+        {/* Amber Projects Section */}
+        {renderProjectSection(amberProjects, 'Amber Projects - At Risk', 'amber', true)}
+
+        {/* Green Projects Section */}
+        {renderProjectSection(greenProjects, 'Green Projects - On Track', 'green', false)}
+
+        {summary.totalProjects === 0 && (
+          <div className="no-projects">
+            <p>No projects found in this portfolio.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default PortfolioReport;

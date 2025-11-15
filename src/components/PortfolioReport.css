@@ -1,0 +1,340 @@
+.portfolio-report-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.report-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 1400px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  padding: 30px;
+}
+
+.report-content.loading,
+.report-content.error {
+  max-width: 400px;
+  text-align: center;
+  padding: 40px;
+}
+
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.report-header h2 {
+  margin: 0 0 8px 0;
+  color: #003c71;
+  font-size: 24px;
+}
+
+.portfolio-description {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.report-header .close-btn {
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.report-header .close-btn:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+/* Summary Section */
+.report-summary {
+  margin-bottom: 30px;
+}
+
+.report-summary h3 {
+  margin: 0 0 16px 0;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.summary-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #e5e7eb 100%);
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  border: 2px solid #e5e7eb;
+}
+
+.summary-card.red {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-color: #D0704d;
+}
+
+.summary-card.amber {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #f5ad5b;
+}
+
+.summary-card.green {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #539668;
+}
+
+.card-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.card-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Report Sections */
+.report-section {
+  margin-bottom: 32px;
+}
+
+.report-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.rag-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Project Cards */
+.report-project {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.project-header h4 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.project-manager {
+  font-size: 13px;
+  color: #6b7280;
+  background: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.project-description {
+  margin: 0 0 16px 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Metrics Table */
+.project-metrics {
+  margin-top: 16px;
+}
+
+.metrics-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.metrics-table thead {
+  background: linear-gradient(135deg, #00aeef 0%, #003c71 100%);
+  color: white;
+}
+
+.metrics-table th {
+  padding: 12px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metrics-table td {
+  padding: 12px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.metrics-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.metric-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.metric-status {
+  text-align: center;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-value {
+  text-align: center;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.metric-variance {
+  text-align: center;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.metric-variance.positive {
+  color: #539668;
+}
+
+.metric-variance.negative {
+  color: #D0704d;
+}
+
+.metric-date {
+  text-align: center;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.metric-comment {
+  max-width: 300px;
+}
+
+.comment-box {
+  background: #fffbeb;
+  border-left: 3px solid #f5ad5b;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+.comment-box p {
+  margin: 0 0 6px 0;
+  font-size: 13px;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.comment-meta {
+  font-size: 11px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.no-comment {
+  color: #9ca3af;
+  font-style: italic;
+  font-size: 13px;
+}
+
+/* No Projects */
+.no-projects {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.no-projects p {
+  font-size: 16px;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .report-content {
+    padding: 20px;
+  }
+
+  .summary-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .metrics-table {
+    font-size: 12px;
+  }
+
+  .metrics-table th,
+  .metrics-table td {
+    padding: 8px;
+  }
+
+  .project-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

@@ -3,6 +3,7 @@ import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';
 import PortfolioSelector from './components/PortfolioSelector';
 import PortfolioManager from './components/PortfolioManager';
+import PortfolioReport from './components/PortfolioReport';
 import MetricChart from './components/MetricChart';
 import MetricTabs from './components/MetricTabs';
 import DataGrid from './components/DataGrid';
@@ -49,6 +50,7 @@ function App() {
   const [showConsistencyReport, setShowConsistencyReport] = useState(false);
   const [showImportData, setShowImportData] = useState(false);
   const [showPortfolioManager, setShowPortfolioManager] = useState(false);
+  const [showPortfolioReport, setShowPortfolioReport] = useState(false);
   const [showFeatureShowreel, setShowFeatureShowreel] = useState(false);
 
   // Load user on mount and load projects regardless of auth
@@ -567,6 +569,16 @@ function App() {
               onPortfolioChange={setSelectedPortfolio}
               onManagePortfolios={isAdmin() ? () => setShowPortfolioManager(true) : null}
             />
+            {selectedPortfolio && (
+              <button
+                className="portfolio-report-btn"
+                onClick={() => setShowPortfolioReport(true)}
+                title="View Portfolio Status Report"
+              >
+                <MdShowChart size={18} />
+                Portfolio Report
+              </button>
+            )}
             <ProjectSelector
               key={`project-${projects.length}`} // Force re-render when projects list changes
               projects={projectsObject}
@@ -992,6 +1004,13 @@ function App() {
             loadPortfolios();
             loadProjects();
           }}
+        />
+      )}
+
+      {showPortfolioReport && selectedPortfolio && (
+        <PortfolioReport
+          portfolioId={selectedPortfolio}
+          onClose={() => setShowPortfolioReport(false)}
         />
       )}
 

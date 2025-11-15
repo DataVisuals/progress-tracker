@@ -459,7 +459,184 @@ function createApp(dbPath) {
       res.status(500).json({ error: err.message });
     }
   });
-  
+
+  // Portfolio Status Report - Available to all users (no auth required)
+  app.get('/api/portfolios/:id/report', async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Get portfolio info
+      const portfolio = await dbGet('SELECT * FROM portfolios WHERE id = ?', [id]);
+      if (!portfolio) {
+        return res.status(404).json({ error: 'Portfolio not found' });
+      }
+
+      // Get all projects in this portfolio with their metrics
+      const projects = await dbAll(`
+        SELECT p.id, p.name, p.description, p.initiative_manager, p.start_date, p.end_date
+        FROM projects p
+        WHERE p.portfolio_id = ?
+        ORDER BY p.name
+      `, [id]);
+
+      const projectsWithMetrics = [];
+
+      for (const project of projects) {
+        // Get all metrics for this project
+        const metrics = await dbAll(`
+          SELECT m.id, m.name, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date
+          FROM metrics m
+          WHERE m.project_id = ?
+          ORDER BY m.name
+        `, [project.id]);
+
+        const metricsWithStatus = [];
+
+        for (const metric of metrics) {
+          // Get all periods for this metric, sorted by date
+          const periods = await dbAll(`
+            SELECT mp.id, mp.reporting_date, mp.complete, mp.expected, mp.target
+            FROM metric_periods mp
+            WHERE mp.metric_id = ?
+            ORDER BY mp.reporting_date ASC
+          `, [metric.id]);
+
+          if (periods.length === 0) continue;
+
+          // Find the current period (period has started but next period hasn't started yet)
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          let currentPeriod = null;
+          for (let i = 0; i < periods.length; i++) {
+            const periodStart = new Date(periods[i].reporting_date);
+            periodStart.setHours(0, 0, 0, 0);
+
+            // Check if this period has started
+            if (periodStart <= today) {
+              // Check if next period has started
+              if (i + 1 < periods.length) {
+                const nextPeriodStart = new Date(periods[i + 1].reporting_date);
+                nextPeriodStart.setHours(0, 0, 0, 0);
+                if (today < nextPeriodStart) {
+                  // We're in this period (started but next hasn't started)
+                  currentPeriod = periods[i];
+                  break;
+                }
+              } else {
+                // This is the last period and it has started
+                currentPeriod = periods[i];
+              }
+            }
+          }
+
+          // If no current period found (all periods are in the future), skip
+          if (!currentPeriod) continue;
+
+          // Calculate RAG status
+          let ragStatus = 'grey';
+          let variance = 0;
+          let variancePercent = 0;
+
+          if (currentPeriod.complete !== null && currentPeriod.expected !== null) {
+            variance = currentPeriod.complete - currentPeriod.expected;
+            variancePercent = currentPeriod.expected > 0
+              ? Math.abs((variance / currentPeriod.expected) * 100)
+              : 0;
+
+            const amberTolerance = parseFloat(metric.amber_tolerance) || 5.0;
+            const redTolerance = parseFloat(metric.red_tolerance) || 10.0;
+
+            if (currentPeriod.expected === 0) {
+              ragStatus = 'grey';
+            } else if (variance >= 0) {
+              ragStatus = 'green';
+            } else if (variancePercent > redTolerance) {
+              ragStatus = 'red';
+            } else if (variancePercent > amberTolerance) {
+              ragStatus = 'amber';
+            } else {
+              ragStatus = 'green';
+            }
+          }
+
+          // Get latest comment for this period (for red and amber metrics)
+          let latestComment = null;
+          if (ragStatus === 'red' || ragStatus === 'amber') {
+            const comments = await dbAll(`
+              SELECT comment_text, created_at, created_by
+              FROM period_comments
+              WHERE period_id = ?
+              ORDER BY created_at DESC
+              LIMIT 1
+            `, [currentPeriod.id]);
+
+            if (comments.length > 0) {
+              latestComment = comments[0];
+            }
+          }
+
+          metricsWithStatus.push({
+            id: metric.id,
+            name: metric.name,
+            ragStatus,
+            variance,
+            variancePercent,
+            complete: currentPeriod.complete,
+            expected: currentPeriod.expected,
+            reporting_date: currentPeriod.reporting_date,
+            latestComment
+          });
+        }
+
+        // Only include projects that have metrics
+        if (metricsWithStatus.length > 0) {
+          projectsWithMetrics.push({
+            id: project.id,
+            name: project.name,
+            description: project.description,
+            initiative_manager: project.initiative_manager,
+            start_date: project.start_date,
+            end_date: project.end_date,
+            metrics: metricsWithStatus
+          });
+        }
+      }
+
+      // Group projects by worst RAG status
+      const redProjects = projectsWithMetrics.filter(p =>
+        p.metrics.some(m => m.ragStatus === 'red')
+      );
+      const amberProjects = projectsWithMetrics.filter(p =>
+        p.metrics.some(m => m.ragStatus === 'amber') &&
+        !p.metrics.some(m => m.ragStatus === 'red')
+      );
+      const greenProjects = projectsWithMetrics.filter(p =>
+        p.metrics.every(m => m.ragStatus === 'green' || m.ragStatus === 'grey')
+      );
+
+      // Summary statistics
+      const summary = {
+        totalProjects: projectsWithMetrics.length,
+        redCount: redProjects.length,
+        amberCount: amberProjects.length,
+        greenCount: greenProjects.length,
+        totalMetrics: projectsWithMetrics.reduce((sum, p) => sum + p.metrics.length, 0)
+      };
+
+      res.json({
+        portfolio,
+        summary,
+        redProjects,
+        amberProjects,
+        greenProjects
+      });
+    } catch (err) {
+      console.error('Portfolio report error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== PROJECTS =====
   app.get('/api/projects', async (req, res) => {
     try {
