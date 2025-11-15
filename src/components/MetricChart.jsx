@@ -749,7 +749,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       if (metricMetadata) {
         pdf.setFontSize(10);
         pdf.setTextColor(100, 100, 100);
-        pdf.text(`Period: ${formatDate(metricMetadata.start_date)} → ${formatDate(metricMetadata.end_date)}`, 15, 22);
+        pdf.text(`Period: ${formatDate(metricMetadata.start_date)} - ${formatDate(metricMetadata.end_date)}`, 15, 22);
       }
 
       // Add chart image
@@ -853,7 +853,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               <span className="date-label">Metric Period:</span>
               <span className="date-value">{formatDate(metricMetadata.start_date)}</span>
             </div>
-            <div className="date-range-separator">→</div>
+            <div className="date-range-separator">{'\u2192'}</div>
             <div className="date-range-item">
               <span className="date-value">{formatDate(metricMetadata.end_date)}</span>
             </div>

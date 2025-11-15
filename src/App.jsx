@@ -716,7 +716,7 @@ function App() {
                             onChange={(e) => setEditProjectStartDate(e.target.value)}
                             autoFocus
                           />
-                          <span className="project-timeline-separator">→</span>
+                          <span className="project-timeline-separator">{'\u2192'}</span>
                           <input
                             type="date"
                             value={editProjectEndDate}
@@ -741,7 +741,7 @@ function App() {
                         >
                           <span className="project-timeline-label">PROJECT:</span>
                           <span className="project-timeline-date">{formatDate(currentProject.start_date)}</span>
-                          <span className="project-timeline-separator">→</span>
+                          <span className="project-timeline-separator">{'\u2192'}</span>
                           <span className="project-timeline-date">{formatDate(currentProject.end_date)}</span>
                           {projectDuration && (
                             <>
