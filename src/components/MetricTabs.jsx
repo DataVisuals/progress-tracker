@@ -199,11 +199,12 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
                     <span className="metric-tab-name">{metric}</span>
                   </button>
                   {canEdit && (
-                    <div className="metric-tab-menu">
+                    <div className="metric-tab-menu" ref={showDropdown === metric ? dropdownRef : null}>
                       <button
                         className="metric-menu-button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          console.log('Metric menu clicked:', metric, 'showDropdown was:', showDropdown);
                           setShowDropdown(showDropdown === metric ? null : metric);
                         }}
                         title="Metric options"
@@ -211,7 +212,8 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
                         ⋮
                       </button>
                       {showDropdown === metric && (
-                        <div className="metric-dropdown" ref={dropdownRef}>
+                        <div className="metric-dropdown" style={{ border: '2px solid red' }}>
+                          {console.log('Rendering dropdown for:', metric)}
                           <button onMouseDown={() => handleRename(metric)}>
                             Rename Metric
                           </button>

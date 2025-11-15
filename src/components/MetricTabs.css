@@ -2,10 +2,12 @@
   flex-shrink: 0;
   margin-bottom: 4px;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible; /* Changed from hidden to visible to allow dropdown */
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: #00aeef #f0f0f0;
+  padding-bottom: 80px; /* Add space for dropdown menu */
+  margin-bottom: -76px; /* Offset the padding to maintain layout */
 }
 
 .metric-tabs-container::-webkit-scrollbar {
