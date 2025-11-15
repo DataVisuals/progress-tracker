@@ -448,6 +448,26 @@ function App() {
     }
   };
 
+  const handleToleranceChange = async (newAmberTolerance, newRedTolerance) => {
+    try {
+      // Find the metric ID from the currently selected metric
+      const metric = projectMetrics.find(m => m.name === selectedMetric);
+      if (!metric) return;
+
+      await api.updateMetric(metric.id, {
+        amber_tolerance: newAmberTolerance,
+        red_tolerance: newRedTolerance
+      });
+
+      // Reload project data to reflect the new tolerance values
+      await loadProjectData();
+    } catch (err) {
+      console.error('Failed to update tolerances:', err);
+      alert('Failed to update tolerances: ' + (err.response?.data?.error || err.message));
+      throw err; // Re-throw so MetricChart can handle the error
+    }
+  };
+
   // Convert projects array to object format for ProjectSelector
   const projectsObject = projects.reduce((acc, project) => {
     acc[project.id] = {
@@ -864,6 +884,7 @@ function App() {
                   canEditData={canEdit() && !timeTravelTimestamp}
                   amberTolerance={amberTolerance}
                   redTolerance={redTolerance}
+                  onToleranceChange={handleToleranceChange}
                   timeTravelTimestamp={timeTravelTimestamp}
                   projectId={selectedProject}
                   onTimeTravelChange={handleTimeTravelChange}

@@ -219,11 +219,60 @@ const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance })
   return null;
 };
 
-const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance = 5.0, redTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin }) => {
+const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange }) => {
   console.log('MetricChart rendered with canEdit:', canEdit, 'canEditData:', canEditData);
   // canEditData is for commentary/data changes (blocked during time travel)
   // If not provided, default to canEdit for backwards compatibility
   const allowDataEdits = canEditData !== undefined ? canEditData : canEdit;
+
+  const [amberTolerance, setAmberTolerance] = useState(initialAmberTolerance);
+  const [redTolerance, setRedTolerance] = useState(initialRedTolerance);
+  const [editingTolerance, setEditingTolerance] = useState(null); // 'amber' or 'red'
+  const [tempToleranceValue, setTempToleranceValue] = useState('');
+
+  // Sync tolerances when props change
+  useEffect(() => {
+    setAmberTolerance(initialAmberTolerance);
+    setRedTolerance(initialRedTolerance);
+  }, [initialAmberTolerance, initialRedTolerance]);
+
+  const handleToleranceClick = (type) => {
+    if (!canEdit) return;
+    setEditingTolerance(type);
+    setTempToleranceValue(type === 'amber' ? amberTolerance : redTolerance);
+  };
+
+  const handleToleranceSave = async () => {
+    if (!editingTolerance || !onToleranceChange) return;
+
+    const newValue = parseFloat(tempToleranceValue);
+    if (isNaN(newValue) || newValue < 0 || newValue > 100) {
+      alert('Please enter a valid percentage between 0 and 100');
+      return;
+    }
+
+    try {
+      if (editingTolerance === 'amber') {
+        await onToleranceChange(newValue, redTolerance);
+        setAmberTolerance(newValue);
+      } else {
+        await onToleranceChange(amberTolerance, newValue);
+        setRedTolerance(newValue);
+      }
+      setEditingTolerance(null);
+    } catch (err) {
+      console.error('Failed to update tolerance:', err);
+      alert('Failed to update tolerance');
+    }
+  };
+
+  const handleToleranceKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleToleranceSave();
+    } else if (e.key === 'Escape') {
+      setEditingTolerance(null);
+    }
+  };
 
   const [isAdding, setIsAdding] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
@@ -961,7 +1010,33 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               onMouseLeave={() => setHighlightedSeries(null)}
             >
               <div className="legend-indicator" style={{ backgroundColor: '#f5ad5b' }}></div>
-              <span className="legend-text">Amber: &gt;{amberTolerance}% behind</span>
+              {editingTolerance === 'amber' ? (
+                <span className="legend-text">
+                  Amber: &gt;
+                  <input
+                    type="number"
+                    className="tolerance-input"
+                    value={tempToleranceValue}
+                    onChange={(e) => setTempToleranceValue(e.target.value)}
+                    onKeyDown={handleToleranceKeyDown}
+                    onBlur={handleToleranceSave}
+                    autoFocus
+                    min="0"
+                    max="100"
+                    step="0.1"
+                  />
+                  % behind
+                </span>
+              ) : (
+                <span
+                  className="legend-text"
+                  onClick={() => handleToleranceClick('amber')}
+                  style={canEdit ? { cursor: 'pointer' } : {}}
+                  title={canEdit ? 'Click to edit tolerance' : ''}
+                >
+                  Amber: &gt;{amberTolerance}% behind
+                </span>
+              )}
             </div>
             <div
               className={`legend-item ${highlightedSeries === 'red' ? 'active' : ''}`}
@@ -969,7 +1044,33 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               onMouseLeave={() => setHighlightedSeries(null)}
             >
               <div className="legend-indicator" style={{ backgroundColor: '#D0704d' }}></div>
-              <span className="legend-text">Red: &gt;{redTolerance}% behind</span>
+              {editingTolerance === 'red' ? (
+                <span className="legend-text">
+                  Red: &gt;
+                  <input
+                    type="number"
+                    className="tolerance-input"
+                    value={tempToleranceValue}
+                    onChange={(e) => setTempToleranceValue(e.target.value)}
+                    onKeyDown={handleToleranceKeyDown}
+                    onBlur={handleToleranceSave}
+                    autoFocus
+                    min="0"
+                    max="100"
+                    step="0.1"
+                  />
+                  % behind
+                </span>
+              ) : (
+                <span
+                  className="legend-text"
+                  onClick={() => handleToleranceClick('red')}
+                  style={canEdit ? { cursor: 'pointer' } : {}}
+                  title={canEdit ? 'Click to edit tolerance' : ''}
+                >
+                  Red: &gt;{redTolerance}% behind
+                </span>
+              )}
             </div>
             <div
               className={`legend-item ${highlightedSeries === 'remaining' ? 'active' : ''}`}
