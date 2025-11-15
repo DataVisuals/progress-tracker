@@ -21,7 +21,8 @@ const PortfolioReport = ({ portfolioId, onClose }) => {
       setError(null);
     } catch (err) {
       console.error('Failed to load portfolio report:', err);
-      setError('Failed to load portfolio report');
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to load portfolio report';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
