@@ -565,7 +565,7 @@ function createApp(dbPath) {
           if (ragStatus === 'red' || ragStatus === 'amber') {
             const comments = await dbAll(`
               SELECT comment_text, created_at, created_by
-              FROM period_comments
+              FROM comments
               WHERE period_id = ?
               ORDER BY created_at DESC
               LIMIT 1
