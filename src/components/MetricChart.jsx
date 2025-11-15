@@ -1129,14 +1129,14 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
         </div>
       </div>
 
-      {/* Tabbed Section - Data Table, Commentary, Time Travel, and Dependencies */}
+      {/* Tabbed Section - Latest Progress, Commentary, Time Travel, and Dependencies */}
       <div className="tabbed-section">
         <div className="tab-navigation">
           <button
             className={`tab-button ${activeTab === 'table' ? 'active' : ''}`}
             onClick={() => setActiveTab('table')}
           >
-            Data Table
+            Latest Progress
           </button>
           <button
             className={`tab-button ${activeTab === 'commentary' ? 'active' : ''}`}
@@ -1170,7 +1170,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           */}
         </div>
 
-        {/* Data Table Tab Content */}
+        {/* Latest Progress Tab Content */}
         {activeTab === 'table' && (
           <div className="tab-content">
             <div className="data-table-header">

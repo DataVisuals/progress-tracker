@@ -837,6 +837,129 @@ function createApp(dbPath) {
     }
   });
 
+  // Edit feedback text (user can only edit their own)
+  app.put('/api/feedback/:id', authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { text } = req.body;
+
+      if (!text || !text.trim()) {
+        return res.status(400).json({ error: 'Feedback text is required' });
+      }
+
+      const feedback = await dbGet('SELECT * FROM feedback WHERE id = ?', [id]);
+      if (!feedback) {
+        return res.status(404).json({ error: 'Feedback not found' });
+      }
+
+      // Only the feedback creator can edit it
+      if (feedback.user_id !== req.user.userId) {
+        return res.status(403).json({ error: 'You can only edit your own feedback' });
+      }
+
+      await dbRun(
+        `UPDATE feedback
+         SET text = ?,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [text.trim(), id]
+      );
+
+      const updatedFeedback = await dbGet(
+        `SELECT f.*,
+                u.name as user_name,
+                u.email as user_email,
+                r.name as responder_name,
+                s.name as resolver_name
+         FROM feedback f
+         LEFT JOIN users u ON f.user_id = u.id
+         LEFT JOIN users r ON f.responded_by = r.id
+         LEFT JOIN users s ON f.resolved_by = s.id
+         WHERE f.id = ?`,
+        [id]
+      );
+
+      await logAudit(
+        req.user,
+        'UPDATE',
+        'feedback',
+        id,
+        feedback,
+        updatedFeedback,
+        `Edited feedback text`,
+        req.ip
+      );
+
+      res.json(updatedFeedback);
+    } catch (err) {
+      console.error('Edit feedback error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Edit PM response (PMs only)
+  app.put('/api/feedback/:id/edit-response', authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { pm_response } = req.body;
+
+      if (!isPMOrAbove(req.user)) {
+        return res.status(403).json({ error: 'Only PMs and admins can edit responses' });
+      }
+
+      if (!pm_response || !pm_response.trim()) {
+        return res.status(400).json({ error: 'Response text is required' });
+      }
+
+      const feedback = await dbGet('SELECT * FROM feedback WHERE id = ?', [id]);
+      if (!feedback) {
+        return res.status(404).json({ error: 'Feedback not found' });
+      }
+
+      if (!feedback.pm_response) {
+        return res.status(400).json({ error: 'No response exists to edit' });
+      }
+
+      await dbRun(
+        `UPDATE feedback
+         SET pm_response = ?,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [pm_response.trim(), id]
+      );
+
+      const updatedFeedback = await dbGet(
+        `SELECT f.*,
+                u.name as user_name,
+                u.email as user_email,
+                r.name as responder_name,
+                s.name as resolver_name
+         FROM feedback f
+         LEFT JOIN users u ON f.user_id = u.id
+         LEFT JOIN users r ON f.responded_by = r.id
+         LEFT JOIN users s ON f.resolved_by = s.id
+         WHERE f.id = ?`,
+        [id]
+      );
+
+      await logAudit(
+        req.user,
+        'UPDATE',
+        'feedback',
+        id,
+        feedback,
+        updatedFeedback,
+        `Edited PM response to feedback`,
+        req.ip
+      );
+
+      res.json(updatedFeedback);
+    } catch (err) {
+      console.error('Edit response error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== PROJECTS =====
   app.get('/api/projects', async (req, res) => {
     try {

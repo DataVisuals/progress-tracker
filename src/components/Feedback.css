@@ -347,3 +347,45 @@
   color: #059669;
   font-weight: 500;
 }
+
+.btn-edit-small {
+  background: transparent;
+  color: #6b7280;
+  border: none;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  margin-top: 4px;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.btn-edit-small:hover {
+  color: #00aeef;
+}
+
+.edit-container {
+  margin-top: 4px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.btn-cancel {
+  background: #9ca3af;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 13px;
+}
+
+.btn-cancel:hover {
+  background: #6b7280;
+}

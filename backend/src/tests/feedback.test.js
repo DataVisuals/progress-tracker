@@ -333,4 +333,214 @@ describe('Feedback API Tests', () => {
       expect(resolvedFeedback.status).toBe('resolved');
     });
   });
+
+  describe('PUT /api/feedback/:id (edit feedback)', () => {
+    test('should allow user to edit their own feedback', async () => {
+      // Create feedback
+      const createResponse = await request(app)
+        .post('/api/feedback')
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .send({
+          text: 'Original feedback text'
+        });
+
+      const feedbackId = createResponse.body.id;
+
+      // Edit the feedback
+      const response = await request(app)
+        .put(`/api/feedback/${feedbackId}`)
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .send({
+          text: 'Updated feedback text'
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.text).toBe('Updated feedback text');
+    });
+
+    test('should reject editing feedback from different user', async () => {
+      // Viewer creates feedback
+      const createResponse = await request(app)
+        .post('/api/feedback')
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .send({
+          text: 'Viewer feedback'
+        });
+
+      const feedbackId = createResponse.body.id;
+
+      // PM tries to edit it
+      const response = await request(app)
+        .put(`/api/feedback/${feedbackId}`)
+        .set('Authorization', `Bearer ${pmToken}`)
+        .send({
+          text: 'PM trying to edit'
+        });
+
+      expect(response.status).toBe(403);
+    });
+
+    test('should reject editing without authentication', async () => {
+      const response = await request(app)
+        .put(`/api/feedback/${testFeedbackId}`)
+        .send({
+          text: 'Unauthenticated edit'
+        });
+
+      expect(response.status).toBe(401);
+    });
+
+    test('should reject editing without text', async () => {
+      const response = await request(app)
+        .put(`/api/feedback/${testFeedbackId}`)
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .send({});
+
+      expect(response.status).toBe(400);
+    });
+
+    test('should reject editing with empty text', async () => {
+      const response = await request(app)
+        .put(`/api/feedback/${testFeedbackId}`)
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .send({
+          text: '   '
+        });
+
+      expect(response.status).toBe(400);
+    });
+
+    test('should return 404 for non-existent feedback', async () => {
+      const response = await request(app)
+        .put('/api/feedback/99999')
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .send({
+          text: 'Edit non-existent feedback'
+        });
+
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe('PUT /api/feedback/:id/edit-response (edit PM response)', () => {
+    test('should allow PM to edit their response', async () => {
+      // Create feedback and respond
+      const createResponse = await request(app)
+        .post('/api/feedback')
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .send({
+          text: 'Feedback needing response'
+        });
+
+      const feedbackId = createResponse.body.id;
+
+      await request(app)
+        .put(`/api/feedback/${feedbackId}/respond`)
+        .set('Authorization', `Bearer ${pmToken}`)
+        .send({
+          pm_response: 'Original response'
+        });
+
+      // Edit the response
+      const response = await request(app)
+        .put(`/api/feedback/${feedbackId}/edit-response`)
+        .set('Authorization', `Bearer ${pmToken}`)
+        .send({
+          pm_response: 'Updated response'
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.pm_response).toBe('Updated response');
+    });
+
+    test('should allow admin to edit PM response', async () => {
+      // Create feedback and respond
+      const createResponse = await request(app)
+        .post('/api/feedback')
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .send({
+          text: 'Feedback for admin response edit'
+        });
+
+      const feedbackId = createResponse.body.id;
+
+      await request(app)
+        .put(`/api/feedback/${feedbackId}/respond`)
+        .set('Authorization', `Bearer ${pmToken}`)
+        .send({
+          pm_response: 'PM response'
+        });
+
+      // Admin edits the response
+      const response = await request(app)
+        .put(`/api/feedback/${feedbackId}/edit-response`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          pm_response: 'Admin edited response'
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.pm_response).toBe('Admin edited response');
+    });
+
+    test('should reject viewer attempting to edit response', async () => {
+      const response = await request(app)
+        .put(`/api/feedback/${testFeedbackId}/edit-response`)
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .send({
+          pm_response: 'Viewer trying to edit'
+        });
+
+      expect(response.status).toBe(403);
+    });
+
+    test('should reject editing response without authentication', async () => {
+      const response = await request(app)
+        .put(`/api/feedback/${testFeedbackId}/edit-response`)
+        .send({
+          pm_response: 'Unauthenticated edit'
+        });
+
+      expect(response.status).toBe(401);
+    });
+
+    test('should reject editing response without text', async () => {
+      const response = await request(app)
+        .put(`/api/feedback/${testFeedbackId}/edit-response`)
+        .set('Authorization', `Bearer ${pmToken}`)
+        .send({});
+
+      expect(response.status).toBe(400);
+    });
+
+    test('should reject editing non-existent response', async () => {
+      // Create feedback without response
+      const createResponse = await request(app)
+        .post('/api/feedback')
+        .set('Authorization', `Bearer ${viewerToken}`)
+        .send({
+          text: 'Feedback without response'
+        });
+
+      const response = await request(app)
+        .put(`/api/feedback/${createResponse.body.id}/edit-response`)
+        .set('Authorization', `Bearer ${pmToken}`)
+        .send({
+          pm_response: 'Trying to edit non-existent response'
+        });
+
+      expect(response.status).toBe(400);
+    });
+
+    test('should return 404 for non-existent feedback', async () => {
+      const response = await request(app)
+        .put('/api/feedback/99999/edit-response')
+        .set('Authorization', `Bearer ${pmToken}`)
+        .send({
+          pm_response: 'Edit response on non-existent feedback'
+        });
+
+      expect(response.status).toBe(404);
+    });
+  });
 });

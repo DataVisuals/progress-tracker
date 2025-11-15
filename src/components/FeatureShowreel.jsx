@@ -14,7 +14,12 @@ import {
   MdShare,
   MdHistory,
   MdSecurity,
-  MdAssessment
+  MdAssessment,
+  MdFeedback,
+  MdComment,
+  MdPictureAsPdf,
+  MdTune,
+  MdLink
 } from 'react-icons/md';
 import './FeatureShowreel.css';
 
@@ -96,13 +101,20 @@ const FeatureShowreel = ({ onClose }) => {
       { icon: <MdSpeed />, name: "RAG Status Indicators", desc: "Visual Red/Amber/Green status on all metrics" },
       { icon: <MdTimeline />, name: "Progress Curves", desc: "Expected vs actual progress visualization" },
       { icon: <MdTrendingUp />, name: "Trend Analysis", desc: "Identify flat trajectories and changes" },
-      { icon: <MdEdit />, name: "Inline Editing", desc: "Double-click to rename projects and metrics" }
+      { icon: <MdEdit />, name: "Inline Editing", desc: "Double-click to rename projects and metrics" },
+      { icon: <MdTune />, name: "Tolerance Configuration", desc: "Adjust amber/red thresholds per metric" }
     ],
     "Data Management": [
       { icon: <MdList />, name: "Data Grid Editor", desc: "Spreadsheet-like interface for bulk updates" },
       { icon: <MdHistory />, name: "Time Travel", desc: "View historical data at any point in time" },
       { icon: <MdShare />, name: "Shareable Links", desc: "Direct URLs to specific projects and metrics" },
-      { icon: <MdAssessment />, name: "Import/Export", desc: "CSV import and data export functionality" }
+      { icon: <MdAssessment />, name: "Import/Export", desc: "CSV import and data export functionality" },
+      { icon: <MdPictureAsPdf />, name: "PDF Export", desc: "Export metric charts with data tables" }
+    ],
+    "Collaboration": [
+      { icon: <MdComment />, name: "PM Commentary", desc: "Add context and commentary to metrics" },
+      { icon: <MdFeedback />, name: "Feedback Threads", desc: "Submit feedback and PM responses" },
+      { icon: <MdLink />, name: "Project Links", desc: "Add external links to project resources" }
     ],
     "Organization": [
       { icon: <MdFolderSpecial />, name: "Portfolios", desc: "Group projects with color-coded portfolios" },

@@ -10,6 +10,9 @@ const Feedback = ({ currentUser }) => {
   const [feedbackText, setFeedbackText] = useState('');
   const [responseText, setResponseText] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [editingFeedback, setEditingFeedback] = useState(null);
+  const [editingResponse, setEditingResponse] = useState(null);
+  const [editText, setEditText] = useState({});
 
   const isPMOrAbove = currentUser && (currentUser.role === 'pm' || currentUser.role === 'admin');
 
@@ -75,6 +78,42 @@ const Feedback = ({ currentUser }) => {
     } catch (err) {
       console.error('Failed to update feedback status:', err);
       alert('Failed to update status. Please try again.');
+    }
+  };
+
+  const handleEditFeedback = async (feedbackId) => {
+    const text = editText[feedbackId];
+    if (!text?.trim()) {
+      alert('Please enter feedback text');
+      return;
+    }
+
+    try {
+      await api.put(`/feedback/${feedbackId}`, { text });
+      setEditingFeedback(null);
+      setEditText({ ...editText, [feedbackId]: '' });
+      loadFeedback();
+    } catch (err) {
+      console.error('Failed to edit feedback:', err);
+      alert('Failed to edit feedback. Please try again.');
+    }
+  };
+
+  const handleEditResponse = async (feedbackId) => {
+    const pm_response = editText[`response_${feedbackId}`];
+    if (!pm_response?.trim()) {
+      alert('Please enter a response');
+      return;
+    }
+
+    try {
+      await api.put(`/feedback/${feedbackId}/edit-response`, { pm_response });
+      setEditingResponse(null);
+      setEditText({ ...editText, [`response_${feedbackId}`]: '' });
+      loadFeedback();
+    } catch (err) {
+      console.error('Failed to edit response:', err);
+      alert('Failed to edit response. Please try again.');
     }
   };
 
@@ -176,7 +215,40 @@ const Feedback = ({ currentUser }) => {
               </div>
 
               <div className="thread-content">
-                <p className="thread-description">{item.text}</p>
+                {editingFeedback === item.id ? (
+                  <div className="edit-container">
+                    <textarea
+                      className="response-input"
+                      value={editText[item.id]}
+                      onChange={(e) => setEditText({ ...editText, [item.id]: e.target.value })}
+                      rows="3"
+                      autoFocus
+                    />
+                    <div className="edit-actions">
+                      <button className="btn-respond" onClick={() => handleEditFeedback(item.id)}>
+                        Save
+                      </button>
+                      <button className="btn-cancel" onClick={() => setEditingFeedback(null)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="thread-description">{item.text}</p>
+                    {currentUser && currentUser.userId === item.user_id && (
+                      <button
+                        className="btn-edit-small"
+                        onClick={() => {
+                          setEditingFeedback(item.id);
+                          setEditText({ ...editText, [item.id]: item.text });
+                        }}
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {item.pm_response && (
@@ -185,7 +257,40 @@ const Feedback = ({ currentUser }) => {
                     <span className="response-author">{item.responder_name || 'PM'}</span>
                     <span className="response-date">{formatDate(item.responded_at)}</span>
                   </div>
-                  <p className="response-text">{item.pm_response}</p>
+                  {editingResponse === item.id ? (
+                    <div className="edit-container">
+                      <textarea
+                        className="response-input"
+                        value={editText[`response_${item.id}`]}
+                        onChange={(e) => setEditText({ ...editText, [`response_${item.id}`]: e.target.value })}
+                        rows="2"
+                        autoFocus
+                      />
+                      <div className="edit-actions">
+                        <button className="btn-respond" onClick={() => handleEditResponse(item.id)}>
+                          Save
+                        </button>
+                        <button className="btn-cancel" onClick={() => setEditingResponse(null)}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="response-text">{item.pm_response}</p>
+                      {isPMOrAbove && (
+                        <button
+                          className="btn-edit-small"
+                          onClick={() => {
+                            setEditingResponse(item.id);
+                            setEditText({ ...editText, [`response_${item.id}`]: item.pm_response });
+                          }}
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
