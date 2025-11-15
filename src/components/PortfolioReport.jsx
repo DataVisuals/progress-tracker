@@ -136,10 +136,12 @@ const PortfolioReport = ({ portfolioId, onClose }) => {
 
   if (error) {
     return (
-      <div className="portfolio-report-modal">
-        <div className="report-content error">
-          <p>{error}</p>
-          <button onClick={onClose} className="close-btn">Close</button>
+      <div className="portfolio-report-modal" onClick={onClose}>
+        <div className="report-content error" onClick={(e) => e.stopPropagation()}>
+          <div className="error-icon">⚠️</div>
+          <h3>Unable to Load Report</h3>
+          <p className="error-message">{error}</p>
+          <button onClick={onClose} className="error-close-btn">Close</button>
         </div>
       </div>
     );
