@@ -133,7 +133,7 @@ export default function PortfolioSelector({
                     onClick={handleManageClick}
                     role="option"
                   >
-                    <span className="option-name">⚙️ Manage Portfolios...</span>
+                    <span className="option-name">+ Manage Portfolios...</span>
                   </div>
                 </>
               )}
