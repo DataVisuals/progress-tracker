@@ -138,12 +138,12 @@
 }
 
 .portfolio-header-option:hover {
-  background-color: #e5e7eb;
+  color: #00aeef;
 }
 
 .portfolio-header-option.selected {
-  background-color: #00aeef;
-  color: white;
+  color: #00aeef;
+  font-weight: 700;
 }
 
 .portfolio-manage-icon-btn {
