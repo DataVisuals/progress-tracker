@@ -168,6 +168,9 @@ const Feedback = ({ currentUser }) => {
                   <span className="thread-date">{formatDate(item.created_at)}</span>
                   <span className={`thread-status ${getStatusBadge(item.status)}`}>
                     {item.status}
+                    {item.status === 'resolved' && item.resolved_at && (
+                      <span className="status-date"> {formatDate(item.resolved_at)}</span>
+                    )}
                   </span>
                 </div>
               </div>
