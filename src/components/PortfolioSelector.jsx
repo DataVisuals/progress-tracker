@@ -97,24 +97,30 @@ export default function PortfolioSelector({
 
         {isOpen && (
           <div className="portfolio-select-dropdown" role="listbox">
-            <div className="portfolio-dropdown-header">
-              <div
-                className={`portfolio-header-option ${!selectedPortfolio ? 'selected' : ''}`}
-                onClick={() => handleSelect(null)}
-              >
-                All Projects
-              </div>
-              {onManagePortfolios && (
+            {onManagePortfolios && (
+              <div className="portfolio-dropdown-header">
+                <span className="header-title">Portfolios</span>
                 <button
-                  className="portfolio-manage-icon-btn"
+                  className="portfolio-manage-btn"
                   onClick={handleManageClick}
                   title="Manage Portfolios"
                 >
-                  +
+                  Manage
                 </button>
-              )}
-            </div>
+              </div>
+            )}
             <div className="portfolio-options-list">
+              <div
+                className={`portfolio-option-item all-projects-option ${!selectedPortfolio ? 'selected' : ''}`}
+                onClick={() => handleSelect(null)}
+                role="option"
+                aria-selected={!selectedPortfolio}
+              >
+                <div className="option-content">
+                  <span className="all-projects-icon">◆</span>
+                  <span className="option-name">All Projects</span>
+                </div>
+              </div>
               {portfolios.map(portfolio => (
                 <div
                   key={portfolio.id}

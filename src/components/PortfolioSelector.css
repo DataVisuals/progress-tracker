@@ -120,53 +120,51 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 8px 12px;
   background: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
   gap: 8px;
 }
 
-.portfolio-header-option {
-  flex: 1;
-  font-size: 12px;
+.header-title {
+  font-size: 11px;
   font-weight: 600;
-  color: #1f2937;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.portfolio-manage-btn {
+  background: none;
+  border: none;
+  color: #00aeef;
+  font-size: 11px;
+  font-weight: 600;
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
-  transition: all 0.15s;
+  transition: all 0.2s;
 }
 
-.portfolio-header-option:hover {
-  color: #00aeef;
+.portfolio-manage-btn:hover {
+  background: rgba(0, 174, 239, 0.1);
+  color: #0095d1;
 }
 
-.portfolio-header-option.selected {
-  color: #00aeef;
-  font-weight: 700;
+.all-projects-option {
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 600;
 }
 
-.portfolio-manage-icon-btn {
-  background: white;
-  border: 2px solid #d1d5db;
-  color: #6b7280;
-  width: 26px;
-  height: 26px;
-  border-radius: 4px;
+.all-projects-icon {
+  width: 10px;
+  height: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: 700;
-  transition: all 0.2s;
+  color: #6b7280;
+  font-size: 10px;
   flex-shrink: 0;
-}
-
-.portfolio-manage-icon-btn:hover {
-  background: #00aeef;
-  border-color: #00aeef;
-  color: white;
 }
 
 .portfolio-options-list {
