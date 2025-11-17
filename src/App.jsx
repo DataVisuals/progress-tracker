@@ -442,12 +442,13 @@ function App() {
     setEditPortfolioValue(currentProject?.portfolio_id || null);
   };
 
-  const handlePortfolioChange = (option) => {
-    if (option && option.value === '__create__') {
+  const handlePortfolioOptionClick = (portfolioId) => {
+    if (portfolioId === '__create__') {
       setShowPortfolioManager(true);
+      setEditingPortfolio(false);
       return;
     }
-    setEditPortfolioValue(option ? option.value : null);
+    setEditPortfolioValue(portfolioId);
   };
 
   const handleSavePortfolio = async () => {
@@ -916,25 +917,51 @@ function App() {
                       <label className="portfolio-label">Portfolio:</label>
                       {editingPortfolio ? (
                         <div className="portfolio-editor">
-                          <Select
-                            value={editPortfolioValue ? { value: editPortfolioValue, label: portfolios.find(p => p.id === editPortfolioValue)?.name } : null}
-                            onChange={handlePortfolioChange}
-                            options={[
-                              { value: null, label: 'No Portfolio' },
-                              ...portfolios.map(p => ({ value: p.id, label: p.name })),
-                              { value: '__create__', label: '+ Create New Portfolio...' }
-                            ]}
-                            styles={selectStyles}
-                            placeholder="Select portfolio..."
-                            menuPortalTarget={document.body}
-                            menuPosition="fixed"
-                          />
-                          <button onClick={handleSavePortfolio} className="save-btn">
-                            Save
-                          </button>
-                          <button onClick={() => setEditingPortfolio(false)} className="cancel-btn">
-                            Cancel
-                          </button>
+                          <div className="portfolio-edit-dropdown">
+                            <div
+                              className="portfolio-option-item"
+                              onClick={() => handlePortfolioOptionClick(null)}
+                            >
+                              <div className="option-content">
+                                <span className="no-portfolio-icon">◆</span>
+                                <span className="option-name">No Portfolio</span>
+                                {editPortfolioValue === null && <span className="selected-check">✓</span>}
+                              </div>
+                            </div>
+                            {portfolios.map(portfolio => (
+                              <div
+                                key={portfolio.id}
+                                className={`portfolio-option-item ${editPortfolioValue === portfolio.id ? 'selected' : ''}`}
+                                onClick={() => handlePortfolioOptionClick(portfolio.id)}
+                              >
+                                <div className="option-content">
+                                  <span
+                                    className="portfolio-color-dot"
+                                    style={{ backgroundColor: portfolio.color }}
+                                  />
+                                  <span className="option-name">{portfolio.name}</span>
+                                  {editPortfolioValue === portfolio.id && <span className="selected-check">✓</span>}
+                                </div>
+                              </div>
+                            ))}
+                            <div
+                              className="portfolio-option-item create-new"
+                              onClick={() => handlePortfolioOptionClick('__create__')}
+                            >
+                              <div className="option-content">
+                                <span className="create-icon">+</span>
+                                <span className="option-name">Create New Portfolio...</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="portfolio-editor-actions">
+                            <button onClick={handleSavePortfolio} className="save-btn">
+                              Save
+                            </button>
+                            <button onClick={() => setEditingPortfolio(false)} className="cancel-btn">
+                              Cancel
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div

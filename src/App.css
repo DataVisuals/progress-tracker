@@ -502,13 +502,106 @@
 
 .portfolio-editor {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 12px;
   flex: 1;
 }
 
-.portfolio-editor > div:first-child {
-  min-width: 250px;
+.portfolio-edit-dropdown {
+  background: white;
+  border: 2px solid #00aeef;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.portfolio-edit-dropdown .portfolio-option-item {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #1f2937;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.portfolio-edit-dropdown .portfolio-option-item:last-child {
+  border-bottom: none;
+}
+
+.portfolio-edit-dropdown .portfolio-option-item .option-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.portfolio-edit-dropdown .portfolio-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.portfolio-edit-dropdown .no-portfolio-icon {
+  width: 10px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.portfolio-edit-dropdown .create-icon {
+  width: 10px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00aeef;
+  font-size: 16px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.portfolio-edit-dropdown .option-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.portfolio-edit-dropdown .selected-check {
+  color: #00aeef;
+  font-weight: bold;
+  font-size: 14px;
+  margin-left: auto;
+}
+
+.portfolio-edit-dropdown .portfolio-option-item:hover {
+  background-color: #f0f9ff;
+  color: #003c71;
+}
+
+.portfolio-edit-dropdown .portfolio-option-item.selected {
+  background-color: #e6f7ff;
+  font-weight: 600;
+}
+
+.portfolio-edit-dropdown .portfolio-option-item.create-new {
+  border-top: 2px solid #e5e7eb;
+  font-weight: 500;
+}
+
+.portfolio-edit-dropdown .portfolio-option-item.create-new:hover {
+  background-color: #f0f9ff;
+  color: #00aeef;
+}
+
+.portfolio-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .portfolio-display {
