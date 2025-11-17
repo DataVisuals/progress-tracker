@@ -220,7 +220,7 @@ const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance })
   return null;
 };
 
-const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange, currentUser }) => {
+const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange, onTargetChange, onProgressionChange, currentUser }) => {
   console.log('MetricChart rendered with canEdit:', canEdit, 'canEditData:', canEditData);
   // canEditData is for commentary/data changes (blocked during time travel)
   // If not provided, default to canEdit for backwards compatibility
@@ -230,6 +230,10 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   const [redTolerance, setRedTolerance] = useState(initialRedTolerance);
   const [editingTolerance, setEditingTolerance] = useState(null); // 'amber' or 'red'
   const [tempToleranceValue, setTempToleranceValue] = useState('');
+  const [editingTarget, setEditingTarget] = useState(false);
+  const [tempTargetValue, setTempTargetValue] = useState('');
+  const [editingProgression, setEditingProgression] = useState(false);
+  const [tempProgressionValue, setTempProgressionValue] = useState('');
 
   // Sync tolerances when props change
   useEffect(() => {
@@ -275,6 +279,73 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     }
   };
 
+  const handleTargetClick = () => {
+    if (!canEdit || !onTargetChange) return;
+    const currentTarget = metricMetadata?.final_target || sortedData[0]?.final_target || 0;
+    setEditingTarget(true);
+    setTempTargetValue(currentTarget.toString());
+  };
+
+  const handleTargetSave = async () => {
+    if (!onTargetChange) return;
+
+    const newValue = parseFloat(tempTargetValue);
+    if (isNaN(newValue) || newValue <= 0) {
+      alert('Please enter a valid target value (greater than 0)');
+      return;
+    }
+
+    try {
+      await onTargetChange(newValue);
+      setEditingTarget(false);
+    } catch (err) {
+      console.error('Failed to update target:', err);
+      alert('Failed to update target');
+    }
+  };
+
+  const handleTargetKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleTargetSave();
+    } else if (e.key === 'Escape') {
+      setEditingTarget(false);
+    }
+  };
+
+  const handleProgressionClick = () => {
+    if (!canEdit || !onProgressionChange) return;
+    // If custom curve, show "custom" in picker, otherwise show the progression type
+    const currentProgression = metricMetadata?.is_custom ? 'custom' : (metricMetadata?.progression_type || sortedData[0]?.progression_type || 'linear');
+    setEditingProgression(true);
+    setTempProgressionValue(currentProgression);
+  };
+
+  const handleProgressionSave = async () => {
+    if (!onProgressionChange) return;
+
+    // Check if value actually changed
+    const currentValue = metricMetadata?.is_custom ? 'custom' : metricMetadata?.progression_type;
+    if (tempProgressionValue === currentValue) {
+      // No change, just close the editor
+      setEditingProgression(false);
+      return;
+    }
+
+    // Don't save if "custom" is selected - it means keep current values
+    if (tempProgressionValue === 'custom') {
+      setEditingProgression(false);
+      return;
+    }
+
+    try {
+      await onProgressionChange(tempProgressionValue);
+      setEditingProgression(false);
+    } catch (err) {
+      console.error('Failed to update progression:', err);
+      alert('Failed to update progression');
+    }
+  };
+
   const [isAdding, setIsAdding] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [newCommentText, setNewCommentText] = useState('');
@@ -297,11 +368,56 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     return new Date(a.reporting_date) - new Date(b.reporting_date);
   });
 
+  // Helper function to calculate expected value based on progression type
+  const calculateExpectedValue = (progressionType, finalTarget, periodIndex, totalPeriods) => {
+    const ratio = periodIndex / totalPeriods;
+
+    switch(progressionType) {
+      case 'linear':
+        return Math.round(finalTarget * ratio);
+      case 's-curve':
+        return Math.round(finalTarget / (1 + Math.exp(-10 * (ratio - 0.5))));
+      case 'exponential':
+        return Math.round(finalTarget * (Math.exp(3 * ratio) - 1) / (Math.exp(3) - 1));
+      case 'logarithmic':
+        return Math.round(finalTarget * Math.sqrt(ratio));
+      default:
+        return Math.round(finalTarget * ratio);
+    }
+  };
+
   // Get metric metadata from first data point (all periods have same metric metadata)
-  const metricMetadata = sortedData.length > 0 ? {
+  const baseMetadata = sortedData.length > 0 ? {
     start_date: sortedData[0].start_date,
     end_date: sortedData[0].end_date,
-    frequency: sortedData[0].frequency
+    frequency: sortedData[0].frequency,
+    final_target: sortedData[0].final_target,
+    progression_type: sortedData[0].progression_type
+  } : null;
+
+  // Check if the curve is custom (manually edited expected values)
+  const isCustomCurve = baseMetadata ? (() => {
+    const { progression_type, final_target } = baseMetadata;
+    const totalPeriods = sortedData.length;
+
+    // Check if any expected value differs from calculated progression
+    for (let i = 0; i < sortedData.length; i++) {
+      const calculatedExpected = calculateExpectedValue(progression_type, final_target, i + 1, totalPeriods);
+      const actualExpected = sortedData[i].expected;
+
+      // Allow for small rounding differences
+      if (Math.abs(calculatedExpected - actualExpected) > 0.5) {
+        return true;
+      }
+    }
+
+    return false;
+  })() : false;
+
+  // Add is_custom flag to metadata
+  const metricMetadata = baseMetadata ? {
+    ...baseMetadata,
+    is_custom: isCustomCurve
   } : null;
 
   // Calculate duration in days and months if metadata is available
@@ -892,6 +1008,77 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               </svg>
               PDF
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Metric Properties Row */}
+      {metricMetadata && (
+        <div className="metric-properties-row" style={{ display: 'flex', gap: '20px', padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}>
+          <div className="metric-property">
+            <span className="property-label">Target:</span>
+            {editingTarget && onTargetChange ? (
+              <div style={{ display: 'inline-flex', gap: '4px', alignItems: 'center' }}>
+                <input
+                  type="number"
+                  className="tolerance-input"
+                  value={tempTargetValue}
+                  onChange={(e) => setTempTargetValue(e.target.value)}
+                  onKeyDown={handleTargetKeyDown}
+                  onBlur={handleTargetSave}
+                  autoFocus
+                  style={{ width: '80px' }}
+                />
+                <button onClick={handleTargetSave} style={{ fontSize: '11px', padding: '2px 6px' }}>✓</button>
+                <button onClick={() => setEditingTarget(false)} style={{ fontSize: '11px', padding: '2px 6px' }}>✕</button>
+              </div>
+            ) : (
+              <span
+                className="property-value"
+                onClick={handleTargetClick}
+                style={canEdit && onTargetChange ? { cursor: 'pointer', textDecoration: 'underline dotted' } : {}}
+                title={canEdit && onTargetChange ? 'Click to edit target' : ''}
+              >
+                {formatNumber(metricMetadata.final_target || 0)}
+              </span>
+            )}
+          </div>
+          <div className="metric-property">
+            <span className="property-label">Progression:</span>
+            {editingProgression && onProgressionChange ? (
+              <div style={{ display: 'inline-flex', gap: '4px', alignItems: 'center' }}>
+                <select
+                  className="progression-select"
+                  value={tempProgressionValue}
+                  onChange={(e) => setTempProgressionValue(e.target.value)}
+                  onBlur={handleProgressionSave}
+                  autoFocus
+                  style={{ fontSize: '12px', padding: '2px 6px' }}
+                >
+                  <option value="custom">Custom (Keep manual values)</option>
+                  <option value="linear">Linear</option>
+                  <option value="exponential">Exponential (Back-loaded)</option>
+                  <option value="s-curve">S-curve</option>
+                  <option value="logarithmic">Logarithmic (Front-loaded)</option>
+                </select>
+                <button onClick={handleProgressionSave} style={{ fontSize: '11px', padding: '2px 6px' }}>✓</button>
+                <button onClick={() => setEditingProgression(false)} style={{ fontSize: '11px', padding: '2px 6px' }}>✕</button>
+              </div>
+            ) : (
+              <span
+                className={`property-value ${metricMetadata.is_custom ? 'custom-curve' : ''}`}
+                onClick={handleProgressionClick}
+                style={canEdit && onProgressionChange ? { cursor: 'pointer', textDecoration: 'underline dotted' } : {}}
+                title={canEdit && onProgressionChange ? 'Click to edit progression type' : (metricMetadata.is_custom ? 'Expected values have been manually customized' : '')}
+              >
+                {metricMetadata.is_custom ? 'Custom' :
+                 metricMetadata.progression_type === 'linear' ? 'Linear' :
+                 metricMetadata.progression_type === 'exponential' ? 'Exponential' :
+                 metricMetadata.progression_type === 's-curve' ? 'S-curve' :
+                 metricMetadata.progression_type === 'logarithmic' ? 'Logarithmic' :
+                 metricMetadata.progression_type || 'Linear'}
+              </span>
+            )}
           </div>
         </div>
       )}

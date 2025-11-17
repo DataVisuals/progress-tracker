@@ -1359,14 +1359,37 @@ function createApp(dbPath) {
   
       values.push(req.params.id);
       await dbRun(`UPDATE metrics SET ${updates.join(', ')} WHERE id = ?`, values);
-  
+
+      // If final_target or progression_type changed, recalculate expected values for all periods
+      if (final_target !== undefined || progression_type !== undefined) {
+        const updatedMetric = await dbGet('SELECT * FROM metrics WHERE id = ?', [req.params.id]);
+        const periods = await dbAll(
+          'SELECT id, reporting_date FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date ASC',
+          [req.params.id]
+        );
+
+        const totalPeriods = periods.length;
+        for (let i = 0; i < periods.length; i++) {
+          const expected = calculateExpectedValue(
+            updatedMetric.progression_type,
+            updatedMetric.final_target,
+            i + 1,
+            totalPeriods
+          );
+          await dbRun(
+            'UPDATE metric_periods SET expected = ?, target = ? WHERE id = ?',
+            [expected, updatedMetric.final_target, periods[i].id]
+          );
+        }
+      }
+
       await logAudit(req.user, 'UPDATE', 'metrics', req.params.id,
         oldValues,
         newValues,
         `Updated metric "${metric.name}"`,
         req.ip
       );
-  
+
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -1450,6 +1473,7 @@ function createApp(dbPath) {
           m.start_date,
           m.end_date,
           m.frequency,
+          m.progression_type,
           m.metric_type,
           p.name as initiative,
           u.name as owner,

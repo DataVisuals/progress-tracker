@@ -196,6 +196,57 @@
   opacity: 0.7;
 }
 
+/* Metric Properties Row */
+.metric-properties-row {
+  margin: 8px 0;
+}
+
+.metric-property {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.property-label {
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.property-value {
+  font-weight: 500;
+  color: #003c71;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: #f3f4f6;
+  transition: all 0.2s;
+}
+
+.property-value:hover {
+  background-color: #e5e7eb;
+}
+
+/* Custom curve indicator styling */
+.property-value.custom-curve {
+  background-color: #fef3c7;
+  color: #92400e;
+  font-style: italic;
+}
+
+.progression-select {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background-color: white;
+  color: #374151;
+  cursor: pointer;
+}
+
+.progression-select:focus {
+  outline: none;
+  border-color: #00aeef;
+  box-shadow: 0 0 0 2px rgba(0, 174, 239, 0.1);
+}
+
 /* Tabbed Section */
 .tabbed-section {
   margin-top: 8px;

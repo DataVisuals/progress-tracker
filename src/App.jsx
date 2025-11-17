@@ -507,6 +507,46 @@ function App() {
     }
   };
 
+  const handleTargetChange = async (newTarget) => {
+    try {
+      // Find the metric ID from the currently selected metric
+      const metric = projectMetrics.find(m => m.name === selectedMetric);
+      if (!metric) return;
+
+      await api.updateMetric(metric.id, {
+        final_target: parseFloat(newTarget)
+      });
+
+      // Reload both project data and metrics to reflect the new target
+      await loadProjectData();
+      await loadProjectMetrics();
+    } catch (err) {
+      console.error('Failed to update target:', err);
+      alert('Failed to update target: ' + (err.response?.data?.error || err.message));
+      throw err;
+    }
+  };
+
+  const handleProgressionChange = async (newProgression) => {
+    try {
+      // Find the metric ID from the currently selected metric
+      const metric = projectMetrics.find(m => m.name === selectedMetric);
+      if (!metric) return;
+
+      await api.updateMetric(metric.id, {
+        progression_type: newProgression
+      });
+
+      // Reload both project data and metrics to reflect the new progression
+      await loadProjectData();
+      await loadProjectMetrics();
+    } catch (err) {
+      console.error('Failed to update progression type:', err);
+      alert('Failed to update progression type: ' + (err.response?.data?.error || err.message));
+      throw err;
+    }
+  };
+
   // Convert projects array to object format for ProjectSelector
   const projectsObject = projects.reduce((acc, project) => {
     acc[project.id] = {
@@ -988,6 +1028,8 @@ function App() {
                   amberTolerance={amberTolerance}
                   redTolerance={redTolerance}
                   onToleranceChange={handleToleranceChange}
+                  onTargetChange={handleTargetChange}
+                  onProgressionChange={handleProgressionChange}
                   timeTravelTimestamp={timeTravelTimestamp}
                   projectId={selectedProject}
                   onTimeTravelChange={handleTimeTravelChange}
