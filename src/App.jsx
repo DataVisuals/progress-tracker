@@ -229,6 +229,40 @@ function App() {
             throw new Error('Missing metric_id');
           }
 
+          // Check if this period is beyond the metric's end date
+          const metric = projectMetrics.find(m => m.id === item.metric_id);
+          if (metric && metric.end_date) {
+            const periodDate = new Date(item.reporting_date);
+            const metricEndDate = new Date(metric.end_date);
+
+            if (periodDate > metricEndDate) {
+              // Period is beyond metric's end date - ask user if they want to extend
+              const newEndDate = item.reporting_date;
+              const confirmed = window.confirm(
+                `This period (${item.reporting_date}) is after the metric's current end date (${metric.end_date}).\n\n` +
+                `Would you like to extend the metric end date to ${newEndDate}?`
+              );
+
+              if (confirmed) {
+                // Update the metric's end date
+                try {
+                  await api.updateMetric(metric.id, {
+                    end_date: newEndDate
+                  });
+                  console.log('Metric end date updated to:', newEndDate);
+                } catch (updateErr) {
+                  console.error('Failed to update metric end date:', updateErr);
+                  alert('Failed to update metric end date. Period will not be created.');
+                  throw updateErr;
+                }
+              } else {
+                // User declined - skip this period
+                console.log('User declined to extend metric end date. Skipping period creation.');
+                continue;
+              }
+            }
+          }
+
           const response = await api.createPeriod({
             metric_id: item.metric_id,
             reporting_date: item.reporting_date,

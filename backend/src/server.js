@@ -1308,14 +1308,14 @@ function createApp(dbPath) {
       }
   
       // Extract all editable fields from request body
-      const { name, amber_tolerance, red_tolerance, final_target, progression_type, metric_type } = req.body;
-  
+      const { name, amber_tolerance, red_tolerance, final_target, progression_type, metric_type, start_date, end_date } = req.body;
+
       // Build update query for provided fields
       const updates = [];
       const values = [];
       const oldValues = {};
       const newValues = {};
-  
+
       if (name !== undefined) {
         updates.push('name = ?');
         values.push(name);
@@ -1351,6 +1351,18 @@ function createApp(dbPath) {
         values.push(metric_type);
         oldValues.metric_type = metric.metric_type;
         newValues.metric_type = metric_type;
+      }
+      if (start_date !== undefined) {
+        updates.push('start_date = ?');
+        values.push(start_date);
+        oldValues.start_date = metric.start_date;
+        newValues.start_date = start_date;
+      }
+      if (end_date !== undefined) {
+        updates.push('end_date = ?');
+        values.push(end_date);
+        oldValues.end_date = metric.end_date;
+        newValues.end_date = end_date;
       }
   
       if (updates.length === 0) {
