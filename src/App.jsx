@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';
 import PortfolioSelector from './components/PortfolioSelector';
@@ -16,6 +17,7 @@ import ConsistencyReport from './components/ConsistencyReport';
 import ImportData from './components/ImportData';
 import FeatureShowreel from './components/FeatureShowreel';
 import { api } from './api/client';
+import { selectStyles } from './components/SelectStyles';
 import { MdShowChart, MdArrowDropDown, MdHelpOutline, MdShare } from 'react-icons/md';
 import './App.css';
 
@@ -38,6 +40,8 @@ function App() {
   const [editingProjectDates, setEditingProjectDates] = useState(false);
   const [editProjectStartDate, setEditProjectStartDate] = useState('');
   const [editProjectEndDate, setEditProjectEndDate] = useState('');
+  const [editingPortfolio, setEditingPortfolio] = useState(false);
+  const [editPortfolioValue, setEditPortfolioValue] = useState(null);
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
@@ -396,6 +400,39 @@ function App() {
       }
     }
     setEditingProjectDates(false);
+  };
+
+  const handlePortfolioClick = () => {
+    if (!canEdit()) return;
+    setEditingPortfolio(true);
+    setEditPortfolioValue(currentProject?.portfolio_id || null);
+  };
+
+  const handlePortfolioChange = (option) => {
+    if (option && option.value === '__create__') {
+      setShowPortfolioManager(true);
+      return;
+    }
+    setEditPortfolioValue(option ? option.value : null);
+  };
+
+  const handleSavePortfolio = async () => {
+    if (editPortfolioValue !== (currentProject?.portfolio_id || null)) {
+      try {
+        await api.updateProject(selectedProject, {
+          name: currentProject.name,
+          description: currentProject.description,
+          initiative_manager: currentProject.initiative_manager,
+          portfolio_id: editPortfolioValue
+        });
+        // Reload projects to reflect the new portfolio
+        await loadProjects();
+      } catch (err) {
+        console.error('Failed to update project portfolio:', err);
+        alert('Failed to update project portfolio');
+      }
+    }
+    setEditingPortfolio(false);
   };
 
   const handleMetricCreated = async (metricName) => {
@@ -800,6 +837,60 @@ function App() {
                       <MdShare /> Share
                     </button>
                   </div>
+                  {(currentProject || canEdit()) && (
+                    <div className="project-portfolio-section">
+                      <label className="portfolio-label">Portfolio:</label>
+                      {editingPortfolio ? (
+                        <div className="portfolio-editor">
+                          <Select
+                            value={editPortfolioValue ? { value: editPortfolioValue, label: portfolios.find(p => p.id === editPortfolioValue)?.name } : null}
+                            onChange={handlePortfolioChange}
+                            options={[
+                              { value: null, label: 'No Portfolio' },
+                              ...portfolios.map(p => ({ value: p.id, label: p.name })),
+                              { value: '__create__', label: '+ Create New Portfolio...' }
+                            ]}
+                            styles={selectStyles}
+                            placeholder="Select portfolio..."
+                            menuPortalTarget={document.body}
+                            menuPosition="fixed"
+                          />
+                          <button onClick={handleSavePortfolio} className="save-btn">
+                            Save
+                          </button>
+                          <button onClick={() => setEditingPortfolio(false)} className="cancel-btn">
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          className={`portfolio-display ${canEdit() ? 'editable' : ''}`}
+                          onClick={handlePortfolioClick}
+                          title={canEdit() ? "Click to change portfolio" : undefined}
+                        >
+                          {currentProject?.portfolio_name ? (
+                            <span
+                              className="portfolio-badge"
+                              style={{
+                                backgroundColor: currentProject.portfolio_color || '#888',
+                                color: '#fff',
+                                padding: '4px 12px',
+                                borderRadius: '12px',
+                                fontSize: '12px',
+                                fontWeight: '600'
+                              }}
+                            >
+                              {currentProject.portfolio_name}
+                            </span>
+                          ) : (
+                            <span className="portfolio-none">
+                              {canEdit() ? 'Click to assign portfolio' : 'No portfolio'}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 {(currentProject?.description || canEdit()) && (
                   <div className="report-header-right">

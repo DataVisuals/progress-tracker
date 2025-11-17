@@ -487,6 +487,91 @@
   color: white;
 }
 
+.project-portfolio-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.portfolio-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.portfolio-editor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.portfolio-editor > div:first-child {
+  min-width: 250px;
+}
+
+.portfolio-display {
+  cursor: default;
+}
+
+.portfolio-display.editable {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.portfolio-display.editable:hover {
+  opacity: 0.8;
+}
+
+.portfolio-badge {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.portfolio-none {
+  font-size: 13px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.portfolio-display.editable .portfolio-none:hover {
+  color: #00aeef;
+}
+
+.save-btn {
+  background-color: #00aeef;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-btn:hover {
+  background-color: #003c71;
+}
+
+.cancel-btn {
+  background-color: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
 .report-meta {
   font-size: 12px;
   color: #9ca3af;
