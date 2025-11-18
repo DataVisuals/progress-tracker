@@ -380,7 +380,8 @@ function App() {
         name: newName,
         description: project.description,
         initiative_manager: project.initiative_manager,
-        secondary_pm: project.secondary_pm
+        secondary_pm: project.secondary_pm,
+        portfolio_id: project.portfolio_id
       });
 
       // Reload projects to reflect the new name
@@ -434,7 +435,8 @@ function App() {
           name: currentProject.name,
           description: editProjectDescValue,
           initiative_manager: currentProject.initiative_manager,
-          secondary_pm: currentProject.secondary_pm
+          secondary_pm: currentProject.secondary_pm,
+          portfolio_id: currentProject.portfolio_id
         });
         // Reload projects to reflect the new description
         await loadProjects();
@@ -461,7 +463,8 @@ function App() {
           initiative_manager: currentProject.initiative_manager,
           secondary_pm: currentProject.secondary_pm,
           start_date: editProjectStartDate,
-          end_date: editProjectEndDate
+          end_date: editProjectEndDate,
+          portfolio_id: currentProject.portfolio_id
         });
         // Reload projects to reflect the new dates
         await loadProjects();
@@ -906,6 +909,23 @@ function App() {
                         {projectName}
                       </h2>
                     )}
+                    {/* Portfolio badge inline with title */}
+                    {!editingPortfolio && currentProject?.portfolio_name && (
+                      <div
+                        className={`portfolio-display-inline ${canEdit() ? 'editable' : ''}`}
+                        onClick={handlePortfolioClick}
+                        title={canEdit() ? "Click to change portfolio" : undefined}
+                      >
+                        <span
+                          className="portfolio-badge-inline"
+                          style={{
+                            backgroundColor: currentProject.portfolio_color || '#888',
+                          }}
+                        >
+                          {currentProject.portfolio_name}
+                        </span>
+                      </div>
+                    )}
                     {currentProject?.start_date && currentProject?.end_date && (
                       editingProjectDates ? (
                         <div className="project-dates-editor">
@@ -938,7 +958,6 @@ function App() {
                           } : undefined}
                           title={canEdit() ? "Double-click to edit dates" : undefined}
                         >
-                          <span className="project-timeline-label">PROJECT:</span>
                           <span className="project-timeline-date">{formatDate(currentProject.start_date)}</span>
                           <span className="project-timeline-separator">{'\u2192'}</span>
                           <span className="project-timeline-date">{formatDate(currentProject.end_date)}</span>
@@ -958,170 +977,153 @@ function App() {
                       )
                     )}
                   </div>
-                  <div className="project-links">
-                    {projectLinks.map((link) => (
-                      <a
-                        key={link.id}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="project-link-btn"
-                      >
-                        {link.label}
-                      </a>
-                    ))}
-                    {canEdit() && (
-                      <button
-                        onClick={() => setShowLinksEditor(true)}
-                        className="edit-links-btn"
-                        title="Edit project links"
-                      >
-                        {projectLinks.length === 0 ? '+ Add Links' : 'Edit Links'}
-                      </button>
+                  {/* Second row: IMs and Links combined */}
+                  <div className="project-meta-row">
+                    {/* Portfolio editor (only when editing) */}
+                    {editingPortfolio && (
+                      <div className="portfolio-editor-inline">
+                        <div className="portfolio-edit-dropdown">
+                          <div
+                            className="portfolio-option-item"
+                            onClick={() => handlePortfolioOptionClick(null)}
+                          >
+                            <div className="option-content">
+                              <span className="no-portfolio-icon">◆</span>
+                              <span className="option-name">No Portfolio</span>
+                              {editPortfolioValue === null && <span className="selected-check">✓</span>}
+                            </div>
+                          </div>
+                          {portfolios.map(portfolio => (
+                            <div
+                              key={portfolio.id}
+                              className={`portfolio-option-item ${editPortfolioValue === portfolio.id ? 'selected' : ''}`}
+                              onClick={() => handlePortfolioOptionClick(portfolio.id)}
+                            >
+                              <div className="option-content">
+                                <span
+                                  className="portfolio-color-dot"
+                                  style={{ backgroundColor: portfolio.color }}
+                                />
+                                <span className="option-name">{portfolio.name}</span>
+                                {editPortfolioValue === portfolio.id && <span className="selected-check">✓</span>}
+                              </div>
+                            </div>
+                          ))}
+                          <div
+                            className="portfolio-option-item create-new"
+                            onClick={() => handlePortfolioOptionClick('__create__')}
+                          >
+                            <div className="option-content">
+                              <span className="create-icon">+</span>
+                              <span className="option-name">Create New Portfolio...</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="portfolio-editor-actions">
+                          <button onClick={handleSavePortfolio} className="save-btn">
+                            Save
+                          </button>
+                          <button onClick={() => setEditingPortfolio(false)} className="cancel-btn">
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
                     )}
-                    <button
-                      onClick={handleShareLink}
-                      className="share-link-btn"
-                      title="Copy link to this page"
-                    >
-                      <MdShare /> Share
-                    </button>
+
+                    {/* No portfolio placeholder (when not editing and no portfolio assigned) */}
+                    {!editingPortfolio && !currentProject?.portfolio_name && canEdit() && (
+                      <div
+                        className="portfolio-display-inline editable"
+                        onClick={handlePortfolioClick}
+                        title="Click to assign portfolio"
+                      >
+                        <span className="portfolio-none-inline">+ Add Portfolio</span>
+                      </div>
+                    )}
+
+                    {/* IMs section */}
+                    {editingPMs ? (
+                      <div className="pm-editor">
+                        <div className="pm-editor-field">
+                          <label>Primary IM:</label>
+                          <input
+                            type="text"
+                            value={editPMValue}
+                            onChange={(e) => setEditPMValue(e.target.value)}
+                            placeholder="Enter name..."
+                          />
+                        </div>
+                        <div className="pm-editor-field">
+                          <label>Secondary IM:</label>
+                          <input
+                            type="text"
+                            value={editSecondaryPMValue}
+                            onChange={(e) => setEditSecondaryPMValue(e.target.value)}
+                            placeholder="Enter name..."
+                          />
+                        </div>
+                        <div className="pm-editor-actions">
+                          <button onClick={handleSavePMs} className="save-btn">Save</button>
+                          <button onClick={() => setEditingPMs(false)} className="cancel-btn">Cancel</button>
+                        </div>
+                      </div>
+                    ) : (currentProject?.initiative_manager || currentProject?.secondary_pm || canEdit()) && (
+                      <div
+                        className={`pm-display-inline ${canEdit() ? 'editable' : ''}`}
+                        onClick={handlePMsClick}
+                        title={canEdit() ? "Click to edit initiative managers" : undefined}
+                      >
+                        {currentProject?.initiative_manager ? (
+                          <>
+                            <span className="pm-info-inline">
+                              {currentProject.initiative_manager}
+                            </span>
+                            {currentProject?.secondary_pm && (
+                              <>
+                                <span className="pm-separator">|</span>
+                                <span className="pm-info-inline">
+                                  {currentProject.secondary_pm}
+                                </span>
+                              </>
+                            )}
+                          </>
+                        ) : canEdit() ? (
+                          <span className="pm-placeholder-inline">+ Add IMs</span>
+                        ) : null}
+                      </div>
+                    )}
+
+                    {/* Links */}
+                    <div className="project-links-inline">
+                      {projectLinks.map((link) => (
+                        <a
+                          key={link.id}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="project-link-btn"
+                        >
+                          {link.label}
+                        </a>
+                      ))}
+                      {canEdit() && (
+                        <button
+                          onClick={() => setShowLinksEditor(true)}
+                          className="edit-links-btn"
+                          title="Edit project links"
+                        >
+                          {projectLinks.length === 0 ? '+ Links' : 'Edit'}
+                        </button>
+                      )}
+                      <button
+                        onClick={handleShareLink}
+                        className="share-link-btn"
+                        title="Copy link to this page"
+                      >
+                        <MdShare />
+                      </button>
+                    </div>
                   </div>
-                  {(currentProject || canEdit()) && (
-                    <div className="project-portfolio-section">
-                      <label className="portfolio-label">Portfolio:</label>
-                      {editingPortfolio ? (
-                        <div className="portfolio-editor">
-                          <div className="portfolio-edit-dropdown">
-                            <div
-                              className="portfolio-option-item"
-                              onClick={() => handlePortfolioOptionClick(null)}
-                            >
-                              <div className="option-content">
-                                <span className="no-portfolio-icon">◆</span>
-                                <span className="option-name">No Portfolio</span>
-                                {editPortfolioValue === null && <span className="selected-check">✓</span>}
-                              </div>
-                            </div>
-                            {portfolios.map(portfolio => (
-                              <div
-                                key={portfolio.id}
-                                className={`portfolio-option-item ${editPortfolioValue === portfolio.id ? 'selected' : ''}`}
-                                onClick={() => handlePortfolioOptionClick(portfolio.id)}
-                              >
-                                <div className="option-content">
-                                  <span
-                                    className="portfolio-color-dot"
-                                    style={{ backgroundColor: portfolio.color }}
-                                  />
-                                  <span className="option-name">{portfolio.name}</span>
-                                  {editPortfolioValue === portfolio.id && <span className="selected-check">✓</span>}
-                                </div>
-                              </div>
-                            ))}
-                            <div
-                              className="portfolio-option-item create-new"
-                              onClick={() => handlePortfolioOptionClick('__create__')}
-                            >
-                              <div className="option-content">
-                                <span className="create-icon">+</span>
-                                <span className="option-name">Create New Portfolio...</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="portfolio-editor-actions">
-                            <button onClick={handleSavePortfolio} className="save-btn">
-                              Save
-                            </button>
-                            <button onClick={() => setEditingPortfolio(false)} className="cancel-btn">
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          className={`portfolio-display ${canEdit() ? 'editable' : ''}`}
-                          onClick={handlePortfolioClick}
-                          title={canEdit() ? "Click to change portfolio" : undefined}
-                        >
-                          {currentProject?.portfolio_name ? (
-                            <span
-                              className="portfolio-badge"
-                              style={{
-                                backgroundColor: currentProject.portfolio_color || '#888',
-                                color: '#fff',
-                                padding: '4px 12px',
-                                borderRadius: '12px',
-                                fontSize: '12px',
-                                fontWeight: '600'
-                              }}
-                            >
-                              {currentProject.portfolio_name}
-                            </span>
-                          ) : (
-                            <span className="portfolio-none">
-                              {canEdit() ? 'Click to assign portfolio' : 'No portfolio'}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {(currentProject?.initiative_manager || currentProject?.secondary_pm || canEdit()) && (
-                    <div className="project-pm-section">
-                      {editingPMs ? (
-                        <div className="pm-editor">
-                          <div className="pm-editor-field">
-                            <label>Primary IM:</label>
-                            <input
-                              type="text"
-                              value={editPMValue}
-                              onChange={(e) => setEditPMValue(e.target.value)}
-                              placeholder="Enter name..."
-                            />
-                          </div>
-                          <div className="pm-editor-field">
-                            <label>Secondary IM:</label>
-                            <input
-                              type="text"
-                              value={editSecondaryPMValue}
-                              onChange={(e) => setEditSecondaryPMValue(e.target.value)}
-                              placeholder="Enter name..."
-                            />
-                          </div>
-                          <div className="pm-editor-actions">
-                            <button onClick={handleSavePMs} className="save-btn">Save</button>
-                            <button onClick={() => setEditingPMs(false)} className="cancel-btn">Cancel</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          className={`pm-display ${canEdit() ? 'editable' : ''}`}
-                          onClick={handlePMsClick}
-                          title={canEdit() ? "Click to edit project managers" : undefined}
-                        >
-                          {currentProject?.initiative_manager ? (
-                            <span className="pm-info">
-                              <span className="pm-label">Primary IM:</span> {currentProject.initiative_manager}
-                            </span>
-                          ) : canEdit() ? (
-                            <span className="pm-info pm-placeholder">
-                              <span className="pm-label">Primary IM:</span> Click to add...
-                            </span>
-                          ) : null}
-                          {currentProject?.secondary_pm ? (
-                            <span className="pm-info">
-                              <span className="pm-label">Secondary IM:</span> {currentProject.secondary_pm}
-                            </span>
-                          ) : canEdit() && currentProject?.initiative_manager ? (
-                            <span className="pm-info pm-placeholder">
-                              <span className="pm-label">Secondary IM:</span> Click to add...
-                            </span>
-                          ) : null}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
                 {(currentProject?.description || canEdit()) && (
                   <div className="report-header-right">
