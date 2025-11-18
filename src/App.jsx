@@ -143,9 +143,11 @@ function App() {
     }
   };
 
-  const loadProjects = async (portfolioFilter = selectedPortfolio) => {
+  const loadProjects = async (portfolioFilter) => {
     try {
-      const url = portfolioFilter ? `/projects?portfolio_id=${portfolioFilter}` : '/projects';
+      // Use provided filter, or fall back to current selectedPortfolio state
+      const filterToUse = portfolioFilter !== undefined ? portfolioFilter : selectedPortfolio;
+      const url = filterToUse ? `/projects?portfolio_id=${filterToUse}` : '/projects';
       const response = await api.get(url);
       setProjects(response.data);
     } catch (err) {
@@ -496,8 +498,16 @@ function App() {
           secondary_pm: currentProject.secondary_pm,
           portfolio_id: editPortfolioValue
         });
-        // Reload projects to reflect the new portfolio
-        await loadProjects();
+
+        // If we're filtering by a portfolio and the project was moved to a different one,
+        // switch to the new portfolio so the project remains visible
+        if (selectedPortfolio && editPortfolioValue !== selectedPortfolio) {
+          setSelectedPortfolio(editPortfolioValue);
+          // loadProjects will be triggered by the useEffect watching selectedPortfolio
+        } else {
+          // Reload projects to reflect the new portfolio
+          await loadProjects();
+        }
       } catch (err) {
         console.error('Failed to update project portfolio:', err);
         alert('Failed to update project portfolio');

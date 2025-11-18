@@ -10,7 +10,9 @@ export default function PortfolioSelector({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  const selectedPortfolioData = portfolios.find(p => p.id === parseInt(selectedPortfolio));
+  // Normalize selectedPortfolio to number for comparison (handle null, undefined, string)
+  const normalizedPortfolioId = selectedPortfolio != null ? Number(selectedPortfolio) : null;
+  const selectedPortfolioData = portfolios.find(p => p.id === normalizedPortfolioId);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -125,11 +127,11 @@ export default function PortfolioSelector({
                 <div
                   key={portfolio.id}
                   className={`portfolio-option-item ${
-                    selectedPortfolio === portfolio.id ? 'selected' : ''
+                    normalizedPortfolioId === portfolio.id ? 'selected' : ''
                   }`}
                   onClick={() => handleSelect(portfolio.id)}
                   role="option"
-                  aria-selected={selectedPortfolio === portfolio.id}
+                  aria-selected={normalizedPortfolioId === portfolio.id}
                 >
                   <div className="option-content">
                     <span
