@@ -1133,32 +1133,8 @@ function App() {
                       </div>
                     )}
 
-                  </div>
-                </div>
-                {(currentProject?.description || canEdit() || projectLinks.length > 0) && (
-                  <div className="report-header-right">
-                    {editingProjectDesc ? (
-                      <textarea
-                        className="project-desc-input"
-                        value={editProjectDescValue}
-                        onChange={(e) => setEditProjectDescValue(e.target.value)}
-                        onKeyDown={handleProjectDescKeyDown}
-                        onBlur={handleSaveProjectDesc}
-                        placeholder="Enter project description..."
-                        rows={3}
-                        autoFocus
-                      />
-                    ) : (
-                      <p
-                        className={`project-description ${canEdit() ? 'editable' : ''} ${currentProject?.description ? 'filled' : 'empty'}`}
-                        onClick={handleProjectDescClick}
-                        title={currentProject?.description ? currentProject.description : (canEdit() ? "Click to edit description" : undefined)}
-                      >
-                        {currentProject?.description || (canEdit() ? 'Click to add a description...' : '')}
-                      </p>
-                    )}
-                    {/* Links and Share - right aligned under description */}
-                    <div className="project-links-inline" style={{ justifyContent: 'flex-end', marginTop: '8px' }}>
+                    {/* Links and Share - under IMs */}
+                    <div className="project-links-inline" style={{ marginTop: '8px' }}>
                       {projectLinks.map((link) => (
                         <a
                           key={link.id}
@@ -1187,6 +1163,33 @@ function App() {
                         <MdShare />
                       </button>
                     </div>
+
+                  </div>
+                </div>
+                {(currentProject?.description || canEdit()) && (
+                  <div className="report-header-right" style={{ flex: 2 }}>
+                    {editingProjectDesc ? (
+                      <textarea
+                        className="project-desc-input"
+                        value={editProjectDescValue}
+                        onChange={(e) => setEditProjectDescValue(e.target.value)}
+                        onKeyDown={handleProjectDescKeyDown}
+                        onBlur={handleSaveProjectDesc}
+                        placeholder="Enter project description..."
+                        rows={3}
+                        autoFocus
+                        style={{ textAlign: 'right' }}
+                      />
+                    ) : (
+                      <p
+                        className={`project-description ${canEdit() ? 'editable' : ''} ${currentProject?.description ? 'filled' : 'empty'}`}
+                        onClick={handleProjectDescClick}
+                        title={currentProject?.description ? currentProject.description : (canEdit() ? "Click to edit description" : undefined)}
+                        style={{ textAlign: 'right' }}
+                      >
+                        {currentProject?.description || (canEdit() ? 'Click to add a description...' : '')}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
