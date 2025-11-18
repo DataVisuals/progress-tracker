@@ -10,6 +10,7 @@ import MetricTabs from './components/MetricTabs';
 import DataGrid from './components/DataGrid';
 import AuditLog from './components/AuditLog';
 import UserManagement from './components/UserManagement';
+import UserSelector from './components/UserSelector';
 import ProjectSetup from './components/ProjectSetup';
 import ProjectLinksEditor from './components/ProjectLinksEditor';
 import UserProfile from './components/UserProfile';
@@ -43,8 +44,9 @@ function App() {
   const [editingPortfolio, setEditingPortfolio] = useState(false);
   const [editPortfolioValue, setEditPortfolioValue] = useState(null);
   const [editingPMs, setEditingPMs] = useState(false);
-  const [editPMValue, setEditPMValue] = useState('');
-  const [editSecondaryPMValue, setEditSecondaryPMValue] = useState('');
+  const [editPMValue, setEditPMValue] = useState(null);
+  const [editSecondaryPMValue, setEditSecondaryPMValue] = useState(null);
+  const [users, setUsers] = useState([]);
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
@@ -82,6 +84,19 @@ function App() {
         setSelectedMetric(metricName);
       }
     }
+  }, []);
+
+  // Load users for PM selector
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const response = await api.getUsers();
+        setUsers(response.data);
+      } catch (err) {
+        console.error('Failed to load users:', err);
+      }
+    };
+    loadUsers();
   }, []);
 
   // Reload projects when portfolio selection changes
@@ -522,27 +537,32 @@ function App() {
   const handlePMsClick = () => {
     if (!canEdit()) return;
     setEditingPMs(true);
-    setEditPMValue(currentProject?.initiative_manager || '');
-    setEditSecondaryPMValue(currentProject?.secondary_pm || '');
+    // Find the user objects by name
+    const primaryUser = users.find(u => u.name === currentProject?.initiative_manager);
+    const secondaryUser = users.find(u => u.name === currentProject?.secondary_pm);
+    setEditPMValue(primaryUser ? { value: primaryUser.id, label: primaryUser.name } : null);
+    setEditSecondaryPMValue(secondaryUser ? { value: secondaryUser.id, label: secondaryUser.name } : null);
   };
 
   const handleSavePMs = async () => {
-    const pmChanged = editPMValue !== (currentProject?.initiative_manager || '');
-    const secondaryPMChanged = editSecondaryPMValue !== (currentProject?.secondary_pm || '');
+    const newPMName = editPMValue?.label || '';
+    const newSecondaryPMName = editSecondaryPMValue?.label || '';
+    const pmChanged = newPMName !== (currentProject?.initiative_manager || '');
+    const secondaryPMChanged = newSecondaryPMName !== (currentProject?.secondary_pm || '');
 
     if (pmChanged || secondaryPMChanged) {
       try {
         await api.updateProject(selectedProject, {
           name: currentProject.name,
           description: currentProject.description,
-          initiative_manager: editPMValue,
-          secondary_pm: editSecondaryPMValue,
+          initiative_manager: newPMName,
+          secondary_pm: newSecondaryPMName,
           portfolio_id: currentProject.portfolio_id
         });
         await loadProjects();
       } catch (err) {
         console.error('Failed to update project managers:', err);
-        alert('Failed to update project managers');
+        alert('Failed to update project managers: ' + (err.response?.data?.error || err.message));
       }
     }
     setEditingPMs(false);
@@ -656,6 +676,26 @@ function App() {
     } catch (err) {
       console.error('Failed to update progression type:', err);
       alert('Failed to update progression type: ' + (err.response?.data?.error || err.message));
+      throw err;
+    }
+  };
+
+  const handleDescriptionChange = async (newDescription) => {
+    try {
+      // Find the metric ID from the currently selected metric
+      const metric = projectMetrics.find(m => m.name === selectedMetric);
+      if (!metric) return;
+
+      await api.updateMetric(metric.id, {
+        description: newDescription
+      });
+
+      // Reload both project data and metrics to reflect the new description
+      await loadProjectData();
+      await loadProjectMetrics();
+    } catch (err) {
+      console.error('Failed to update description:', err);
+      alert('Failed to update description: ' + (err.response?.data?.error || err.message));
       throw err;
     }
   };
@@ -1046,20 +1086,20 @@ function App() {
                       <div className="pm-editor">
                         <div className="pm-editor-field">
                           <label>Primary IM:</label>
-                          <input
-                            type="text"
-                            value={editPMValue}
-                            onChange={(e) => setEditPMValue(e.target.value)}
-                            placeholder="Enter name..."
+                          <UserSelector
+                            users={users}
+                            selectedUser={editPMValue}
+                            onUserChange={setEditPMValue}
+                            placeholder="Select primary IM..."
                           />
                         </div>
                         <div className="pm-editor-field">
                           <label>Secondary IM:</label>
-                          <input
-                            type="text"
-                            value={editSecondaryPMValue}
-                            onChange={(e) => setEditSecondaryPMValue(e.target.value)}
-                            placeholder="Enter name..."
+                          <UserSelector
+                            users={users}
+                            selectedUser={editSecondaryPMValue}
+                            onUserChange={setEditSecondaryPMValue}
+                            placeholder="Select secondary IM..."
                           />
                         </div>
                         <div className="pm-editor-actions">
@@ -1093,8 +1133,32 @@ function App() {
                       </div>
                     )}
 
-                    {/* Links */}
-                    <div className="project-links-inline">
+                  </div>
+                </div>
+                {(currentProject?.description || canEdit() || projectLinks.length > 0) && (
+                  <div className="report-header-right">
+                    {editingProjectDesc ? (
+                      <textarea
+                        className="project-desc-input"
+                        value={editProjectDescValue}
+                        onChange={(e) => setEditProjectDescValue(e.target.value)}
+                        onKeyDown={handleProjectDescKeyDown}
+                        onBlur={handleSaveProjectDesc}
+                        placeholder="Enter project description..."
+                        rows={3}
+                        autoFocus
+                      />
+                    ) : (
+                      <p
+                        className={`project-description ${canEdit() ? 'editable' : ''} ${currentProject?.description ? 'filled' : 'empty'}`}
+                        onClick={handleProjectDescClick}
+                        title={currentProject?.description ? currentProject.description : (canEdit() ? "Click to edit description" : undefined)}
+                      >
+                        {currentProject?.description || (canEdit() ? 'Click to add a description...' : '')}
+                      </p>
+                    )}
+                    {/* Links and Share - right aligned under description */}
+                    <div className="project-links-inline" style={{ justifyContent: 'flex-end', marginTop: '8px' }}>
                       {projectLinks.map((link) => (
                         <a
                           key={link.id}
@@ -1123,30 +1187,6 @@ function App() {
                         <MdShare />
                       </button>
                     </div>
-                  </div>
-                </div>
-                {(currentProject?.description || canEdit()) && (
-                  <div className="report-header-right">
-                    {editingProjectDesc ? (
-                      <textarea
-                        className="project-desc-input"
-                        value={editProjectDescValue}
-                        onChange={(e) => setEditProjectDescValue(e.target.value)}
-                        onKeyDown={handleProjectDescKeyDown}
-                        onBlur={handleSaveProjectDesc}
-                        placeholder="Enter project description..."
-                        rows={3}
-                        autoFocus
-                      />
-                    ) : (
-                      <p
-                        className={`project-description ${canEdit() ? 'editable' : ''} ${currentProject?.description ? 'filled' : 'empty'}`}
-                        onClick={handleProjectDescClick}
-                        title={currentProject?.description ? currentProject.description : (canEdit() ? "Click to edit description" : undefined)}
-                      >
-                        {currentProject?.description || (canEdit() ? 'Click to add a description...' : '')}
-                      </p>
-                    )}
                   </div>
                 )}
               </div>
@@ -1223,6 +1263,7 @@ function App() {
                   onToleranceChange={handleToleranceChange}
                   onTargetChange={handleTargetChange}
                   onProgressionChange={handleProgressionChange}
+                  onDescriptionChange={handleDescriptionChange}
                   timeTravelTimestamp={timeTravelTimestamp}
                   projectId={selectedProject}
                   onTimeTravelChange={handleTimeTravelChange}

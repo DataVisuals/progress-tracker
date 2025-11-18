@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS metrics (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   project_id INTEGER NOT NULL,
   name TEXT NOT NULL,
+  description TEXT,
   owner_id INTEGER,
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,

@@ -220,7 +220,7 @@ const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance })
   return null;
 };
 
-const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange, onTargetChange, onProgressionChange, currentUser }) => {
+const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange, onTargetChange, onProgressionChange, onDescriptionChange, currentUser }) => {
   console.log('MetricChart rendered with canEdit:', canEdit, 'canEditData:', canEditData);
   // canEditData is for commentary/data changes (blocked during time travel)
   // If not provided, default to canEdit for backwards compatibility
@@ -234,6 +234,8 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   const [tempTargetValue, setTempTargetValue] = useState('');
   const [editingProgression, setEditingProgression] = useState(false);
   const [tempProgressionValue, setTempProgressionValue] = useState('');
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [tempDescriptionValue, setTempDescriptionValue] = useState('');
 
   // Sync tolerances when props change
   useEffect(() => {
@@ -343,6 +345,34 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     } catch (err) {
       console.error('Failed to update progression:', err);
       alert('Failed to update progression');
+    }
+  };
+
+  const handleDescriptionClick = () => {
+    if (!canEdit || !onDescriptionChange) return;
+    const currentDescription = sortedData[0]?.metric_description || '';
+    setEditingDescription(true);
+    setTempDescriptionValue(currentDescription);
+  };
+
+  const handleDescriptionSave = async () => {
+    if (!onDescriptionChange) return;
+
+    try {
+      await onDescriptionChange(tempDescriptionValue);
+      setEditingDescription(false);
+    } catch (err) {
+      console.error('Failed to update description:', err);
+      alert('Failed to update description');
+    }
+  };
+
+  const handleDescriptionKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleDescriptionSave();
+    } else if (e.key === 'Escape') {
+      setEditingDescription(false);
     }
   };
 
@@ -1080,6 +1110,54 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               </span>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Metric Description */}
+      {(sortedData[0]?.metric_description || (canEdit && onDescriptionChange)) && (
+        <div className="metric-description-row" style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}>
+          {editingDescription && onDescriptionChange ? (
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+              <textarea
+                className="description-textarea"
+                value={tempDescriptionValue}
+                onChange={(e) => setTempDescriptionValue(e.target.value)}
+                onKeyDown={handleDescriptionKeyDown}
+                onBlur={handleDescriptionSave}
+                placeholder="Enter metric description..."
+                rows={2}
+                autoFocus
+                style={{
+                  flex: 1,
+                  fontSize: '12px',
+                  padding: '6px 8px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  resize: 'vertical',
+                  minHeight: '40px'
+                }}
+              />
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <button onClick={handleDescriptionSave} style={{ fontSize: '11px', padding: '4px 8px' }}>Save</button>
+                <button onClick={() => setEditingDescription(false)} style={{ fontSize: '11px', padding: '4px 8px' }}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <p
+              className={`metric-description-text ${canEdit && onDescriptionChange ? 'editable' : ''}`}
+              onClick={handleDescriptionClick}
+              style={{
+                margin: 0,
+                fontSize: '12px',
+                color: sortedData[0]?.metric_description ? '#374151' : '#9ca3af',
+                cursor: canEdit && onDescriptionChange ? 'pointer' : 'default',
+                fontStyle: sortedData[0]?.metric_description ? 'normal' : 'italic'
+              }}
+              title={canEdit && onDescriptionChange ? 'Click to edit description' : ''}
+            >
+              {sortedData[0]?.metric_description || (canEdit && onDescriptionChange ? 'Click to add a description...' : '')}
+            </p>
+          )}
         </div>
       )}
 

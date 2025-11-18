@@ -241,6 +241,11 @@ function createApp(dbPath) {
     } catch (err) {
       // Check if it's a duplicate key error
       if (err.message && err.message.includes('UNIQUE constraint failed')) {
+        if (err.message.includes('users.email')) {
+          return res.status(400).json({ error: 'A user with this email already exists' });
+        } else if (err.message.includes('users.name') || err.message.includes('idx_users_name')) {
+          return res.status(400).json({ error: 'A user with this name already exists. Please choose a different name.' });
+        }
         return res.status(400).json({ error: 'User already exists' });
       }
       console.error('Registration error:', err);
@@ -1060,6 +1065,20 @@ function createApp(dbPath) {
         return res.status(403).json({ error: 'You do not have permission to create projects' });
       }
 
+      // Validate initiative managers are real users
+      if (initiative_manager && initiative_manager.trim()) {
+        const user = await dbGet('SELECT id FROM users WHERE name = ?', [initiative_manager.trim()]);
+        if (!user) {
+          return res.status(400).json({ error: `Primary initiative manager "${initiative_manager}" is not a registered user` });
+        }
+      }
+      if (secondary_pm && secondary_pm.trim()) {
+        const user = await dbGet('SELECT id FROM users WHERE name = ?', [secondary_pm.trim()]);
+        if (!user) {
+          return res.status(400).json({ error: `Secondary initiative manager "${secondary_pm}" is not a registered user` });
+        }
+      }
+
       const result = await dbRun(
         'INSERT INTO projects (name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [name, description, initiative_manager || null, secondary_pm || null, start_date || null, end_date || null, portfolio_id || null]
@@ -1102,6 +1121,20 @@ function createApp(dbPath) {
   
       const { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id } = req.body;
       const oldProject = await dbGet('SELECT * FROM projects WHERE id = ?', [req.params.id]);
+
+      // Validate initiative managers are real users
+      if (initiative_manager && initiative_manager.trim()) {
+        const user = await dbGet('SELECT id FROM users WHERE name = ?', [initiative_manager.trim()]);
+        if (!user) {
+          return res.status(400).json({ error: `Primary initiative manager "${initiative_manager}" is not a registered user` });
+        }
+      }
+      if (secondary_pm && secondary_pm.trim()) {
+        const user = await dbGet('SELECT id FROM users WHERE name = ?', [secondary_pm.trim()]);
+        if (!user) {
+          return res.status(400).json({ error: `Secondary initiative manager "${secondary_pm}" is not a registered user` });
+        }
+      }
 
       await dbRun(
         'UPDATE projects SET name = ?, description = ?, initiative_manager = ?, secondary_pm = ?, start_date = ?, end_date = ?, portfolio_id = ? WHERE id = ?',
@@ -3468,6 +3501,17 @@ function createApp(dbPath) {
     } catch (err) {
       console.error('Error updating user roles:', err);
     }
+
+    // Migration: Add unique constraint on user name
+    try {
+      await dbRun(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_name ON users(name)`);
+      console.log('✅ Added unique constraint on user name');
+    } catch (err) {
+      // Index already exists or duplicate names exist
+      if (err.message.includes('UNIQUE constraint failed')) {
+        console.log('⚠️ Cannot add unique name constraint - duplicate names exist');
+      }
+    }
   
     // Migration: Add tolerance columns to metrics table
     try {
@@ -3694,8 +3738,8 @@ function createApp(dbPath) {
     }
 
     // Create default admin user if none exists
-    const result = await dbGet('SELECT COUNT(*) as count FROM users');
-    if (result.count === 0) {
+    const existingAdmin = await dbGet('SELECT id FROM users WHERE email = ? OR name = ?', ['admin@example.com', 'Admin User']);
+    if (!existingAdmin) {
       const hash = await hashPassword('admin123');
       await dbRun('INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)', ['admin@example.com', 'Admin User', hash, 'admin']);
       console.log('✅ Created default admin user: admin@example.com / admin123');

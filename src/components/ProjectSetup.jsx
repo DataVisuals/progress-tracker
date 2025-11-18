@@ -33,7 +33,7 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
   const [projectStartDate, setProjectStartDate] = useState(defaultDates.start);
   const [projectEndDate, setProjectEndDate] = useState(defaultDates.end);
   const [metrics, setMetrics] = useState([
-    { name: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0, startDate: defaultDates.start, endDate: defaultDates.end, frequency: 'monthly' }
+    { name: '', description: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0, startDate: defaultDates.start, endDate: defaultDates.end, frequency: 'monthly' }
   ]);
   const [links, setLinks] = useState([
     { label: '', url: '' }
@@ -59,7 +59,7 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
   };
 
   const addMetric = () => {
-    setMetrics([...metrics, { name: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0, startDate: defaultDates.start, endDate: defaultDates.end, frequency: 'monthly' }]);
+    setMetrics([...metrics, { name: '', description: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0, startDate: defaultDates.start, endDate: defaultDates.end, frequency: 'monthly' }]);
   };
 
   const removeMetric = (index) => {
@@ -148,6 +148,7 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
       for (const metric of validMetrics) {
         const metricResponse = await api.createMetric(projectId, {
           name: metric.name,
+          description: metric.description || null,
           start_date: metric.startDate,
           end_date: metric.endDate,
           frequency: metric.frequency,
@@ -296,6 +297,19 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
                     ×
                   </button>
                 )}
+              </div>
+
+              <div className="metric-description-row">
+                <div className="form-group metric-description">
+                  <label>Description</label>
+                  <input
+                    type="text"
+                    value={metric.description}
+                    onChange={(e) => updateMetric(index, 'description', e.target.value)}
+                    placeholder="Brief description of what this metric measures..."
+                    maxLength={500}
+                  />
+                </div>
               </div>
 
               <div className="metric-card-row">

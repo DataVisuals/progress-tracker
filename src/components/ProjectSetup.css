@@ -196,6 +196,18 @@
   flex: 1;
 }
 
+.metric-description-row {
+  margin-bottom: 6px;
+}
+
+.metric-description {
+  width: 100%;
+}
+
+.metric-description input {
+  width: 100%;
+}
+
 .tolerance-indicator {
   font-size: 14px;
   margin-right: 3px;

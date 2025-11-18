@@ -73,7 +73,7 @@ describe('Project Description API Tests', () => {
         .send({
           name: 'Test Project',
           description: 'This is a test project description',
-          initiative_manager: 'Test Manager',
+          initiative_manager: 'Test User',
           start_date: '2024-01-01',
           end_date: '2024-12-31'
         });
@@ -89,7 +89,7 @@ describe('Project Description API Tests', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'Test Project No Desc',
-          initiative_manager: 'Test Manager',
+          initiative_manager: 'Test User',
           start_date: '2024-01-01',
           end_date: '2024-12-31'
         });
@@ -132,7 +132,7 @@ describe('Project Description API Tests', () => {
       expect(response.status).toBe(200);
       expect(response.body.name).toBe('Test Project');
       expect(response.body.description).toBe('This is a test project description');
-      expect(response.body.initiative_manager).toBe('Test Manager');
+      expect(response.body.initiative_manager).toBe('Test User');
     });
   });
 
@@ -144,7 +144,7 @@ describe('Project Description API Tests', () => {
         .send({
           name: 'Test Project',
           description: 'Updated description for test project',
-          initiative_manager: 'Test Manager',
+          initiative_manager: 'Test User',
           start_date: '2024-01-01',
           end_date: '2024-12-31'
         });
@@ -167,7 +167,7 @@ describe('Project Description API Tests', () => {
         .send({
           name: 'Test Project',
           description: '',
-          initiative_manager: 'Test Manager',
+          initiative_manager: 'Test User',
           start_date: '2024-01-01',
           end_date: '2024-12-31'
         });
@@ -190,7 +190,7 @@ describe('Project Description API Tests', () => {
         .send({
           name: 'Test Project',
           description: multilineDesc,
-          initiative_manager: 'Test Manager',
+          initiative_manager: 'Test User',
           start_date: '2024-01-01',
           end_date: '2024-12-31'
         });
@@ -225,7 +225,7 @@ describe('Project Description API Tests', () => {
         .send({
           name: 'Test Project',
           description: 'Audit test description',
-          initiative_manager: 'Test Manager',
+          initiative_manager: 'Test User',
           start_date: '2024-01-01',
           end_date: '2024-12-31'
         });
