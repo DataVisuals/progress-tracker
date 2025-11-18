@@ -1081,87 +1081,90 @@ function App() {
                       </div>
                     )}
 
-                    {/* IMs section */}
-                    {editingPMs ? (
-                      <div className="pm-editor">
-                        <div className="pm-editor-field">
-                          <label>Primary IM:</label>
-                          <UserSelector
-                            users={users}
-                            selectedUser={editPMValue}
-                            onUserChange={setEditPMValue}
-                            placeholder="Select primary IM..."
-                          />
+                    {/* IMs and Links stacked vertically */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {/* IMs section */}
+                      {editingPMs ? (
+                        <div className="pm-editor">
+                          <div className="pm-editor-field">
+                            <label>Primary IM:</label>
+                            <UserSelector
+                              users={users}
+                              selectedUser={editPMValue}
+                              onUserChange={setEditPMValue}
+                              placeholder="Select primary IM..."
+                            />
+                          </div>
+                          <div className="pm-editor-field">
+                            <label>Secondary IM:</label>
+                            <UserSelector
+                              users={users}
+                              selectedUser={editSecondaryPMValue}
+                              onUserChange={setEditSecondaryPMValue}
+                              placeholder="Select secondary IM..."
+                            />
+                          </div>
+                          <div className="pm-editor-actions">
+                            <button onClick={handleSavePMs} className="save-btn">Save</button>
+                            <button onClick={() => setEditingPMs(false)} className="cancel-btn">Cancel</button>
+                          </div>
                         </div>
-                        <div className="pm-editor-field">
-                          <label>Secondary IM:</label>
-                          <UserSelector
-                            users={users}
-                            selectedUser={editSecondaryPMValue}
-                            onUserChange={setEditSecondaryPMValue}
-                            placeholder="Select secondary IM..."
-                          />
-                        </div>
-                        <div className="pm-editor-actions">
-                          <button onClick={handleSavePMs} className="save-btn">Save</button>
-                          <button onClick={() => setEditingPMs(false)} className="cancel-btn">Cancel</button>
-                        </div>
-                      </div>
-                    ) : (currentProject?.initiative_manager || currentProject?.secondary_pm || canEdit()) && (
-                      <div
-                        className={`pm-display-inline ${canEdit() ? 'editable' : ''}`}
-                        onClick={handlePMsClick}
-                        title={canEdit() ? "Click to edit initiative managers" : undefined}
-                      >
-                        {currentProject?.initiative_manager ? (
-                          <>
-                            <span className="pm-info-inline">
-                              {currentProject.initiative_manager}
-                            </span>
-                            {currentProject?.secondary_pm && (
-                              <>
-                                <span className="pm-separator">|</span>
-                                <span className="pm-info-inline">
-                                  {currentProject.secondary_pm}
-                                </span>
-                              </>
-                            )}
-                          </>
-                        ) : canEdit() ? (
-                          <span className="pm-placeholder-inline">+ Add IMs</span>
-                        ) : null}
-                      </div>
-                    )}
-
-                    {/* Links and Share - under IMs */}
-                    <div className="project-links-inline" style={{ marginTop: '8px' }}>
-                      {projectLinks.map((link) => (
-                        <a
-                          key={link.id}
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="project-link-btn"
+                      ) : (currentProject?.initiative_manager || currentProject?.secondary_pm || canEdit()) && (
+                        <div
+                          className={`pm-display-inline ${canEdit() ? 'editable' : ''}`}
+                          onClick={handlePMsClick}
+                          title={canEdit() ? "Click to edit initiative managers" : undefined}
                         >
-                          {link.label}
-                        </a>
-                      ))}
-                      {canEdit() && (
-                        <button
-                          onClick={() => setShowLinksEditor(true)}
-                          className="edit-links-btn"
-                          title="Edit project links"
-                        >
-                          {projectLinks.length === 0 ? '+ Links' : 'Edit'}
-                        </button>
+                          {currentProject?.initiative_manager ? (
+                            <>
+                              <span className="pm-info-inline">
+                                {currentProject.initiative_manager}
+                              </span>
+                              {currentProject?.secondary_pm && (
+                                <>
+                                  <span className="pm-separator">|</span>
+                                  <span className="pm-info-inline">
+                                    {currentProject.secondary_pm}
+                                  </span>
+                                </>
+                              )}
+                            </>
+                          ) : canEdit() ? (
+                            <span className="pm-placeholder-inline">+ Add IMs</span>
+                          ) : null}
+                        </div>
                       )}
-                      <button
-                        onClick={handleShareLink}
-                        className="share-link-btn"
-                        title="Copy link to this page"
-                      >
-                        <MdShare />
-                      </button>
+
+                      {/* Links and Share - under IMs */}
+                      <div className="project-links-inline">
+                        {projectLinks.map((link) => (
+                          <a
+                            key={link.id}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="project-link-btn"
+                          >
+                            {link.label}
+                          </a>
+                        ))}
+                        {canEdit() && (
+                          <button
+                            onClick={() => setShowLinksEditor(true)}
+                            className="edit-links-btn"
+                            title="Edit project links"
+                          >
+                            {projectLinks.length === 0 ? '+ Links' : 'Edit'}
+                          </button>
+                        )}
+                        <button
+                          onClick={handleShareLink}
+                          className="share-link-btn"
+                          title="Copy link to this page"
+                        >
+                          <MdShare />
+                        </button>
+                      </div>
                     </div>
 
                   </div>

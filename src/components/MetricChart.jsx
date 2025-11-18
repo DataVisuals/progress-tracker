@@ -1110,53 +1110,38 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               </span>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Metric Description */}
-      {(sortedData[0]?.metric_description || (canEdit && onDescriptionChange)) && (
-        <div className="metric-description-row" style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', minHeight: '32px' }}>
-          {editingDescription && onDescriptionChange ? (
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-              <textarea
-                className="description-textarea"
-                value={tempDescriptionValue}
-                onChange={(e) => setTempDescriptionValue(e.target.value)}
-                onKeyDown={handleDescriptionKeyDown}
-                onBlur={handleDescriptionSave}
-                placeholder="Enter metric description..."
-                rows={2}
-                autoFocus
-                style={{
-                  flex: 1,
-                  fontSize: '12px',
-                  padding: '6px 8px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '4px',
-                  resize: 'vertical',
-                  minHeight: '40px'
-                }}
-              />
-              <div style={{ display: 'flex', gap: '4px' }}>
-                <button onClick={handleDescriptionSave} style={{ fontSize: '11px', padding: '4px 8px' }}>Save</button>
-                <button onClick={() => setEditingDescription(false)} style={{ fontSize: '11px', padding: '4px 8px' }}>Cancel</button>
-              </div>
+          {/* Description - inline with other properties */}
+          {(sortedData[0]?.metric_description || (canEdit && onDescriptionChange)) && (
+            <div className="metric-property" style={{ flex: 1 }}>
+              {editingDescription && onDescriptionChange ? (
+                <div style={{ display: 'inline-flex', gap: '4px', alignItems: 'center', width: '100%' }}>
+                  <input
+                    type="text"
+                    value={tempDescriptionValue}
+                    onChange={(e) => setTempDescriptionValue(e.target.value)}
+                    onKeyDown={handleDescriptionKeyDown}
+                    onBlur={handleDescriptionSave}
+                    placeholder="Enter metric description..."
+                    autoFocus
+                    style={{ flex: 1, fontSize: '12px', padding: '2px 6px' }}
+                  />
+                  <button onClick={handleDescriptionSave} style={{ fontSize: '11px', padding: '2px 6px' }}>✓</button>
+                  <button onClick={() => setEditingDescription(false)} style={{ fontSize: '11px', padding: '2px 6px' }}>✕</button>
+                </div>
+              ) : (
+                <span
+                  onClick={handleDescriptionClick}
+                  style={{
+                    cursor: canEdit && onDescriptionChange ? 'pointer' : 'default',
+                    color: sortedData[0]?.metric_description ? '#374151' : '#9ca3af',
+                    fontStyle: sortedData[0]?.metric_description ? 'normal' : 'italic'
+                  }}
+                  title={canEdit && onDescriptionChange ? 'Click to edit description' : ''}
+                >
+                  {sortedData[0]?.metric_description || (canEdit && onDescriptionChange ? 'Click to add description...' : '')}
+                </span>
+              )}
             </div>
-          ) : (
-            <p
-              className={`metric-description-text ${canEdit && onDescriptionChange ? 'editable' : ''}`}
-              onClick={handleDescriptionClick}
-              style={{
-                margin: 0,
-                fontSize: '12px',
-                color: sortedData[0]?.metric_description ? '#374151' : '#9ca3af',
-                cursor: canEdit && onDescriptionChange ? 'pointer' : 'default',
-                fontStyle: sortedData[0]?.metric_description ? 'normal' : 'italic'
-              }}
-              title={canEdit && onDescriptionChange ? 'Click to edit description' : ''}
-            >
-              {sortedData[0]?.metric_description || (canEdit && onDescriptionChange ? 'Click to add a description...' : '')}
-            </p>
           )}
         </div>
       )}
