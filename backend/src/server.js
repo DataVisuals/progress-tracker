@@ -1276,7 +1276,7 @@ function createApp(dbPath) {
         return res.status(403).json({ error: 'You do not have permission to add metrics to this project' });
       }
   
-      const { name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type } = req.body;
+      const { name, description, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type } = req.body;
   
       // Verify project exists first
       const project = await dbGet('SELECT id, initiative_manager FROM projects WHERE id = ?', [req.params.projectId]);
@@ -1306,6 +1306,7 @@ function createApp(dbPath) {
       console.log('Creating metric:', {
         projectId: req.params.projectId,
         name,
+        description,
         owner_id: finalOwnerId,
         start_date,
         end_date,
@@ -1313,11 +1314,11 @@ function createApp(dbPath) {
         progression_type,
         final_target
       });
-  
+
       const result = await dbRun(`
-        INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [req.params.projectId, name, finalOwnerId, start_date, end_date, frequency, progression_type || 'linear', final_target, amber_tolerance || 5.0, red_tolerance || 10.0, metric_type || 'lead']);
+        INSERT INTO metrics (project_id, name, description, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [req.params.projectId, name, description || null, finalOwnerId, start_date, end_date, frequency, progression_type || 'linear', final_target, amber_tolerance || 5.0, red_tolerance || 10.0, metric_type || 'lead']);
   
       console.log('Metric created with ID:', result.lastID);
   
@@ -1328,12 +1329,12 @@ function createApp(dbPath) {
       console.log('Periods generated successfully');
   
       await logAudit(req.user, 'CREATE', 'metrics', result.lastID, null,
-        { name, owner_id: finalOwnerId, start_date, end_date, frequency, progression_type: progression_type || 'linear', final_target },
+        { name, description, owner_id: finalOwnerId, start_date, end_date, frequency, progression_type: progression_type || 'linear', final_target },
         `Created metric "${name}" for project ID ${req.params.projectId}`,
         req.ip
       );
-  
-      logger.asset.create(req.user, 'metric', { name, owner_id: finalOwnerId, start_date, end_date, frequency, final_target }, req.params.projectId);
+
+      logger.asset.create(req.user, 'metric', { name, description, owner_id: finalOwnerId, start_date, end_date, frequency, final_target }, req.params.projectId);
   
       res.json({ id: result.lastID });
     } catch (err) {
@@ -1356,7 +1357,7 @@ function createApp(dbPath) {
       }
   
       // Extract all editable fields from request body
-      const { name, amber_tolerance, red_tolerance, final_target, progression_type, metric_type, start_date, end_date } = req.body;
+      const { name, description, amber_tolerance, red_tolerance, final_target, progression_type, metric_type, start_date, end_date } = req.body;
 
       // Build update query for provided fields
       const updates = [];
@@ -1369,6 +1370,12 @@ function createApp(dbPath) {
         values.push(name);
         oldValues.name = metric.name;
         newValues.name = name;
+      }
+      if (description !== undefined) {
+        updates.push('description = ?');
+        values.push(description);
+        oldValues.description = metric.description;
+        newValues.description = description;
       }
       if (amber_tolerance !== undefined) {
         updates.push('amber_tolerance = ?');
@@ -1491,6 +1498,7 @@ function createApp(dbPath) {
         SELECT
           m.id,
           m.name,
+          m.description,
           m.project_id,
           m.start_date,
           m.end_date,
@@ -1522,6 +1530,7 @@ function createApp(dbPath) {
           mp.id,
           mp.reporting_date,
           m.name as metric,
+          m.description as metric_description,
           mp.expected,
           mp.target as final_target,
           m.final_target as metric_final_target,
@@ -2961,18 +2970,19 @@ function createApp(dbPath) {
           .map(async (period) => {
             // Get metric and project info
             const metric = await dbGet(`
-              SELECT m.name, m.project_id, m.final_target, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date, m.frequency, m.metric_type, p.name as initiative, p.initiative_manager
+              SELECT m.name, m.description, m.project_id, m.final_target, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date, m.frequency, m.metric_type, p.name as initiative, p.initiative_manager
               FROM metrics m
               JOIN projects p ON m.project_id = p.id
               WHERE m.id = ?
             `, [period.metric_id]);
-  
+
             const owner = await dbGet('SELECT name FROM users WHERE id = (SELECT owner_id FROM metrics WHERE id = ?)', [period.metric_id]);
-  
+
             return {
               id: period.id,
               reporting_date: period.reporting_date,
               metric: metric?.name || 'Unknown',
+              metric_description: metric?.description || null,
               expected: period.expected,
               final_target: period.target, // Period target (cumulative expected for this period)
               metric_final_target: metric?.final_target || period.target, // Metric's overall final target
@@ -3258,8 +3268,11 @@ function createApp(dbPath) {
   });
   
   // ===== EXPORT =====
-  const { exportAllData } = require('./exportService');
-  
+  const { exportAllData, setExportDatabaseFunctions } = require('./exportService');
+
+  // Set database functions for export service to use the correct database
+  setExportDatabaseFunctions(dbAll);
+
   // Manual export trigger (admin only)
   app.post('/api/export', authenticateToken, async (req, res) => {
     try {
@@ -3289,7 +3302,10 @@ function createApp(dbPath) {
   
   // ===== IMPORT =====
   const multer = require('multer');
-  const { importDataFromFile, generateImportTemplate, ImportValidationError } = require('./importService');
+  const { importDataFromFile, generateImportTemplate, ImportValidationError, setDatabaseFunctions } = require('./importService');
+
+  // Set database functions for import service to use the correct database
+  setDatabaseFunctions(dbGet, dbAll, dbRun);
   
   // Configure multer for file uploads
   const upload = multer({
@@ -3469,7 +3485,15 @@ function createApp(dbPath) {
     } catch (err) {
       // Column already exists, that's fine
     }
-  
+
+    // Migration: Add description column to metrics table
+    try {
+      await dbRun(`ALTER TABLE metrics ADD COLUMN description TEXT`);
+      console.log('✅ Added description column to metrics table');
+    } catch (err) {
+      // Column already exists, that's fine
+    }
+
     // Migration: Add commentary column to metric_periods table
     try {
       await dbRun(`ALTER TABLE metric_periods ADD COLUMN commentary TEXT`);

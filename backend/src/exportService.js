@@ -1,7 +1,18 @@
 const ExcelJS = require('exceljs');
 const path = require('path');
 const fs = require('fs').promises;
-const { dbAll } = require('./db');
+
+// Default database functions - will be overridden when used with createApp
+let dbAll;
+
+// Initialize with default db (for backward compatibility)
+const db = require('./db');
+dbAll = db.dbAll;
+
+// Function to set database functions (called by server.js createApp)
+function setExportDatabaseFunctions(dbAllFn) {
+  dbAll = dbAllFn;
+}
 
 const EXPORTS_DIR = path.join(__dirname, '../exports');
 const MAX_EXPORTS = 10;
@@ -77,6 +88,9 @@ async function exportAllData() {
     workbook.creator = 'Progress Tracker';
     workbook.created = new Date();
 
+    // Track used sheet names to ensure uniqueness
+    const usedSheetNames = new Set();
+
     // Create a tab for each project
     for (const project of projects) {
       // Get all data for this project
@@ -102,7 +116,18 @@ async function exportAllData() {
       }
 
       // Create worksheet (truncate project name if too long for Excel sheet names)
-      const sheetName = project.name.substring(0, 31); // Excel limit is 31 chars
+      let sheetName = project.name.substring(0, 31); // Excel limit is 31 chars
+
+      // Ensure sheet name is unique
+      let counter = 1;
+      let baseName = sheetName;
+      while (usedSheetNames.has(sheetName)) {
+        const suffix = ` (${counter})`;
+        sheetName = baseName.substring(0, 31 - suffix.length) + suffix;
+        counter++;
+      }
+      usedSheetNames.add(sheetName);
+
       const worksheet = workbook.addWorksheet(sheetName);
 
       // Add project info header
@@ -209,5 +234,6 @@ async function exportAllData() {
 module.exports = {
   exportAllData,
   cleanupOldExports,
-  getExportFilename
+  getExportFilename,
+  setExportDatabaseFunctions
 };

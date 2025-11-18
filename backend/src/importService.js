@@ -1,6 +1,21 @@
 const ExcelJS = require('exceljs');
 const path = require('path');
-const { dbGet, dbAll, dbRun } = require('./db');
+
+// Default database functions - will be overridden when used with createApp
+let dbGet, dbAll, dbRun;
+
+// Initialize with default db (for backward compatibility)
+const db = require('./db');
+dbGet = db.dbGet;
+dbAll = db.dbAll;
+dbRun = db.dbRun;
+
+// Function to set database functions (called by server.js createApp)
+function setDatabaseFunctions(dbGetFn, dbAllFn, dbRunFn) {
+  dbGet = dbGetFn;
+  dbAll = dbAllFn;
+  dbRun = dbRunFn;
+}
 
 /**
  * Import Template Format (Prescriptive):
@@ -531,5 +546,6 @@ async function generateImportTemplate() {
 module.exports = {
   importDataFromFile,
   generateImportTemplate,
-  ImportValidationError
+  ImportValidationError,
+  setDatabaseFunctions
 };

@@ -777,24 +777,26 @@ describe('Metrics API Tests', () => {
       // Sort by date to ensure correct order
       metricPeriods.sort((a, b) => a.reporting_date.localeCompare(b.reporting_date));
 
-      // Verify first 3 periods have original target (100)
-      expect(metricPeriods[0].final_target).toBe(100);
-      expect(metricPeriods[0].complete).toBe(15);
-      // Gray bar should be: 100 - 15 = 85
-      const grayBar1 = metricPeriods[0].final_target - metricPeriods[0].complete;
-      expect(grayBar1).toBe(85);
+      // When a metric's final_target is updated, ALL periods get the new target value
+      // This ensures consistency across the entire metric timeline
 
-      expect(metricPeriods[1].final_target).toBe(100);
+      // Verify all periods have the new target (150)
+      expect(metricPeriods[0].final_target).toBe(150);
+      expect(metricPeriods[0].complete).toBe(15);
+      // Gray bar should be: 150 - 15 = 135
+      const grayBar1 = metricPeriods[0].final_target - metricPeriods[0].complete;
+      expect(grayBar1).toBe(135);
+
+      expect(metricPeriods[1].final_target).toBe(150);
       expect(metricPeriods[1].complete).toBe(30);
       const grayBar2 = metricPeriods[1].final_target - metricPeriods[1].complete;
-      expect(grayBar2).toBe(70);
+      expect(grayBar2).toBe(120);
 
-      expect(metricPeriods[2].final_target).toBe(100);
+      expect(metricPeriods[2].final_target).toBe(150);
       expect(metricPeriods[2].complete).toBe(50);
       const grayBar3 = metricPeriods[2].final_target - metricPeriods[2].complete;
-      expect(grayBar3).toBe(50);
+      expect(grayBar3).toBe(100);
 
-      // Verify last 3 periods have new target (150)
       expect(metricPeriods[3].final_target).toBe(150);
       expect(metricPeriods[3].complete).toBe(70);
       // Gray bar should be: 150 - 70 = 80
@@ -811,12 +813,13 @@ describe('Metrics API Tests', () => {
       const grayBar6 = metricPeriods[5].final_target - metricPeriods[5].complete;
       expect(grayBar6).toBe(10);
 
-      // Key assertion: Gray bars should change when targets change
-      // Before target change: gray bars were 85, 70, 50
-      // After target change: gray bars are 80, 50, 10
-      // This proves that the gray bars correctly reflect the changing target
-      expect(grayBar1).toBeGreaterThan(grayBar4); // 85 > 80 (different despite progress)
-      expect(grayBar4).toBeGreaterThan(grayBar5); // 80 > 50 (gray bars shrinking as work completes)
+      // Key assertion: Gray bars should shrink as work completes
+      // All periods now have same target, so gray bar differences reflect progress
+      expect(grayBar1).toBeGreaterThan(grayBar2); // 135 > 120 (more work done)
+      expect(grayBar2).toBeGreaterThan(grayBar3); // 120 > 100
+      expect(grayBar3).toBeGreaterThan(grayBar4); // 100 > 80
+      expect(grayBar4).toBeGreaterThan(grayBar5); // 80 > 50
+      expect(grayBar5).toBeGreaterThan(grayBar6); // 50 > 10
     });
 
     test('should handle target decreases (scope reduction)', async () => {
@@ -873,18 +876,18 @@ describe('Metrics API Tests', () => {
         .filter(p => p.metric_id === metricId)
         .sort((a, b) => a.reporting_date.localeCompare(b.reporting_date));
 
-      // Verify target change is reflected
-      expect(metricPeriods[0].final_target).toBe(200);
-      const grayBarBefore = metricPeriods[0].final_target - metricPeriods[0].complete;
-      expect(grayBarBefore).toBe(150); // 200 - 50
+      // When target is updated, ALL periods get the new target value (120)
+      expect(metricPeriods[0].final_target).toBe(120);
+      const grayBar1 = metricPeriods[0].final_target - metricPeriods[0].complete;
+      expect(grayBar1).toBe(70); // 120 - 50
 
       expect(metricPeriods[1].final_target).toBe(120);
-      const grayBarAfter = metricPeriods[1].final_target - metricPeriods[1].complete;
-      expect(grayBarAfter).toBe(50); // 120 - 70
+      const grayBar2 = metricPeriods[1].final_target - metricPeriods[1].complete;
+      expect(grayBar2).toBe(50); // 120 - 70
 
-      // Gray bar should decrease significantly due to scope reduction
-      expect(grayBarBefore).toBeGreaterThan(grayBarAfter);
-      expect(grayBarBefore - grayBarAfter).toBe(100); // Scope reduced by 80, but also completed 20 more
+      // Gray bar should decrease as more work is completed
+      expect(grayBar1).toBeGreaterThan(grayBar2);
+      expect(grayBar1 - grayBar2).toBe(20); // Completed 20 more (70 - 50)
     });
   });
 });

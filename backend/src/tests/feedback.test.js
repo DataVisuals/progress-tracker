@@ -6,6 +6,7 @@ const TEST_DB_PATH = path.join(__dirname, '../data/test-feedback.db');
 
 let app, adminToken, pmToken, viewerToken;
 let testFeedbackId;
+let testProjectId;
 
 describe('Feedback API Tests', () => {
   beforeAll(async () => {
@@ -63,6 +64,18 @@ describe('Feedback API Tests', () => {
       password: 'viewer123'
     });
     viewerToken = viewerLogin.body.token;
+
+    // Create a test project for feedback
+    const projectResponse = await request(app)
+      .post('/api/projects')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name: 'Feedback Test Project',
+        description: 'Project for feedback testing',
+        start_date: '2025-01-01',
+        end_date: '2025-12-31'
+      });
+    testProjectId = projectResponse.body.id;
   });
 
   afterAll(async () => {
@@ -93,7 +106,8 @@ describe('Feedback API Tests', () => {
         .post('/api/feedback')
         .set('Authorization', `Bearer ${viewerToken}`)
         .send({
-          text: 'This is a test feedback'
+          text: 'This is a test feedback',
+          project_id: testProjectId
         });
 
       expect(response.status).toBe(201);
@@ -107,7 +121,8 @@ describe('Feedback API Tests', () => {
       const response = await request(app)
         .post('/api/feedback')
         .send({
-          text: 'Unauthenticated Feedback'
+          text: 'Unauthenticated Feedback',
+          project_id: testProjectId
         });
 
       expect(response.status).toBe(401);
@@ -155,7 +170,8 @@ describe('Feedback API Tests', () => {
         .post('/api/feedback')
         .set('Authorization', `Bearer ${viewerToken}`)
         .send({
-          text: 'Testing admin response to feedback'
+          text: 'Testing admin response to feedback',
+          project_id: testProjectId
         });
 
       const response = await request(app)
@@ -290,7 +306,8 @@ describe('Feedback API Tests', () => {
         .post('/api/feedback')
         .set('Authorization', `Bearer ${viewerToken}`)
         .send({
-          text: 'Testing complete workflow for feedback'
+          text: 'Testing complete workflow for feedback',
+          project_id: testProjectId
         });
 
       expect(createResponse.status).toBe(201);
@@ -341,7 +358,8 @@ describe('Feedback API Tests', () => {
         .post('/api/feedback')
         .set('Authorization', `Bearer ${viewerToken}`)
         .send({
-          text: 'Original feedback text'
+          text: 'Original feedback text',
+          project_id: testProjectId
         });
 
       const feedbackId = createResponse.body.id;
@@ -364,7 +382,8 @@ describe('Feedback API Tests', () => {
         .post('/api/feedback')
         .set('Authorization', `Bearer ${viewerToken}`)
         .send({
-          text: 'Viewer feedback'
+          text: 'Viewer feedback',
+          project_id: testProjectId
         });
 
       const feedbackId = createResponse.body.id;
@@ -415,7 +434,8 @@ describe('Feedback API Tests', () => {
         .put('/api/feedback/99999')
         .set('Authorization', `Bearer ${viewerToken}`)
         .send({
-          text: 'Edit non-existent feedback'
+          text: 'Edit non-existent feedback',
+          project_id: testProjectId
         });
 
       expect(response.status).toBe(404);
@@ -429,7 +449,8 @@ describe('Feedback API Tests', () => {
         .post('/api/feedback')
         .set('Authorization', `Bearer ${viewerToken}`)
         .send({
-          text: 'Feedback needing response'
+          text: 'Feedback needing response',
+          project_id: testProjectId
         });
 
       const feedbackId = createResponse.body.id;
@@ -459,7 +480,8 @@ describe('Feedback API Tests', () => {
         .post('/api/feedback')
         .set('Authorization', `Bearer ${viewerToken}`)
         .send({
-          text: 'Feedback for admin response edit'
+          text: 'Feedback for admin response edit',
+          project_id: testProjectId
         });
 
       const feedbackId = createResponse.body.id;
@@ -519,7 +541,8 @@ describe('Feedback API Tests', () => {
         .post('/api/feedback')
         .set('Authorization', `Bearer ${viewerToken}`)
         .send({
-          text: 'Feedback without response'
+          text: 'Feedback without response',
+          project_id: testProjectId
         });
 
       const response = await request(app)

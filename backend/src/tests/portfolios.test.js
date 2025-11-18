@@ -378,4 +378,704 @@ describe('Portfolio Management API Tests', () => {
       });
     });
   });
+
+  // Comprehensive RAG calculation tests
+  describe('RAG Status Calculation Verification', () => {
+    let ragPortfolioId, ragProjectId, ragMetricId;
+    let dbGet, dbRun, dbAll;
+
+    beforeAll(async () => {
+      // Get database functions
+      const { createApp } = require('../server');
+      const result = createApp(TEST_DB_PATH);
+      dbGet = result.dbGet;
+      dbRun = result.dbRun;
+      dbAll = result.dbAll;
+
+      // Create a portfolio for RAG tests
+      const portfolioResponse = await request(app)
+        .post('/api/portfolios')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'RAG Calculation Portfolio',
+          color: '#00FF00'
+        });
+      ragPortfolioId = portfolioResponse.body.id;
+    });
+
+    beforeEach(async () => {
+      // Create a fresh project for each test
+      const projectResponse = await request(app)
+        .post('/api/projects')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: `RAG Test Project ${Date.now()}`,
+          description: 'Project for RAG calculation testing',
+          start_date: '2024-01-01',
+          end_date: '2024-12-31',
+          portfolio_id: ragPortfolioId
+        });
+      ragProjectId = projectResponse.body.id;
+
+      // Create a metric with specific tolerances and past dates
+      const metricResponse = await request(app)
+        .post(`/api/projects/${ragProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'RAG Calc Metric',
+          start_date: '2024-01-01',
+          end_date: '2024-12-31',
+          frequency: 'monthly',
+          progression_type: 'linear',
+          final_target: 100,
+          amber_tolerance: 5,
+          red_tolerance: 10
+        });
+
+      ragMetricId = metricResponse.body.id;
+    });
+
+    test('should return GREEN when complete >= expected', async () => {
+      // Update period with complete > expected (ahead of schedule)
+      // Get the periods for the metric
+      const periods = await dbAll(
+        'SELECT id, reporting_date FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date DESC LIMIT 1',
+        [ragMetricId]
+      );
+
+      if (periods.length > 0) {
+        // Set complete > expected for GREEN status
+        await dbRun(
+          'UPDATE metric_periods SET complete = 110, expected = 100 WHERE id = ?',
+          [periods[0].id]
+        );
+      }
+
+      const response = await request(app)
+        .get(`/api/portfolios/${ragPortfolioId}/report`);
+
+      expect(response.status).toBe(200);
+
+      const allProjects = [
+        ...response.body.redProjects,
+        ...response.body.amberProjects,
+        ...response.body.greenProjects
+      ];
+
+      const project = allProjects.find(p => p.id === ragProjectId);
+      if (project && project.metrics.length > 0) {
+        const metric = project.metrics.find(m => m.id === ragMetricId);
+        if (metric) {
+          expect(metric.ragStatus).toBe('green');
+          expect(metric.variance).toBeGreaterThanOrEqual(0);
+        }
+      }
+    });
+
+    test('should return GREEN when variance is within tolerance (< 5%)', async () => {
+      // 3% behind (within 5% amber tolerance) = GREEN
+      const periods = await dbAll(
+        'SELECT id FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date DESC LIMIT 1',
+        [ragMetricId]
+      );
+
+      if (periods.length > 0) {
+        // complete = 97, expected = 100 → variance = -3 → 3%
+        await dbRun(
+          'UPDATE metric_periods SET complete = 97, expected = 100 WHERE id = ?',
+          [periods[0].id]
+        );
+      }
+
+      const response = await request(app)
+        .get(`/api/portfolios/${ragPortfolioId}/report`);
+
+      expect(response.status).toBe(200);
+
+      const allProjects = [
+        ...response.body.redProjects,
+        ...response.body.amberProjects,
+        ...response.body.greenProjects
+      ];
+
+      const project = allProjects.find(p => p.id === ragProjectId);
+      if (project && project.metrics.length > 0) {
+        const metric = project.metrics.find(m => m.id === ragMetricId);
+        if (metric) {
+          expect(metric.ragStatus).toBe('green');
+          expect(metric.variancePercent).toBeLessThanOrEqual(5);
+        }
+      }
+    });
+
+    test('should return AMBER when variance exceeds amber tolerance (5-10%)', async () => {
+      // 8% behind (exceeds 5% amber but within 10% red) = AMBER
+      const periods = await dbAll(
+        'SELECT id, reporting_date FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date DESC LIMIT 1',
+        [ragMetricId]
+      );
+
+      if (periods.length > 0) {
+        // complete = 92, expected = 100 → variance = -8 → 8%
+        await dbRun(
+          'UPDATE metric_periods SET complete = 92, expected = 100 WHERE id = ?',
+          [periods[0].id]
+        );
+      }
+
+      const response = await request(app)
+        .get(`/api/portfolios/${ragPortfolioId}/report`);
+
+      expect(response.status).toBe(200);
+
+      const project = response.body.amberProjects.find(p => p.id === ragProjectId);
+      expect(project).toBeDefined();
+
+      if (project) {
+        const metric = project.metrics.find(m => m.id === ragMetricId);
+        expect(metric).toBeDefined();
+        if (metric) {
+          expect(metric.ragStatus).toBe('amber');
+          expect(metric.variancePercent).toBeGreaterThan(5);
+          expect(metric.variancePercent).toBeLessThanOrEqual(10);
+        }
+      }
+    });
+
+    test('should return RED when variance exceeds red tolerance (> 10%)', async () => {
+      // 15% behind (exceeds 10% red) = RED
+      const periods = await dbAll(
+        'SELECT id FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date DESC LIMIT 1',
+        [ragMetricId]
+      );
+
+      if (periods.length > 0) {
+        // complete = 85, expected = 100 → variance = -15 → 15%
+        await dbRun(
+          'UPDATE metric_periods SET complete = 85, expected = 100 WHERE id = ?',
+          [periods[0].id]
+        );
+      }
+
+      const response = await request(app)
+        .get(`/api/portfolios/${ragPortfolioId}/report`);
+
+      expect(response.status).toBe(200);
+
+      const project = response.body.redProjects.find(p => p.id === ragProjectId);
+      expect(project).toBeDefined();
+
+      if (project) {
+        const metric = project.metrics.find(m => m.id === ragMetricId);
+        expect(metric).toBeDefined();
+        if (metric) {
+          expect(metric.ragStatus).toBe('red');
+          expect(metric.variancePercent).toBeGreaterThan(10);
+        }
+      }
+    });
+
+    test('should return GREY when expected is 0', async () => {
+      const periods = await dbAll(
+        'SELECT id FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date DESC LIMIT 1',
+        [ragMetricId]
+      );
+
+      if (periods.length > 0) {
+        // Set expected to 0
+        await dbRun(
+          'UPDATE metric_periods SET complete = 10, expected = 0 WHERE id = ?',
+          [periods[0].id]
+        );
+      }
+
+      const response = await request(app)
+        .get(`/api/portfolios/${ragPortfolioId}/report`);
+
+      expect(response.status).toBe(200);
+
+      // With expected=0, metric should show grey status
+      const allProjects = [
+        ...response.body.redProjects,
+        ...response.body.amberProjects,
+        ...response.body.greenProjects
+      ];
+
+      const project = allProjects.find(p => p.id === ragProjectId);
+      if (project && project.metrics.length > 0) {
+        const metric = project.metrics.find(m => m.id === ragMetricId);
+        if (metric) {
+          expect(metric.ragStatus).toBe('grey');
+        }
+      }
+    });
+
+    test('should return GREY when complete is null', async () => {
+      const periods = await dbAll(
+        'SELECT id FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date DESC LIMIT 1',
+        [ragMetricId]
+      );
+
+      if (periods.length > 0) {
+        // Set complete to null
+        await dbRun(
+          'UPDATE metric_periods SET complete = NULL, expected = 100 WHERE id = ?',
+          [periods[0].id]
+        );
+      }
+
+      const response = await request(app)
+        .get(`/api/portfolios/${ragPortfolioId}/report`);
+
+      expect(response.status).toBe(200);
+
+      const allProjects = [
+        ...response.body.redProjects,
+        ...response.body.amberProjects,
+        ...response.body.greenProjects
+      ];
+
+      const project = allProjects.find(p => p.id === ragProjectId);
+      if (project && project.metrics.length > 0) {
+        const metric = project.metrics.find(m => m.id === ragMetricId);
+        if (metric) {
+          expect(metric.ragStatus).toBe('grey');
+        }
+      }
+    });
+
+    test('should return GREEN at exactly amber tolerance boundary (5%)', async () => {
+      // Exactly 5% behind = GREEN (boundary uses >)
+      const periods = await dbAll(
+        'SELECT id FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date DESC LIMIT 1',
+        [ragMetricId]
+      );
+
+      if (periods.length > 0) {
+        // complete = 95, expected = 100 → variance = -5 → exactly 5%
+        await dbRun(
+          'UPDATE metric_periods SET complete = 95, expected = 100 WHERE id = ?',
+          [periods[0].id]
+        );
+      }
+
+      const response = await request(app)
+        .get(`/api/portfolios/${ragPortfolioId}/report`);
+
+      expect(response.status).toBe(200);
+
+      // At exactly 5% boundary, should be green (tolerances use >)
+      const greenProject = response.body.greenProjects.find(p => p.id === ragProjectId);
+      expect(greenProject).toBeDefined();
+
+      if (greenProject) {
+        const metric = greenProject.metrics.find(m => m.id === ragMetricId);
+        if (metric) {
+          expect(metric.ragStatus).toBe('green');
+          expect(metric.variancePercent).toBeCloseTo(5, 0);
+        }
+      }
+    });
+
+    test('should return AMBER at exactly red tolerance boundary (10%)', async () => {
+      // Exactly 10% behind = AMBER (boundary uses >)
+      const periods = await dbAll(
+        'SELECT id FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date DESC LIMIT 1',
+        [ragMetricId]
+      );
+
+      if (periods.length > 0) {
+        // complete = 90, expected = 100 → variance = -10 → exactly 10%
+        await dbRun(
+          'UPDATE metric_periods SET complete = 90, expected = 100 WHERE id = ?',
+          [periods[0].id]
+        );
+      }
+
+      const response = await request(app)
+        .get(`/api/portfolios/${ragPortfolioId}/report`);
+
+      expect(response.status).toBe(200);
+
+      // At exactly 10% boundary, should be amber (tolerances use >)
+      const amberProject = response.body.amberProjects.find(p => p.id === ragProjectId);
+      expect(amberProject).toBeDefined();
+
+      if (amberProject) {
+        const metric = amberProject.metrics.find(m => m.id === ragMetricId);
+        if (metric) {
+          expect(metric.ragStatus).toBe('amber');
+          expect(metric.variancePercent).toBeCloseTo(10, 0);
+        }
+      }
+    });
+
+    test('should classify project as RED if any metric is red', async () => {
+      // Create a second metric that's green
+      const greenMetricResponse = await request(app)
+        .post(`/api/projects/${ragProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Green Metric',
+          start_date: '2024-01-01',
+          end_date: '2024-12-31',
+          frequency: 'monthly',
+          progression_type: 'linear',
+          final_target: 100,
+          amber_tolerance: 5,
+          red_tolerance: 10
+        });
+
+      // Set original metric to RED
+      const redPeriods = await dbAll(
+        'SELECT id FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date DESC LIMIT 1',
+        [ragMetricId]
+      );
+      if (redPeriods.length > 0) {
+        await dbRun(
+          'UPDATE metric_periods SET complete = 85, expected = 100 WHERE id = ?',
+          [redPeriods[0].id]
+        );
+      }
+
+      // Set new metric to GREEN
+      const greenPeriods = await dbAll(
+        'SELECT id FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date DESC LIMIT 1',
+        [greenMetricResponse.body.id]
+      );
+      if (greenPeriods.length > 0) {
+        await dbRun(
+          'UPDATE metric_periods SET complete = 110, expected = 100 WHERE id = ?',
+          [greenPeriods[0].id]
+        );
+      }
+
+      const response = await request(app)
+        .get(`/api/portfolios/${ragPortfolioId}/report`);
+
+      expect(response.status).toBe(200);
+
+      // Project should be in red projects (worst metric wins)
+      const redProject = response.body.redProjects.find(p => p.id === ragProjectId);
+      expect(redProject).toBeDefined();
+    });
+  });
+
+  // Cascade delete verification tests
+  describe('Cascade Delete Verification', () => {
+    let cascadePortfolioId, cascadeProjectId, cascadeMetricId, cascadePeriodId;
+    let dbGet, dbRun, dbAll;
+
+    beforeAll(async () => {
+      // Get database functions
+      const { createApp } = require('../server');
+      const result = createApp(TEST_DB_PATH);
+      dbGet = result.dbGet;
+      dbRun = result.dbRun;
+      dbAll = result.dbAll;
+
+      // Create a portfolio for cascade tests
+      const portfolioResponse = await request(app)
+        .post('/api/portfolios')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Cascade Test Portfolio',
+          color: '#FF0000'
+        });
+      cascadePortfolioId = portfolioResponse.body.id;
+    });
+
+    beforeEach(async () => {
+      // Create a project with full hierarchy for each test
+      const projectResponse = await request(app)
+        .post('/api/projects')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: `Cascade Test Project ${Date.now()}`,
+          description: 'Project for cascade delete testing',
+          start_date: '2024-01-01',
+          end_date: '2024-12-31',
+          portfolio_id: cascadePortfolioId
+        });
+      cascadeProjectId = projectResponse.body.id;
+
+      // Create a metric
+      const metricResponse = await request(app)
+        .post(`/api/projects/${cascadeProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Cascade Test Metric',
+          start_date: '2024-01-01',
+          end_date: '2024-12-31',
+          frequency: 'monthly',
+          progression_type: 'linear',
+          final_target: 100
+        });
+      cascadeMetricId = metricResponse.body.id;
+
+      // Get a period ID
+      const periods = await dbAll(
+        'SELECT id FROM metric_periods WHERE metric_id = ? LIMIT 1',
+        [cascadeMetricId]
+      );
+      cascadePeriodId = periods[0]?.id;
+    });
+
+    test('should cascade delete metrics when project is deleted', async () => {
+      // Verify metric exists before delete
+      const metricBefore = await dbGet(
+        'SELECT id FROM metrics WHERE id = ?',
+        [cascadeMetricId]
+      );
+      expect(metricBefore).toBeDefined();
+
+      // Delete the project
+      const response = await request(app)
+        .delete(`/api/projects/${cascadeProjectId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+
+      // Verify metric was cascade deleted
+      const metricAfter = await dbGet(
+        'SELECT id FROM metrics WHERE id = ?',
+        [cascadeMetricId]
+      );
+      expect(metricAfter).toBeUndefined();
+    });
+
+    test('should cascade delete periods when project is deleted', async () => {
+      // Count periods before delete
+      const periodsBefore = await dbAll(
+        'SELECT id FROM metric_periods WHERE metric_id = ?',
+        [cascadeMetricId]
+      );
+      expect(periodsBefore.length).toBeGreaterThan(0);
+
+      // Delete the project
+      await request(app)
+        .delete(`/api/projects/${cascadeProjectId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      // Verify periods were cascade deleted
+      const periodsAfter = await dbAll(
+        'SELECT id FROM metric_periods WHERE metric_id = ?',
+        [cascadeMetricId]
+      );
+      expect(periodsAfter.length).toBe(0);
+    });
+
+    test('should cascade delete comments when project is deleted', async () => {
+      // Create a comment on a period
+      await request(app)
+        .post(`/api/periods/${cascadePeriodId}/comments`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          comment_text: 'Test comment for cascade delete'
+        });
+
+      // Verify comment exists
+      const commentBefore = await dbGet(
+        'SELECT id FROM comments WHERE period_id = ?',
+        [cascadePeriodId]
+      );
+      expect(commentBefore).toBeDefined();
+
+      // Delete the project
+      await request(app)
+        .delete(`/api/projects/${cascadeProjectId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      // Verify comment was cascade deleted
+      const commentAfter = await dbGet(
+        'SELECT id FROM comments WHERE period_id = ?',
+        [cascadePeriodId]
+      );
+      expect(commentAfter).toBeUndefined();
+    });
+
+    test('should cascade delete periods when metric is deleted', async () => {
+      // Count periods before delete
+      const periodsBefore = await dbAll(
+        'SELECT id FROM metric_periods WHERE metric_id = ?',
+        [cascadeMetricId]
+      );
+      expect(periodsBefore.length).toBeGreaterThan(0);
+
+      // Delete the metric
+      const response = await request(app)
+        .delete(`/api/metrics/${cascadeMetricId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+
+      // Verify periods were cascade deleted
+      const periodsAfter = await dbAll(
+        'SELECT id FROM metric_periods WHERE metric_id = ?',
+        [cascadeMetricId]
+      );
+      expect(periodsAfter.length).toBe(0);
+    });
+
+    test('should cascade delete comments when metric is deleted', async () => {
+      // Create a comment on a period
+      await request(app)
+        .post(`/api/periods/${cascadePeriodId}/comments`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          comment_text: 'Test comment for metric cascade'
+        });
+
+      // Verify comment exists
+      const commentBefore = await dbGet(
+        'SELECT id FROM comments WHERE period_id = ?',
+        [cascadePeriodId]
+      );
+      expect(commentBefore).toBeDefined();
+
+      // Delete the metric
+      await request(app)
+        .delete(`/api/metrics/${cascadeMetricId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      // Verify comment was cascade deleted
+      const commentAfter = await dbGet(
+        'SELECT id FROM comments WHERE period_id = ?',
+        [cascadePeriodId]
+      );
+      expect(commentAfter).toBeUndefined();
+    });
+
+    test('should cascade delete project links when project is deleted', async () => {
+      // Create a project link
+      const linkResponse = await request(app)
+        .post(`/api/projects/${cascadeProjectId}/links`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          label: 'JIRA',
+          url: 'https://jira.example.com/browse/TEST'
+        });
+
+      const linkId = linkResponse.body.id;
+
+      // Verify link exists
+      const linkBefore = await dbGet(
+        'SELECT id FROM project_links WHERE id = ?',
+        [linkId]
+      );
+      expect(linkBefore).toBeDefined();
+
+      // Delete the project
+      await request(app)
+        .delete(`/api/projects/${cascadeProjectId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      // Verify link was cascade deleted
+      const linkAfter = await dbGet(
+        'SELECT id FROM project_links WHERE id = ?',
+        [linkId]
+      );
+      expect(linkAfter).toBeUndefined();
+    });
+
+    test('should cascade delete CRAIDs when project is deleted', async () => {
+      // Create a CRAID
+      const craidResponse = await request(app)
+        .post(`/api/projects/${cascadeProjectId}/craids`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          type: 'risk',
+          title: 'Test Risk',
+          description: 'Test risk for cascade delete'
+        });
+
+      const craidId = craidResponse.body.id;
+
+      // Verify CRAID exists
+      const craidBefore = await dbGet(
+        'SELECT id FROM craids WHERE id = ?',
+        [craidId]
+      );
+      expect(craidBefore).toBeDefined();
+
+      // Delete the project
+      await request(app)
+        .delete(`/api/projects/${cascadeProjectId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      // Verify CRAID was cascade deleted
+      const craidAfter = await dbGet(
+        'SELECT id FROM craids WHERE id = ?',
+        [craidId]
+      );
+      expect(craidAfter).toBeUndefined();
+    });
+
+    test('should NOT cascade delete project when portfolio is deleted', async () => {
+      // Create a separate portfolio and project for this test
+      const testPortfolioResponse = await request(app)
+        .post('/api/portfolios')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: `Portfolio ${Date.now()}`,
+          color: '#0000FF'
+        });
+      const testPortfolioId = testPortfolioResponse.body.id;
+
+      const testProjectResponse = await request(app)
+        .post('/api/projects')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: `Project ${Date.now()}`,
+          description: 'Test project',
+          start_date: '2024-01-01',
+          end_date: '2024-12-31',
+          portfolio_id: testPortfolioId
+        });
+      const testProjectId = testProjectResponse.body.id;
+
+      // Delete the portfolio
+      await request(app)
+        .delete(`/api/portfolios/${testPortfolioId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      // Verify project still exists (portfolio_id should be set to NULL)
+      const projectAfter = await dbGet(
+        'SELECT id, portfolio_id FROM projects WHERE id = ?',
+        [testProjectId]
+      );
+      expect(projectAfter).toBeDefined();
+      expect(projectAfter.portfolio_id).toBeNull();
+    });
+
+    test('should cascade delete project permissions when project is deleted', async () => {
+      // Grant PM permission to the project
+      const pmUser = await dbGet('SELECT id FROM users WHERE email = ?', ['pm@portfolio.test']);
+      if (pmUser) {
+        await dbRun(
+          'INSERT OR IGNORE INTO project_permissions (project_id, user_id) VALUES (?, ?)',
+          [cascadeProjectId, pmUser.id]
+        );
+
+        // Verify permission exists
+        const permBefore = await dbGet(
+          'SELECT id FROM project_permissions WHERE project_id = ? AND user_id = ?',
+          [cascadeProjectId, pmUser.id]
+        );
+        expect(permBefore).toBeDefined();
+
+        // Delete the project
+        await request(app)
+          .delete(`/api/projects/${cascadeProjectId}`)
+          .set('Authorization', `Bearer ${adminToken}`);
+
+        // Verify permission was cascade deleted
+        const permAfter = await dbGet(
+          'SELECT id FROM project_permissions WHERE project_id = ? AND user_id = ?',
+          [cascadeProjectId, pmUser.id]
+        );
+        expect(permAfter).toBeUndefined();
+      }
+    });
+  });
 });
