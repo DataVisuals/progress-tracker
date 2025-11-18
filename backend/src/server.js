@@ -676,7 +676,7 @@ function createApp(dbPath) {
   // ===== FEEDBACK =====
   app.get('/api/feedback', async (req, res) => {
     try {
-      const { status } = req.query;
+      const { status, project_id } = req.query;
       let query = `
         SELECT f.*,
                u.name as user_name,
@@ -689,10 +689,20 @@ function createApp(dbPath) {
         LEFT JOIN users s ON f.resolved_by = s.id
       `;
       let params = [];
+      let conditions = [];
+
+      if (project_id) {
+        conditions.push('f.project_id = ?');
+        params.push(project_id);
+      }
 
       if (status) {
-        query += ' WHERE f.status = ?';
+        conditions.push('f.status = ?');
         params.push(status);
+      }
+
+      if (conditions.length > 0) {
+        query += ' WHERE ' + conditions.join(' AND ');
       }
 
       query += ' ORDER BY f.created_at DESC';
@@ -707,16 +717,20 @@ function createApp(dbPath) {
 
   app.post('/api/feedback', authenticateToken, async (req, res) => {
     try {
-      const { text } = req.body;
+      const { text, project_id } = req.body;
 
       if (!text || !text.trim()) {
         return res.status(400).json({ error: 'Feedback text is required' });
       }
 
+      if (!project_id) {
+        return res.status(400).json({ error: 'Project ID is required' });
+      }
+
       const result = await dbRun(
-        `INSERT INTO feedback (user_id, text, status)
-         VALUES (?, ?, 'open')`,
-        [req.user.userId, text.trim()]
+        `INSERT INTO feedback (user_id, text, status, project_id)
+         VALUES (?, ?, 'open', ?)`,
+        [req.user.userId, text.trim(), project_id]
       );
 
       const newFeedback = await dbGet(
@@ -3639,6 +3653,20 @@ function createApp(dbPath) {
       }
     } catch (err) {
       console.error('Error migrating feedback to text-only:', err);
+    }
+
+    // Migration: Add project_id to feedback table
+    try {
+      const feedbackCols = await dbAll(`PRAGMA table_info(feedback)`);
+      const hasProjectId = feedbackCols.some(col => col.name === 'project_id');
+
+      if (!hasProjectId) {
+        await dbRun(`ALTER TABLE feedback ADD COLUMN project_id INTEGER REFERENCES projects(id)`);
+        await dbRun(`CREATE INDEX IF NOT EXISTS idx_feedback_project ON feedback(project_id)`);
+        console.log('✅ Added project_id to feedback table');
+      }
+    } catch (err) {
+      console.error('Error adding project_id to feedback:', err);
     }
 
     // Create default admin user if none exists

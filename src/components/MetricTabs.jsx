@@ -49,12 +49,15 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
 
     const latest = sortedPeriods[currentPeriodIndex];
 
+    // Check if we're still in the current period (next period hasn't started yet)
+    // This is used to determine if we should show grey for missing/incomplete data
+    const isInCurrentPeriod = currentPeriodIndex === sortedPeriods.length - 1 ||
+      today < new Date(sortedPeriods[currentPeriodIndex + 1].reporting_date);
+
     // Check if we have the necessary data
     if (latest.complete === null || latest.complete === undefined ||
         latest.expected === null || latest.expected === undefined) {
-      // If we're still in the current period (next period hasn't started), don't show red
-      const isInCurrentPeriod = currentPeriodIndex === sortedPeriods.length - 1 ||
-        today < new Date(sortedPeriods[currentPeriodIndex + 1].reporting_date);
+      // If we're still in the current period, don't show red for missing data
       return isInCurrentPeriod ? 'grey' : null;
     }
 
@@ -72,6 +75,11 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
     // Determine RAG status
     if (expected === 0) return 'grey'; // No expected value
     if (variance >= 0) return 'green'; // On track or ahead of schedule
+
+    // If we're still in the current period, don't show red/amber for incomplete data
+    // The period's data shouldn't be judged until after the period completes
+    if (isInCurrentPeriod) return 'grey';
+
     if (variancePercent > redTolerance) return 'red';
     if (variancePercent > amberTolerance) return 'amber';
     return 'green';

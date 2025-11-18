@@ -1626,9 +1626,9 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
         )}
 
         {/* Feedback Tab Content */}
-        {activeTab === 'feedback' && currentUser && (
+        {activeTab === 'feedback' && currentUser && projectId && (
           <div className="tab-content">
-            <Feedback currentUser={currentUser} />
+            <Feedback currentUser={currentUser} projectId={projectId} />
           </div>
         )}
 

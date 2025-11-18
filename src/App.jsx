@@ -86,7 +86,36 @@ function App() {
 
   // Reload projects when portfolio selection changes
   useEffect(() => {
-    loadProjects();
+    const loadAndSelectProject = async () => {
+      try {
+        const url = selectedPortfolio ? `/projects?portfolio_id=${selectedPortfolio}` : '/projects';
+        const response = await api.get(url);
+        setProjects(response.data);
+
+        // If we have a portfolio filter and a currently selected project
+        if (selectedPortfolio && selectedProject) {
+          // Check if the current project is in the filtered list
+          const projectInList = response.data.find(p => p.id === parseInt(selectedProject));
+          if (!projectInList && response.data.length > 0) {
+            // Current project not in this portfolio, select the first one
+            setSelectedProject(response.data[0].id.toString());
+            setSelectedMetric('');
+          } else if (!projectInList) {
+            // No projects in this portfolio
+            setSelectedProject('');
+            setSelectedMetric('');
+          }
+        } else if (selectedPortfolio && !selectedProject && response.data.length > 0) {
+          // Portfolio selected but no project selected - select first project
+          setSelectedProject(response.data[0].id.toString());
+          setSelectedMetric('');
+        }
+      } catch (err) {
+        console.error('Failed to load projects:', err);
+      }
+    };
+
+    loadAndSelectProject();
   }, [selectedPortfolio]);
 
   // Load project data when project selected

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import './Feedback.css';
 
-const Feedback = ({ currentUser }) => {
+const Feedback = ({ currentUser, projectId }) => {
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, open, resolved
@@ -17,13 +17,15 @@ const Feedback = ({ currentUser }) => {
   const isPMOrAbove = currentUser && (currentUser.role === 'pm' || currentUser.role === 'admin');
 
   useEffect(() => {
-    loadFeedback();
-  }, []);
+    if (projectId) {
+      loadFeedback();
+    }
+  }, [projectId]);
 
   const loadFeedback = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/feedback');
+      const response = await api.get(`/feedback?project_id=${projectId}`);
       setFeedback(response.data);
     } catch (err) {
       console.error('Failed to load feedback:', err);
@@ -42,7 +44,7 @@ const Feedback = ({ currentUser }) => {
 
     try {
       setSubmitting(true);
-      await api.post('/feedback', { text: feedbackText });
+      await api.post('/feedback', { text: feedbackText, project_id: projectId });
       setFeedbackText('');
       setShowForm(false);
       loadFeedback();
