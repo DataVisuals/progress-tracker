@@ -42,6 +42,9 @@ function App() {
   const [editProjectEndDate, setEditProjectEndDate] = useState('');
   const [editingPortfolio, setEditingPortfolio] = useState(false);
   const [editPortfolioValue, setEditPortfolioValue] = useState(null);
+  const [editingPMs, setEditingPMs] = useState(false);
+  const [editPMValue, setEditPMValue] = useState('');
+  const [editSecondaryPMValue, setEditSecondaryPMValue] = useState('');
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
@@ -345,7 +348,8 @@ function App() {
       await api.updateProject(projectId, {
         name: newName,
         description: project.description,
-        initiative_manager: project.initiative_manager
+        initiative_manager: project.initiative_manager,
+        secondary_pm: project.secondary_pm
       });
 
       // Reload projects to reflect the new name
@@ -398,7 +402,8 @@ function App() {
         await api.updateProject(selectedProject, {
           name: currentProject.name,
           description: editProjectDescValue,
-          initiative_manager: currentProject.initiative_manager
+          initiative_manager: currentProject.initiative_manager,
+          secondary_pm: currentProject.secondary_pm
         });
         // Reload projects to reflect the new description
         await loadProjects();
@@ -423,6 +428,7 @@ function App() {
           name: currentProject.name,
           description: currentProject.description,
           initiative_manager: currentProject.initiative_manager,
+          secondary_pm: currentProject.secondary_pm,
           start_date: editProjectStartDate,
           end_date: editProjectEndDate
         });
@@ -458,6 +464,7 @@ function App() {
           name: currentProject.name,
           description: currentProject.description,
           initiative_manager: currentProject.initiative_manager,
+          secondary_pm: currentProject.secondary_pm,
           portfolio_id: editPortfolioValue
         });
         // Reload projects to reflect the new portfolio
@@ -468,6 +475,35 @@ function App() {
       }
     }
     setEditingPortfolio(false);
+  };
+
+  const handlePMsClick = () => {
+    if (!canEdit()) return;
+    setEditingPMs(true);
+    setEditPMValue(currentProject?.initiative_manager || '');
+    setEditSecondaryPMValue(currentProject?.secondary_pm || '');
+  };
+
+  const handleSavePMs = async () => {
+    const pmChanged = editPMValue !== (currentProject?.initiative_manager || '');
+    const secondaryPMChanged = editSecondaryPMValue !== (currentProject?.secondary_pm || '');
+
+    if (pmChanged || secondaryPMChanged) {
+      try {
+        await api.updateProject(selectedProject, {
+          name: currentProject.name,
+          description: currentProject.description,
+          initiative_manager: editPMValue,
+          secondary_pm: editSecondaryPMValue,
+          portfolio_id: currentProject.portfolio_id
+        });
+        await loadProjects();
+      } catch (err) {
+        console.error('Failed to update project managers:', err);
+        alert('Failed to update project managers');
+      }
+    }
+    setEditingPMs(false);
   };
 
   const handleMetricCreated = async (metricName) => {
@@ -988,6 +1024,61 @@ function App() {
                               {canEdit() ? 'Click to assign portfolio' : 'No portfolio'}
                             </span>
                           )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {(currentProject?.initiative_manager || currentProject?.secondary_pm || canEdit()) && (
+                    <div className="project-pm-section">
+                      {editingPMs ? (
+                        <div className="pm-editor">
+                          <div className="pm-editor-field">
+                            <label>Primary IM:</label>
+                            <input
+                              type="text"
+                              value={editPMValue}
+                              onChange={(e) => setEditPMValue(e.target.value)}
+                              placeholder="Enter name..."
+                            />
+                          </div>
+                          <div className="pm-editor-field">
+                            <label>Secondary IM:</label>
+                            <input
+                              type="text"
+                              value={editSecondaryPMValue}
+                              onChange={(e) => setEditSecondaryPMValue(e.target.value)}
+                              placeholder="Enter name..."
+                            />
+                          </div>
+                          <div className="pm-editor-actions">
+                            <button onClick={handleSavePMs} className="save-btn">Save</button>
+                            <button onClick={() => setEditingPMs(false)} className="cancel-btn">Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className={`pm-display ${canEdit() ? 'editable' : ''}`}
+                          onClick={handlePMsClick}
+                          title={canEdit() ? "Click to edit project managers" : undefined}
+                        >
+                          {currentProject?.initiative_manager ? (
+                            <span className="pm-info">
+                              <span className="pm-label">Primary IM:</span> {currentProject.initiative_manager}
+                            </span>
+                          ) : canEdit() ? (
+                            <span className="pm-info pm-placeholder">
+                              <span className="pm-label">Primary IM:</span> Click to add...
+                            </span>
+                          ) : null}
+                          {currentProject?.secondary_pm ? (
+                            <span className="pm-info">
+                              <span className="pm-label">Secondary IM:</span> {currentProject.secondary_pm}
+                            </span>
+                          ) : canEdit() && currentProject?.initiative_manager ? (
+                            <span className="pm-info pm-placeholder">
+                              <span className="pm-label">Secondary IM:</span> Click to add...
+                            </span>
+                          ) : null}
                         </div>
                       )}
                     </div>

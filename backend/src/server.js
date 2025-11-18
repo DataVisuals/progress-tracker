@@ -149,7 +149,35 @@ function createApp(dbPath) {
       console.error('Failed to log audit entry:', err);
     }
   }
-  
+
+  // ===== GRANT PERMISSIONS TO INITIATIVE MANAGERS =====
+  async function grantPermissionsToInitiativeManagers(projectId, initiativeManager, secondaryPM) {
+    const managers = [initiativeManager, secondaryPM].filter(name => name && name.trim());
+
+    for (const managerName of managers) {
+      // Look up user by name
+      const user = await dbGet('SELECT id FROM users WHERE name = ?', [managerName.trim()]);
+
+      if (user) {
+        // Check if permission already exists
+        const existingPermission = await dbGet(
+          'SELECT id FROM project_permissions WHERE project_id = ? AND user_id = ?',
+          [projectId, user.id]
+        );
+
+        if (!existingPermission) {
+          await dbRun(
+            'INSERT INTO project_permissions (project_id, user_id) VALUES (?, ?)',
+            [projectId, user.id]
+          );
+          console.log(`Granted permission to initiative manager "${managerName}" (user ${user.id}) for project ${projectId}`);
+        }
+      } else {
+        console.log(`Initiative manager "${managerName}" not found in users table - no permission granted`);
+      }
+    }
+  }
+
   // ===== AUTH ROUTES =====
   app.post('/api/auth/login', async (req, res) => {
     try {
@@ -1006,23 +1034,23 @@ function createApp(dbPath) {
         return res.status(401).json({ error: 'User not authenticated' });
       }
   
-      const { name, description, initiative_manager, start_date, end_date, portfolio_id } = req.body;
-      const projectData = { name, description, initiative_manager, start_date, end_date, portfolio_id };
-  
+      const { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id } = req.body;
+      const projectData = { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id };
+
       // Log project creation attempt
       logger.project.createAttempt(req.user, projectData);
-  
+
       // Check if user can create projects (using role from JWT token)
       if (!canCreateProject(req.user)) {
         logger.project.createFailure(req.user, projectData, 'Permission denied - insufficient role');
         return res.status(403).json({ error: 'You do not have permission to create projects' });
       }
-  
+
       const result = await dbRun(
-        'INSERT INTO projects (name, description, initiative_manager, start_date, end_date, portfolio_id) VALUES (?, ?, ?, ?, ?, ?)',
-        [name, description, initiative_manager || null, start_date || null, end_date || null, portfolio_id || null]
+        'INSERT INTO projects (name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [name, description, initiative_manager || null, secondary_pm || null, start_date || null, end_date || null, portfolio_id || null]
       );
-  
+
       // Auto-grant permission to the creating user if they are a PM or Editor
       if (req.user.role === ROLES.PM || req.user.role === ROLES.EDITOR) {
         await dbRun(
@@ -1031,17 +1059,20 @@ function createApp(dbPath) {
         );
         logger.debug('PROJECT', `Auto-granted permission to user ${req.user.email} for project ${result.lastID}`);
       }
-  
+
+      // Grant permissions to initiative managers
+      await grantPermissionsToInitiativeManagers(result.lastID, initiative_manager, secondary_pm);
+
       await logAudit(req.user, 'CREATE', 'projects', result.lastID, null,
-        { name, description, initiative_manager, start_date, end_date, portfolio_id },
+        { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id },
         `Created project "${name}"`,
         req.ip
       );
-  
+
       // Log successful creation
       logger.project.createSuccess(req.user, result.lastID, projectData);
-  
-      res.json({ id: result.lastID, name, description, initiative_manager, start_date, end_date, portfolio_id });
+
+      res.json({ id: result.lastID, name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id });
     } catch (err) {
       logger.project.createFailure(req.user, req.body, err.message);
       res.status(500).json({ error: err.message });
@@ -1055,17 +1086,20 @@ function createApp(dbPath) {
         return res.status(403).json({ error: 'You do not have permission to edit this project' });
       }
   
-      const { name, description, initiative_manager, start_date, end_date, portfolio_id } = req.body;
+      const { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id } = req.body;
       const oldProject = await dbGet('SELECT * FROM projects WHERE id = ?', [req.params.id]);
-  
+
       await dbRun(
-        'UPDATE projects SET name = ?, description = ?, initiative_manager = ?, start_date = ?, end_date = ?, portfolio_id = ? WHERE id = ?',
-        [name, description, initiative_manager || null, start_date || null, end_date || null, portfolio_id || null, req.params.id]
+        'UPDATE projects SET name = ?, description = ?, initiative_manager = ?, secondary_pm = ?, start_date = ?, end_date = ?, portfolio_id = ? WHERE id = ?',
+        [name, description, initiative_manager || null, secondary_pm || null, start_date || null, end_date || null, portfolio_id || null, req.params.id]
       );
-  
+
+      // Grant permissions to new initiative managers
+      await grantPermissionsToInitiativeManagers(req.params.id, initiative_manager, secondary_pm);
+
       await logAudit(req.user, 'UPDATE', 'projects', req.params.id,
-        { name: oldProject.name, description: oldProject.description, initiative_manager: oldProject.initiative_manager, start_date: oldProject.start_date, end_date: oldProject.end_date, portfolio_id: oldProject.portfolio_id },
-        { name, description, initiative_manager, start_date, end_date, portfolio_id },
+        { name: oldProject.name, description: oldProject.description, initiative_manager: oldProject.initiative_manager, secondary_pm: oldProject.secondary_pm, start_date: oldProject.start_date, end_date: oldProject.end_date, portfolio_id: oldProject.portfolio_id },
+        { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id },
         `Updated project "${name}"`,
         req.ip
       );
@@ -2229,27 +2263,66 @@ function createApp(dbPath) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
-      const { limit = 100, offset = 0, table_name, user_id, action } = req.query;
+      const { limit = 100, offset = 0, table_name, user_id, action, project_id } = req.query;
 
-      let query = 'SELECT *, created_at as timestamp FROM audit_log WHERE 1=1';
+      let query = '';
       const params = [];
-  
-      if (table_name) {
-        query += ' AND table_name = ?';
-        params.push(table_name);
+
+      // Special handling for project_id filter with metric_periods table
+      if (project_id && table_name === 'metric_periods') {
+        // Get all metric IDs for this project first
+        const metrics = await dbAll('SELECT id FROM metrics WHERE project_id = ?', [parseInt(project_id)]);
+        const metricIds = metrics.map(m => m.id);
+
+        if (metricIds.length === 0) {
+          return res.json([]);
+        }
+
+        // Get all metric_period IDs for these metrics
+        const periods = await dbAll(
+          `SELECT id FROM metric_periods WHERE metric_id IN (${metricIds.map(() => '?').join(',')})`,
+          metricIds
+        );
+        const periodIds = periods.map(p => p.id);
+
+        if (periodIds.length === 0) {
+          return res.json([]);
+        }
+
+        // Filter audit log by these period IDs
+        query = `SELECT *, created_at as timestamp FROM audit_log
+                 WHERE table_name = 'metric_periods'
+                 AND record_id IN (${periodIds.map(() => '?').join(',')})`;
+        params.push(...periodIds);
+
+        if (user_id) {
+          query += ' AND user_id = ?';
+          params.push(parseInt(user_id));
+        }
+        if (action) {
+          query += ' AND action = ?';
+          params.push(action);
+        }
+      } else {
+        query = 'SELECT *, created_at as timestamp FROM audit_log WHERE 1=1';
+
+        if (table_name) {
+          query += ' AND table_name = ?';
+          params.push(table_name);
+        }
+        if (user_id) {
+          query += ' AND user_id = ?';
+          params.push(parseInt(user_id));
+        }
+        if (action) {
+          query += ' AND action = ?';
+          params.push(action);
+        }
       }
-      if (user_id) {
-        query += ' AND user_id = ?';
-        params.push(parseInt(user_id));
-      }
-      if (action) {
-        query += ' AND action = ?';
-        params.push(action);
-      }
-  
+
       query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
       params.push(parseInt(limit), parseInt(offset));
-  
+
       const logs = await dbAll(query, params);
       res.json(logs);
     } catch (err) {
@@ -3461,6 +3534,14 @@ function createApp(dbPath) {
     try {
       await dbRun(`ALTER TABLE projects ADD COLUMN portfolio_id INTEGER REFERENCES portfolios(id)`);
       console.log('✅ Added portfolio_id column to projects table');
+    } catch (err) {
+      // Column already exists, that's fine
+    }
+
+    // Migration: Add secondary_pm to projects table
+    try {
+      await dbRun(`ALTER TABLE projects ADD COLUMN secondary_pm TEXT`);
+      console.log('✅ Added secondary_pm column to projects table');
     } catch (err) {
       // Column already exists, that's fine
     }

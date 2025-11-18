@@ -25,6 +25,7 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
 
   const [projectName, setProjectName] = useState('');
   const [projectManager, setProjectManager] = useState(null);
+  const [secondaryPM, setSecondaryPM] = useState(null);
   const [projectDesc, setProjectDesc] = useState('');
   const [portfolioId, setPortfolioId] = useState(null);
   const [users, setUsers] = useState([]);
@@ -136,6 +137,7 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
         name: projectName,
         description: projectDesc,
         initiative_manager: projectManager ? projectManager.label : '',
+        secondary_pm: secondaryPM ? secondaryPM.label : '',
         start_date: projectStartDate,
         end_date: projectEndDate,
         portfolio_id: portfolioId
@@ -197,16 +199,25 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="project-manager">Project Manager</label>
+            <label htmlFor="project-manager">Primary Initiative Manager</label>
             <UserSelector
               users={users}
               selectedUser={projectManager}
               onUserChange={(option) => setProjectManager(option)}
-              placeholder="Select project manager..."
+              placeholder="Select primary initiative manager..."
             />
           </div>
         </div>
         <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="secondary-pm">Secondary Initiative Manager</label>
+            <UserSelector
+              users={users}
+              selectedUser={secondaryPM}
+              onUserChange={(option) => setSecondaryPM(option)}
+              placeholder="Select secondary IM (optional)..."
+            />
+          </div>
           <div className="form-group">
             <label htmlFor="project-desc">Description</label>
             <input

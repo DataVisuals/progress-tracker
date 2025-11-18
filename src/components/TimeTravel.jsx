@@ -19,16 +19,17 @@ const TimeTravel = ({ projectId, onTimeTravelChange, onRevert, isAdmin = false }
       // Get audit log entries for this project's metric_periods
       const response = await api.getAuditLog({
         table_name: 'metric_periods',
+        project_id: projectId,
         limit: 500
       });
 
       // Extract and sort timestamps (oldest to newest for slider)
-      const timestamps = response.data
-        .map(log => log.created_at)
+      // Use unique timestamps only
+      const uniqueTimestamps = [...new Set(response.data.map(log => log.created_at))]
         .sort((a, b) => new Date(a) - new Date(b));
 
-      setAuditTimestamps(timestamps);
-      setSliderIndex(timestamps.length); // Start at "present" (max position)
+      setAuditTimestamps(uniqueTimestamps);
+      setSliderIndex(uniqueTimestamps.length); // Start at "present" (max position)
     } catch (err) {
       console.error('Failed to load audit timestamps:', err);
     }

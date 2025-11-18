@@ -632,6 +632,88 @@
   color: #00aeef;
 }
 
+.project-pm-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.pm-display {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: default;
+}
+
+.pm-display.editable {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.pm-display.editable:hover {
+  opacity: 0.8;
+}
+
+.pm-info {
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.pm-info.pm-placeholder {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.pm-display.editable:hover .pm-placeholder {
+  color: #00aeef;
+}
+
+.pm-label {
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.pm-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.pm-editor-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pm-editor-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.pm-editor-field input {
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  width: 150px;
+}
+
+.pm-editor-field input:focus {
+  outline: none;
+  border-color: #00aeef;
+  box-shadow: 0 0 0 2px rgba(0, 174, 239, 0.1);
+}
+
+.pm-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .save-btn {
   background-color: #00aeef;
   color: white;
