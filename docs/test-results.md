@@ -3,8 +3,9 @@
 ## Date: 2025-11-18
 
 ## Summary
-- **Test Suites**: 15 passed, 15 total
-- **Tests**: 278 passed, 278 total
+- **Backend Test Suites**: 15 passed, 15 total
+- **Backend Tests**: 278 passed, 278 total
+- **Frontend Tests**: 11 passed in MetricTabs suite (updated for grey status behavior)
 
 ## Test Suites
 

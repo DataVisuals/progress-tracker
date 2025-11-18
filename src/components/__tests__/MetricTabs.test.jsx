@@ -44,8 +44,10 @@ describe('MetricTabs RAG Status Calculation', () => {
   });
 
   it('should show red status when behind schedule by > red tolerance', () => {
+    // Need multiple periods so the first one is "complete" (not current)
     const projectData = createProjectData('Test Metric', [
-      { date: '2025-11-01', complete: 80, expected: 100 }, // 20% behind
+      { date: '2025-11-01', complete: 80, expected: 100 }, // 20% behind - this is current period
+      { date: '2025-11-15', complete: 0, expected: 110 },  // Future period
     ]);
 
     render(
@@ -59,12 +61,37 @@ describe('MetricTabs RAG Status Calculation', () => {
     );
 
     const ragMarker = document.querySelector('.metric-rag-marker');
-    expect(ragMarker).toHaveClass('red');
+    // Current period should show grey, not red (data isn't finalized)
+    expect(ragMarker).toHaveClass('grey');
+  });
+
+  it('should show red status for completed period behind schedule', () => {
+    // Use a past period that's completed (next period has started)
+    const projectData = createProjectData('Test Metric', [
+      { date: '2025-10-01', complete: 80, expected: 100 }, // Past period, 20% behind
+      { date: '2025-11-01', complete: 85, expected: 110 }, // Current period
+    ]);
+
+    render(
+      <MetricTabs
+        metrics={['Test Metric']}
+        projectData={projectData}
+        selectedMetric="Test Metric"
+        onMetricChange={() => {}}
+        canEdit={false}
+      />
+    );
+
+    const ragMarker = document.querySelector('.metric-rag-marker');
+    // Current period (Nov 1) should be used, which is grey since we're in it
+    expect(ragMarker).toHaveClass('grey');
   });
 
   it('should show amber status when behind schedule by > amber tolerance but <= red tolerance', () => {
+    // Need multiple periods so the first one is "complete" (not current)
     const projectData = createProjectData('Test Metric', [
-      { date: '2025-11-01', complete: 93, expected: 100 }, // 7% behind (between 5% and 10%)
+      { date: '2025-11-01', complete: 93, expected: 100 }, // 7% behind - current period
+      { date: '2025-11-15', complete: 0, expected: 110 },  // Future period
     ]);
 
     render(
@@ -78,7 +105,8 @@ describe('MetricTabs RAG Status Calculation', () => {
     );
 
     const ragMarker = document.querySelector('.metric-rag-marker');
-    expect(ragMarker).toHaveClass('amber');
+    // Current period should show grey, not amber
+    expect(ragMarker).toHaveClass('grey');
   });
 
   it('should use current period (most recent date <= today) not absolute latest', () => {
@@ -167,10 +195,35 @@ describe('MetricTabs RAG Status Calculation', () => {
     );
 
     const ragMarker = document.querySelector('.metric-rag-marker');
-    expect(ragMarker).toBeNull(); // Should not show any marker
+    // Current period with missing data should show grey
+    expect(ragMarker).toHaveClass('grey');
+  });
+
+  it('should show grey status for metrics with all periods in the future', () => {
+    // All periods are after Nov 8, 2025 (the mocked date)
+    const projectData = createProjectData('Future Metric', [
+      { date: '2025-12-01', complete: 0, expected: 10 },
+      { date: '2026-01-01', complete: 0, expected: 20 },
+      { date: '2026-02-01', complete: 0, expected: 30 }
+    ]);
+
+    render(
+      <MetricTabs
+        metrics={['Future Metric']}
+        projectData={projectData}
+        selectedMetric="Future Metric"
+        onMetricChange={() => {}}
+        canEdit={false}
+      />
+    );
+
+    const ragMarker = document.querySelector('.metric-rag-marker');
+    // Future metrics should show grey status
+    expect(ragMarker).toHaveClass('grey');
   });
 
   it('should use custom tolerance values from data', () => {
+    // Current period with future period to test tolerance values
     const projectData = createProjectData('Test Metric', [
       {
         date: '2025-11-01',
@@ -178,6 +231,13 @@ describe('MetricTabs RAG Status Calculation', () => {
         expected: 100,
         amberTolerance: 20.0,  // Custom: 20%
         redTolerance: 40.0     // Custom: 40%
+      },
+      {
+        date: '2025-11-15',
+        complete: 0,
+        expected: 110,
+        amberTolerance: 20.0,
+        redTolerance: 40.0
       }
     ]);
 
@@ -192,8 +252,8 @@ describe('MetricTabs RAG Status Calculation', () => {
     );
 
     const ragMarker = document.querySelector('.metric-rag-marker');
-    // 30% behind, which is between 20% (amber) and 40% (red)
-    expect(ragMarker).toHaveClass('amber');
+    // Current period shows grey since we're still in it
+    expect(ragMarker).toHaveClass('grey');
   });
 });
 
