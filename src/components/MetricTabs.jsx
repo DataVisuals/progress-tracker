@@ -44,8 +44,8 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
       }
     }
 
-    // If no current period found (all periods are in the future), return null
-    if (currentPeriodIndex === -1) return null;
+    // If no current period found (all periods are in the future), return grey
+    if (currentPeriodIndex === -1) return 'grey';
 
     const latest = sortedPeriods[currentPeriodIndex];
 
