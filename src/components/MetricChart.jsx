@@ -1115,7 +1115,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
 
       {/* Metric Description */}
       {(sortedData[0]?.metric_description || (canEdit && onDescriptionChange)) && (
-        <div className="metric-description-row" style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}>
+        <div className="metric-description-row" style={{ padding: '8px 0', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', minHeight: '32px' }}>
           {editingDescription && onDescriptionChange ? (
             <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
               <textarea
