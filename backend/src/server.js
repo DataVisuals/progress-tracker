@@ -568,8 +568,28 @@ function createApp(dbPath) {
             }
           }
 
-          // If no current period found (all periods are in the future), skip
-          if (!currentPeriod) continue;
+          // Calculate RAG status
+          let ragStatus = 'grey';
+          let variance = 0;
+          let variancePercent = 0;
+
+          // If no current period found (all periods are in the future), show as grey
+          if (!currentPeriod) {
+            // Use the first period for display but show grey status
+            const firstPeriod = periods[0];
+            metricsWithStatus.push({
+              id: metric.id,
+              name: metric.name,
+              ragStatus: 'grey',
+              variance: 0,
+              variancePercent: 0,
+              complete: firstPeriod.complete || 0,
+              expected: firstPeriod.expected || 0,
+              reporting_date: firstPeriod.reporting_date,
+              latestComment: null
+            });
+            continue;
+          }
 
           // Check if we're still in the current period (haven't passed to next period yet)
           // Find the index of current period
@@ -584,11 +604,6 @@ function createApp(dbPath) {
           const isInCurrentPeriod = currentPeriodIndex < periods.length - 1
             ? today < new Date(periods[currentPeriodIndex + 1].reporting_date)
             : today <= metricEndDate;
-
-          // Calculate RAG status
-          let ragStatus = 'grey';
-          let variance = 0;
-          let variancePercent = 0;
 
           if (currentPeriod.complete !== null && currentPeriod.expected !== null) {
             variance = currentPeriod.complete - currentPeriod.expected;

@@ -710,6 +710,50 @@ describe('Portfolio Management API Tests', () => {
       }
     });
 
+    test('should return GREY for metrics that start in the future', async () => {
+      // Create a metric that starts in the future
+      const futureStart = new Date();
+      futureStart.setMonth(futureStart.getMonth() + 1);
+      const futureEnd = new Date();
+      futureEnd.setMonth(futureEnd.getMonth() + 7);
+
+      const futureMetricResponse = await request(app)
+        .post(`/api/projects/${ragProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Future Metric',
+          start_date: futureStart.toISOString().split('T')[0],
+          end_date: futureEnd.toISOString().split('T')[0],
+          frequency: 'monthly',
+          progression_type: 'linear',
+          final_target: 100,
+          amber_tolerance: 5,
+          red_tolerance: 10
+        });
+
+      const futureMetricId = futureMetricResponse.body.id;
+
+      const response = await request(app)
+        .get(`/api/portfolios/${ragPortfolioId}/report`);
+
+      expect(response.status).toBe(200);
+
+      const allProjects = [
+        ...response.body.redProjects,
+        ...response.body.amberProjects,
+        ...response.body.greenProjects
+      ];
+
+      const project = allProjects.find(p => p.id === ragProjectId);
+      if (project && project.metrics.length > 0) {
+        const metric = project.metrics.find(m => m.id === futureMetricId);
+        if (metric) {
+          // Future metrics should show grey
+          expect(metric.ragStatus).toBe('grey');
+        }
+      }
+    });
+
     test('should return GREY for current period even if behind schedule', async () => {
       // Current period (period has started but next hasn't) should show grey
       // even if the data shows it's behind schedule

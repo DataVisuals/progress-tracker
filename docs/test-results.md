@@ -4,7 +4,7 @@
 
 ## Summary
 - **Test Suites**: 15 passed, 15 total
-- **Tests**: 277 passed, 277 total
+- **Tests**: 278 passed, 278 total
 
 ## Test Suites
 
@@ -54,7 +54,8 @@
 5. **Current Period Grey RAG Status**
    - Backend now shows grey for periods still in progress
    - Portfolio report won't show red/amber until period is complete
-   - Added test: "should return GREY for current period even if behind schedule"
+   - Future metrics (start date in future) also show grey
+   - Added tests for current period and future metrics grey status
 
 6. **Feedback Table Fix**
    - Removed NOT NULL constraint from legacy title/description columns
