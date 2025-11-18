@@ -571,6 +571,20 @@ function createApp(dbPath) {
           // If no current period found (all periods are in the future), skip
           if (!currentPeriod) continue;
 
+          // Check if we're still in the current period (haven't passed to next period yet)
+          // Find the index of current period
+          const currentPeriodIndex = periods.findIndex(p => p.id === currentPeriod.id);
+
+          // We're in the current period if:
+          // 1. There's a next period and we haven't reached it yet, OR
+          // 2. This is the last period AND the metric end date is still in the future
+          const metricEndDate = new Date(metric.end_date);
+          metricEndDate.setHours(0, 0, 0, 0);
+
+          const isInCurrentPeriod = currentPeriodIndex < periods.length - 1
+            ? today < new Date(periods[currentPeriodIndex + 1].reporting_date)
+            : today <= metricEndDate;
+
           // Calculate RAG status
           let ragStatus = 'grey';
           let variance = 0;
@@ -589,6 +603,10 @@ function createApp(dbPath) {
               ragStatus = 'grey';
             } else if (variance >= 0) {
               ragStatus = 'green';
+            } else if (isInCurrentPeriod) {
+              // If we're still in the current period, show grey instead of red/amber
+              // The period's data shouldn't be judged until after the period completes
+              ragStatus = 'grey';
             } else if (variancePercent > redTolerance) {
               ragStatus = 'red';
             } else if (variancePercent > amberTolerance) {

@@ -4,7 +4,7 @@
 
 ## Summary
 - **Test Suites**: 15 passed, 15 total
-- **Tests**: 276 passed, 276 total
+- **Tests**: 277 passed, 277 total
 
 ## Test Suites
 
@@ -50,3 +50,12 @@
 
 ### Test Updates
 - Updated project.test.js to use valid user names for initiative_manager field
+
+5. **Current Period Grey RAG Status**
+   - Backend now shows grey for periods still in progress
+   - Portfolio report won't show red/amber until period is complete
+   - Added test: "should return GREY for current period even if behind schedule"
+
+6. **Feedback Table Fix**
+   - Removed NOT NULL constraint from legacy title/description columns
+   - Feedback submission now works correctly

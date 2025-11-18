@@ -710,6 +710,84 @@ describe('Portfolio Management API Tests', () => {
       }
     });
 
+    test('should return GREY for current period even if behind schedule', async () => {
+      // Current period (period has started but next hasn't) should show grey
+      // even if the data shows it's behind schedule
+      const today = new Date();
+      const startDate = new Date(today);
+      startDate.setMonth(startDate.getMonth() - 1);
+      const endDate = new Date(today);
+      endDate.setMonth(endDate.getMonth() + 6);
+
+      // Create a metric with periods spanning current date
+      const currentMetricResponse = await request(app)
+        .post(`/api/projects/${ragProjectId}/metrics`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Current Period Metric',
+          start_date: startDate.toISOString().split('T')[0],
+          end_date: endDate.toISOString().split('T')[0],
+          frequency: 'monthly',
+          progression_type: 'linear',
+          final_target: 100,
+          amber_tolerance: 5,
+          red_tolerance: 10
+        });
+
+      const currentMetricId = currentMetricResponse.body.id;
+
+      // Get all periods for this metric
+      const periods = await dbAll(
+        'SELECT id, reporting_date FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date ASC',
+        [currentMetricId]
+      );
+
+      // Find the current period (period that has started but next hasn't)
+      let currentPeriodId = null;
+      for (let i = 0; i < periods.length; i++) {
+        const periodDate = new Date(periods[i].reporting_date);
+        if (periodDate <= today) {
+          if (i + 1 < periods.length) {
+            const nextPeriodDate = new Date(periods[i + 1].reporting_date);
+            if (today < nextPeriodDate) {
+              currentPeriodId = periods[i].id;
+              break;
+            }
+          } else {
+            currentPeriodId = periods[i].id;
+          }
+        }
+      }
+
+      if (currentPeriodId) {
+        // Set it to be 15% behind (would normally be RED)
+        await dbRun(
+          'UPDATE metric_periods SET complete = 85, expected = 100 WHERE id = ?',
+          [currentPeriodId]
+        );
+
+        const response = await request(app)
+          .get(`/api/portfolios/${ragPortfolioId}/report`);
+
+        expect(response.status).toBe(200);
+
+        const allProjects = [
+          ...response.body.redProjects,
+          ...response.body.amberProjects,
+          ...response.body.greenProjects
+        ];
+
+        const project = allProjects.find(p => p.id === ragProjectId);
+        if (project && project.metrics.length > 0) {
+          const metric = project.metrics.find(m => m.id === currentMetricId);
+          if (metric) {
+            // Current period should show grey instead of red
+            expect(metric.ragStatus).toBe('grey');
+          }
+        }
+      }
+    });
+
     test('should classify project as RED if any metric is red', async () => {
       // Create a second metric that's green
       const greenMetricResponse = await request(app)
