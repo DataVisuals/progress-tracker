@@ -597,13 +597,10 @@ function createApp(dbPath) {
 
           // We're in the current period if:
           // 1. There's a next period and we haven't reached it yet, OR
-          // 2. This is the last period AND the metric end date is still in the future
-          const metricEndDate = new Date(metric.end_date);
-          metricEndDate.setHours(0, 0, 0, 0);
-
-          const isInCurrentPeriod = currentPeriodIndex < periods.length - 1
-            ? today < new Date(periods[currentPeriodIndex + 1].reporting_date)
-            : today <= metricEndDate;
+          // Check if we're still in the current period (next period hasn't started yet)
+          // This matches the frontend logic in MetricTabs.jsx exactly
+          const isInCurrentPeriod = currentPeriodIndex === periods.length - 1 ||
+            today < new Date(periods[currentPeriodIndex + 1].reporting_date);
 
           // Helper function to calculate RAG for a specific period
           const calculateRAGForPeriod = (period) => {

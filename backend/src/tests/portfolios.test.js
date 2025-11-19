@@ -610,17 +610,23 @@ describe('Portfolio Management API Tests', () => {
       }
     });
 
-    test('should return GREY when complete is null', async () => {
+    test('should use previous period RAG when current period complete is null', async () => {
+      // Get all periods and set up: previous period with good data, current period with null
       const periods = await dbAll(
-        'SELECT id FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date DESC LIMIT 1',
+        'SELECT id FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date DESC',
         [ragMetricId]
       );
 
-      if (periods.length > 0) {
-        // Set complete to null
+      if (periods.length >= 2) {
+        // Set the latest (current) period to null complete
         await dbRun(
           'UPDATE metric_periods SET complete = NULL, expected = 100 WHERE id = ?',
           [periods[0].id]
+        );
+        // Set previous period to green (on track)
+        await dbRun(
+          'UPDATE metric_periods SET complete = 100, expected = 100 WHERE id = ?',
+          [periods[1].id]
         );
       }
 
@@ -639,7 +645,8 @@ describe('Portfolio Management API Tests', () => {
       if (project && project.metrics.length > 0) {
         const metric = project.metrics.find(m => m.id === ragMetricId);
         if (metric) {
-          expect(metric.ragStatus).toBe('grey');
+          // Should use previous period's GREEN status since current has null complete
+          expect(metric.ragStatus).toBe('green');
         }
       }
     });
