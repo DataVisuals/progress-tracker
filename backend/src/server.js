@@ -605,30 +605,60 @@ function createApp(dbPath) {
             ? today < new Date(periods[currentPeriodIndex + 1].reporting_date)
             : today <= metricEndDate;
 
-          if (currentPeriod.complete !== null && currentPeriod.expected !== null) {
-            variance = currentPeriod.complete - currentPeriod.expected;
-            variancePercent = currentPeriod.expected > 0
-              ? Math.abs((variance / currentPeriod.expected) * 100)
+          // Helper function to calculate RAG for a specific period
+          const calculateRAGForPeriod = (period) => {
+            if (period.complete === null || period.expected === null) {
+              return { ragStatus: 'grey', variance: 0, variancePercent: 0 };
+            }
+
+            const periodVariance = period.complete - period.expected;
+            const periodVariancePercent = period.expected > 0
+              ? Math.abs((periodVariance / period.expected) * 100)
               : 0;
 
             const amberTolerance = parseFloat(metric.amber_tolerance) || 5.0;
             const redTolerance = parseFloat(metric.red_tolerance) || 10.0;
 
-            if (currentPeriod.expected === 0) {
-              ragStatus = 'grey';
-            } else if (variance >= 0) {
-              ragStatus = 'green';
-            } else if (isInCurrentPeriod) {
-              // If we're still in the current period, show grey instead of red/amber
-              // The period's data shouldn't be judged until after the period completes
-              ragStatus = 'grey';
-            } else if (variancePercent > redTolerance) {
-              ragStatus = 'red';
-            } else if (variancePercent > amberTolerance) {
-              ragStatus = 'amber';
+            let status = 'grey';
+            if (period.expected === 0) {
+              status = 'grey';
+            } else if (periodVariance >= 0) {
+              status = 'green';
+            } else if (periodVariancePercent > redTolerance) {
+              status = 'red';
+            } else if (periodVariancePercent > amberTolerance) {
+              status = 'amber';
             } else {
-              ragStatus = 'green';
+              status = 'green';
             }
+
+            return { ragStatus: status, variance: periodVariance, variancePercent: periodVariancePercent };
+          };
+
+          // If we're in the current period and it has no data, use previous period's status
+          if (isInCurrentPeriod) {
+            const currentComplete = currentPeriod.complete || 0;
+
+            // If current period has no meaningful data (complete is 0 or null), use previous period
+            if (currentComplete === 0 && currentPeriodIndex > 0) {
+              const previousPeriod = periods[currentPeriodIndex - 1];
+              const previousRAG = calculateRAGForPeriod(previousPeriod);
+              ragStatus = previousRAG.ragStatus;
+              variance = previousRAG.variance;
+              variancePercent = previousRAG.variancePercent;
+            } else {
+              // Current period has data - calculate its RAG
+              const currentRAG = calculateRAGForPeriod(currentPeriod);
+              ragStatus = currentRAG.ragStatus;
+              variance = currentRAG.variance;
+              variancePercent = currentRAG.variancePercent;
+            }
+          } else {
+            // For completed periods, calculate normally
+            const periodRAG = calculateRAGForPeriod(currentPeriod);
+            ragStatus = periodRAG.ragStatus;
+            variance = periodRAG.variance;
+            variancePercent = periodRAG.variancePercent;
           }
 
           // Get latest comment for this period (for red and amber metrics)
