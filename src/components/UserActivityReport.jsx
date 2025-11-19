@@ -139,77 +139,44 @@ const UserActivityReport = ({ onClose }) => {
 
         {data && !loading && (
           <div className="activity-content">
-            {/* Stack Rank Summary */}
-            <div className="activity-section">
-              <h3>Activity Ranking</h3>
-              <div className="rank-list">
-                {data.users.map((user, index) => (
-                  <div key={user.user_email} className="rank-item">
-                    <span className="rank-number">#{index + 1}</span>
-                    <span className="rank-name">{user.user_name}</span>
-                    <span className="rank-count">{user.total_activity} actions</span>
-                  </div>
-                ))}
-                {data.users.length === 0 && (
-                  <div className="no-data">No activity in this period</div>
-                )}
-              </div>
-            </div>
-
             {/* Stacked Bar Chart */}
-            {data.activityTypes.length > 0 && (
-              <div className="activity-section chart-section">
-                <h3>Activity by Type</h3>
-                <div className="chart-container">
-                  <ResponsiveContainer width="100%" height={Math.max(300, data.users.length * 50)}>
-                    <BarChart
-                      data={getChartData()}
-                      layout="vertical"
-                      margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis
-                        dataKey="name"
-                        type="category"
-                        width={90}
-                        tick={{ fontSize: 12 }}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend
-                        formatter={(value) => formatActivityType(value)}
-                        wrapperStyle={{ fontSize: '11px' }}
-                      />
-                      {data.activityTypes.map((type) => (
-                        <Bar
-                          key={type}
-                          dataKey={type}
-                          stackId="a"
-                          fill={getColor(type)}
-                          name={type}
-                        />
-                      ))}
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
-
-            {/* Activity Legend */}
-            <div className="activity-section">
-              <h3>Activity Types Legend</h3>
-              <div className="legend-grid">
-                {data.activityTypes.map(type => (
-                  <div key={type} className="legend-item">
-                    <span
-                      className="legend-color"
-                      style={{ backgroundColor: getColor(type) }}
+            {data.activityTypes.length > 0 ? (
+              <div className="chart-container">
+                <ResponsiveContainer width="100%" height={Math.max(250, data.users.length * 28)}>
+                  <BarChart
+                    data={getChartData()}
+                    layout="vertical"
+                    margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
+                    barSize={16}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      width={90}
+                      tick={{ fontSize: 12 }}
                     />
-                    <span className="legend-label">{formatActivityType(type)}</span>
-                  </div>
-                ))}
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend
+                      formatter={(value) => formatActivityType(value)}
+                      wrapperStyle={{ fontSize: '11px' }}
+                    />
+                    {data.activityTypes.map((type) => (
+                      <Bar
+                        key={type}
+                        dataKey={type}
+                        stackId="a"
+                        fill={getColor(type)}
+                        name={type}
+                      />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-            </div>
+            ) : (
+              <div className="no-data">No activity in this period</div>
+            )}
           </div>
         )}
       </div>
