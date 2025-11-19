@@ -2961,13 +2961,13 @@ function createApp(dbPath) {
       // Get activity timeline (daily counts)
       const activityTimeline = await dbAll(`
         SELECT
-          DATE(created_at) as date,
+          DATE(a.created_at) as date,
           COALESCE(u.name, a.user_email, 'Unknown') as user_name,
           COUNT(*) as count
         FROM audit_log a
         LEFT JOIN users u ON a.user_id = u.id
         WHERE a.created_at >= ?
-        GROUP BY DATE(created_at), COALESCE(u.name, a.user_email, 'Unknown')
+        GROUP BY DATE(a.created_at), COALESCE(u.name, a.user_email, 'Unknown')
         ORDER BY date DESC
       `, [daysAgo.toISOString()]);
 
