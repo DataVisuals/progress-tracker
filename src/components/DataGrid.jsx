@@ -392,7 +392,8 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
                       type="text"
                       value={row.metric}
                       readOnly
-                      style={{width: '100%', backgroundColor: '#f0f0f0', cursor: 'not-allowed'}}
+                      className="readonly-input"
+                      style={{width: '100%'}}
                     />
                   </td>
                   <td>
@@ -419,7 +420,8 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
                       inputMode="numeric"
                       value={row.complete}
                       onChange={(e) => handleCellChange(row.id, 'complete', parseFloat(e.target.value) || 0)}
-                      style={{width: '100%', backgroundColor: isFuture ? '#f0f0f0' : 'transparent', cursor: isFuture ? 'not-allowed' : 'text'}}
+                      className={isFuture ? 'readonly-input' : ''}
+                      style={{width: '100%'}}
                       readOnly={isFuture}
                       disabled={isFuture}
                     />
@@ -445,7 +447,7 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
                     type="text"
                     value={newRow.metric}
                     readOnly
-                    style={{backgroundColor: '#f0f0f0', cursor: 'not-allowed'}}
+                    className="readonly-input"
                   />
                 </td>
                 <td>

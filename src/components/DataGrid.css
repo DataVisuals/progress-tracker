@@ -314,6 +314,11 @@
   background-color: #f0f9ff;
 }
 
+.readonly-input {
+  background-color: #f0f0f0 !important;
+  cursor: not-allowed !important;
+}
+
 .delete-row-btn {
   background-color: #ef4444;
   color: white;
@@ -557,6 +562,62 @@
   border-color: #00aeef;
 }
 
+/* Dark mode override for react-select metric selector */
+:root.dark-mode .metric-selector-inline .css-13cymwt-control,
+:root.dark-mode .metric-selector-inline .css-t3ipsp-control,
+:root.dark-mode .metric-selector-inline [class*="-control"] {
+  background-color: #1f2937 !important;
+  border-color: #4b5563 !important;
+}
+
+:root.dark-mode .metric-selector-inline .css-1dimb5e-singleValue,
+:root.dark-mode .metric-selector-inline [class*="-singleValue"] {
+  color: #f9fafb !important;
+}
+
+:root.dark-mode .metric-selector-inline .css-1xc3v61-indicatorContainer,
+:root.dark-mode .metric-selector-inline [class*="-indicatorContainer"] {
+  color: #9ca3af !important;
+}
+
+:root.dark-mode .metric-selector-inline .css-1nmdiq5-menu,
+:root.dark-mode .metric-selector-inline [class*="-menu"] {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+:root.dark-mode .metric-selector-inline .css-d7l1ni-option,
+:root.dark-mode .metric-selector-inline [class*="-option"]:hover {
+  background-color: #374151 !important;
+}
+
+:root.dark-mode .metric-selector-inline .css-tr4s17-option,
+:root.dark-mode .metric-selector-inline [class*="-option"][aria-selected="true"] {
+  background-color: #00aeef !important;
+}
+
+:root.dark-mode .metric-selector-inline input,
+:root.dark-mode .metric-selector-inline [class*="-input"] input {
+  color: #f9fafb !important;
+  background-color: transparent !important;
+  caret-color: #f9fafb !important;
+}
+
+:root.dark-mode .metric-selector-inline [class*="-placeholder"] {
+  color: #9ca3af !important;
+}
+
+/* Force dark mode on react-select input when text is selected */
+:root.dark-mode .metric-selector-inline input::selection {
+  background-color: #00aeef !important;
+  color: #f9fafb !important;
+}
+
+/* Target the value container wrapper */
+:root.dark-mode .metric-selector-inline [class*="-ValueContainer"] {
+  background-color: transparent !important;
+}
+
 :root.dark-mode .selected-metric-header {
   background-color: #0c4a6e;
   border-bottom-color: #1e3a5f;
@@ -628,6 +689,11 @@
 
 :root.dark-mode .new-row {
   background-color: #164e63;
+}
+
+:root.dark-mode .readonly-input {
+  background-color: #374151 !important;
+  color: #9ca3af !important;
 }
 
 :root.dark-mode .data-grid-actions {
