@@ -155,3 +155,75 @@
   font-size: 14px;
   font-style: italic;
 }
+
+/* Dark Mode Styles */
+:root.dark-mode .user-select-trigger {
+  background-color: #1f2937 !important;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:root.dark-mode .search-input {
+  background-color: #1f2937;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:root.dark-mode .user-select-trigger:hover {
+  border-color: #00aeef;
+}
+
+:root.dark-mode .selected-text {
+  color: #f9fafb;
+}
+
+:root.dark-mode .dropdown-arrow {
+  color: #9ca3af;
+}
+
+:root.dark-mode .user-select-dropdown {
+  background: #1f2937;
+  border-color: #00aeef;
+}
+
+:root.dark-mode .search-container {
+  background-color: #374151;
+  border-bottom-color: #4b5563;
+}
+
+:root.dark-mode .search-input:focus {
+  border-color: #00aeef;
+}
+
+:root.dark-mode .option-item {
+  color: #f9fafb;
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .option-item:hover,
+:root.dark-mode .option-item.highlighted {
+  background-color: #374151;
+  color: #e0f2fe;
+}
+
+:root.dark-mode .option-item.selected {
+  background-color: #00aeef;
+  color: white;
+}
+
+:root.dark-mode .option-item.selected:hover {
+  background-color: #0095d1;
+}
+
+:root.dark-mode .clear-option {
+  color: #9ca3af;
+}
+
+:root.dark-mode .option-item:has(.clear-option):hover {
+  background-color: #7f1d1d;
+  color: #fecaca;
+}
+
+:root.dark-mode .no-results {
+  color: #9ca3af;
+}

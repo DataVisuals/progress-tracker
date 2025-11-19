@@ -218,3 +218,68 @@
 .portfolio-option-item.selected:hover {
   background-color: #0095d1;
 }
+
+/* Dark Mode Styles */
+:root.dark-mode .portfolio-select-trigger {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:root.dark-mode .portfolio-select-trigger:hover {
+  background-color: #4b5563;
+  border-color: #6b7280;
+}
+
+:root.dark-mode .portfolio-select-trigger .selected-text {
+  color: #f9fafb;
+}
+
+:root.dark-mode .portfolio-select-trigger .placeholder-text {
+  color: #9ca3af;
+}
+
+:root.dark-mode .portfolio-select-trigger .dropdown-arrow {
+  color: #9ca3af;
+}
+
+:root.dark-mode .portfolio-select-dropdown {
+  background: #1f2937;
+  border-color: #00aeef;
+}
+
+:root.dark-mode .portfolio-dropdown-header {
+  background: #111827;
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .header-title {
+  color: #9ca3af;
+}
+
+:root.dark-mode .portfolio-option-item {
+  color: #f9fafb;
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .portfolio-option-item:hover {
+  background-color: #374151;
+  color: #e0f2fe;
+}
+
+:root.dark-mode .portfolio-option-item.selected {
+  background-color: #00aeef;
+  color: white;
+}
+
+:root.dark-mode .portfolio-option-item.selected:hover {
+  background-color: #0095d1;
+}
+
+:root.dark-mode .all-projects-option {
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .all-projects-icon {
+  color: #9ca3af;
+}

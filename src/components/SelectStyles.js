@@ -1,3 +1,6 @@
+// Helper to check if dark mode is active
+const isDarkMode = () => document.documentElement.classList.contains('dark-mode');
+
 // Shared react-select styles for consistent appearance across the app
 export const selectStyles = {
   control: (base, state) => ({
@@ -5,7 +8,8 @@ export const selectStyles = {
     minHeight: '32px',
     height: '32px',
     fontSize: '0.6875rem',
-    borderColor: state.isFocused ? '#00aeef' : '#d1d5db',
+    backgroundColor: isDarkMode() ? '#1f2937' : 'white',
+    borderColor: state.isFocused ? '#00aeef' : isDarkMode() ? '#4b5563' : '#d1d5db',
     boxShadow: state.isFocused ? '0 0 0 3px rgba(0, 174, 239, 0.1)' : 'none',
     '&:hover': {
       borderColor: '#00aeef'
@@ -20,23 +24,28 @@ export const selectStyles = {
     ...base,
     margin: '0',
     padding: '0',
-    height: '30px'
+    height: '30px',
+    color: isDarkMode() ? '#f9fafb' : '#374151'
   }),
   indicatorSeparator: () => ({
     display: 'none'
   }),
   dropdownIndicator: (base) => ({
     ...base,
-    padding: '4px'
+    padding: '4px',
+    color: isDarkMode() ? '#9ca3af' : '#6b7280'
   }),
   clearIndicator: (base) => ({
     ...base,
-    padding: '4px'
+    padding: '4px',
+    color: isDarkMode() ? '#9ca3af' : '#6b7280'
   }),
   menu: (base) => ({
     ...base,
     fontSize: '0.6875rem',
-    zIndex: 9999
+    zIndex: 9999,
+    backgroundColor: isDarkMode() ? '#1f2937' : 'white',
+    borderColor: isDarkMode() ? '#374151' : '#d1d5db'
   }),
   menuPortal: (base) => ({
     ...base,
@@ -48,9 +57,9 @@ export const selectStyles = {
     backgroundColor: state.isSelected
       ? '#00aeef'
       : state.isFocused
-      ? '#f3f4f6'
-      : 'white',
-    color: state.isSelected ? 'white' : '#374151',
+      ? isDarkMode() ? '#374151' : '#f3f4f6'
+      : isDarkMode() ? '#1f2937' : 'white',
+    color: state.isSelected ? 'white' : isDarkMode() ? '#f9fafb' : '#374151',
     '&:active': {
       backgroundColor: '#003c71'
     }
@@ -62,7 +71,7 @@ export const selectStyles = {
   }),
   singleValue: (base) => ({
     ...base,
-    color: '#374151',
+    color: isDarkMode() ? '#f9fafb' : '#374151',
     fontSize: '0.6875rem'
   })
 };
@@ -74,7 +83,8 @@ export const compactSelectStyles = {
     minHeight: '32px',
     fontSize: '13px',
     minWidth: '150px',
-    borderColor: state.isFocused ? '#00aeef' : '#d1d5db',
+    backgroundColor: isDarkMode() ? '#1f2937' : 'white',
+    borderColor: state.isFocused ? '#00aeef' : isDarkMode() ? '#4b5563' : '#d1d5db',
     boxShadow: state.isFocused ? '0 0 0 2px rgba(0, 174, 239, 0.1)' : 'none',
     '&:hover': {
       borderColor: '#00aeef'
@@ -83,7 +93,8 @@ export const compactSelectStyles = {
   menu: (base) => ({
     ...base,
     fontSize: '13px',
-    zIndex: 9999
+    zIndex: 9999,
+    backgroundColor: isDarkMode() ? '#1f2937' : 'white'
   }),
   menuPortal: (base) => ({
     ...base,
@@ -95,9 +106,9 @@ export const compactSelectStyles = {
     backgroundColor: state.isSelected
       ? '#00aeef'
       : state.isFocused
-      ? '#f3f4f6'
-      : 'white',
-    color: state.isSelected ? 'white' : '#374151'
+      ? isDarkMode() ? '#374151' : '#f3f4f6'
+      : isDarkMode() ? '#1f2937' : 'white',
+    color: state.isSelected ? 'white' : isDarkMode() ? '#f9fafb' : '#374151'
   }),
   placeholder: (base) => ({
     ...base,
@@ -106,7 +117,7 @@ export const compactSelectStyles = {
   }),
   singleValue: (base) => ({
     ...base,
-    color: '#374151',
+    color: isDarkMode() ? '#f9fafb' : '#374151',
     fontSize: '13px'
   })
 };

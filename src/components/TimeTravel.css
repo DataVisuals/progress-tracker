@@ -206,3 +206,53 @@
   margin: 0;
   font-weight: 500;
 }
+
+/* Dark Mode Styles */
+:root.dark-mode .time-travel-slider-container {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:root.dark-mode .time-travel-slider-container.active {
+  border-color: #00aeef;
+}
+
+:root.dark-mode .time-travel-title {
+  color: #d1d5db;
+}
+
+:root.dark-mode .time-travel-slider-container.active .time-travel-title {
+  color: #00aeef;
+}
+
+:root.dark-mode .time-travel-timestamp {
+  color: #d1d5db;
+}
+
+:root.dark-mode .slider-label {
+  color: #9ca3af;
+}
+
+:root.dark-mode .time-travel-slider {
+  background: #374151;
+}
+
+:root.dark-mode .time-travel-slider::-webkit-slider-thumb {
+  border-color: #1f2937;
+}
+
+:root.dark-mode .time-travel-slider::-moz-range-thumb {
+  border-color: #1f2937;
+}
+
+:root.dark-mode .slider-info {
+  color: #6b7280;
+}
+
+:root.dark-mode .revert-action {
+  border-top-color: #374151;
+}
+
+:root.dark-mode .revert-warning {
+  color: #fbbf24;
+}

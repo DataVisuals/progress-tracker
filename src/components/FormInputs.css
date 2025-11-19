@@ -91,3 +91,39 @@
 .form-group .react-select-container {
   min-height: 38px;
 }
+
+/* Dark Mode Styles */
+:root.dark-mode .form-group input[type="text"],
+:root.dark-mode .form-group input[type="email"],
+:root.dark-mode .form-group input[type="password"],
+:root.dark-mode .form-group input[type="number"],
+:root.dark-mode .form-group input[type="date"],
+:root.dark-mode .form-group textarea {
+  color: #f9fafb;
+  background-color: #1f2937;
+  border-color: #4b5563;
+}
+
+:root.dark-mode .form-group input::placeholder,
+:root.dark-mode .form-group textarea::placeholder {
+  color: #9ca3af;
+}
+
+:root.dark-mode .form-group label {
+  color: #d1d5db;
+}
+
+:root.dark-mode .form-group input:disabled,
+:root.dark-mode .form-group textarea:disabled {
+  background-color: #1f2937;
+}
+
+:root.dark-mode .form-group input[readonly],
+:root.dark-mode .form-group textarea[readonly] {
+  background-color: #1f2937;
+}
+
+/* Date input dark mode calendar icon */
+:root.dark-mode .form-group input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}

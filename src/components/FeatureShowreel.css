@@ -317,41 +317,106 @@
   }
 }
 
-/* Dark mode support (if needed) */
-@media (prefers-color-scheme: dark) {
-  .showreel-modal {
-    background: #1f2937;
-    color: #f3f4f6;
-  }
+/* Dark mode support - class-based */
+:root.dark-mode .showreel-modal {
+  background: #1f2937;
+  color: #f3f4f6;
+}
 
-  .showreel-close {
-    color: #9ca3af;
-  }
+:root.dark-mode .showreel-close {
+  color: #9ca3af;
+}
 
-  .showreel-close:hover {
-    background: #374151;
-    color: #f3f4f6;
-  }
+:root.dark-mode .showreel-close:hover {
+  background: #374151;
+  color: #f3f4f6;
+}
 
-  .showreel-title {
-    color: #f3f4f6;
-  }
+:root.dark-mode .showreel-title {
+  color: #f3f4f6;
+}
 
-  .showreel-description {
-    color: #d1d5db;
-  }
+:root.dark-mode .showreel-description {
+  color: #d1d5db;
+}
 
-  .showreel-details li {
-    color: #e5e7eb;
-  }
+:root.dark-mode .showreel-details li {
+  color: #e5e7eb;
+}
 
-  .showreel-progress {
-    border-top-color: #374151;
-  }
+:root.dark-mode .showreel-progress {
+  border-top-color: #374151;
+}
 
-  .showreel-slide-counter {
-    color: #9ca3af;
-  }
+:root.dark-mode .showreel-slide-counter {
+  color: #9ca3af;
+}
+
+:root.dark-mode .showreel-dot {
+  border-color: #4b5563;
+}
+
+:root.dark-mode .showreel-dot:hover {
+  border-color: #00aeef;
+}
+
+:root.dark-mode .showreel-nav-btn:disabled {
+  background: #374151;
+  color: #6b7280;
+}
+
+:root.dark-mode .feature-category {
+  background: #111827;
+}
+
+:root.dark-mode .category-title {
+  color: #e0f2fe;
+}
+
+:root.dark-mode .feature-item {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:root.dark-mode .feature-item:hover {
+  border-color: #00aeef;
+}
+
+:root.dark-mode .feature-item-name {
+  color: #f9fafb;
+}
+
+:root.dark-mode .feature-item-desc {
+  color: #9ca3af;
+}
+
+:root.dark-mode .tip-badge {
+  background: #78350f;
+  color: #fef3c7;
+}
+
+:root.dark-mode .dismiss-btn {
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+:root.dark-mode .dismiss-btn:hover {
+  background: #374151;
+  border-color: #6b7280;
+  color: #d1d5db;
+}
+
+:root.dark-mode .book-plug {
+  color: #6b7280;
+  border-top-color: #374151;
+}
+
+:root.dark-mode .book-plug a {
+  color: #9ca3af;
+}
+
+:root.dark-mode .book-plug a:hover {
+  color: #00aeef;
 }
 
 /* All Features Page Styles */

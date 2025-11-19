@@ -283,3 +283,62 @@
 .cancel-btn:hover {
   background-color: #4b5563;
 }
+
+/* Dark Mode Styles */
+:root.dark-mode .project-setup-container h2 {
+  color: #e0f2fe;
+}
+
+:root.dark-mode .setup-subtitle {
+  color: #9ca3af;
+}
+
+:root.dark-mode .setup-section {
+  background: #374151;
+}
+
+:root.dark-mode .setup-section h3 {
+  color: #d1d5db;
+}
+
+:root.dark-mode .section-help {
+  color: #9ca3af;
+}
+
+:root.dark-mode .form-group label {
+  color: #d1d5db;
+}
+
+:root.dark-mode .project-setup-container .form-group input,
+:root.dark-mode .project-setup-container .form-group textarea,
+:root.dark-mode .project-setup-container .form-group select {
+  background-color: #1f2937;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:root.dark-mode .metric-card {
+  background: #1f2937;
+  border-color: #4b5563;
+}
+
+:root.dark-mode .metric-card-header {
+  border-bottom-color: #4b5563;
+}
+
+:root.dark-mode .metric-card-section h4 {
+  color: #9ca3af;
+}
+
+:root.dark-mode .link-row {
+  background: #1f2937;
+  border-color: #4b5563;
+}
+
+:root.dark-mode .modal-actions {
+  border-top-color: #4b5563;
+}
+
+:root.dark-mode .remove-metric-btn:hover {
+  background-color: #7f1d1d;
+}

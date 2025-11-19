@@ -1812,8 +1812,8 @@ function createApp(dbPath) {
         return res.status(403).json({ error: 'You do not have permission to edit this data' });
       }
   
-      const { complete } = req.body;
-  
+      const { complete, commentary } = req.body;
+
       // Check if this is a historic edit of completion values (period end date has passed)
       const periodEndDate = new Date(periodData.reporting_date);
       const today = new Date();
@@ -1830,15 +1830,15 @@ function createApp(dbPath) {
           });
         }
       }
-  
+
       if (complete !== undefined) {
         await dbRun('UPDATE metric_periods SET complete = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [complete, req.params.id]);
-  
+
         // Mark historic edits clearly in audit log
         const description = isHistoricEdit
           ? `⚠️ HISTORIC EDIT: Updated complete value for metric "${periodData.metric_name}" on ${periodData.reporting_date} (period ended ${periodData.reporting_date})`
           : `Updated complete value for metric "${periodData.metric_name}" on ${periodData.reporting_date}`;
-  
+
         await logAudit(req.user, 'UPDATE', 'metric_periods', req.params.id,
           { complete: periodData.complete },
           { complete },
@@ -1846,6 +1846,23 @@ function createApp(dbPath) {
           req.ip
         );
       }
+
+      // Handle commentary updates
+      if (commentary !== undefined) {
+        await dbRun('UPDATE metric_periods SET commentary = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [commentary, req.params.id]);
+
+        // Get project name for description
+        const project = await dbGet('SELECT p.name FROM projects p JOIN metrics m ON p.id = m.project_id WHERE m.id = ?', [periodData.metric_id]);
+        const projectName = project?.name || 'Unknown';
+
+        await logAudit(req.user, 'UPDATE', 'metric_periods', req.params.id,
+          { commentary: periodData.commentary },
+          { commentary },
+          `Updated metric period for Project: ${projectName}, Metric: ${periodData.metric_name}, Period: ${periodData.reporting_date}`,
+          req.ip
+        );
+      }
+
       res.json({ success: true, isHistoricEdit });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -1894,6 +1911,36 @@ function createApp(dbPath) {
   });
   
   // ===== COMMENTS (for periods) =====
+
+  // Get recent comments across all projects (for dashboard)
+  app.get('/api/comments/recent', authenticateToken, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit) || 10;
+      const comments = await dbAll(`
+        SELECT
+          c.id,
+          c.comment_text,
+          c.created_at,
+          c.period_id,
+          u.name as created_by_name,
+          p.name as project_name,
+          p.id as project_id,
+          m.name as metric_name,
+          mp.reporting_date
+        FROM comments c
+        LEFT JOIN users u ON c.created_by = u.id
+        JOIN metric_periods mp ON c.period_id = mp.id
+        JOIN metrics m ON mp.metric_id = m.id
+        JOIN projects p ON m.project_id = p.id
+        ORDER BY c.created_at DESC
+        LIMIT ?
+      `, [limit]);
+      res.json(comments);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.get('/api/periods/:periodId/comments', async (req, res) => {
     try {
       const comments = await dbAll(`
@@ -1930,7 +1977,7 @@ function createApp(dbPath) {
       const { comment_text } = req.body;
       const result = await dbRun(
         'INSERT INTO comments (period_id, comment_text, created_by) VALUES (?, ?, ?)',
-        [req.params.periodId, comment_text, req.user.id]
+        [req.params.periodId, comment_text, req.user.userId]
       );
   
       await logAudit(req.user, 'CREATE', 'comments', result.lastID, null,

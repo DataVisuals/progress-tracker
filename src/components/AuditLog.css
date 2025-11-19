@@ -187,3 +187,80 @@
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   color: #374151;
 }
+
+/* Dark Mode Styles */
+:root.dark-mode .filter-select {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:root.dark-mode .audit-loading,
+:root.dark-mode .audit-empty {
+  color: #9ca3af;
+}
+
+:root.dark-mode .audit-log-entry {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+:root.dark-mode .audit-log-entry:hover {
+  background-color: #374151;
+  border-color: #4b5563;
+}
+
+:root.dark-mode .action-create {
+  background-color: #064e3b;
+  color: #a7f3d0;
+}
+
+:root.dark-mode .action-update {
+  background-color: #1e3a5f;
+  color: #93c5fd;
+}
+
+:root.dark-mode .action-delete {
+  background-color: #7f1d1d;
+  color: #fecaca;
+}
+
+:root.dark-mode .audit-table-name {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:root.dark-mode .audit-timestamp {
+  color: #9ca3af;
+}
+
+:root.dark-mode .audit-description {
+  color: #f9fafb;
+}
+
+:root.dark-mode .audit-user {
+  color: #9ca3af;
+}
+
+:root.dark-mode .audit-details {
+  border-top-color: #374151;
+}
+
+:root.dark-mode .audit-details summary:hover {
+  color: #7dd3fc;
+}
+
+:root.dark-mode .audit-old-values strong {
+  color: #fca5a5;
+}
+
+:root.dark-mode .audit-new-values strong {
+  color: #34d399;
+}
+
+:root.dark-mode .audit-values pre {
+  background-color: #111827;
+  border-color: #374151;
+  color: #d1d5db;
+}

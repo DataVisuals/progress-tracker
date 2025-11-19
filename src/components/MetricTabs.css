@@ -6,8 +6,8 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: #00aeef #f0f0f0;
-  padding-bottom: 80px; /* Add space for dropdown menu */
-  margin-bottom: -76px; /* Offset the padding to maintain layout */
+  padding-bottom: 120px; /* Add space for dropdown menu */
+  margin-bottom: -116px; /* Offset the padding to maintain layout */
 }
 
 .metric-tabs-container::-webkit-scrollbar {
@@ -183,14 +183,10 @@
 }
 
 .metric-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  z-index: 1000;
   min-width: 160px;
   overflow: hidden;
 }
@@ -222,4 +218,73 @@
 
 .metric-dropdown button + button {
   border-top: 1px solid #e5e7eb;
+}
+
+/* Dark Mode Styles */
+:root.dark-mode .metric-tabs-container {
+  scrollbar-color: #00aeef #374151;
+}
+
+:root.dark-mode .metric-tabs-container::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+:root.dark-mode .metric-tabs-container::-webkit-scrollbar-thumb {
+  border-color: #374151;
+}
+
+:root.dark-mode .metric-tabs {
+  background-color: #374151;
+}
+
+:root.dark-mode .metric-tab {
+  color: #9ca3af;
+}
+
+:root.dark-mode .metric-tab:hover {
+  color: #f9fafb;
+}
+
+:root.dark-mode .metric-tab.active {
+  background-color: #1f2937;
+  color: #e0f2fe;
+}
+
+:root.dark-mode .metric-tab-input {
+  background-color: #1f2937;
+  color: #e0f2fe;
+}
+
+:root.dark-mode .metric-menu-button {
+  color: #9ca3af;
+}
+
+:root.dark-mode .metric-menu-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #f9fafb;
+}
+
+:root.dark-mode .metric-dropdown {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:root.dark-mode .metric-dropdown button {
+  color: #f9fafb;
+}
+
+:root.dark-mode .metric-dropdown button:hover {
+  background-color: #374151;
+}
+
+:root.dark-mode .metric-dropdown button.delete-option {
+  color: #fca5a5;
+}
+
+:root.dark-mode .metric-dropdown button.delete-option:hover {
+  background-color: #7f1d1d;
+}
+
+:root.dark-mode .metric-dropdown button + button {
+  border-top-color: #374151;
 }

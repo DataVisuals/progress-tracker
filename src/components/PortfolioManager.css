@@ -254,3 +254,90 @@
   margin-bottom: 12px;
   font-size: 0.8125rem;
 }
+
+/* Dark Mode Styles */
+:root.dark-mode .portfolio-manager {
+  background: #1f2937;
+}
+
+:root.dark-mode .portfolio-manager-header {
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .portfolio-manager-header h2 {
+  color: #f9fafb;
+}
+
+:root.dark-mode .close-btn {
+  color: #9ca3af;
+}
+
+:root.dark-mode .close-btn:hover {
+  background-color: #374151;
+  color: #f9fafb;
+}
+
+:root.dark-mode .portfolio-item {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+:root.dark-mode .portfolio-details h3 {
+  color: #f9fafb;
+}
+
+:root.dark-mode .portfolio-description {
+  color: #9ca3af;
+}
+
+:root.dark-mode .portfolio-order {
+  color: #6b7280;
+}
+
+:root.dark-mode .portfolio-form h3 {
+  color: #f9fafb;
+}
+
+:root.dark-mode .form-group label {
+  color: #d1d5db;
+}
+
+:root.dark-mode .form-group input,
+:root.dark-mode .form-group textarea {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:root.dark-mode .form-group input:focus,
+:root.dark-mode .form-group textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+:root.dark-mode .form-hint {
+  color: #9ca3af;
+}
+
+:root.dark-mode .color-option.selected {
+  border-color: #f9fafb;
+  box-shadow: 0 0 0 2px #1f2937, 0 0 0 4px #f9fafb;
+}
+
+:root.dark-mode .btn-secondary {
+  background: #374151;
+  color: #f9fafb;
+}
+
+:root.dark-mode .btn-secondary:hover {
+  background: #4b5563;
+}
+
+:root.dark-mode .text-muted {
+  color: #9ca3af;
+}
+
+:root.dark-mode .error-message {
+  background: #7f1d1d;
+  color: #fecaca;
+}

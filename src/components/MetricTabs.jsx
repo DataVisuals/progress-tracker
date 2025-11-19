@@ -5,7 +5,9 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
   const [editingMetric, setEditingMetric] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [showDropdown, setShowDropdown] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const dropdownRef = useRef(null);
+  const menuButtonRefs = useRef({});
 
   // Helper to calculate RAG status for a metric
   const getRAGStatus = (metricName) => {
@@ -217,30 +219,27 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
                     <span className="metric-tab-name">{metric}</span>
                   </button>
                   {canEdit && (
-                    <div className="metric-tab-menu" ref={showDropdown === metric ? dropdownRef : null}>
+                    <div className="metric-tab-menu">
                       <button
+                        ref={el => menuButtonRefs.current[metric] = el}
                         className="metric-menu-button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setShowDropdown(showDropdown === metric ? null : metric);
+                          if (showDropdown === metric) {
+                            setShowDropdown(null);
+                          } else {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setDropdownPosition({
+                              top: rect.bottom + 4,
+                              left: rect.right - 160 // Align to right edge of button
+                            });
+                            setShowDropdown(metric);
+                          }
                         }}
                         title="Metric options"
                       >
                         ⋮
                       </button>
-                      {showDropdown === metric && (
-                        <div className="metric-dropdown">
-                          <button onMouseDown={() => handleRename(metric)}>
-                            Rename Metric
-                          </button>
-                          <button
-                            onMouseDown={() => handleDelete(metric)}
-                            className="delete-option"
-                          >
-                            Delete Metric
-                          </button>
-                        </div>
-                      )}
                     </div>
                   )}
                 </>
@@ -249,6 +248,32 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
           );
         })}
       </div>
+
+      {/* Fixed position dropdown portal */}
+      {showDropdown && (
+        <div
+          className="metric-dropdown-portal"
+          ref={dropdownRef}
+          style={{
+            position: 'fixed',
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
+            zIndex: 9999
+          }}
+        >
+          <div className="metric-dropdown">
+            <button onMouseDown={() => handleRename(showDropdown)}>
+              Rename Metric
+            </button>
+            <button
+              onMouseDown={() => handleDelete(showDropdown)}
+              className="delete-option"
+            >
+              Delete Metric
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -112,3 +112,50 @@
 .error-state {
   color: #ef4444;
 }
+
+/* Dark Mode Styles */
+:root.dark-mode .activity-controls {
+  background: #111827;
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .activity-controls select {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:root.dark-mode .chart-container {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:root.dark-mode .activity-tooltip {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:root.dark-mode .tooltip-label {
+  color: #f9fafb;
+}
+
+:root.dark-mode .tooltip-total {
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .tooltip-name {
+  color: #d1d5db;
+}
+
+:root.dark-mode .tooltip-value {
+  color: #f9fafb;
+}
+
+:root.dark-mode .loading-state,
+:root.dark-mode .no-data {
+  color: #9ca3af;
+}
+
+:root.dark-mode .error-state {
+  color: #fca5a5;
+}

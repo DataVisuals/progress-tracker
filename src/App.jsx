@@ -18,9 +18,10 @@ import ConsistencyReport from './components/ConsistencyReport';
 import ImportData from './components/ImportData';
 import TipsSplash from './components/TipsSplash';
 import UserActivityReport from './components/UserActivityReport';
+import HomePage from './components/HomePage';
 import { api } from './api/client';
 import { selectStyles } from './components/SelectStyles';
-import { MdShowChart, MdArrowDropDown, MdHelpOutline, MdShare } from 'react-icons/md';
+import { MdShowChart, MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
 import './App.css';
 
 function App() {
@@ -64,6 +65,11 @@ function App() {
   const [showTipsSplash, setShowTipsSplash] = useState(false);
   const [showUserActivity, setShowUserActivity] = useState(false);
   const [targetChangePrompt, setTargetChangePrompt] = useState(null); // { newTarget, resolve }
+  const [allProjectsData, setAllProjectsData] = useState({}); // For HomePage red metrics
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
 
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
@@ -95,6 +101,12 @@ function App() {
     }
   }, []);
 
+  // Apply dark mode class to document
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark-mode', darkMode);
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+  }, [darkMode]);
+
   // Load users for PM selector (only when authenticated)
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -109,6 +121,13 @@ function App() {
     };
     loadUsers();
   }, [isAuthenticated]);
+
+  // Load all projects data when projects list changes (for HomePage)
+  useEffect(() => {
+    if (projects.length > 0) {
+      loadAllProjectsData();
+    }
+  }, [projects]);
 
   // Reload projects when portfolio selection changes
   useEffect(() => {
@@ -213,6 +232,20 @@ function App() {
     }
   };
 
+  // Load all projects data for HomePage
+  const loadAllProjectsData = async () => {
+    try {
+      const projectsData = {};
+      for (const project of projects) {
+        const response = await api.getProjectData(project.id);
+        projectsData[project.id] = response.data;
+      }
+      setAllProjectsData(projectsData);
+    } catch (err) {
+      console.error('Failed to load all projects data:', err);
+    }
+  };
+
   const handleTimeTravelChange = async (timestamp) => {
     setTimeTravelTimestamp(timestamp);
     await loadProjectData(timestamp);
@@ -229,6 +262,18 @@ function App() {
   const handleMetricChange = (metric) => {
     setSelectedMetric(metric);
     updateURL(selectedProject, metric);
+  };
+
+  // Navigate to a specific project and optionally a metric (for HomePage)
+  const handleNavigateToProject = (projectId, metricName = '') => {
+    setSelectedProject(projectId.toString());
+    if (metricName) {
+      setSelectedMetric(metricName);
+      updateURL(projectId.toString(), metricName);
+    } else {
+      setSelectedMetric('');
+      updateURL(projectId.toString(), '');
+    }
   };
 
   // Update URL without page reload
@@ -810,7 +855,15 @@ function App() {
       <header className="app-header-main">
         <div className="header-content">
           <div className="header-left">
-            <h1>
+            <h1
+              onClick={() => {
+                setSelectedProject('');
+                setSelectedMetric('');
+                window.history.pushState({}, '', window.location.pathname);
+              }}
+              style={{ cursor: 'pointer' }}
+              title="Go to Dashboard"
+            >
               <MdShowChart className="app-logo" />
               Progress Tracker
             </h1>
@@ -820,6 +873,13 @@ function App() {
               title="Tips & Features"
             >
               <MdHelpOutline />
+            </button>
+            <button
+              className="theme-toggle-btn"
+              onClick={() => setDarkMode(!darkMode)}
+              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {darkMode ? <MdLightMode /> : <MdDarkMode />}
             </button>
           </div>
           <div className="header-right">
@@ -1320,24 +1380,12 @@ function App() {
         )}
 
         {!selectedProject && (
-          <div className="empty-state">
-            <svg
-              className="empty-state-icon"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-              />
-            </svg>
-            <h3>Select a Project to Begin</h3>
-            <p>Choose a project from the dropdown above to view metrics and reports</p>
-          </div>
+          <HomePage
+            projects={projectsObject}
+            projectsData={allProjectsData}
+            onNavigateToProject={handleNavigateToProject}
+            currentUser={currentUser}
+          />
         )}
       </div>
 

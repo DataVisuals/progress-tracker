@@ -310,3 +310,124 @@
 .info-list strong {
   color: #1e40af;
 }
+
+/* Dark Mode Styles */
+:root.dark-mode .import-section {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+:root.dark-mode .import-section h3 {
+  color: #e0f2fe;
+}
+
+:root.dark-mode .import-instructions {
+  color: #d1d5db;
+}
+
+:root.dark-mode .help-text {
+  color: #9ca3af;
+}
+
+:root.dark-mode .file-label {
+  background-color: #1f2937;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:root.dark-mode .file-label:hover {
+  background-color: #374151;
+  border-color: #00aeef;
+}
+
+:root.dark-mode .file-info {
+  background-color: #064e3b;
+  border-color: #10b981;
+  color: #a7f3d0;
+}
+
+:root.dark-mode .import-error {
+  background-color: #7f1d1d;
+  border-color: #ef4444;
+  color: #fecaca;
+}
+
+:root.dark-mode .validation-errors {
+  background-color: #78350f;
+  border-color: #f59e0b;
+}
+
+:root.dark-mode .validation-errors h4 {
+  color: #fef3c7;
+}
+
+:root.dark-mode .errors-table-wrapper {
+  border-color: #f59e0b;
+}
+
+:root.dark-mode .errors-table th {
+  background-color: #92400e;
+  color: #fef3c7;
+  border-bottom-color: #f59e0b;
+}
+
+:root.dark-mode .errors-table td {
+  border-bottom-color: #78350f;
+  color: #fef3c7;
+}
+
+:root.dark-mode .errors-table tbody tr:hover {
+  background-color: #92400e;
+}
+
+:root.dark-mode .more-errors {
+  color: #fef3c7;
+}
+
+:root.dark-mode .import-success {
+  background-color: #064e3b;
+  border-color: #10b981;
+}
+
+:root.dark-mode .import-success h3 {
+  color: #a7f3d0;
+}
+
+:root.dark-mode .result-item {
+  background-color: #1f2937;
+  border-color: #10b981;
+}
+
+:root.dark-mode .result-label {
+  color: #a7f3d0;
+}
+
+:root.dark-mode .partial-errors {
+  background-color: #78350f;
+  border-color: #f59e0b;
+}
+
+:root.dark-mode .partial-errors h4 {
+  color: #fef3c7;
+}
+
+:root.dark-mode .partial-errors ul {
+  color: #fef3c7;
+}
+
+:root.dark-mode .info-section {
+  background: #1e3a5f;
+  border-color: #3b82f6;
+}
+
+:root.dark-mode .info-section h3 {
+  color: #93c5fd;
+}
+
+:root.dark-mode .info-list {
+  color: #bfdbfe;
+}
+
+:root.dark-mode .info-list strong {
+  color: #93c5fd;
+}
