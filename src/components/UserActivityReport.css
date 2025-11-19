@@ -1,0 +1,180 @@
+.user-activity-modal {
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.activity-controls {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.activity-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.activity-controls select {
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+}
+
+.activity-content {
+  padding: 20px;
+}
+
+.activity-section {
+  margin-bottom: 24px;
+}
+
+.activity-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #374151;
+}
+
+.rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rank-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.rank-number {
+  font-weight: 700;
+  color: #6366f1;
+  min-width: 40px;
+  font-size: 14px;
+}
+
+.rank-name {
+  flex: 1;
+  font-weight: 500;
+  color: #374151;
+}
+
+.rank-count {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.chart-section {
+  margin-top: 32px;
+}
+
+.chart-container {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.legend-label {
+  text-transform: capitalize;
+}
+
+/* Tooltip styles */
+.activity-tooltip {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-width: 250px;
+}
+
+.tooltip-label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #1f2937;
+}
+
+.tooltip-total {
+  font-size: 14px;
+  font-weight: 500;
+  color: #6366f1;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tooltip-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tooltip-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.tooltip-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.tooltip-name {
+  flex: 1;
+  text-transform: capitalize;
+  color: #4b5563;
+}
+
+.tooltip-value {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.loading-state,
+.error-state,
+.no-data {
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.error-state {
+  color: #ef4444;
+}

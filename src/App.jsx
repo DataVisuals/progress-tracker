@@ -17,6 +17,7 @@ import UserProfile from './components/UserProfile';
 import ConsistencyReport from './components/ConsistencyReport';
 import ImportData from './components/ImportData';
 import FeatureShowreel from './components/FeatureShowreel';
+import UserActivityReport from './components/UserActivityReport';
 import { api } from './api/client';
 import { selectStyles } from './components/SelectStyles';
 import { MdShowChart, MdArrowDropDown, MdHelpOutline, MdShare } from 'react-icons/md';
@@ -61,6 +62,7 @@ function App() {
   const [showPortfolioManager, setShowPortfolioManager] = useState(false);
   const [showPortfolioReport, setShowPortfolioReport] = useState(false);
   const [showFeatureShowreel, setShowFeatureShowreel] = useState(false);
+  const [showUserActivity, setShowUserActivity] = useState(false);
 
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
@@ -883,6 +885,9 @@ function App() {
                     <button onMouseDown={() => { setShowConsistencyReport(true); setShowAdminDropdown(false); }}>
                       Consistency Report
                     </button>
+                    <button onMouseDown={() => { setShowUserActivity(true); setShowAdminDropdown(false); }}>
+                      User Activity Report
+                    </button>
                   </div>
                 )}
               </div>
@@ -1348,6 +1353,10 @@ function App() {
             />
           </div>
         </div>
+      )}
+
+      {showUserActivity && (
+        <UserActivityReport onClose={() => setShowUserActivity(false)} />
       )}
 
       {showNewProject && (

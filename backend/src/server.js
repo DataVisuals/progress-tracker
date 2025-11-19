@@ -2917,7 +2917,91 @@ function createApp(dbPath) {
       res.status(500).json({ error: err.message, details: err.toString() });
     }
   });
-  
+
+  // ===== USER ACTIVITY REPORT =====
+  app.get('/api/admin/user-activity', authenticateToken, async (req, res) => {
+    try {
+      // Check if user is admin
+      if (!isAdmin(req.user)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { days = 30 } = req.query;
+      const daysAgo = new Date();
+      daysAgo.setDate(daysAgo.getDate() - parseInt(days));
+
+      // Get activity counts by user and activity type
+      const activityByUser = await dbAll(`
+        SELECT
+          COALESCE(u.name, a.user_email, 'Unknown') as user_name,
+          COALESCE(u.email, a.user_email) as user_email,
+          a.action,
+          a.table_name,
+          COUNT(*) as count
+        FROM audit_log a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.created_at >= ?
+        GROUP BY COALESCE(u.name, a.user_email, 'Unknown'), a.action, a.table_name
+        ORDER BY user_name, count DESC
+      `, [daysAgo.toISOString()]);
+
+      // Get total activity by user (for ranking)
+      const totalsByUser = await dbAll(`
+        SELECT
+          COALESCE(u.name, a.user_email, 'Unknown') as user_name,
+          COALESCE(u.email, a.user_email) as user_email,
+          COUNT(*) as total_activity
+        FROM audit_log a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.created_at >= ?
+        GROUP BY COALESCE(u.name, a.user_email, 'Unknown')
+        ORDER BY total_activity DESC
+      `, [daysAgo.toISOString()]);
+
+      // Get activity timeline (daily counts)
+      const activityTimeline = await dbAll(`
+        SELECT
+          DATE(created_at) as date,
+          COALESCE(u.name, a.user_email, 'Unknown') as user_name,
+          COUNT(*) as count
+        FROM audit_log a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.created_at >= ?
+        GROUP BY DATE(created_at), COALESCE(u.name, a.user_email, 'Unknown')
+        ORDER BY date DESC
+      `, [daysAgo.toISOString()]);
+
+      // Transform data for stacked bar chart
+      const userActivityMap = {};
+      activityByUser.forEach(row => {
+        if (!userActivityMap[row.user_name]) {
+          userActivityMap[row.user_name] = {
+            user_name: row.user_name,
+            user_email: row.user_email,
+            activities: {}
+          };
+        }
+        const activityType = `${row.action}_${row.table_name}`;
+        userActivityMap[row.user_name].activities[activityType] =
+          (userActivityMap[row.user_name].activities[activityType] || 0) + row.count;
+      });
+
+      // Get all unique activity types for the legend
+      const activityTypes = [...new Set(activityByUser.map(row => `${row.action}_${row.table_name}`))].sort();
+
+      res.json({
+        users: totalsByUser,
+        activityBreakdown: Object.values(userActivityMap),
+        activityTypes,
+        timeline: activityTimeline,
+        period: parseInt(days)
+      });
+    } catch (err) {
+      console.error('User activity report error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== TIME TRAVEL (Reconstruct historical state from audit log) =====
   app.get('/api/projects/:projectId/data/time-travel', authenticateToken, async (req, res) => {
     try {
