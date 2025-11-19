@@ -1318,6 +1318,34 @@
   color: var(--text-secondary);
 }
 
+/* Portfolio Edit Dropdown Dark Mode */
+:root.dark-mode .portfolio-edit-dropdown {
+  background: #1f2937;
+  border-color: #00aeef;
+}
+
+:root.dark-mode .portfolio-edit-dropdown .portfolio-option-item {
+  color: #f9fafb;
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .portfolio-edit-dropdown .portfolio-option-item:hover {
+  background-color: #374151;
+  color: #e0f2fe;
+}
+
+:root.dark-mode .portfolio-edit-dropdown .portfolio-option-item.selected {
+  background-color: rgba(0, 174, 239, 0.2);
+}
+
+:root.dark-mode .portfolio-edit-dropdown .no-portfolio-icon {
+  color: #9ca3af;
+}
+
+:root.dark-mode .portfolio-edit-dropdown .portfolio-option-item.create-new {
+  border-top-color: #374151;
+}
+
 :root.dark-mode .project-dates-inline {
   color: var(--text-secondary);
 }

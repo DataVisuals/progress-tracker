@@ -256,4 +256,90 @@ describe('Comments API Tests', () => {
       expect(response.status).toBe(404);
     });
   });
+
+  describe('GET /api/comments/recent', () => {
+    test('should return recent comments with all required fields', async () => {
+      const response = await request(app)
+        .get('/api/comments/recent')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+
+      // Check that each comment has required fields
+      const comment = response.body[0];
+      expect(comment).toHaveProperty('id');
+      expect(comment).toHaveProperty('comment_text');
+      expect(comment).toHaveProperty('created_at');
+      expect(comment).toHaveProperty('period_id');
+      expect(comment).toHaveProperty('created_by_name');
+      expect(comment).toHaveProperty('project_name');
+      expect(comment).toHaveProperty('project_id');
+      expect(comment).toHaveProperty('metric_name');
+      expect(comment).toHaveProperty('reporting_date');
+    });
+
+    test('should return comments ordered by created_at DESC', async () => {
+      const response = await request(app)
+        .get('/api/comments/recent')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+
+      if (response.body.length >= 2) {
+        const firstDate = new Date(response.body[0].created_at);
+        const secondDate = new Date(response.body[1].created_at);
+        expect(firstDate.getTime()).toBeGreaterThanOrEqual(secondDate.getTime());
+      }
+    });
+
+    test('should respect limit parameter', async () => {
+      const response = await request(app)
+        .get('/api/comments/recent?limit=2')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBeLessThanOrEqual(2);
+    });
+
+    test('should use default limit of 10', async () => {
+      const response = await request(app)
+        .get('/api/comments/recent')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBeLessThanOrEqual(10);
+    });
+
+    test('should reject request without authentication', async () => {
+      const response = await request(app)
+        .get('/api/comments/recent');
+
+      expect(response.status).toBe(401);
+    });
+
+    test('should include author name when created_by is set', async () => {
+      // First create a comment that should have created_by set
+      await request(app)
+        .post(`/api/periods/${testPeriodId}/comments`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          comment_text: 'Comment with author for testing'
+        });
+
+      const response = await request(app)
+        .get('/api/comments/recent')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBeGreaterThan(0);
+
+      // The response should have created_by_name field
+      expect(response.body[0]).toHaveProperty('created_by_name');
+
+      // The most recent comment should have the admin user's name
+      expect(response.body[0].created_by_name).toBe('Admin User');
+    });
+  });
 });
