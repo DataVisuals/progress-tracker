@@ -23,7 +23,10 @@ import {
   MdLightbulb,
   MdWarning,
   MdTrackChanges,
-  MdShowChart
+  MdShowChart,
+  MdPeople,
+  MdBarChart,
+  MdPerson
 } from 'react-icons/md';
 import './FeatureShowreel.css';
 
@@ -178,11 +181,14 @@ const TipsSplash = ({ onClose, onDismissPermanently }) => {
     "Organization": [
       { icon: <MdFolderSpecial />, name: "Portfolios", desc: "Group projects with color-coded portfolios" },
       { icon: <MdFilterList />, name: "Portfolio Filtering", desc: "View projects by portfolio" },
-      { icon: <MdCheckCircle />, name: "Consistency Reports", desc: "Automated data quality checks" }
+      { icon: <MdBarChart />, name: "Portfolio Reports", desc: "RAG summary across all portfolio projects" },
+      { icon: <MdCheckCircle />, name: "Consistency Reports", desc: "Automated data quality checks" },
+      { icon: <MdPerson />, name: "Initiative Managers", desc: "Assign primary and secondary IMs to projects" }
     ],
     "Security & Audit": [
       { icon: <MdSecurity />, name: "Role-Based Access", desc: "Admin, PM, Editor, and Viewer roles" },
       { icon: <MdHistory />, name: "Audit Log", desc: "Complete history of all changes" },
+      { icon: <MdPeople />, name: "User Activity Report", desc: "Track user logins and engagement metrics" },
       { icon: <MdEdit />, name: "Historic Edit Protection", desc: "Prevent unauthorized changes to past data" }
     ]
   };
