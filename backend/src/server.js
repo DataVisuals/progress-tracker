@@ -1450,7 +1450,7 @@ function createApp(dbPath) {
       }
   
       // Extract all editable fields from request body
-      const { name, description, amber_tolerance, red_tolerance, final_target, progression_type, metric_type, start_date, end_date } = req.body;
+      const { name, description, amber_tolerance, red_tolerance, final_target, progression_type, metric_type, start_date, end_date, recalculate_expected } = req.body;
 
       // Build update query for provided fields
       const updates = [];
@@ -1520,8 +1520,9 @@ function createApp(dbPath) {
       values.push(req.params.id);
       await dbRun(`UPDATE metrics SET ${updates.join(', ')} WHERE id = ?`, values);
 
-      // If final_target or progression_type changed, recalculate expected values for all periods
-      if (final_target !== undefined || progression_type !== undefined) {
+      // If final_target or progression_type changed, recalculate expected values
+      // recalculate_expected can be: 'all', 'future', or 'none'
+      if ((final_target !== undefined || progression_type !== undefined) && recalculate_expected !== 'none') {
         const updatedMetric = await dbGet('SELECT * FROM metrics WHERE id = ?', [req.params.id]);
         const periods = await dbAll(
           'SELECT id, reporting_date FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date ASC',
@@ -1529,7 +1530,19 @@ function createApp(dbPath) {
         );
 
         const totalPeriods = periods.length;
+        const today = new Date().toISOString().split('T')[0];
+
         for (let i = 0; i < periods.length; i++) {
+          // If recalculate_expected is 'future', only update periods after today
+          if (recalculate_expected === 'future' && periods[i].reporting_date <= today) {
+            // Only update the target for past/current periods, not the expected value
+            await dbRun(
+              'UPDATE metric_periods SET target = ? WHERE id = ?',
+              [updatedMetric.final_target, periods[i].id]
+            );
+            continue;
+          }
+
           const expected = calculateExpectedValue(
             updatedMetric.progression_type,
             updatedMetric.final_target,

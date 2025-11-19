@@ -298,7 +298,8 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     }
 
     try {
-      await onTargetChange(newValue);
+      // Pass the new value and whether the curve is custom
+      await onTargetChange(newValue, metricMetadata?.is_custom || false);
       setEditingTarget(false);
     } catch (err) {
       console.error('Failed to update target:', err);

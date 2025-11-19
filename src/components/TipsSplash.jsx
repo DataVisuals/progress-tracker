@@ -304,6 +304,18 @@ const TipsSplash = ({ onClose, onDismissPermanently }) => {
             Don't show on startup
           </button>
         </div>
+
+        <div className="book-plug">
+          <span>Inspired by </span>
+          <a
+            href="https://www.franklincovey.com/the-4-disciplines/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            The 4 Disciplines of Execution
+          </a>
+          <span> by McChesney, Covey & Huling</span>
+        </div>
       </div>
     </div>
   );

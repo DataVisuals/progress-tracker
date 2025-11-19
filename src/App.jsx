@@ -63,6 +63,7 @@ function App() {
   const [showPortfolioReport, setShowPortfolioReport] = useState(false);
   const [showTipsSplash, setShowTipsSplash] = useState(false);
   const [showUserActivity, setShowUserActivity] = useState(false);
+  const [targetChangePrompt, setTargetChangePrompt] = useState(null); // { newTarget, resolve }
 
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
@@ -650,14 +651,34 @@ function App() {
     }
   };
 
-  const handleTargetChange = async (newTarget) => {
+  const handleTargetChange = async (newTarget, isCustomCurve) => {
     try {
       // Find the metric ID from the currently selected metric
       const metric = projectMetrics.find(m => m.name === selectedMetric);
       if (!metric) return;
 
+      // If curve is custom, just update target without recalculating
+      // If curve is not custom, ask user how to apply the change
+      let recalculateMode = 'all'; // default
+
+      if (!isCustomCurve) {
+        // Show prompt and wait for user selection
+        recalculateMode = await new Promise((resolve) => {
+          setTargetChangePrompt({ newTarget, resolve });
+        });
+
+        // If user cancelled, abort
+        if (recalculateMode === 'cancel') {
+          return;
+        }
+      } else {
+        // Custom curve - don't recalculate expected values
+        recalculateMode = 'none';
+      }
+
       await api.updateMetric(metric.id, {
-        final_target: parseFloat(newTarget)
+        final_target: parseFloat(newTarget),
+        recalculate_expected: recalculateMode
       });
 
       // Reload both project data and metrics to reflect the new target
@@ -1164,7 +1185,7 @@ function App() {
                         {canEdit() && (
                           <button
                             onClick={() => setShowLinksEditor(true)}
-                            className="edit-links-btn"
+                            className={`edit-links-btn ${projectLinks.length === 0 ? 'placeholder' : ''}`}
                             title="Edit project links"
                           >
                             {projectLinks.length === 0 ? '+ Links' : 'Edit'}
@@ -1433,6 +1454,49 @@ function App() {
             setShowImportData(false);
           }}
         />
+      )}
+
+      {targetChangePrompt && (
+        <div className="modal-overlay">
+          <div className="modal-content target-change-modal">
+            <h3>Recalculate Expected Values?</h3>
+            <p>
+              The target has changed to <strong>{targetChangePrompt.newTarget}</strong>.
+              How should the expected values be updated?
+            </p>
+            <div className="target-change-options">
+              <button
+                className="target-option-btn primary"
+                onClick={() => {
+                  targetChangePrompt.resolve('all');
+                  setTargetChangePrompt(null);
+                }}
+              >
+                All periods
+                <span className="option-desc">Recalculate expected values for all periods</span>
+              </button>
+              <button
+                className="target-option-btn secondary"
+                onClick={() => {
+                  targetChangePrompt.resolve('future');
+                  setTargetChangePrompt(null);
+                }}
+              >
+                Future periods only
+                <span className="option-desc">Keep past expected values, update future only</span>
+              </button>
+              <button
+                className="target-option-btn cancel"
+                onClick={() => {
+                  targetChangePrompt.resolve('cancel');
+                  setTargetChangePrompt(null);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showTipsSplash && (

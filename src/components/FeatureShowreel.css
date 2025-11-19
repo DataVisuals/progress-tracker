@@ -502,3 +502,21 @@
   border-color: #9ca3af;
   color: #374151;
 }
+
+.book-plug {
+  padding: 12px 40px 20px;
+  text-align: center;
+  font-size: 11px;
+  color: #9ca3af;
+  border-top: 1px solid #e5e7eb;
+}
+
+.book-plug a {
+  color: #6b7280;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.book-plug a:hover {
+  color: #3b82f6;
+}
