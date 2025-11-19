@@ -47,42 +47,52 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
     // If no current period found (all periods are in the future), return grey
     if (currentPeriodIndex === -1) return 'grey';
 
-    const latest = sortedPeriods[currentPeriodIndex];
-
     // Check if we're still in the current period (next period hasn't started yet)
-    // This is used to determine if we should show grey for missing/incomplete data
     const isInCurrentPeriod = currentPeriodIndex === sortedPeriods.length - 1 ||
       today < new Date(sortedPeriods[currentPeriodIndex + 1].reporting_date);
 
-    // Check if we have the necessary data
-    if (latest.complete === null || latest.complete === undefined ||
-        latest.expected === null || latest.expected === undefined) {
-      // If we're still in the current period, don't show red for missing data
-      return isInCurrentPeriod ? 'grey' : null;
+    // Helper function to calculate RAG for a specific period
+    const calculateRAGForPeriod = (period) => {
+      if (period.complete === null || period.complete === undefined ||
+          period.expected === null || period.expected === undefined) {
+        return null;
+      }
+
+      const complete = parseFloat(period.complete);
+      const expected = parseFloat(period.expected);
+      const variance = complete - expected;
+      const variancePercent = expected > 0 ? Math.abs((variance / expected) * 100) : 0;
+      const amberTolerance = parseFloat(period.amber_tolerance) || 5.0;
+      const redTolerance = parseFloat(period.red_tolerance) || 10.0;
+
+      if (expected === 0) return 'grey';
+      if (variance >= 0) return 'green';
+      if (variancePercent > redTolerance) return 'red';
+      if (variancePercent > amberTolerance) return 'amber';
+      return 'green';
+    };
+
+    const currentPeriod = sortedPeriods[currentPeriodIndex];
+
+    // If we're in the current period and it doesn't have data yet, use the previous period's status
+    if (isInCurrentPeriod) {
+      const currentComplete = parseFloat(currentPeriod.complete) || 0;
+      const currentExpected = parseFloat(currentPeriod.expected) || 0;
+
+      // If current period has no meaningful data (complete is 0 or null), use previous period
+      if (currentComplete === 0 && currentPeriodIndex > 0) {
+        const previousPeriod = sortedPeriods[currentPeriodIndex - 1];
+        const previousRAG = calculateRAGForPeriod(previousPeriod);
+        return previousRAG || 'grey';
+      }
+
+      // Current period has data - calculate its RAG
+      // But if behind schedule, still show the status (user wants to see red/amber)
+      return calculateRAGForPeriod(currentPeriod) || 'grey';
     }
 
-    const complete = parseFloat(latest.complete);
-    const expected = parseFloat(latest.expected);
-
-    // Calculate variance percentage (complete - expected, matches MetricChart.jsx)
-    const variance = complete - expected;
-    const variancePercent = expected > 0 ? Math.abs((variance / expected) * 100) : 0;
-
-    // Get tolerances from the first data point that has them, or use defaults
-    const amberTolerance = parseFloat(latest.amber_tolerance) || 5.0;
-    const redTolerance = parseFloat(latest.red_tolerance) || 10.0;
-
-    // Determine RAG status
-    if (expected === 0) return 'grey'; // No expected value
-    if (variance >= 0) return 'green'; // On track or ahead of schedule
-
-    // If we're still in the current period, don't show red/amber for incomplete data
-    // The period's data shouldn't be judged until after the period completes
-    if (isInCurrentPeriod) return 'grey';
-
-    if (variancePercent > redTolerance) return 'red';
-    if (variancePercent > amberTolerance) return 'amber';
-    return 'green';
+    // For completed periods, calculate normally
+    return calculateRAGForPeriod(currentPeriod) || 'grey';
   };
 
   // Helper to detect if trajectory is flat (no significant change)
