@@ -388,6 +388,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   const [isCommentaryCollapsed, setIsCommentaryCollapsed] = useState(true);
   const [isDataTableCollapsed, setIsDataTableCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('table'); // 'table', 'commentary', 'feedback', 'timetravel', or 'dependencies'
+  const [feedbackData, setFeedbackData] = useState([]); // For checking recent feedback
   const chartContainerRef = useRef(null);
   const [tableWidth, setTableWidth] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -490,6 +491,39 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       loadComments();
     }
   }, [data]);
+
+  // Load feedback data for checking recent items
+  useEffect(() => {
+    const loadFeedback = async () => {
+      if (!projectId) return;
+      try {
+        const response = await api.get(`/feedback?project_id=${projectId}`);
+        setFeedbackData(response.data);
+      } catch (err) {
+        console.error('Failed to load feedback for indicators:', err);
+        setFeedbackData([]);
+      }
+    };
+    loadFeedback();
+  }, [projectId]);
+
+  // Helper function to check if there are recent items (within last 24 hours)
+  const hasRecentComments = () => {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    for (const periodId in comments) {
+      const periodComments = comments[periodId];
+      if (periodComments.some(comment => new Date(comment.created_at) > twentyFourHoursAgo)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const hasRecentFeedback = () => {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    return feedbackData.some(item => new Date(item.created_at) > twentyFourHoursAgo);
+  };
 
   // Get baseline target (first period's target)
   const baselineTarget = sortedData.length > 0 ? sortedData[0].final_target : 0;
@@ -1393,6 +1427,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             onClick={() => setActiveTab('commentary')}
           >
             PM Commentary
+            {hasRecentComments() && <span className="recent-indicator" title="New in last 24 hours" />}
           </button>
           {currentUser && (
             <button
@@ -1400,6 +1435,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               onClick={() => setActiveTab('feedback')}
             >
               Feedback
+              {hasRecentFeedback() && <span className="recent-indicator" title="New in last 24 hours" />}
             </button>
           )}
           {projectId && onTimeTravelChange && currentUser && (
