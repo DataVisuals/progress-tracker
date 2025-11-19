@@ -273,6 +273,7 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
   return (
     <div className="data-grid-overlay">
       <div className="data-grid-modal">
+        <button className="close-btn" onClick={onClose}>×</button>
         <div className="data-grid-header">
           <h2>Edit Project Data</h2>
           <div className="header-actions">
@@ -293,7 +294,6 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
                 {showBulkAdd ? 'Hide' : 'Bulk Add'}
               </button>
             )}
-            <button className="close-btn" onClick={onClose}>✕</button>
           </div>
         </div>
 

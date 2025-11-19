@@ -83,9 +83,9 @@ const ImportData = ({ onClose, onSuccess }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content import-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="close-btn" onClick={onClose}>×</button>
         <div className="modal-header">
           <h2>Import Project Data</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
         <div className="import-content">

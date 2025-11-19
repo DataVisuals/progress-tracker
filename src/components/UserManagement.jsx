@@ -191,6 +191,7 @@ const UserManagement = ({ currentUser, onClose }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content user-management-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="close-btn" onClick={onClose}>×</button>
         <h2>User Management</h2>
 
         <div className="user-management-container">
@@ -314,11 +315,6 @@ const UserManagement = ({ currentUser, onClose }) => {
           )}
         </div>
 
-        <div className="modal-actions">
-          <button className="cancel-btn" onClick={onClose}>
-            Close
-          </button>
-        </div>
 
         {showAddUser && (
           <div className="add-user-modal">

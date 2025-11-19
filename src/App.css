@@ -897,6 +897,7 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   max-width: 500px;
   width: 90%;
+  position: relative;
 }
 
 .modal-content.modal-large {
@@ -921,10 +922,8 @@
 }
 
 .modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 20px;
+  padding-right: 40px;
 }
 
 .modal-header h2 {
@@ -932,24 +931,29 @@
 }
 
 .close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
   background: none;
   border: none;
-  font-size: 32px;
-  color: #6b7280;
+  font-size: 24px;
+  color: #9ca3af;
   cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
+  padding: 2px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 4px;
   transition: all 0.2s;
   line-height: 1;
+  z-index: 10;
 }
 
 .close-btn:hover {
-  color: #003c71;
-  transform: scale(1.1);
+  background-color: #f3f4f6;
+  color: #374151;
 }
 
 .form-group {

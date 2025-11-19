@@ -42,9 +42,9 @@ const Login = ({ onLogin }) => {
   return (
     <div className="login-overlay" onClick={() => setShowModal(false)}>
       <div className="login-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
         <div className="login-header">
           <h1>Login</h1>
-          <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
         </div>
         <form className="login-form" onSubmit={handleSubmit}>
           <input

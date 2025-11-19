@@ -1,6 +1,8 @@
-.user-activity-modal {
-  max-width: 900px;
-  max-height: 90vh;
+.modal-content.user-activity-modal {
+  max-width: 1200px;
+  width: 95%;
+  max-height: 95vh;
+  min-height: 600px;
   overflow-y: auto;
 }
 

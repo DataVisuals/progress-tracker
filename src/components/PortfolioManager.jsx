@@ -113,9 +113,9 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
   return (
     <div className="portfolio-manager-overlay">
       <div className="portfolio-manager">
+        <button className="close-btn" onClick={onClose}>×</button>
         <div className="portfolio-manager-header">
           <h2>Manage Portfolios</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
         {error && <div className="error-message">{error}</div>}

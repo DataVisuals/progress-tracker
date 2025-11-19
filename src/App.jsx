@@ -1336,9 +1336,9 @@ function App() {
       {showAuditLog && (
         <div className="modal-overlay" onClick={() => setShowAuditLog(false)}>
           <div className="modal-content audit-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="close-btn" onClick={() => setShowAuditLog(false)}>×</button>
             <div className="modal-header">
               <h2>Audit Log</h2>
-              <button className="close-btn" onClick={() => setShowAuditLog(false)}>×</button>
             </div>
             <AuditLog />
           </div>
@@ -1348,9 +1348,7 @@ function App() {
       {showConsistencyReport && (
         <div className="modal-overlay" onClick={() => setShowConsistencyReport(false)}>
           <div className="modal-content audit-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <button className="close-btn" onClick={() => setShowConsistencyReport(false)}>×</button>
-            </div>
+            <button className="close-btn" onClick={() => setShowConsistencyReport(false)}>×</button>
             <ConsistencyReport
               onNavigate={(projectId) => {
                 setSelectedProject(projectId);
