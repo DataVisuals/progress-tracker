@@ -37,6 +37,12 @@
   padding: 16px;
 }
 
+.chart-scroll-wrapper {
+  max-height: 560px; /* ~20 users at 28px each */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 /* Tooltip styles */
 .activity-tooltip {
   background: white;

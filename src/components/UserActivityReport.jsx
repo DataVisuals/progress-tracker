@@ -27,26 +27,50 @@ const UserActivityReport = ({ onClose }) => {
     }
   };
 
-  // Color palette for different activity types
+  // Color palette for different activity types - distinct colors for each
   const activityColors = {
-    'CREATE_projects': '#10b981',
-    'UPDATE_projects': '#3b82f6',
-    'DELETE_projects': '#ef4444',
-    'CREATE_metrics': '#8b5cf6',
-    'UPDATE_metrics': '#6366f1',
-    'DELETE_metrics': '#f43f5e',
-    'CREATE_metric_periods': '#14b8a6',
-    'UPDATE_metric_periods': '#06b6d4',
-    'DELETE_metric_periods': '#f97316',
-    'CREATE_comments': '#eab308',
-    'UPDATE_comments': '#a3e635',
-    'DELETE_comments': '#f87171',
-    'CREATE_feedback': '#ec4899',
-    'UPDATE_feedback': '#d946ef',
-    'DELETE_feedback': '#fb7185',
-    'CREATE_portfolios': '#0ea5e9',
-    'UPDATE_portfolios': '#38bdf8',
-    'DELETE_portfolios': '#f472b6',
+    // Projects - emerald greens
+    'CREATE_projects': '#047857',
+    'UPDATE_projects': '#10b981',
+    'DELETE_projects': '#6ee7b7',
+    // Project links - lime greens
+    'CREATE_project_links': '#4d7c0f',
+    'UPDATE_project_links': '#84cc16',
+    'DELETE_project_links': '#bef264',
+    // Metrics - deep blues
+    'CREATE_metrics': '#1e40af',
+    'UPDATE_metrics': '#3b82f6',
+    'DELETE_metrics': '#93c5fd',
+    // Metric periods - indigo/violet
+    'CREATE_metric_periods': '#4c1d95',
+    'UPDATE_metric_periods': '#8b5cf6',
+    'DELETE_metric_periods': '#c4b5fd',
+    // Comments - amber/orange
+    'CREATE_comments': '#b45309',
+    'UPDATE_comments': '#f59e0b',
+    'DELETE_comments': '#fcd34d',
+    // Feedback - pink/rose
+    'CREATE_feedback': '#9d174d',
+    'UPDATE_feedback': '#ec4899',
+    'DELETE_feedback': '#f9a8d4',
+    // Portfolios - cyan/teal
+    'CREATE_portfolios': '#0e7490',
+    'UPDATE_portfolios': '#06b6d4',
+    'DELETE_portfolios': '#67e8f9',
+    // CRAIDs - red/crimson
+    'CREATE_craids': '#991b1b',
+    'UPDATE_craids': '#ef4444',
+    'DELETE_craids': '#fca5a5',
+    // Users - slate/gray
+    'CREATE_users': '#334155',
+    'UPDATE_users': '#64748b',
+    'DELETE_users': '#cbd5e1',
+    // Project permissions - sky blue
+    'CREATE_project_permissions': '#0369a1',
+    'UPDATE_project_permissions': '#0ea5e9',
+    'DELETE_project_permissions': '#7dd3fc',
+    // Import - special purple
+    'IMPORT_projects': '#7e22ce',
   };
 
   const getColor = (activityType) => {
@@ -142,37 +166,39 @@ const UserActivityReport = ({ onClose }) => {
             {/* Stacked Bar Chart */}
             {data.activityTypes.length > 0 ? (
               <div className="chart-container">
-                <ResponsiveContainer width="100%" height={Math.max(250, data.users.length * 28)}>
-                  <BarChart
-                    data={getChartData()}
-                    layout="vertical"
-                    margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
-                    barSize={16}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis
-                      dataKey="name"
-                      type="category"
-                      width={90}
-                      tick={{ fontSize: 12 }}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend
-                      formatter={(value) => formatActivityType(value)}
-                      wrapperStyle={{ fontSize: '11px' }}
-                    />
-                    {data.activityTypes.map((type) => (
-                      <Bar
-                        key={type}
-                        dataKey={type}
-                        stackId="a"
-                        fill={getColor(type)}
-                        name={type}
+                <div className="chart-scroll-wrapper">
+                  <ResponsiveContainer width="100%" height={Math.max(250, getChartData().length * 28)}>
+                    <BarChart
+                      data={getChartData()}
+                      layout="vertical"
+                      margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
+                      barSize={16}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis
+                        dataKey="name"
+                        type="category"
+                        width={90}
+                        tick={{ fontSize: 12 }}
                       />
-                    ))}
-                  </BarChart>
-                </ResponsiveContainer>
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend
+                        formatter={(value) => formatActivityType(value)}
+                        wrapperStyle={{ fontSize: '11px' }}
+                      />
+                      {data.activityTypes.map((type) => (
+                        <Bar
+                          key={type}
+                          dataKey={type}
+                          stackId="a"
+                          fill={getColor(type)}
+                          name={type}
+                        />
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             ) : (
               <div className="no-data">No activity in this period</div>

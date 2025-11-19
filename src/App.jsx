@@ -16,7 +16,7 @@ import ProjectLinksEditor from './components/ProjectLinksEditor';
 import UserProfile from './components/UserProfile';
 import ConsistencyReport from './components/ConsistencyReport';
 import ImportData from './components/ImportData';
-import FeatureShowreel from './components/FeatureShowreel';
+import TipsSplash from './components/TipsSplash';
 import UserActivityReport from './components/UserActivityReport';
 import { api } from './api/client';
 import { selectStyles } from './components/SelectStyles';
@@ -61,7 +61,7 @@ function App() {
   const [showImportData, setShowImportData] = useState(false);
   const [showPortfolioManager, setShowPortfolioManager] = useState(false);
   const [showPortfolioReport, setShowPortfolioReport] = useState(false);
-  const [showFeatureShowreel, setShowFeatureShowreel] = useState(false);
+  const [showTipsSplash, setShowTipsSplash] = useState(false);
   const [showUserActivity, setShowUserActivity] = useState(false);
 
   // Load user on mount and load projects regardless of auth
@@ -85,6 +85,12 @@ function App() {
       if (metricName) {
         setSelectedMetric(metricName);
       }
+    }
+
+    // Show tips splash on first load unless dismissed
+    const tipsDismissed = localStorage.getItem('tipsSplashDismissed');
+    if (!tipsDismissed) {
+      setShowTipsSplash(true);
     }
   }, []);
 
@@ -789,8 +795,8 @@ function App() {
             </h1>
             <button
               className="help-icon-btn"
-              onClick={() => setShowFeatureShowreel(true)}
-              title="Learn about features"
+              onClick={() => setShowTipsSplash(true)}
+              title="Tips & Features"
             >
               <MdHelpOutline />
             </button>
@@ -1431,9 +1437,12 @@ function App() {
         />
       )}
 
-      {showFeatureShowreel && (
-        <FeatureShowreel
-          onClose={() => setShowFeatureShowreel(false)}
+      {showTipsSplash && (
+        <TipsSplash
+          onClose={() => setShowTipsSplash(false)}
+          onDismissPermanently={() => {
+            localStorage.setItem('tipsSplashDismissed', 'true');
+          }}
         />
       )}
     </div>
