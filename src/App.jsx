@@ -86,8 +86,10 @@ function App() {
     }
   }, []);
 
-  // Load users for PM selector
+  // Load users for PM selector (only when authenticated)
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     const loadUsers = async () => {
       try {
         const response = await api.getUsers();
@@ -97,7 +99,7 @@ function App() {
       }
     };
     loadUsers();
-  }, []);
+  }, [isAuthenticated]);
 
   // Reload projects when portfolio selection changes
   useEffect(() => {
