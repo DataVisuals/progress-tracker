@@ -419,11 +419,12 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   };
 
   // Get metric metadata from first data point (all periods have same metric metadata)
+  // Note: Use metric_final_target (from metrics table) rather than final_target (from metric_periods.target)
   const baseMetadata = sortedData.length > 0 ? {
     start_date: sortedData[0].start_date,
     end_date: sortedData[0].end_date,
     frequency: sortedData[0].frequency,
-    final_target: sortedData[0].final_target,
+    final_target: sortedData[0].metric_final_target || sortedData[0].final_target,
     progression_type: sortedData[0].progression_type
   } : null;
 

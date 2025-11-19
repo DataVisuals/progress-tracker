@@ -874,13 +874,6 @@ function App() {
             >
               <MdHelpOutline />
             </button>
-            <button
-              className="theme-toggle-btn"
-              onClick={() => setDarkMode(!darkMode)}
-              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-              {darkMode ? <MdLightMode /> : <MdDarkMode />}
-            </button>
           </div>
           <div className="header-right">
             <PortfolioSelector
@@ -1011,6 +1004,13 @@ function App() {
                 setIsAuthenticated(true);
               }} />
             )}
+            <button
+              className="theme-toggle-btn"
+              onClick={() => setDarkMode(!darkMode)}
+              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {darkMode ? <MdLightMode /> : <MdDarkMode />}
+            </button>
           </div>
         </div>
       </header>

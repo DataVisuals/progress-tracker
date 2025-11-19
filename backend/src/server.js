@@ -3207,7 +3207,7 @@ function createApp(dbPath) {
           .map(async (period) => {
             // Get metric and project info
             const metric = await dbGet(`
-              SELECT m.name, m.description, m.project_id, m.final_target, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date, m.frequency, m.metric_type, p.name as initiative, p.initiative_manager
+              SELECT m.name, m.description, m.project_id, m.final_target, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date, m.frequency, m.progression_type, m.metric_type, p.name as initiative, p.initiative_manager
               FROM metrics m
               JOIN projects p ON m.project_id = p.id
               WHERE m.id = ?
@@ -3231,6 +3231,7 @@ function createApp(dbPath) {
               start_date: metric?.start_date || null,
               end_date: metric?.end_date || null,
               frequency: metric?.frequency || null,
+              progression_type: metric?.progression_type || 'linear',
               metric_type: metric?.metric_type || 'lead',
               initiative: metric?.initiative || 'Unknown',
               owner: owner?.name || null,

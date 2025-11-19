@@ -208,12 +208,42 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
       icon: <MdLightbulb />,
       title: "Quality Over Quantity",
       description: "A few well-chosen metrics tell a better story than many mediocre ones."
+    },
+    {
+      icon: <MdLink />,
+      title: "Link to Project Documentation",
+      description: "Add links to your project's SharePoint, Confluence, or documentation hub for easy access."
+    },
+    {
+      icon: <MdDashboard />,
+      title: "Connect Power BI Dashboards",
+      description: "Link to your Power BI reports and dashboards for deeper data analysis and visualization."
+    },
+    {
+      icon: <MdAssignment />,
+      title: "Link to Jira Dashboards",
+      description: "Connect to your Jira boards and dashboards to see sprint progress alongside your metrics."
+    },
+    {
+      icon: <MdTimeline />,
+      title: "Add Navigator Links",
+      description: "Link to your team's Navigator roadmaps to provide strategic context for your metrics."
+    },
+    {
+      icon: <MdFolderSpecial />,
+      title: "Centralize Key Resources",
+      description: "Use project links to create a single source of truth for all your project's key tools and resources."
     }
   ];
 
+  // Randomize tips on component mount
+  useEffect(() => {
+    selectRandomTips();
+  }, []);
+
+  // Load data when projects change
   useEffect(() => {
     loadHomePageData();
-    selectRandomTips();
   }, [projects, projectsData]);
 
   const selectRandomTips = () => {
