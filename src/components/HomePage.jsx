@@ -622,20 +622,14 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
         </div>
       </div>
 
-      {/* Feedback Section - Full Width */}
-      <div className="feedback-section">
-        <div className="feedback-header">
-          <MdFeedback className="feedback-icon" />
-          <h2>Feedback on Your Projects</h2>
-        </div>
-        <div className="feedback-content">
-          {loading ? (
-            <div className="feedback-empty">Loading...</div>
-          ) : feedback.length === 0 ? (
-            <div className="feedback-empty">
-              No feedback yet. Feedback from stakeholders on your projects will appear here.
-            </div>
-          ) : (
+      {/* Feedback Section - Full Width - Only show if there's feedback */}
+      {!loading && feedback.length > 0 && (
+        <div className="feedback-section">
+          <div className="feedback-header">
+            <MdFeedback className="feedback-icon" />
+            <h2>Feedback on Your Projects</h2>
+          </div>
+          <div className="feedback-content">
             <div className="feedback-list">
               {feedback.map((item, index) => (
                 <div
@@ -661,9 +655,9 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
                 </div>
               ))}
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
