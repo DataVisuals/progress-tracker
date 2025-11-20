@@ -2978,6 +2978,555 @@ function createApp(dbPath) {
     }
   });
 
+  // ===== AUTO-GENERATE FEEDBACK FROM CONSISTENCY ISSUES =====
+  // Helper function to create or get system user
+  async function getSystemUserId() {
+    let systemUser = await dbGet('SELECT id FROM users WHERE email = ?', ['system@progress-tracker']);
+    if (!systemUser) {
+      // Create system user
+      const hash = await hashPassword(Math.random().toString(36));
+      const result = await dbRun(
+        'INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)',
+        ['system@progress-tracker', 'System', hash, 'viewer']
+      );
+      systemUser = { id: result.lastID };
+      console.log('✅ Created system user for automated feedback');
+    }
+    return systemUser.id;
+  }
+
+  // Helper function to generate a unique key for each issue type to prevent duplicates
+  function getIssueKey(issue) {
+    switch (issue.type) {
+      case 'vacation_month_growth':
+        return `vacation_month_growth:${issue.project_id}:${issue.metric_id}`;
+      case 'all_back_loaded':
+        return `all_back_loaded:${issue.project_id}`;
+      case 'single_metric':
+        return `single_metric:${issue.project_id}`;
+      case 'no_lead_metrics':
+        return `no_lead_metrics:${issue.project_id}`;
+      case 'metric_type_mismatch':
+        return `metric_type_mismatch:${issue.project_id}:${issue.metric_id}`;
+      default:
+        return `unknown:${issue.project_id}`;
+    }
+  }
+
+  // Generate consistency feedback automatically
+  async function generateConsistencyFeedback() {
+    try {
+      const systemUserId = await getSystemUserId();
+
+      // Reuse consistency report logic to get issues
+      const issues = [];
+
+      // 1. Vacation month growth
+      const vacationMonthGrowth = await dbAll(`
+        WITH growth_calc AS (
+          SELECT
+            p.id as project_id,
+            p.name as project_name,
+            p.initiative_manager as pm_name,
+            m.id as metric_id,
+            m.name as metric_name,
+            mp.reporting_date,
+            mp.complete,
+            LAG(mp.complete) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as prev_complete
+          FROM metric_periods mp
+          JOIN metrics m ON mp.metric_id = m.id
+          JOIN projects p ON m.project_id = p.id
+          WHERE CAST(strftime('%m', mp.reporting_date) AS INTEGER) IN (1, 8)
+        )
+        SELECT
+          project_id,
+          project_name,
+          pm_name,
+          metric_id,
+          metric_name,
+          reporting_date,
+          complete,
+          prev_complete,
+          complete - prev_complete as growth
+        FROM growth_calc
+        WHERE complete > COALESCE(prev_complete, 0)
+        AND (complete - prev_complete) IS NOT NULL
+        ORDER BY project_name, metric_name, reporting_date
+      `);
+
+      const metricsWithVacationGrowth = new Map();
+      for (const row of vacationMonthGrowth) {
+        if (!row.prev_complete || row.growth === null) continue;
+
+        const key = `${row.project_id}-${row.metric_id}`;
+        if (!metricsWithVacationGrowth.has(key)) {
+          metricsWithVacationGrowth.set(key, {
+            project_id: row.project_id,
+            project_name: row.project_name,
+            pm_name: row.pm_name,
+            metric_id: row.metric_id,
+            metric_name: row.metric_name,
+            vacation_periods: []
+          });
+        }
+
+        const avgGrowth = await dbGet(`
+          WITH lag_calc AS (
+            SELECT
+              mp.complete,
+              LAG(mp.complete) OVER (PARTITION BY mp.metric_id ORDER BY mp.reporting_date) as prev_complete
+            FROM metric_periods mp
+            WHERE mp.metric_id = ?
+          ),
+          growth_all AS (
+            SELECT
+              complete - prev_complete as growth
+            FROM lag_calc
+          )
+          SELECT AVG(growth) as avg_growth
+          FROM growth_all
+          WHERE growth IS NOT NULL AND growth > 0
+        `, [row.metric_id]);
+
+        if (avgGrowth && avgGrowth.avg_growth && row.growth > avgGrowth.avg_growth * 0.8) {
+          metricsWithVacationGrowth.get(key).vacation_periods.push({
+            date: row.reporting_date,
+            growth: row.growth,
+            avg_growth: avgGrowth.avg_growth
+          });
+        }
+      }
+
+      for (const [, value] of metricsWithVacationGrowth) {
+        if (value.vacation_periods.length > 0) {
+          const months = value.vacation_periods.map(p => {
+            const month = new Date(p.date).getMonth() + 1;
+            return month === 1 ? 'January (December work)' : 'August (July/August work)';
+          });
+          issues.push({
+            type: 'vacation_month_growth',
+            severity: 'warning',
+            project_id: value.project_id,
+            project_name: value.project_name,
+            pm_name: value.pm_name,
+            metric_id: value.metric_id,
+            metric_name: value.metric_name,
+            details: `Normal or accelerated growth detected during vacation months: ${months.join(', ')}. Reporting dates: ${value.vacation_periods.map(p => p.date).join(', ')}`
+          });
+        }
+      }
+
+      // 2. Back-loaded growth
+      const backLoadedMetrics = await dbAll(`
+        WITH lag_calc AS (
+          SELECT
+            m.id as metric_id,
+            m.name as metric_name,
+            m.project_id,
+            p.name as project_name,
+            p.initiative_manager as pm_name,
+            mp.reporting_date,
+            mp.complete,
+            LAG(mp.complete, 1, 0) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as prev_complete
+          FROM metric_periods mp
+          JOIN metrics m ON mp.metric_id = m.id
+          JOIN projects p ON m.project_id = p.id
+        ),
+        period_growth AS (
+          SELECT
+            metric_id,
+            metric_name,
+            project_id,
+            project_name,
+            pm_name,
+            reporting_date,
+            ROW_NUMBER() OVER (PARTITION BY metric_id ORDER BY reporting_date) as period_num,
+            COUNT(*) OVER (PARTITION BY metric_id) as total_periods,
+            complete - prev_complete as growth
+          FROM lag_calc
+        ),
+        first_half_growth AS (
+          SELECT
+            metric_id,
+            metric_name,
+            project_id,
+            project_name,
+            pm_name,
+            SUM(growth) as first_half_total,
+            AVG(growth) as first_half_avg
+          FROM period_growth
+          WHERE period_num <= total_periods / 2
+          GROUP BY metric_id, metric_name, project_id, project_name, pm_name
+        ),
+        second_half_growth AS (
+          SELECT
+            metric_id,
+            SUM(growth) as second_half_total,
+            AVG(growth) as second_half_avg
+          FROM period_growth
+          WHERE period_num > total_periods / 2
+          GROUP BY metric_id
+        )
+        SELECT
+          f.project_id,
+          f.project_name,
+          f.pm_name,
+          f.metric_id,
+          f.metric_name,
+          f.first_half_total,
+          f.first_half_avg,
+          s.second_half_total,
+          s.second_half_avg
+        FROM first_half_growth f
+        JOIN second_half_growth s ON f.metric_id = s.metric_id
+        WHERE s.second_half_total > f.first_half_total * 2
+      `);
+
+      const projectMetrics = new Map();
+      for (const metric of backLoadedMetrics) {
+        if (!projectMetrics.has(metric.project_id)) {
+          projectMetrics.set(metric.project_id, {
+            project_name: metric.project_name,
+            pm_name: metric.pm_name,
+            back_loaded: [],
+            total: 0
+          });
+        }
+        projectMetrics.get(metric.project_id).back_loaded.push(metric);
+      }
+
+      for (const [projectId, data] of projectMetrics) {
+        const totalMetrics = await dbGet(
+          'SELECT COUNT(*) as count FROM metrics WHERE project_id = ?',
+          [projectId]
+        );
+        data.total = totalMetrics.count;
+
+        if (data.back_loaded.length === data.total && data.total > 0) {
+          issues.push({
+            type: 'all_back_loaded',
+            severity: 'high',
+            project_id: projectId,
+            project_name: data.project_name,
+            pm_name: data.pm_name,
+            details: `All ${data.total} metric(s) show back-loaded growth (majority of progress in second half)`
+          });
+        }
+      }
+
+      // 3. Single metric projects
+      const singleMetricProjects = await dbAll(`
+        WITH project_metric_counts AS (
+          SELECT
+            p.id as project_id,
+            p.name as project_name,
+            p.initiative_manager as pm_name,
+            m.id as metric_id,
+            m.name as metric_name,
+            COUNT(m.id) OVER (PARTITION BY p.id) as metric_count
+          FROM projects p
+          LEFT JOIN metrics m ON p.id = m.project_id
+        )
+        SELECT *
+        FROM project_metric_counts
+        WHERE metric_count = 1
+      `);
+
+      for (const project of singleMetricProjects) {
+        issues.push({
+          type: 'single_metric',
+          severity: 'info',
+          project_id: project.project_id,
+          project_name: project.project_name,
+          pm_name: project.pm_name,
+          metric_id: project.metric_id,
+          metric_name: project.metric_name,
+          details: 'Project has only one metric'
+        });
+      }
+
+      // 4. No lead metrics
+      const projectsWithoutLeadMetrics = await dbAll(`
+        WITH project_metrics AS (
+          SELECT
+            p.id as project_id,
+            p.name as project_name,
+            p.initiative_manager as pm_name,
+            COUNT(m.id) as total_metrics,
+            SUM(CASE WHEN m.metric_type = 'lead' OR m.metric_type IS NULL THEN 1 ELSE 0 END) as lead_count,
+            SUM(CASE WHEN m.metric_type = 'lag' THEN 1 ELSE 0 END) as lag_count
+          FROM projects p
+          LEFT JOIN metrics m ON p.id = m.project_id
+          GROUP BY p.id, p.name, p.initiative_manager
+        )
+        SELECT
+          project_id,
+          project_name,
+          pm_name,
+          total_metrics,
+          lead_count,
+          lag_count
+        FROM project_metrics
+        WHERE total_metrics > 0 AND lead_count = 0
+      `);
+
+      for (const project of projectsWithoutLeadMetrics) {
+        issues.push({
+          type: 'no_lead_metrics',
+          severity: 'warning',
+          project_id: project.project_id,
+          project_name: project.project_name,
+          pm_name: project.pm_name,
+          details: `Project has ${project.lag_count} lag metric(s) but no lead metrics. Lead metrics provide early indicators of progress.`
+        });
+      }
+
+      // 5. Metric type mismatches
+      const metricTypeMismatches = await dbAll(`
+        WITH growth_calc AS (
+          SELECT
+            m.id as metric_id,
+            m.name as metric_name,
+            m.metric_type,
+            m.project_id,
+            p.name as project_name,
+            p.initiative_manager as pm_name,
+            mp.reporting_date,
+            mp.complete,
+            LAG(mp.complete, 1, 0) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as prev_complete
+          FROM metric_periods mp
+          JOIN metrics m ON mp.metric_id = m.id
+          JOIN projects p ON m.project_id = p.id
+          WHERE mp.complete IS NOT NULL
+        ),
+        period_analysis AS (
+          SELECT
+            metric_id,
+            metric_name,
+            metric_type,
+            project_id,
+            project_name,
+            pm_name,
+            ROW_NUMBER() OVER (PARTITION BY metric_id ORDER BY reporting_date) as period_num,
+            COUNT(*) OVER (PARTITION BY metric_id) as total_periods,
+            complete - prev_complete as growth,
+            SUM(complete - prev_complete) OVER (PARTITION BY metric_id) as total_growth
+          FROM growth_calc
+        ),
+        final_30_percent AS (
+          SELECT
+            metric_id,
+            metric_name,
+            metric_type,
+            project_id,
+            project_name,
+            pm_name,
+            total_periods,
+            SUM(growth) as final_30_growth,
+            MAX(total_growth) as total_growth
+          FROM period_analysis
+          WHERE period_num > (total_periods * 0.7)
+          GROUP BY metric_id, metric_name, metric_type, project_id, project_name, pm_name, total_periods
+        )
+        SELECT
+          metric_id,
+          metric_name,
+          metric_type,
+          project_id,
+          project_name,
+          pm_name,
+          total_periods,
+          final_30_growth,
+          total_growth,
+          CAST(final_30_growth AS REAL) / NULLIF(total_growth, 0) as final_30_percent
+        FROM final_30_percent
+        WHERE total_growth > 0
+          AND (
+            (metric_type = 'lag' AND (final_30_growth / NULLIF(total_growth, 0)) < 0.5)
+            OR
+            (metric_type = 'lead' AND (final_30_growth / NULLIF(total_growth, 0)) > 0.7)
+          )
+      `);
+
+      for (const metric of metricTypeMismatches) {
+        const percentInFinal = (metric.final_30_percent * 100).toFixed(1);
+        if (metric.metric_type === 'lag') {
+          issues.push({
+            type: 'metric_type_mismatch',
+            severity: 'warning',
+            project_id: metric.project_id,
+            project_name: metric.project_name,
+            pm_name: metric.pm_name,
+            metric_id: metric.metric_id,
+            metric_name: metric.metric_name,
+            details: `Metric '${metric.metric_name}' is declared as 'lag' but shows progressive pattern with only ${percentInFinal}% of progress in final 30% of periods. Consider changing to 'lead' type.`
+          });
+        } else {
+          issues.push({
+            type: 'metric_type_mismatch',
+            severity: 'warning',
+            project_id: metric.project_id,
+            project_name: metric.project_name,
+            pm_name: metric.pm_name,
+            metric_id: metric.metric_id,
+            metric_name: metric.metric_name,
+            details: `Metric '${metric.metric_name}' is declared as 'lead' but shows back-loaded pattern with ${percentInFinal}% of progress in final 30% of periods. Consider changing to 'lag' type.`
+          });
+        }
+      }
+
+      // Now create feedback entries for each issue (avoiding duplicates)
+      let createdCount = 0;
+      let skippedCount = 0;
+
+      for (const issue of issues) {
+        const issueKey = getIssueKey(issue);
+        const feedbackText = `[${issue.severity.toUpperCase()}] ${issue.project_name}: ${issue.details}`;
+
+        // Check if this feedback already exists (based on similar text and project)
+        const existing = await dbGet(
+          `SELECT id FROM feedback
+           WHERE project_id = ?
+           AND text LIKE ?
+           AND status IN ('open', 'responded')
+           LIMIT 1`,
+          [issue.project_id, `%${issue.details.substring(0, 50)}%`]
+        );
+
+        if (!existing) {
+          // Create new feedback
+          await dbRun(
+            `INSERT INTO feedback (user_id, text, status, project_id)
+             VALUES (?, ?, 'open', ?)`,
+            [systemUserId, feedbackText, issue.project_id]
+          );
+          createdCount++;
+        } else {
+          skippedCount++;
+        }
+      }
+
+      console.log(`✅ Consistency feedback generated: ${createdCount} created, ${skippedCount} skipped (duplicates)`);
+      return { created: createdCount, skipped: skippedCount, total: issues.length };
+    } catch (err) {
+      console.error('Error generating consistency feedback:', err);
+      throw err;
+    }
+  }
+
+  // Endpoint to manually trigger consistency feedback generation (admin only)
+  app.post('/api/admin/generate-consistency-feedback', authenticateToken, async (req, res) => {
+    try {
+      if (!isAdmin(req.user)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const result = await generateConsistencyFeedback();
+      res.json({
+        success: true,
+        message: `Generated consistency feedback: ${result.created} created, ${result.skipped} skipped`,
+        ...result
+      });
+    } catch (err) {
+      console.error('Error generating consistency feedback:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Auto-generate consistency feedback on server start (after a delay to ensure DB is ready)
+  // Skip in test mode to avoid interfering with tests
+  if (process.env.NODE_ENV !== 'test') {
+    setTimeout(async () => {
+      try {
+        await generateConsistencyFeedback();
+      } catch (err) {
+        console.error('Error in initial consistency feedback generation:', err);
+      }
+    }, 5000); // 5 second delay after server start
+  }
+
+  // ===== PAGE ANALYTICS =====
+  // Track page view (no authentication required for tracking)
+  app.post('/api/analytics/pageview', async (req, res) => {
+    try {
+      const { path, session_id } = req.body;
+      const userId = req.user?.userId || null;
+
+      if (!path) {
+        return res.status(204).send(); // Silent fail if no path
+      }
+
+      // Store page view asynchronously (fire and forget)
+      dbRun(
+        'INSERT INTO page_views (user_id, path, session_id) VALUES (?, ?, ?)',
+        [userId, path, session_id]
+      ).catch(err => {
+        console.error('Page view tracking error:', err);
+      });
+
+      res.status(204).send();
+    } catch (err) {
+      console.error('Page view endpoint error:', err);
+      res.status(204).send(); // Always return 204 to not break client
+    }
+  });
+
+  // Get page heatmap data (admin only) - filtered for projects only
+  app.get('/api/admin/page-heatmap', authenticateToken, async (req, res) => {
+    try {
+      if (!isAdmin(req.user)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { days = 30 } = req.query;
+      const daysAgo = new Date();
+      const parsedDays = parseInt(days) || 30; // Default to 30 if invalid
+      daysAgo.setDate(daysAgo.getDate() - parsedDays);
+
+      // Get page view counts (only Project pages)
+      const pageViewCounts = await dbAll(`
+        SELECT path, COUNT(*) as view_count
+        FROM page_views
+        WHERE created_at >= ? AND path LIKE 'Project:%'
+        GROUP BY path
+        ORDER BY view_count DESC
+      `, [daysAgo.toISOString()]);
+
+      // Get timeline data (views by date)
+      const timeline = await dbAll(`
+        SELECT DATE(created_at) as date, COUNT(*) as views
+        FROM page_views
+        WHERE created_at >= ? AND path LIKE 'Project:%'
+        GROUP BY DATE(created_at)
+        ORDER BY date
+      `, [daysAgo.toISOString()]);
+
+      // Get top users by view count
+      const topUsers = await dbAll(`
+        SELECT
+          COALESCE(u.name, 'Anonymous') as user_name,
+          u.email as user_email,
+          COUNT(*) as view_count
+        FROM page_views pv
+        LEFT JOIN users u ON pv.user_id = u.id
+        WHERE pv.created_at >= ? AND pv.path LIKE 'Project:%'
+        GROUP BY pv.user_id, u.name, u.email
+        ORDER BY view_count DESC
+        LIMIT 10
+      `, [daysAgo.toISOString()]);
+
+      res.json({
+        pageViewCounts,
+        timeline,
+        topUsers,
+        period: parsedDays
+      });
+    } catch (err) {
+      console.error('Page heatmap error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== USER ACTIVITY REPORT =====
   app.get('/api/admin/user-activity', authenticateToken, async (req, res) => {
     try {
@@ -3942,6 +4491,27 @@ function createApp(dbPath) {
       console.error('Error adding project_id to feedback:', err);
     }
 
+    // Migration: Create page_views table for analytics
+    try {
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS page_views (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER,
+          path TEXT NOT NULL,
+          session_id TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+      `);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_page_views_path ON page_views(path)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_page_views_session ON page_views(session_id)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_page_views_created ON page_views(created_at)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_page_views_user ON page_views(user_id)`);
+      console.log('✅ Created page_views table');
+    } catch (err) {
+      // Table already exists, that's fine
+    }
+
     // Create default admin user if none exists
     const existingAdmin = await dbGet('SELECT id FROM users WHERE email = ? OR name = ?', ['admin@example.com', 'Admin User']);
     if (!existingAdmin) {
@@ -3949,7 +4519,7 @@ function createApp(dbPath) {
       await dbRun('INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)', ['admin@example.com', 'Admin User', hash, 'admin']);
       console.log('✅ Created default admin user: admin@example.com / admin123');
     }
-  
+
     console.log('✅ Database ready at backend/data/progress-tracker.db');
   }
 
@@ -3959,7 +4529,7 @@ function createApp(dbPath) {
   });
 
   // Return app and database functions for use (server start moved outside)
-  return { app, PORT, dbRun, dbGet, dbAll };
+  return { app, PORT, dbRun, dbGet, dbAll, generateConsistencyFeedback };
 }
 
 // ===== DEFAULT INSTANCE AND SERVER START =====
@@ -3967,14 +4537,15 @@ function createApp(dbPath) {
 const defaultInstance = createApp();
 const app = defaultInstance.app;
 const PORT = defaultInstance.PORT;
+const generateConsistencyFeedback = defaultInstance.generateConsistencyFeedback;
 
 // Only start server if not in test mode
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`✅ Server running on http://localhost:${PORT}`);
 
-    // Start the daily export scheduler
-    startScheduler();
+    // Start the daily export and consistency feedback schedulers
+    startScheduler(generateConsistencyFeedback);
   });
 }
 
