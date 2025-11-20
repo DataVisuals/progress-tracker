@@ -237,21 +237,19 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
     }
   ];
 
-  // Randomize tips on component mount
+  // Randomize tips and load data on component mount only
   useEffect(() => {
     selectRandomTips();
-  }, []);
 
-  // Load data when projects or projectsData change (but not on empty initial state)
-  useEffect(() => {
-    const projectCount = Object.keys(projects).length;
-    const dataCount = Object.keys(projectsData).length;
+    // Use a small delay to ensure projects and projectsData have been loaded
+    const timeoutId = setTimeout(() => {
+      if (!loadingRef.current) {
+        loadHomePageData();
+      }
+    }, 100);
 
-    // Only load if we have data and aren't already loading
-    if ((projectCount > 0 || dataCount > 0) && !loadingRef.current) {
-      loadHomePageData();
-    }
-  }, [Object.keys(projects).length, Object.keys(projectsData).length]);
+    return () => clearTimeout(timeoutId);
+  }, []); // Only run once on mount
 
   const selectRandomTips = () => {
     const shuffled = [...allTips].sort(() => 0.5 - Math.random());
