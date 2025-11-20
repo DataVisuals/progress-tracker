@@ -1387,3 +1387,128 @@
   color: #e0f2fe;
 }
 
+
+/* Compact spacing for laptop screens with limited vertical space */
+@media (max-height: 900px) {
+  .metric-chart-container {
+    padding: 12px;
+  }
+
+  .chart-metric-header {
+    padding: 8px 12px;
+  }
+
+  .chart-metric-title {
+    padding: 10px 12px;
+  }
+
+  .chart-stats {
+    padding: 4px 0;
+    margin: 6px -12px -10px -12px;
+    padding: 8px 12px;
+  }
+
+  .chart-divider {
+    margin: 6px 0;
+  }
+
+  .chart-controls {
+    margin-bottom: 3px;
+    gap: 12px;
+  }
+
+  .chart-controls-left {
+    gap: 6px;
+    padding: 8px 14px;
+  }
+
+  .chart-controls-right {
+    gap: 12px;
+    padding: 8px 14px;
+  }
+
+  .chart-control-group {
+    gap: 6px;
+  }
+
+  .axis-divider {
+    margin: 6px 0;
+  }
+
+  .metric-tabs {
+    gap: 0;
+    padding: 0;
+  }
+
+  .metric-tab {
+    padding: 6px 14px;
+  }
+
+  .commentary-section {
+    margin-top: 10px;
+    padding: 10px;
+  }
+}
+
+@media (max-height: 768px) {
+  .metric-chart-container {
+    padding: 10px;
+  }
+
+  .chart-metric-header {
+    padding: 6px 10px;
+  }
+
+  .chart-metric-title {
+    padding: 8px 10px;
+  }
+
+  .chart-stats {
+    padding: 3px 0;
+    margin: 5px -10px -8px -10px;
+    padding: 6px 10px;
+  }
+
+  .chart-divider {
+    margin: 4px 0;
+  }
+
+  .chart-controls {
+    margin-bottom: 2px;
+    gap: 10px;
+  }
+
+  .chart-controls-left {
+    gap: 5px;
+    padding: 6px 12px;
+  }
+
+  .chart-controls-right {
+    gap: 10px;
+    padding: 6px 12px;
+  }
+
+  .chart-control-group {
+    gap: 4px;
+  }
+
+  .axis-divider {
+    margin: 4px 0;
+  }
+
+  .metric-tabs {
+    gap: 0;
+    padding: 0;
+  }
+
+  .metric-tab {
+    padding: 5px 12px;
+    font-size: 13px;
+  }
+
+  .commentary-section {
+    margin-top: 8px;
+    padding: 8px;
+  }
+}
+

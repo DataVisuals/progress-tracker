@@ -858,3 +858,93 @@ html.dark-mode .home-quadrant .quadrant-content {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* Compact spacing for laptop screens with limited vertical space */
+@media (max-height: 900px) {
+  .home-page {
+    padding: 0 20px 20px 20px;
+  }
+
+  .home-header {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+  }
+
+  .home-grid {
+    gap: 20px;
+  }
+
+  .quadrant-content {
+    padding: 14px 18px;
+  }
+
+  .summary-grid {
+    gap: 10px;
+  }
+
+  .summary-card {
+    padding: 8px 14px;
+  }
+
+  .getting-started {
+    padding: 16px;
+    margin-top: 10px;
+  }
+
+  .metric-item,
+  .commentary-item,
+  .tip-item {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .feedback-section {
+    margin-top: 16px;
+    padding: 14px 18px;
+  }
+}
+
+@media (max-height: 768px) {
+  .home-page {
+    padding: 0 16px 16px 16px;
+  }
+
+  .home-header {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+
+  .home-grid {
+    gap: 16px;
+  }
+
+  .quadrant-content {
+    padding: 12px 16px;
+  }
+
+  .summary-grid {
+    gap: 8px;
+  }
+
+  .summary-card {
+    padding: 6px 12px;
+  }
+
+  .getting-started {
+    padding: 12px;
+    margin-top: 8px;
+  }
+
+  .metric-item,
+  .commentary-item,
+  .tip-item {
+    padding: 6px;
+    gap: 4px;
+  }
+
+  .feedback-section {
+    margin-top: 12px;
+    padding: 12px 16px;
+  }
+}
+
