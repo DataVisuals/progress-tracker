@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   MdComment,
   MdWarning,
@@ -41,6 +41,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
   const [randomTips, setRandomTips] = useState([]);
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(true);
+  const loadingRef = useRef(false); // Track if data is currently being loaded
 
   // Tips from the TipsSplash component
   const allTips = [
@@ -246,7 +247,8 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
     const projectCount = Object.keys(projects).length;
     const dataCount = Object.keys(projectsData).length;
 
-    if (projectCount > 0 || dataCount > 0) {
+    // Only load if we have data and aren't already loading
+    if ((projectCount > 0 || dataCount > 0) && !loadingRef.current) {
       loadHomePageData();
     }
   }, [Object.keys(projects).length, Object.keys(projectsData).length]);
@@ -257,6 +259,9 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
   };
 
   const loadHomePageData = async () => {
+    if (loadingRef.current) return; // Prevent concurrent loads
+
+    loadingRef.current = true;
     setLoading(true);
     try {
       // Get recent commentary from audit log - filter for metric_periods table
@@ -392,6 +397,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
       console.error('Failed to load home page data:', err);
     } finally {
       setLoading(false);
+      loadingRef.current = false; // Reset loading flag
     }
   };
 

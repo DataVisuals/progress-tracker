@@ -80,7 +80,7 @@ function App() {
       setCurrentUser(JSON.parse(userStr));
     }
     loadPortfolios();
-    loadProjects();
+    // Note: Don't call loadProjects() here - let the selectedPortfolio useEffect handle it
 
     // Parse URL parameters on initial load
     const params = new URLSearchParams(window.location.search);
