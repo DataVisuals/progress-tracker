@@ -527,11 +527,13 @@ html.dark-mode .quadrant-content {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  text-align: left;
 }
 
 .tip-item {
   display: flex;
   gap: 12px;
+  text-align: left;
 }
 
 .tip-icon-wrapper {
