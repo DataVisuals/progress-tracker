@@ -869,13 +869,6 @@ function App() {
               <MdShowChart className="app-logo" />
               Progress Tracker
             </h1>
-            <button
-              className="help-icon-btn"
-              onClick={() => setShowWhatsNew(true)}
-              title="What's New"
-            >
-              <MdHelpOutline />
-            </button>
           </div>
           <div className="header-right">
             <PortfolioSelector
@@ -1557,6 +1550,15 @@ function App() {
           }}
         />
       )}
+
+      <footer className="app-footer">
+        <button
+          className="footer-link"
+          onClick={() => setShowWhatsNew(true)}
+        >
+          What's New
+        </button>
+      </footer>
     </div>
   );
 }

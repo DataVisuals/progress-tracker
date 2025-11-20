@@ -1525,3 +1525,35 @@
     font-size: 13px;
   }
 }
+
+/* Footer */
+.app-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px;
+  text-align: center;
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  z-index: 10;
+}
+
+.footer-link {
+  background: none;
+  border: none;
+  color: #00aeef;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 8px;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.footer-link:hover {
+  color: #003c71;
+}
+
+:root.dark-mode .footer-link:hover {
+  color: #60d5ff;
+}
