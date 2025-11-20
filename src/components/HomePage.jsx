@@ -237,19 +237,22 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
     }
   ];
 
-  // Randomize tips and load data on component mount only
+  // Randomize tips on component mount only
   useEffect(() => {
     selectRandomTips();
+  }, []); // Only run once on mount
 
-    // Use a small delay to ensure projects and projectsData have been loaded
-    const timeoutId = setTimeout(() => {
+  // Load data when projects or projectsData change
+  useEffect(() => {
+    const projectCount = Object.keys(projects).length;
+    const projectDataCount = Object.keys(projectsData).length;
+
+    if (projectCount > 0 && projectDataCount > 0) {
       if (!loadingRef.current) {
         loadHomePageData();
       }
-    }, 100);
-
-    return () => clearTimeout(timeoutId);
-  }, []); // Only run once on mount
+    }
+  }, [Object.keys(projects).length, Object.keys(projectsData).length]); // Re-run when counts change
 
   const selectRandomTips = () => {
     const shuffled = [...allTips].sort(() => 0.5 - Math.random());
