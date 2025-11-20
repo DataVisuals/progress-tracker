@@ -241,9 +241,14 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
     selectRandomTips();
   }, []);
 
-  // Load data when projects change
+  // Load data when projects or projectsData change (but not on empty initial state)
   useEffect(() => {
-    loadHomePageData();
+    const projectCount = Object.keys(projects).length;
+    const dataCount = Object.keys(projectsData).length;
+
+    if (projectCount > 0 || dataCount > 0) {
+      loadHomePageData();
+    }
   }, [Object.keys(projects).length, Object.keys(projectsData).length]);
 
   const selectRandomTips = () => {

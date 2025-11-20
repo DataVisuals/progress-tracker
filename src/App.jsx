@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Select from 'react-select';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';
@@ -777,14 +777,16 @@ function App() {
   };
 
   // Convert projects array to object format for ProjectSelector
-  const projectsObject = projects.reduce((acc, project) => {
-    acc[project.id] = {
-      name: project.name,
-      portfolio_name: project.portfolio_name,
-      portfolio_color: project.portfolio_color
-    };
-    return acc;
-  }, {});
+  const projectsObject = useMemo(() => {
+    return projects.reduce((acc, project) => {
+      acc[project.id] = {
+        name: project.name,
+        portfolio_name: project.portfolio_name,
+        portfolio_color: project.portfolio_color
+      };
+      return acc;
+    }, {});
+  }, [projects]);
 
   // Get metrics list from projectMetrics state
   const metrics = projectMetrics.map(m => m.name);
