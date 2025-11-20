@@ -372,13 +372,29 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
               complete,
               expected,
               variancePercent: variancePercent.toFixed(1),
-              portfolioColor: projectInfo.portfolio_color
+              portfolioColor: projectInfo.portfolio_color,
+              portfolioName: projectInfo.portfolio_name
             });
           }
         });
       });
 
-      setRedMetrics(redMetricsList);
+      // Group by portfolio and sort
+      const groupedByPortfolio = redMetricsList.reduce((acc, metric) => {
+        const portfolio = metric.portfolioName || 'No Portfolio';
+        if (!acc[portfolio]) {
+          acc[portfolio] = [];
+        }
+        acc[portfolio].push(metric);
+        return acc;
+      }, {});
+
+      // Convert to array and sort portfolios alphabetically
+      const sortedRedMetrics = Object.entries(groupedByPortfolio)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .flatMap(([portfolio, metrics]) => metrics);
+
+      setRedMetrics(sortedRedMetrics);
 
       // Load feedback for current user's projects
       let feedbackList = [];
@@ -527,35 +543,49 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
               </div>
             ) : (
               <div className="metrics-list">
-                {redMetrics.map((item, index) => (
-                  <div
-                    key={index}
-                    className="metric-item"
-                    onClick={() => handleMetricClick(item.projectId, item.metricName)}
-                  >
-                    <div className="metric-left">
-                      <div className="metric-header">
-                        {item.portfolioColor && (
-                          <span
-                            className="portfolio-dot"
-                            style={{ backgroundColor: item.portfolioColor }}
-                          />
-                        )}
-                        <span className="metric-project">{item.projectName}</span>
+                {redMetrics.map((item, index) => {
+                  // Show portfolio header if this is the first metric in the portfolio
+                  const showPortfolioHeader = index === 0 ||
+                    item.portfolioName !== redMetrics[index - 1].portfolioName;
+
+                  return (
+                    <React.Fragment key={index}>
+                      {showPortfolioHeader && (
+                        <div className="portfolio-group-header">
+                          {item.portfolioColor && (
+                            <span
+                              className="portfolio-header-dot"
+                              style={{ backgroundColor: item.portfolioColor }}
+                            />
+                          )}
+                          <span className="portfolio-header-name">
+                            {item.portfolioName || 'No Portfolio'}
+                          </span>
+                        </div>
+                      )}
+                      <div
+                        className="metric-item"
+                        onClick={() => handleMetricClick(item.projectId, item.metricName)}
+                      >
+                        <div className="metric-left">
+                          <div className="metric-header">
+                            <span className="metric-project">{item.projectName}</span>
+                          </div>
+                          <span className="metric-name">{item.metricName}</span>
+                        </div>
+                        <div className="metric-right">
+                          <span className="metric-variance red">-{item.variancePercent}%</span>
+                          <div className="metric-progress">
+                            <span className="progress-value">{item.complete}</span>
+                            <span className="progress-separator">/</span>
+                            <span className="progress-expected">{item.expected}</span>
+                          </div>
+                          <MdArrowForward className="metric-arrow" />
+                        </div>
                       </div>
-                      <span className="metric-name">{item.metricName}</span>
-                    </div>
-                    <div className="metric-right">
-                      <span className="metric-variance red">-{item.variancePercent}%</span>
-                      <div className="metric-progress">
-                        <span className="progress-value">{item.complete}</span>
-                        <span className="progress-separator">/</span>
-                        <span className="progress-expected">{item.expected}</span>
-                      </div>
-                      <MdArrowForward className="metric-arrow" />
-                    </div>
-                  </div>
-                ))}
+                    </React.Fragment>
+                  );
+                })}
               </div>
             )}
           </div>

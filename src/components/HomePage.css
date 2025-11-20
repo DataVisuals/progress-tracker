@@ -445,6 +445,35 @@ html.dark-mode .quadrant-content {
   text-align: left;
 }
 
+.portfolio-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px 4px;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.portfolio-group-header:first-child {
+  margin-top: 0;
+}
+
+.portfolio-header-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.portfolio-header-name {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 11px;
+}
+
 .metric-item {
   display: flex;
   justify-content: space-between;
@@ -737,6 +766,11 @@ html.dark-mode .quadrant-content {
 
 :root.dark-mode .commentary-text {
   color: #d1d5db;
+}
+
+:root.dark-mode .portfolio-group-header {
+  color: #9ca3af;
+  border-bottom-color: #4b5563;
 }
 
 :root.dark-mode .metric-item {
