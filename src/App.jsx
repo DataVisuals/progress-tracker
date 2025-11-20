@@ -127,7 +127,7 @@ function App() {
     if (projects.length > 0) {
       loadAllProjectsData();
     }
-  }, [projects]);
+  }, [projects.length]);
 
   // Reload projects when portfolio selection changes
   useEffect(() => {

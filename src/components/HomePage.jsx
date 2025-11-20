@@ -244,7 +244,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
   // Load data when projects change
   useEffect(() => {
     loadHomePageData();
-  }, [projects, projectsData]);
+  }, [Object.keys(projects).length, Object.keys(projectsData).length]);
 
   const selectRandomTips = () => {
     const shuffled = [...allTips].sort(() => 0.5 - Math.random());
