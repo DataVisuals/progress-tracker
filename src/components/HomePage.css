@@ -291,7 +291,7 @@
 }
 
 html.dark-mode .quadrant-content {
-  background-color: #1f2937;
+  background-color: #1f2937 !important;
 }
 
 /* Loading and Empty States */
