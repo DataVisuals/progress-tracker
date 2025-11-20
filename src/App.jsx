@@ -18,9 +18,11 @@ import ConsistencyReport from './components/ConsistencyReport';
 import ImportData from './components/ImportData';
 import WhatsNew from './components/WhatsNew';
 import UserActivityReport from './components/UserActivityReport';
+import PageHeatmapReport from './components/PageHeatmapReport';
 import HomePage from './components/HomePage';
 import { api } from './api/client';
 import { selectStyles } from './components/SelectStyles';
+import { usePageTracking, trackPage } from './hooks/usePageTracking';
 import { MdShowChart, MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
 import './App.css';
 
@@ -30,7 +32,19 @@ function App() {
   const [portfolios, setPortfolios] = useState([]);
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
   const [projects, setProjects] = useState([]);
-  const [selectedProject, setSelectedProject] = useState('');
+  const [selectedProject, setSelectedProjectInternal] = useState('');
+
+  // Wrapper to track project views when selecting a project
+  const setSelectedProject = (projectId) => {
+    setSelectedProjectInternal(projectId);
+    if (projectId) {
+      const project = projects.find(p => p.id === parseInt(projectId));
+      if (project?.name) {
+        trackPage(`Project: ${project.name}`);
+      }
+    }
+  };
+
   const [projectData, setProjectData] = useState([]);
   const [projectMetrics, setProjectMetrics] = useState([]);
   const [selectedMetric, setSelectedMetric] = useState('');
@@ -56,6 +70,10 @@ function App() {
   const [showAdminDropdown, setShowAdminDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [timeTravelTimestamp, setTimeTravelTimestamp] = useState(null);
+
+  // Track page views (non-intrusive, fire-and-forget)
+  usePageTracking();
+
   const [projectLinks, setProjectLinks] = useState([]);
   const [showLinksEditor, setShowLinksEditor] = useState(false);
   const [showConsistencyReport, setShowConsistencyReport] = useState(false);
@@ -64,12 +82,25 @@ function App() {
   const [showPortfolioReport, setShowPortfolioReport] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [showUserActivity, setShowUserActivity] = useState(false);
+  const [showPageHeatmap, setShowPageHeatmap] = useState(false);
   const [targetChangePrompt, setTargetChangePrompt] = useState(null); // { newTarget, resolve }
   const [allProjectsData, setAllProjectsData] = useState({}); // For HomePage red metrics
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
+
+  // Track modal/screen views
+  useEffect(() => { if (showDataGrid) trackPage('Data Grid'); }, [showDataGrid]);
+  useEffect(() => { if (showConsistencyReport) trackPage('Consistency Report'); }, [showConsistencyReport]);
+  useEffect(() => { if (showImportData) trackPage('Import Data'); }, [showImportData]);
+  useEffect(() => { if (showPortfolioManager) trackPage('Portfolio Manager'); }, [showPortfolioManager]);
+  useEffect(() => { if (showPortfolioReport) trackPage('Portfolio Report'); }, [showPortfolioReport]);
+  useEffect(() => { if (showUserActivity) trackPage('User Activity Report'); }, [showUserActivity]);
+  useEffect(() => { if (showPageHeatmap) trackPage('Page Heatmap'); }, [showPageHeatmap]);
+  useEffect(() => { if (showAuditLog) trackPage('Audit Log'); }, [showAuditLog]);
+  useEffect(() => { if (showUserManagement) trackPage('User Management'); }, [showUserManagement]);
+  useEffect(() => { if (showLinksEditor) trackPage('Project Links Editor'); }, [showLinksEditor]);
 
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
@@ -959,6 +990,9 @@ function App() {
                     <button onMouseDown={() => { setShowUserActivity(true); setShowAdminDropdown(false); }}>
                       User Activity Report
                     </button>
+                    <button onMouseDown={() => { setShowPageHeatmap(true); setShowAdminDropdown(false); }}>
+                      Page Heatmap
+                    </button>
                   </div>
                 )}
               </div>
@@ -1421,6 +1455,10 @@ function App() {
 
       {showUserActivity && (
         <UserActivityReport onClose={() => setShowUserActivity(false)} />
+      )}
+
+      {showPageHeatmap && (
+        <PageHeatmapReport onClose={() => setShowPageHeatmap(false)} />
       )}
 
       {showNewProject && (

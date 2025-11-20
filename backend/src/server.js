@@ -87,7 +87,10 @@ function createApp(dbPath) {
   const PORT = 3001;
   const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-  app.use(cors());
+  app.use(cors({
+    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    credentials: true
+  }));
   app.use(express.json());
 
   // ===== SERVE FRONTEND STATIC FILES (for Docker deployment) =====
@@ -3640,7 +3643,96 @@ function createApp(dbPath) {
       }
     }
   });
-  
+
+  // ===== PAGE ANALYTICS =====
+
+  // Track page view (non-blocking, fire-and-forget)
+  app.post('/api/analytics/pageview', async (req, res) => {
+    try {
+      const { path, session_id } = req.body;
+      const userId = req.user?.userId || null; // Optional - works for logged in and anonymous
+
+      console.log('📊 Page view tracked:', { path, session_id, userId });
+
+      // Fire and forget - don't wait for response
+      dbRun(
+        'INSERT INTO page_views (user_id, path, session_id) VALUES (?, ?, ?)',
+        [userId, path, session_id]
+      ).catch(err => console.error('Page view tracking error:', err));
+
+      // Immediate response
+      res.status(204).send();
+    } catch (err) {
+      console.error('Page view endpoint error:', err);
+      // Never fail the request
+      res.status(204).send();
+    }
+  });
+
+  // Get page view heatmap (admin only)
+  app.get('/api/admin/page-heatmap', authenticateToken, async (req, res) => {
+    try {
+      if (!isAdmin(req.user)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { days = 30 } = req.query;
+      const daysAgo = new Date();
+      daysAgo.setDate(daysAgo.getDate() - parseInt(days));
+
+      // Get page view counts by path (only project pages)
+      const pageViewCounts = await dbAll(`
+        SELECT
+          path,
+          COUNT(*) as view_count,
+          COUNT(DISTINCT user_id) as unique_users,
+          COUNT(DISTINCT session_id) as unique_sessions
+        FROM page_views
+        WHERE created_at >= ?
+          AND path LIKE 'Project:%'
+        GROUP BY path
+        ORDER BY view_count DESC
+      `, [daysAgo.toISOString()]);
+
+      // Get timeline data (daily counts, only project pages)
+      const timeline = await dbAll(`
+        SELECT
+          DATE(created_at) as date,
+          path,
+          COUNT(*) as count
+        FROM page_views
+        WHERE created_at >= ?
+          AND path LIKE 'Project:%'
+        GROUP BY DATE(created_at), path
+        ORDER BY date DESC
+      `, [daysAgo.toISOString()]);
+
+      // Get top users by page views (only project pages)
+      const topUsers = await dbAll(`
+        SELECT
+          COALESCE(u.name, 'Anonymous') as user_name,
+          COUNT(*) as view_count
+        FROM page_views pv
+        LEFT JOIN users u ON pv.user_id = u.id
+        WHERE pv.created_at >= ?
+          AND pv.path LIKE 'Project:%'
+        GROUP BY COALESCE(u.name, 'Anonymous')
+        ORDER BY view_count DESC
+        LIMIT 10
+      `, [daysAgo.toISOString()]);
+
+      res.json({
+        pageViewCounts,
+        timeline,
+        topUsers,
+        period: parseInt(days)
+      });
+    } catch (err) {
+      console.error('Page heatmap error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== CATCH-ALL ROUTE (must be last) =====
   // Serve index.html for all non-API routes to support React Router
   if (fs.existsSync(frontendPath)) {
@@ -3940,6 +4032,26 @@ function createApp(dbPath) {
       }
     } catch (err) {
       console.error('Error adding project_id to feedback:', err);
+    }
+
+    // Migration: Create page_views table for analytics
+    try {
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS page_views (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER,
+          path TEXT NOT NULL,
+          session_id TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+      `);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_page_views_created ON page_views(created_at)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_page_views_path ON page_views(path)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_page_views_user ON page_views(user_id)`);
+      console.log('✅ Created page_views table');
+    } catch (err) {
+      // Table already exists, that's fine
     }
 
     // Create default admin user if none exists
