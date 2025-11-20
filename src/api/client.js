@@ -106,6 +106,17 @@ export const api = {
   // Consistency Report
   getConsistencyReport: () => client.get('/admin/consistency-report'),
 
+  // Feedback
+  getFeedback: (params) => {
+    const queryString = new URLSearchParams(params).toString();
+    return client.get(`/feedback${queryString ? `?${queryString}` : ''}`);
+  },
+  createFeedback: (data) => client.post('/feedback', data),
+  updateFeedback: (id, data) => client.put(`/feedback/${id}`, data),
+  respondToFeedback: (id, response) => client.put(`/feedback/${id}/respond`, { response }),
+  resolveFeedback: (id) => client.put(`/feedback/${id}/resolve`),
+  editFeedbackResponse: (id, response) => client.put(`/feedback/${id}/edit-response`, { response }),
+
   // Import/Export
   downloadImportTemplate: () => client.get('/import/template', { responseType: 'blob' }),
   importData: (file) => {

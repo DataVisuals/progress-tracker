@@ -352,60 +352,31 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
       // Load feedback for current user's projects
       let feedbackList = [];
       try {
-        // Get all projects where current user is owner or manager
-        const userProjectIds = Object.entries(projects)
-          .filter(([id, project]) => {
-            if (!currentUser) return false;
-            return project.owner_id === currentUser.id ||
-                   project.initiative_manager_id === currentUser.id;
-          })
-          .map(([id]) => id);
+        if (currentUser) {
+          // Fetch all feedback and filter on client side for user's projects
+          // The backend doesn't filter by user, so we get all feedback first
+          const feedbackResponse = await api.getFeedback({});
 
-        if (userProjectIds.length > 0) {
-          // Fetch feedback for these projects
-          const feedbackResponse = await api.getFeedback({
-            project_ids: userProjectIds,
-            limit: 10
-          });
+          if (feedbackResponse.data && Array.isArray(feedbackResponse.data)) {
+            // Get all project IDs that belong to the current user
+            const userProjectIds = Object.entries(projects)
+              .filter(([id, project]) => {
+                // Check if user is the initiative manager (by name comparison)
+                return project.initiative_manager === currentUser.name ||
+                       project.secondary_pm === currentUser.name;
+              })
+              .map(([id]) => parseInt(id));
 
-          if (feedbackResponse.data) {
-            feedbackList = feedbackResponse.data.map(fb => ({
-              ...fb,
-              projectName: projects[fb.project_id]?.name || 'Unknown Project'
-            }));
-          }
-        }
-
-        // If no real feedback, show simulated data for testing
-        if (feedbackList.length === 0) {
-          const projectNames = Object.values(projects).slice(0, 3);
-          if (projectNames.length > 0) {
-            feedbackList = [
-              {
-                project_id: Object.keys(projects)[0],
-                projectName: projectNames[0]?.name || 'Project Alpha',
-                metric_name: 'Sprint Velocity',
-                feedback_text: 'Great progress on the sprint velocity metric! The team has been consistently delivering above expectations. Keep up the momentum.',
-                created_by_name: 'Sarah Johnson',
-                created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-              },
-              {
-                project_id: Object.keys(projects)[1] || Object.keys(projects)[0],
-                projectName: projectNames[1]?.name || projectNames[0]?.name || 'Project Beta',
-                metric_name: 'Code Coverage',
-                feedback_text: 'Code coverage dropped this week. Please review the test gaps and add unit tests for the new authentication module.',
-                created_by_name: 'Mike Chen',
-                created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-              },
-              {
-                project_id: Object.keys(projects)[0],
-                projectName: projectNames[0]?.name || 'Project Alpha',
-                metric_name: 'Customer Satisfaction',
-                feedback_text: 'NPS score is trending upward - excellent work on addressing the customer pain points identified last quarter.',
-                created_by_name: 'Emily Davis',
-                created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-              }
-            ];
+            // Filter feedback for user's projects
+            feedbackList = feedbackResponse.data
+              .filter(fb => userProjectIds.includes(fb.project_id))
+              .slice(0, 10) // Limit to 10 items
+              .map(fb => ({
+                ...fb,
+                projectName: projects[fb.project_id]?.name || 'Unknown Project',
+                feedback_text: fb.text, // Map backend 'text' field to frontend 'feedback_text'
+                created_by_name: fb.user_name // Map backend 'user_name' to frontend 'created_by_name'
+              }));
           }
         }
       } catch (feedbackErr) {
