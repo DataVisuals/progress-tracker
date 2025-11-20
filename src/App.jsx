@@ -16,7 +16,7 @@ import ProjectLinksEditor from './components/ProjectLinksEditor';
 import UserProfile from './components/UserProfile';
 import ConsistencyReport from './components/ConsistencyReport';
 import ImportData from './components/ImportData';
-import TipsSplash from './components/TipsSplash';
+import WhatsNew from './components/WhatsNew';
 import UserActivityReport from './components/UserActivityReport';
 import HomePage from './components/HomePage';
 import { api } from './api/client';
@@ -62,7 +62,7 @@ function App() {
   const [showImportData, setShowImportData] = useState(false);
   const [showPortfolioManager, setShowPortfolioManager] = useState(false);
   const [showPortfolioReport, setShowPortfolioReport] = useState(false);
-  const [showTipsSplash, setShowTipsSplash] = useState(false);
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [showUserActivity, setShowUserActivity] = useState(false);
   const [targetChangePrompt, setTargetChangePrompt] = useState(null); // { newTarget, resolve }
   const [allProjectsData, setAllProjectsData] = useState({}); // For HomePage red metrics
@@ -97,7 +97,7 @@ function App() {
     // Show tips splash on first load unless dismissed
     const tipsDismissed = localStorage.getItem('tipsSplashDismissed');
     if (!tipsDismissed) {
-      setShowTipsSplash(true);
+      setShowWhatsNew(true);
     }
   }, []);
 
@@ -871,8 +871,8 @@ function App() {
             </h1>
             <button
               className="help-icon-btn"
-              onClick={() => setShowTipsSplash(true)}
-              title="Tips & Features"
+              onClick={() => setShowWhatsNew(true)}
+              title="What's New"
             >
               <MdHelpOutline />
             </button>
@@ -1549,9 +1549,9 @@ function App() {
         </div>
       )}
 
-      {showTipsSplash && (
-        <TipsSplash
-          onClose={() => setShowTipsSplash(false)}
+      {showWhatsNew && (
+        <WhatsNew
+          onClose={() => setShowWhatsNew(false)}
           onDismissPermanently={() => {
             localStorage.setItem('tipsSplashDismissed', 'true');
           }}
