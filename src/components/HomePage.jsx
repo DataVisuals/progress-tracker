@@ -295,10 +295,27 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
         }
       }
 
-      setRecentCommentary(enrichedCommentary);
+      // Group commentary by portfolio and sort
+      const groupedCommentary = enrichedCommentary.reduce((acc, comment) => {
+        const portfolio = comment.portfolioName || 'No Portfolio';
+        if (!acc[portfolio]) {
+          acc[portfolio] = [];
+        }
+        acc[portfolio].push(comment);
+        return acc;
+      }, {});
+
+      // Convert to array and sort portfolios alphabetically, then flatten
+      const sortedCommentary = Object.entries(groupedCommentary)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .flatMap(([portfolio, comments]) => comments);
+
+      setRecentCommentary(sortedCommentary);
 
       // Calculate red metrics across all projects
       const redMetricsList = [];
+
+      console.log('Calculating red metrics, projectsData:', Object.keys(projectsData).length, 'projects');
 
       Object.entries(projectsData).forEach(([projectId, data]) => {
         if (!data || !Array.isArray(data)) return;
@@ -345,24 +362,49 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
             }
           }
 
-          if (currentPeriodIndex === -1) return;
-
-          const currentPeriod = sortedPeriods[currentPeriodIndex];
-          const isInCurrentPeriod = currentPeriodIndex === sortedPeriods.length - 1 ||
-            today < new Date(sortedPeriods[currentPeriodIndex + 1].reporting_date);
-
-          // If we're in the current period and complete is 0, skip (avoid false positives)
-          const complete = parseFloat(currentPeriod.complete) || 0;
-          if (isInCurrentPeriod && complete === 0) {
-            return; // Skip metrics with no data in current period
+          if (currentPeriodIndex === -1) {
+            console.log(`Skipping ${metricName} - no current period found`);
+            return;
           }
 
+          let currentPeriod = sortedPeriods[currentPeriodIndex];
+
+          // Check if we're in the current period
+          const isLastPeriod = currentPeriodIndex === sortedPeriods.length - 1;
+          let isInCurrentPeriod = false;
+
+          if (isLastPeriod) {
+            isInCurrentPeriod = true;
+          } else {
+            const nextPeriodStart = new Date(sortedPeriods[currentPeriodIndex + 1].reporting_date);
+            nextPeriodStart.setHours(0, 0, 0, 0);
+            isInCurrentPeriod = today < nextPeriodStart;
+          }
+
+          // If we're in the current period and complete is 0, use the previous period instead
+          if (isInCurrentPeriod && currentPeriodIndex > 0) {
+            const currentComplete = parseFloat(currentPeriod.complete) || 0;
+            if (currentComplete === 0) {
+              console.log(`${metricName}: in current period with complete=0, using previous period`);
+              currentPeriod = sortedPeriods[currentPeriodIndex - 1];
+            }
+          }
+
+          const complete = parseFloat(currentPeriod.complete) || 0;
           const expected = parseFloat(currentPeriod.expected) || 0;
-          if (expected === 0) return;
+
+          console.log(`${metricName}: periods=${sortedPeriods.length}, currentIdx=${currentPeriodIndex}, complete=${complete}, expected=${expected}`);
+
+          if (expected === 0) {
+            console.log(`  -> Skipping: expected=0`);
+            return;
+          }
 
           const variance = complete - expected;
           const variancePercent = Math.abs((variance / expected) * 100);
           const redTolerance = parseFloat(currentPeriod.red_tolerance) || 10.0;
+
+          console.log(`  -> variance=${variancePercent.toFixed(1)}%, red=${redTolerance}%, isRed=${variance < 0 && variancePercent > redTolerance}`);
 
           if (variance < 0 && variancePercent > redTolerance) {
             redMetricsList.push({
@@ -394,6 +436,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
         .sort(([a], [b]) => a.localeCompare(b))
         .flatMap(([portfolio, metrics]) => metrics);
 
+      console.log('Red metrics found:', sortedRedMetrics.length);
       setRedMetrics(sortedRedMetrics);
 
       // Load feedback for current user's projects
@@ -608,44 +651,55 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
               </div>
             ) : (
               <div className="commentary-list">
-                {recentCommentary.map((item, index) => (
-                  <div
-                    key={index}
-                    className="commentary-item"
-                    onClick={() => handleMetricClick(item.projectId, item.metricName)}
-                  >
-                    <div className="commentary-header">
-                      {item.portfolioName && (
-                        <div className="commentary-context">
-                          <span
-                            className="portfolio-dot"
-                            style={{ backgroundColor: item.portfolioColor }}
-                          />
-                          <span className="commentary-portfolio">{item.portfolioName}</span>
+                {recentCommentary.map((item, index) => {
+                  // Show portfolio header if this is the first comment in the portfolio
+                  const showPortfolioHeader = index === 0 ||
+                    item.portfolioName !== recentCommentary[index - 1].portfolioName;
+
+                  return (
+                    <React.Fragment key={index}>
+                      {showPortfolioHeader && (
+                        <div className="portfolio-group-header">
+                          {item.portfolioColor && (
+                            <span
+                              className="portfolio-header-dot"
+                              style={{ backgroundColor: item.portfolioColor }}
+                            />
+                          )}
+                          <span className="portfolio-header-name">
+                            {item.portfolioName || 'No Portfolio'}
+                          </span>
                         </div>
                       )}
-                      <div className="commentary-context">
-                        <span className="commentary-label">Project:</span>
-                        <span className="commentary-project">{item.projectName}</span>
+                      <div
+                        className="commentary-item"
+                        onClick={() => handleMetricClick(item.projectId, item.metricName)}
+                      >
+                        <div className="commentary-header">
+                          <div className="commentary-context">
+                            <span className="commentary-label">Project:</span>
+                            <span className="commentary-project">{item.projectName}</span>
+                          </div>
+                          <div className="commentary-context">
+                            <span className="commentary-label">Metric:</span>
+                            <span className="commentary-metric">{item.metricName}</span>
+                          </div>
+                          <div className="commentary-context">
+                            <span className="commentary-label">Period:</span>
+                            <span className="commentary-period">{item.periodName}</span>
+                          </div>
+                        </div>
+                        <p className="commentary-text">{item.commentary}</p>
+                        <div className="commentary-footer">
+                          {item.createdBy && (
+                            <span className="commentary-author">{item.createdBy}</span>
+                          )}
+                          <span className="commentary-time">{formatTimestamp(item.timestamp)}</span>
+                        </div>
                       </div>
-                      <div className="commentary-context">
-                        <span className="commentary-label">Metric:</span>
-                        <span className="commentary-metric">{item.metricName}</span>
-                      </div>
-                      <div className="commentary-context">
-                        <span className="commentary-label">Period:</span>
-                        <span className="commentary-period">{item.periodName}</span>
-                      </div>
-                    </div>
-                    <p className="commentary-text">{item.commentary}</p>
-                    <div className="commentary-footer">
-                      {item.createdBy && (
-                        <span className="commentary-author">{item.createdBy}</span>
-                      )}
-                      <span className="commentary-time">{formatTimestamp(item.timestamp)}</span>
-                    </div>
-                  </div>
-                ))}
+                    </React.Fragment>
+                  );
+                })}
               </div>
             )}
           </div>
