@@ -287,11 +287,13 @@
   flex: 1;
   overflow-y: auto;
   padding: 16px 20px;
-  background-color: #1f2937;
+  background-color: white;
 }
 
-:not(.dark-mode) .quadrant-content {
-  background-color: white;
+.dark-mode .home-quadrant .quadrant-content,
+html.dark-mode .home-quadrant .quadrant-content,
+html.dark-mode .quadrant-content {
+  background-color: #1f2937 !important;
 }
 
 /* Loading and Empty States */
