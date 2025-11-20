@@ -811,19 +811,27 @@ html.dark-mode .home-quadrant .quadrant-content {
 }
 
 :root.dark-mode .empty-state p {
-  color: #f9fafb;
+  color: #f9fafb !important;
 }
 
 :root.dark-mode .empty-state span {
-  color: #d1d5db;
+  color: #d1d5db !important;
 }
 
 :root.dark-mode .empty-state .empty-icon {
-  color: #9ca3af;
+  color: #9ca3af !important;
 }
 
 :root.dark-mode .empty-state.success .empty-icon {
-  color: #86efac;
+  color: #86efac !important;
+}
+
+:root.dark-mode .empty-state.success p {
+  color: #f9fafb !important;
+}
+
+:root.dark-mode .empty-state.success span {
+  color: #d1d5db !important;
 }
 
 :root.dark-mode .loading-state {
