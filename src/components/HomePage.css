@@ -287,11 +287,11 @@
   flex: 1;
   overflow-y: auto;
   padding: 16px 20px;
-  background-color: white;
+  background-color: #1f2937;
 }
 
-html.dark-mode .quadrant-content {
-  background-color: #1f2937 !important;
+:not(.dark-mode) .quadrant-content {
+  background-color: white;
 }
 
 /* Loading and Empty States */
