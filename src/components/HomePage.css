@@ -446,10 +446,10 @@ html.dark-mode .quadrant-content {
 }
 
 .metric-item {
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   padding: 10px 12px;
   background-color: #fef2f2;
   border-radius: 8px;
@@ -461,6 +461,21 @@ html.dark-mode .quadrant-content {
 .metric-item:hover {
   background-color: #fee2e2;
   border-color: #D0704d;
+}
+
+.metric-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .metric-header {
@@ -486,12 +501,6 @@ html.dark-mode .quadrant-content {
   text-overflow: ellipsis;
 }
 
-.metric-details {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
 .metric-name {
   font-size: 11px;
   color: #6b7280;
@@ -500,6 +509,8 @@ html.dark-mode .quadrant-content {
 .metric-variance {
   font-size: 12px;
   font-weight: 600;
+  min-width: 60px;
+  text-align: right;
 }
 
 .metric-variance.red {
@@ -509,6 +520,8 @@ html.dark-mode .quadrant-content {
 .metric-progress {
   font-size: 11px;
   color: #6b7280;
+  min-width: 60px;
+  text-align: right;
 }
 
 .progress-separator {

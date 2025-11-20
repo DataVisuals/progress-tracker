@@ -515,25 +515,27 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
                     className="metric-item"
                     onClick={() => handleMetricClick(item.projectId, item.metricName)}
                   >
-                    <div className="metric-header">
-                      {item.portfolioColor && (
-                        <span
-                          className="portfolio-dot"
-                          style={{ backgroundColor: item.portfolioColor }}
-                        />
-                      )}
-                      <span className="metric-project">{item.projectName}</span>
-                    </div>
-                    <div className="metric-details">
+                    <div className="metric-left">
+                      <div className="metric-header">
+                        {item.portfolioColor && (
+                          <span
+                            className="portfolio-dot"
+                            style={{ backgroundColor: item.portfolioColor }}
+                          />
+                        )}
+                        <span className="metric-project">{item.projectName}</span>
+                      </div>
                       <span className="metric-name">{item.metricName}</span>
+                    </div>
+                    <div className="metric-right">
                       <span className="metric-variance red">-{item.variancePercent}%</span>
+                      <div className="metric-progress">
+                        <span className="progress-value">{item.complete}</span>
+                        <span className="progress-separator">/</span>
+                        <span className="progress-expected">{item.expected}</span>
+                      </div>
+                      <MdArrowForward className="metric-arrow" />
                     </div>
-                    <div className="metric-progress">
-                      <span className="progress-value">{item.complete}</span>
-                      <span className="progress-separator">/</span>
-                      <span className="progress-expected">{item.expected}</span>
-                    </div>
-                    <MdArrowForward className="metric-arrow" />
                   </div>
                 ))}
               </div>
