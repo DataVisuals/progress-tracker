@@ -265,8 +265,9 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
       // Get recent commentary from audit log - filter for metric_periods table
       // Note: This requires authentication
       let enrichedCommentary = [];
-      try {
-        const commentsResponse = await api.get('/comments/recent?limit=10');
+      if (currentUser) {
+        try {
+          const commentsResponse = await api.get('/comments/recent?limit=10');
 
         enrichedCommentary = (commentsResponse.data || []).map(comment => {
           // Find portfolio info from projects
@@ -286,8 +287,9 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
             portfolioName: projectInfo ? projectInfo[1].portfolio_name : null
           };
         });
-      } catch (commentsErr) {
-        console.log('Could not load recent comments:', commentsErr.message);
+        } catch (commentsErr) {
+          console.log('Could not load recent comments:', commentsErr.message);
+        }
       }
 
       setRecentCommentary(enrichedCommentary);
