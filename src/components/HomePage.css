@@ -369,6 +369,7 @@ html.dark-mode .quadrant-content {
   flex-wrap: wrap;
   gap: 4px 8px;
   font-size: 11px;
+  justify-content: flex-start;
 }
 
 .commentary-context {
