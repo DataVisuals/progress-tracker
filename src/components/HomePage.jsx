@@ -322,24 +322,42 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
             new Date(a.reporting_date) - new Date(b.reporting_date)
           );
 
-          // Find current or most recent period
+          // Find current period (period has started but next period hasn't started yet)
           const today = new Date();
           today.setHours(0, 0, 0, 0);
 
-          let currentPeriod = null;
-          for (let i = sortedPeriods.length - 1; i >= 0; i--) {
-            const periodDate = new Date(sortedPeriods[i].reporting_date);
-            if (periodDate <= today) {
-              currentPeriod = sortedPeriods[i];
-              break;
+          let currentPeriodIndex = -1;
+          for (let i = 0; i < sortedPeriods.length; i++) {
+            const periodStart = new Date(sortedPeriods[i].reporting_date);
+            periodStart.setHours(0, 0, 0, 0);
+
+            if (periodStart <= today) {
+              if (i + 1 < sortedPeriods.length) {
+                const nextPeriodStart = new Date(sortedPeriods[i + 1].reporting_date);
+                nextPeriodStart.setHours(0, 0, 0, 0);
+                if (today < nextPeriodStart) {
+                  currentPeriodIndex = i;
+                  break;
+                }
+              } else {
+                currentPeriodIndex = i;
+              }
             }
           }
 
-          if (!currentPeriod) return;
+          if (currentPeriodIndex === -1) return;
 
+          const currentPeriod = sortedPeriods[currentPeriodIndex];
+          const isInCurrentPeriod = currentPeriodIndex === sortedPeriods.length - 1 ||
+            today < new Date(sortedPeriods[currentPeriodIndex + 1].reporting_date);
+
+          // If we're in the current period and complete is 0, skip (avoid false positives)
           const complete = parseFloat(currentPeriod.complete) || 0;
-          const expected = parseFloat(currentPeriod.expected) || 0;
+          if (isInCurrentPeriod && complete === 0) {
+            return; // Skip metrics with no data in current period
+          }
 
+          const expected = parseFloat(currentPeriod.expected) || 0;
           if (expected === 0) return;
 
           const variance = complete - expected;
