@@ -69,6 +69,11 @@
   min-height: 320px;
 }
 
+/* Expand grid when no feedback section */
+.home-grid.no-feedback {
+  height: calc(100vh - 200px);
+}
+
 /* Feedback Section */
 .feedback-section {
   margin-top: 12px;

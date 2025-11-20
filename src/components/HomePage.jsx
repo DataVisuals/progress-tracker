@@ -451,7 +451,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
         </div>
       </div>
 
-      <div className="home-grid">
+      <div className={`home-grid ${feedback.length === 0 ? 'no-feedback' : ''}`}>
         {/* Top Left - Quick Overview */}
         <div className="home-quadrant summary-quadrant">
           <div className="quadrant-header">
