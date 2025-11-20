@@ -37,7 +37,8 @@ import './HomePage.css';
 
 const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) => {
   const [recentCommentary, setRecentCommentary] = useState([]);
-  const [redMetrics, setRedMetrics] = useState([]);
+  const [atRiskMetrics, setAtRiskMetrics] = useState([]);
+  const [ragFilter, setRagFilter] = useState('all'); // 'all', 'red', 'amber'
   const [randomTips, setRandomTips] = useState([]);
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -312,10 +313,10 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
 
       setRecentCommentary(sortedCommentary);
 
-      // Calculate red metrics across all projects
-      const redMetricsList = [];
+      // Calculate at-risk metrics (red and amber) across all projects
+      const atRiskMetricsList = [];
 
-      console.log('Calculating red metrics, projectsData:', Object.keys(projectsData).length, 'projects');
+      console.log('Calculating at-risk metrics, projectsData:', Object.keys(projectsData).length, 'projects');
 
       Object.entries(projectsData).forEach(([projectId, data]) => {
         if (!data || !Array.isArray(data)) return;
@@ -403,11 +404,23 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
           const variance = complete - expected;
           const variancePercent = Math.abs((variance / expected) * 100);
           const redTolerance = parseFloat(currentPeriod.red_tolerance) || 10.0;
+          const amberTolerance = parseFloat(currentPeriod.amber_tolerance) || 5.0;
 
-          console.log(`  -> variance=${variancePercent.toFixed(1)}%, red=${redTolerance}%, isRed=${variance < 0 && variancePercent > redTolerance}`);
+          // Determine RAG status
+          let ragStatus = 'green';
+          if (variance < 0) {
+            if (variancePercent > redTolerance) {
+              ragStatus = 'red';
+            } else if (variancePercent > amberTolerance) {
+              ragStatus = 'amber';
+            }
+          }
 
-          if (variance < 0 && variancePercent > redTolerance) {
-            redMetricsList.push({
+          console.log(`  -> variance=${variancePercent.toFixed(1)}%, amber=${amberTolerance}%, red=${redTolerance}%, status=${ragStatus}`);
+
+          // Add to list if red or amber
+          if (ragStatus === 'red' || ragStatus === 'amber') {
+            atRiskMetricsList.push({
               projectId,
               projectName: projectInfo.name,
               metricName,
@@ -415,14 +428,15 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
               expected,
               variancePercent: variancePercent.toFixed(1),
               portfolioColor: projectInfo.portfolio_color,
-              portfolioName: projectInfo.portfolio_name
+              portfolioName: projectInfo.portfolio_name,
+              ragStatus
             });
           }
         });
       });
 
       // Group by portfolio and sort
-      const groupedByPortfolio = redMetricsList.reduce((acc, metric) => {
+      const groupedByPortfolio = atRiskMetricsList.reduce((acc, metric) => {
         const portfolio = metric.portfolioName || 'No Portfolio';
         if (!acc[portfolio]) {
           acc[portfolio] = [];
@@ -432,12 +446,12 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
       }, {});
 
       // Convert to array and sort portfolios alphabetically
-      const sortedRedMetrics = Object.entries(groupedByPortfolio)
+      const sortedAtRiskMetrics = Object.entries(groupedByPortfolio)
         .sort(([a], [b]) => a.localeCompare(b))
         .flatMap(([portfolio, metrics]) => metrics);
 
-      console.log('Red metrics found:', sortedRedMetrics.length);
-      setRedMetrics(sortedRedMetrics);
+      console.log('At-risk metrics found:', sortedAtRiskMetrics.length, '(red:', sortedAtRiskMetrics.filter(m => m.ragStatus === 'red').length, ', amber:', sortedAtRiskMetrics.filter(m => m.ragStatus === 'amber').length, ')');
+      setAtRiskMetrics(sortedAtRiskMetrics);
 
       // Load feedback for current user's projects
       let feedbackList = [];
@@ -508,6 +522,14 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
     return sum + metrics.size;
   }, 0);
 
+  // Filter metrics based on RAG filter
+  const filteredMetrics = ragFilter === 'all'
+    ? atRiskMetrics
+    : atRiskMetrics.filter(m => m.ragStatus === ragFilter);
+
+  const redCount = atRiskMetrics.filter(m => m.ragStatus === 'red').length;
+  const amberCount = atRiskMetrics.filter(m => m.ragStatus === 'amber').length;
+
   return (
     <div className="home-page">
       <div className="home-header">
@@ -525,7 +547,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
             <span className="stat-label">Metrics</span>
           </div>
           <div className="stat-item">
-            <span className="stat-value red">{redMetrics.length}</span>
+            <span className="stat-value red">{atRiskMetrics.length}</span>
             <span className="stat-label">At Risk</span>
           </div>
         </div>
@@ -549,11 +571,11 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
                 <div className="summary-label">Total Metrics</div>
               </div>
               <div className="summary-card warning">
-                <div className="summary-number">{redMetrics.length}</div>
+                <div className="summary-number">{atRiskMetrics.length}</div>
                 <div className="summary-label">At Risk</div>
               </div>
               <div className="summary-card success">
-                <div className="summary-number">{metricCount - redMetrics.length}</div>
+                <div className="summary-number">{metricCount - atRiskMetrics.length}</div>
                 <div className="summary-label">On Track</div>
               </div>
             </div>
@@ -574,22 +596,48 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
           <div className="quadrant-header">
             <MdWarning className="quadrant-icon warning" />
             <h2>Metrics at Risk</h2>
+            <div className="rag-filter-buttons">
+              <button
+                className={`rag-filter-btn ${ragFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setRagFilter('all')}
+              >
+                All ({atRiskMetrics.length})
+              </button>
+              <button
+                className={`rag-filter-btn red ${ragFilter === 'red' ? 'active' : ''}`}
+                onClick={() => setRagFilter('red')}
+              >
+                Red ({redCount})
+              </button>
+              <button
+                className={`rag-filter-btn amber ${ragFilter === 'amber' ? 'active' : ''}`}
+                onClick={() => setRagFilter('amber')}
+              >
+                Amber ({amberCount})
+              </button>
+            </div>
           </div>
           <div className="quadrant-content">
             {loading ? (
               <div className="loading-state">Loading...</div>
-            ) : redMetrics.length === 0 ? (
+            ) : atRiskMetrics.length === 0 ? (
               <div className="empty-state success">
                 <MdTrendingUp className="empty-icon" />
                 <p>All metrics on track!</p>
                 <span>No metrics are currently at risk</span>
               </div>
+            ) : filteredMetrics.length === 0 ? (
+              <div className="empty-state success">
+                <MdTrendingUp className="empty-icon" />
+                <p>No {ragFilter} metrics!</p>
+                <span>Try selecting a different filter</span>
+              </div>
             ) : (
               <div className="metrics-list">
-                {redMetrics.map((item, index) => {
+                {filteredMetrics.map((item, index) => {
                   // Show portfolio header if this is the first metric in the portfolio
                   const showPortfolioHeader = index === 0 ||
-                    item.portfolioName !== redMetrics[index - 1].portfolioName;
+                    item.portfolioName !== filteredMetrics[index - 1].portfolioName;
 
                   return (
                     <React.Fragment key={index}>
@@ -607,7 +655,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
                         </div>
                       )}
                       <div
-                        className="metric-item"
+                        className={`metric-item ${item.ragStatus}`}
                         onClick={() => handleMetricClick(item.projectId, item.metricName)}
                       >
                         <div className="metric-left">
@@ -617,7 +665,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
                           <span className="metric-name">{item.metricName}</span>
                         </div>
                         <div className="metric-right">
-                          <span className="metric-variance red">-{item.variancePercent}%</span>
+                          <span className={`metric-variance ${item.ragStatus}`}>-{item.variancePercent}%</span>
                           <div className="metric-progress">
                             <span className="progress-value">{item.complete}</span>
                             <span className="progress-separator">/</span>

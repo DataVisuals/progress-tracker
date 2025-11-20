@@ -268,6 +268,49 @@
   font-size: 15px;
   font-weight: 600;
   color: #374151;
+  flex: 1;
+}
+
+.rag-filter-buttons {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.rag-filter-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #6b7280;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rag-filter-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.rag-filter-btn.active {
+  background: #003c71;
+  color: white;
+  border-color: #003c71;
+}
+
+.rag-filter-btn.red.active {
+  background: #D0704d;
+  border-color: #D0704d;
+}
+
+.rag-filter-btn.amber.active {
+  background: #f5ad5b;
+  border-color: #f5ad5b;
+  color: #1f2937;
 }
 
 .quadrant-icon {
@@ -492,6 +535,16 @@ html.dark-mode .quadrant-content {
   border-color: #D0704d;
 }
 
+.metric-item.amber {
+  background-color: #fffbeb;
+  border-color: #fde68a;
+}
+
+.metric-item.amber:hover {
+  background-color: #fef3c7;
+  border-color: #f5ad5b;
+}
+
 .metric-left {
   flex: 1;
   min-width: 0;
@@ -544,6 +597,10 @@ html.dark-mode .quadrant-content {
 
 .metric-variance.red {
   color: #D0704d;
+}
+
+.metric-variance.amber {
+  color: #f5ad5b;
 }
 
 .metric-progress {
@@ -721,6 +778,34 @@ html.dark-mode .quadrant-content {
   color: #f9fafb;
 }
 
+:root.dark-mode .rag-filter-btn {
+  background: #1f2937;
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+:root.dark-mode .rag-filter-btn:hover {
+  background: #374151;
+  border-color: #6b7280;
+}
+
+:root.dark-mode .rag-filter-btn.active {
+  background: #00aeef;
+  border-color: #00aeef;
+  color: white;
+}
+
+:root.dark-mode .rag-filter-btn.red.active {
+  background: #D0704d;
+  border-color: #D0704d;
+}
+
+:root.dark-mode .rag-filter-btn.amber.active {
+  background: #f5ad5b;
+  border-color: #f5ad5b;
+  color: #1f2937;
+}
+
 
 :root.dark-mode .commentary-item {
   background-color: #374151;
@@ -783,6 +868,16 @@ html.dark-mode .quadrant-content {
   border-color: #fca5a5;
 }
 
+:root.dark-mode .metric-item.amber {
+  background-color: #451a03;
+  border-color: #92400e;
+}
+
+:root.dark-mode .metric-item.amber:hover {
+  background-color: #78350f;
+  border-color: #f5ad5b;
+}
+
 :root.dark-mode .metric-project {
   color: #e0f2fe;
 }
@@ -793,6 +888,10 @@ html.dark-mode .quadrant-content {
 
 :root.dark-mode .metric-variance.red {
   color: #fca5a5;
+}
+
+:root.dark-mode .metric-variance.amber {
+  color: #fcd34d;
 }
 
 :root.dark-mode .metric-progress {
