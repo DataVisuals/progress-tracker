@@ -94,11 +94,7 @@ function App() {
       }
     }
 
-    // Show tips splash on first load unless dismissed
-    const tipsDismissed = localStorage.getItem('tipsSplashDismissed');
-    if (!tipsDismissed) {
-      setShowWhatsNew(true);
-    }
+    // What's New is now only opened via footer link, not on first load
   }, []);
 
   // Apply dark mode class to document
@@ -1545,9 +1541,6 @@ function App() {
       {showWhatsNew && (
         <WhatsNew
           onClose={() => setShowWhatsNew(false)}
-          onDismissPermanently={() => {
-            localStorage.setItem('tipsSplashDismissed', 'true');
-          }}
         />
       )}
 
