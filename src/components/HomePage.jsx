@@ -35,6 +35,7 @@ import {
 } from 'react-icons/md';
 import { api } from '../api/client';
 import './HomePage.css';
+import './MetricTabs.css';
 
 const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) => {
   const [recentCommentary, setRecentCommentary] = useState([]);
@@ -871,6 +872,13 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
                             onClick={() => onNavigateToProject(targetProjectId)}
                             style={{ cursor: 'pointer' }}
                           >
+                            {issue.type === 'missing_recovery_plan' && issue.rag_status && (
+                              <span
+                                className={`metric-rag-marker ${issue.rag_status}`}
+                                title={issue.rag_status === 'red' ? 'Behind schedule' : 'At risk'}
+                                style={{ marginRight: '8px', flexShrink: 0 }}
+                              />
+                            )}
                             <div className="issue-content">
                               <div className="issue-title">{issueTitle}</div>
                               <div className="issue-subtitle">

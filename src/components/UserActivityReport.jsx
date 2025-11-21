@@ -251,7 +251,7 @@ const UserActivityReport = ({ onClose }) => {
                         <BarChart
                           data={getChartData()}
                           layout="vertical"
-                          margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
+                          margin={{ top: 20, right: 30, left: 150, bottom: 5 }}
                           barSize={16}
                         >
                           <CartesianGrid strokeDasharray="3 3" />
@@ -259,8 +259,9 @@ const UserActivityReport = ({ onClose }) => {
                           <YAxis
                             dataKey="name"
                             type="category"
-                            width={90}
+                            width={140}
                             tick={{ fontSize: 12 }}
+                            interval={0}
                           />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend

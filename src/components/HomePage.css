@@ -773,7 +773,7 @@ html.dark-mode .quadrant-content {
 
 .getting-started h3 {
   margin: 0 0 12px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #374151;
 }
@@ -785,7 +785,7 @@ html.dark-mode .quadrant-content {
 }
 
 .getting-started li {
-  font-size: 13px;
+  font-size: 14px;
   color: #6b7280;
   line-height: 1.6;
 }
@@ -1248,6 +1248,7 @@ html.dark-mode .quadrant-content {
 
 .inconsistency-detail {
   display: flex;
+  align-items: center;
   gap: 10px;
   padding: 8px;
   background: white;
