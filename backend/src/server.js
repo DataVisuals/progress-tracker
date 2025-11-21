@@ -2171,7 +2171,7 @@ function createApp(dbPath) {
   // ===== COMMENTS (for periods) =====
 
   // Get recent comments across all projects (for dashboard)
-  app.get('/api/comments/recent', authenticateToken, async (req, res) => {
+  app.get('/api/comments/recent', async (req, res) => {
     try {
       const limit = parseInt(req.query.limit) || 10;
       const comments = await dbAll(`
@@ -3220,7 +3220,7 @@ function createApp(dbPath) {
   });
 
   // Endpoint to get inconsistency report (all users can see, shows issues by PM)
-  app.get('/api/inconsistency-report', authenticateToken, async (req, res) => {
+  app.get('/api/inconsistency-report', async (req, res) => {
     try {
       const inconsistencies = [];
 
