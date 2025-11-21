@@ -3174,7 +3174,133 @@ function createApp(dbPath) {
           details: `Project has ${duration} not covered by any metric (${gap.gap_start} to ${gap.gap_end}). Consider adding metrics to cover this period or adjusting the project timeline.`
         });
       }
-  
+
+      // 6. Find metrics that are red or amber but have no recovery plan
+      const metricsNeedingRecovery = await dbAll(`
+        SELECT DISTINCT
+          p.id as project_id,
+          p.name as project_name,
+          p.initiative_manager as pm_name,
+          m.id as metric_id,
+          m.name as metric_name,
+          mp.rag_status,
+          mp.reporting_date
+        FROM metric_periods mp
+        JOIN metrics m ON mp.metric_id = m.id
+        JOIN projects p ON m.project_id = p.id
+        LEFT JOIN recovery_plans rp ON m.id = rp.metric_id AND rp.status = 'active'
+        WHERE mp.rag_status IN ('red', 'amber')
+        AND rp.id IS NULL
+        AND mp.reporting_date = (
+          SELECT MAX(mp2.reporting_date)
+          FROM metric_periods mp2
+          WHERE mp2.metric_id = mp.metric_id
+        )
+        ${portfolioFilter}
+        ORDER BY
+          CASE mp.rag_status WHEN 'red' THEN 0 WHEN 'amber' THEN 1 END,
+          p.name, m.name
+      `, portfolioParams);
+
+      for (const metric of metricsNeedingRecovery) {
+        issues.push({
+          type: 'missing_recovery_plan',
+          severity: metric.rag_status === 'red' ? 'high' : 'warning',
+          project_id: metric.project_id,
+          project_name: metric.project_name,
+          pm_name: metric.pm_name,
+          metric_id: metric.metric_id,
+          metric_name: metric.metric_name,
+          details: `${metric.metric_name} is ${metric.rag_status.toUpperCase()} but has no recovery plan`,
+          rag_status: metric.rag_status
+        });
+      }
+
+      // 7. Find metrics missing historic data (gaps in periods)
+      const metricsWithGaps = await dbAll(`
+        WITH RECURSIVE expected_dates AS (
+          SELECT
+            m.id as metric_id,
+            m.name as metric_name,
+            m.project_id,
+            p.name as project_name,
+            p.initiative_manager as pm_name,
+            m.frequency,
+            DATE(m.start_date) as expected_date,
+            DATE(m.end_date) as end_date
+          FROM metrics m
+          JOIN projects p ON m.project_id = p.id
+          WHERE 1=1 ${portfolioFilter}
+
+          UNION ALL
+
+          SELECT
+            metric_id,
+            metric_name,
+            project_id,
+            project_name,
+            pm_name,
+            frequency,
+            CASE frequency
+              WHEN 'weekly' THEN DATE(expected_date, '+7 days')
+              WHEN 'monthly' THEN DATE(expected_date, '+1 month')
+              WHEN 'quarterly' THEN DATE(expected_date, '+3 months')
+              ELSE DATE(expected_date, '+1 day')
+            END,
+            end_date
+          FROM expected_dates
+          WHERE expected_date < end_date
+        ),
+        missing_periods AS (
+          SELECT
+            ed.metric_id,
+            ed.metric_name,
+            ed.project_id,
+            ed.project_name,
+            ed.pm_name,
+            ed.expected_date,
+            mp.reporting_date
+          FROM expected_dates ed
+          LEFT JOIN metric_periods mp ON ed.metric_id = mp.metric_id
+            AND DATE(mp.reporting_date) = ed.expected_date
+          WHERE mp.reporting_date IS NULL
+          AND ed.expected_date < DATE('now')
+        ),
+        gap_summary AS (
+          SELECT
+            metric_id,
+            metric_name,
+            project_id,
+            project_name,
+            pm_name,
+            COUNT(*) as missing_count,
+            MIN(expected_date) as first_gap,
+            MAX(expected_date) as last_gap
+          FROM missing_periods
+          GROUP BY metric_id, metric_name, project_id, project_name, pm_name
+          HAVING missing_count > 0
+        )
+        SELECT *
+        FROM gap_summary
+        ORDER BY missing_count DESC, project_name, metric_name
+      `, portfolioParams);
+
+      for (const metric of metricsWithGaps) {
+        issues.push({
+          type: 'missing_historic_data',
+          severity: 'warning',
+          project_id: metric.project_id,
+          project_name: metric.project_name,
+          pm_name: metric.pm_name,
+          metric_id: metric.metric_id,
+          metric_name: metric.metric_name,
+          details: `${metric.metric_name} is missing ${metric.missing_count} period(s) of historic data between ${metric.first_gap} and ${metric.last_gap}`,
+          missing_count: metric.missing_count,
+          first_gap: metric.first_gap,
+          last_gap: metric.last_gap
+        });
+      }
+
       res.json({
         generated_at: new Date().toISOString(),
         total_issues: issues.length,

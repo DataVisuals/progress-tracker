@@ -198,6 +198,13 @@
   overflow-y: auto;
 }
 
+.issue-detail-text {
+  font-size: 12px;
+  color: #4b5563;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
 .issue-project,
 .issue-metric,
 .issue-details {
@@ -363,6 +370,10 @@
 :root.dark-mode .pm-name,
 :root.dark-mode .metric-name {
   color: #9ca3af;
+}
+
+:root.dark-mode .issue-detail-text {
+  color: #d1d5db;
 }
 
 :root.dark-mode .issue-project,

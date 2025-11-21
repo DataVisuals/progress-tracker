@@ -18,6 +18,7 @@ import ImportData from './components/ImportData';
 import WhatsNew from './components/WhatsNew';
 import UserActivityReport from './components/UserActivityReport';
 import PageHeatmapReport from './components/PageHeatmapReport';
+import ConsistencyReport from './components/ConsistencyReport';
 import HomePage from './components/HomePage';
 import { api } from './api/client';
 import { selectStyles } from './components/SelectStyles';
@@ -64,6 +65,7 @@ function App() {
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [showUserActivity, setShowUserActivity] = useState(false);
   const [showPageHeatmap, setShowPageHeatmap] = useState(false);
+  const [showConsistencyReport, setShowConsistencyReport] = useState(false);
   const [targetChangePrompt, setTargetChangePrompt] = useState(null); // { newTarget, resolve }
   const [allProjectsData, setAllProjectsData] = useState({}); // For HomePage red metrics
   const [darkMode, setDarkMode] = useState(() => {
@@ -958,6 +960,9 @@ function App() {
                     </button>
                     <button onMouseDown={() => { setShowPageHeatmap(true); setShowAdminDropdown(false); }}>
                       Page Heatmap
+                    </button>
+                    <button onMouseDown={() => { setShowConsistencyReport(true); setShowAdminDropdown(false); }}>
+                      Data Consistency Report
                     </button>
                   </div>
                 )}

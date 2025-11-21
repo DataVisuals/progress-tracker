@@ -59,7 +59,39 @@ const ConsistencyReport = ({ onNavigate }) => {
 
   const renderIssueTitle = (issue) => {
     // Render title with appropriate links
-    if (issue.type === 'missing_metric_description' && issue.metric_name) {
+    if (issue.type === 'missing_recovery_plan' && issue.metric_name) {
+      return (
+        <>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handleMetricClick(issue.project_id, issue.metric_id);
+            }}
+            className="issue-title-link"
+          >
+            {issue.metric_name}
+          </a>
+          {` is ${issue.rag_status?.toUpperCase()} but has No Recovery Plan`}
+        </>
+      );
+    } else if (issue.type === 'missing_historic_data' && issue.metric_name) {
+      return (
+        <>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handleMetricClick(issue.project_id, issue.metric_id);
+            }}
+            className="issue-title-link"
+          >
+            {issue.metric_name}
+          </a>
+          {` is Missing ${issue.missing_count} Period(s) of Historic Data`}
+        </>
+      );
+    } else if (issue.type === 'missing_metric_description' && issue.metric_name) {
       return (
         <>
           <a
@@ -271,6 +303,11 @@ const ConsistencyReport = ({ onNavigate }) => {
               </div>
 
               <div className="issue-body">
+                {issue.type === 'missing_historic_data' && issue.first_gap && issue.last_gap && (
+                  <div className="issue-detail-text">
+                    Missing data between <strong>{issue.first_gap}</strong> and <strong>{issue.last_gap}</strong>
+                  </div>
+                )}
 
                 {issue.type === 'vacation_month_growth' && issue.periods && (
                   <div className="issue-data">

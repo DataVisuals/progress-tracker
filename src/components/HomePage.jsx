@@ -866,7 +866,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
                           <div
                             key={idx}
                             className="inconsistency-detail"
-                            onClick={() => handleProjectNavigation(targetProjectId)}
+                            onClick={() => onNavigateToProject(targetProjectId)}
                             style={{ cursor: 'pointer' }}
                           >
                             <div className="issue-content">
