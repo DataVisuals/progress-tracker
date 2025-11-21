@@ -766,16 +766,34 @@ html.dark-mode .quadrant-content {
 }
 
 .getting-started {
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
+  margin-top: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
   text-align: left;
 }
 
 .getting-started h3 {
   margin: 0 0 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0369a1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.getting-started h3::before {
+  content: "";
+  width: 20px;
+  height: 20px;
+  background: #0369a1;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z'/%3E%3C/svg%3E") no-repeat center;
+  mask-size: contain;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z'/%3E%3C/svg%3E") no-repeat center;
+  -webkit-mask-size: contain;
+  flex-shrink: 0;
 }
 
 .getting-started ul {
@@ -786,8 +804,13 @@ html.dark-mode .quadrant-content {
 
 .getting-started li {
   font-size: 14px;
-  color: #6b7280;
-  line-height: 1.6;
+  color: #0c4a6e;
+  line-height: 1.7;
+  margin-bottom: 6px;
+}
+
+.getting-started li:last-child {
+  margin-bottom: 0;
 }
 
 /* Dark Mode Styles */
@@ -1006,15 +1029,20 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .getting-started {
-  border-top-color: #4b5563;
+  background: linear-gradient(135deg, #1e3a5f 0%, #0f2744 100%);
+  border-color: #1e40af;
 }
 
 :root.dark-mode .getting-started h3 {
-  color: #f9fafb;
+  color: #93c5fd;
+}
+
+:root.dark-mode .getting-started h3::before {
+  background: #93c5fd;
 }
 
 :root.dark-mode .getting-started li {
-  color: #9ca3af;
+  color: #bfdbfe;
 }
 
 :root.dark-mode .empty-state p {
