@@ -1436,20 +1436,49 @@ function createApp(dbPath) {
       if (!(await canEditProject(req.user.userId, req.params.id))) {
         return res.status(403).json({ error: 'You do not have permission to delete this project' });
       }
-  
+
       const oldProject = await dbGet('SELECT * FROM projects WHERE id = ?', [req.params.id]);
+
+      if (!oldProject) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+
+      // Check for dependencies that would prevent deletion
+      const metrics = await dbAll('SELECT id, name FROM metrics WHERE project_id = ?', [req.params.id]);
+      const links = await dbAll('SELECT id FROM project_links WHERE project_id = ?', [req.params.id]);
+      const permissions = await dbAll('SELECT id FROM project_permissions WHERE project_id = ?', [req.params.id]);
+
+      if (metrics.length > 0) {
+        const metricNames = metrics.map(m => m.name).join(', ');
+        return res.status(400).json({
+          error: `Cannot delete project "${oldProject.name}" because it has ${metrics.length} metric(s): ${metricNames}. Please delete the metrics first.`
+        });
+      }
+
+      // Delete related data first
+      if (links.length > 0) {
+        await dbRun('DELETE FROM project_links WHERE project_id = ?', [req.params.id]);
+      }
+      if (permissions.length > 0) {
+        await dbRun('DELETE FROM project_permissions WHERE project_id = ?', [req.params.id]);
+      }
+
+      // Now delete the project
       await dbRun('DELETE FROM projects WHERE id = ?', [req.params.id]);
-  
+
       await logAudit(req.user, 'DELETE', 'projects', req.params.id,
         { name: oldProject.name, description: oldProject.description },
         null,
         `Deleted project "${oldProject.name}"`,
         req.ip
       );
-  
+
       res.json({ success: true });
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      console.error('Error deleting project:', err);
+      res.status(500).json({
+        error: `Failed to delete project: ${err.message}. This may be due to database constraints or related data.`
+      });
     }
   });
   
