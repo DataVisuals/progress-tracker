@@ -57,17 +57,123 @@ const ConsistencyReport = ({ onNavigate }) => {
     return <span className={`severity-badge ${classMap[severity]}`}>{severity.toUpperCase()}</span>;
   };
 
-  const getTypeLabel = (type) => {
-    const labels = {
-      vacation_month_growth: 'Vacation Month Growth',
-      all_back_loaded: 'Back-Loaded Growth',
-      single_metric: 'Single Metric Project'
-    };
-    return labels[type] || type;
+  const renderIssueTitle = (issue) => {
+    // Render title with appropriate links
+    if (issue.type === 'missing_metric_description' && issue.metric_name) {
+      return (
+        <>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handleMetricClick(issue.project_id, issue.metric_id);
+            }}
+            className="issue-title-link"
+          >
+            {issue.metric_name}
+          </a>
+          {' is Missing a Description'}
+        </>
+      );
+    } else if (issue.type === 'missing_project_description' || issue.details === 'Project missing description') {
+      return (
+        <>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handleProjectClick(issue.project_id);
+            }}
+            className="issue-title-link"
+          >
+            {issue.project_name}
+          </a>
+          {' is Missing a Description'}
+        </>
+      );
+    } else if (issue.type === 'missing_documentation') {
+      return (
+        <>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handleProjectClick(issue.project_id);
+            }}
+            className="issue-title-link"
+          >
+            {issue.project_name}
+          </a>
+          {' has No Documentation Links'}
+        </>
+      );
+    } else if (issue.type === 'vacation_month_growth') {
+      const months = issue.periods?.map(p => {
+        const month = new Date(p.date).getMonth() + 1;
+        return month === 1 ? 'January (December work)' : 'August (July/August work)';
+      }).join(', ') || '';
+      return (
+        <>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handleMetricClick(issue.project_id, issue.metric_id);
+            }}
+            className="issue-title-link"
+          >
+            {issue.metric_name || issue.project_name}
+          </a>
+          {` shows Normal Growth During Vacation Months: ${months}`}
+        </>
+      );
+    } else if (issue.type === 'all_back_loaded') {
+      return (
+        <>
+          {'All Metrics in '}
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handleProjectClick(issue.project_id);
+            }}
+            className="issue-title-link"
+          >
+            {issue.project_name}
+          </a>
+          {' are Back-Loaded'}
+        </>
+      );
+    } else if (issue.type === 'single_metric') {
+      return (
+        <>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handleProjectClick(issue.project_id);
+            }}
+            className="issue-title-link"
+          >
+            {issue.project_name}
+          </a>
+          {' has Only One Metric'}
+        </>
+      );
+    }
+    // Fallback to details if no specific formatting
+    return issue.details;
   };
 
   const handleProjectClick = (projectId) => {
     if (onNavigate) {
+      onNavigate(projectId);
+    }
+  };
+
+  const handleMetricClick = (projectId, metricId) => {
+    if (onNavigate) {
+      // Navigate to project, which will show the metric
       onNavigate(projectId);
     }
   };
@@ -143,37 +249,28 @@ const ConsistencyReport = ({ onNavigate }) => {
           {report.issues.map((issue, index) => (
             <div key={index} className="issue-card">
               <div className="issue-header">
-                <div className="issue-title">
-                  {getSeverityBadge(issue.severity)}
-                  <span className="issue-type">{getTypeLabel(issue.type)}</span>
+                <div className="issue-details-primary">
+                  {renderIssueTitle(issue)}
+                </div>
+                <div className="issue-project-secondary">
+                  {/* Show project link if it's not already in the title */}
+                  {!['missing_project_description', 'missing_documentation', 'all_back_loaded', 'single_metric'].includes(issue.type) && (
+                    <a
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleProjectClick(issue.project_id);
+                      }}
+                      className="project-link"
+                    >
+                      {issue.project_name}
+                    </a>
+                  )}
+                  {issue.pm_name && <span className="pm-name">{!['missing_project_description', 'missing_documentation', 'all_back_loaded', 'single_metric'].includes(issue.type) ? ' • ' : ''}{issue.pm_name}</span>}
                 </div>
               </div>
 
               <div className="issue-body">
-                <div className="issue-project">
-                  <strong>Project:</strong>
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleProjectClick(issue.project_id);
-                    }}
-                    className="project-link"
-                  >
-                    {issue.project_name}
-                  </a>
-                  {issue.pm_name && <span className="pm-name"> (<strong>Initiative Manager:</strong> {issue.pm_name})</span>}
-                </div>
-
-                {issue.metric_name && (
-                  <div className="issue-metric">
-                    <strong>Metric:</strong> {issue.metric_name}
-                  </div>
-                )}
-
-                <div className="issue-details">
-                  {issue.details}
-                </div>
 
                 {issue.type === 'vacation_month_growth' && issue.periods && (
                   <div className="issue-data">

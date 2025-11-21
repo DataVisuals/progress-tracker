@@ -1533,15 +1533,6 @@ function App() {
           onClose={() => setShowWhatsNew(false)}
         />
       )}
-
-      <footer className="app-footer">
-        <button
-          className="footer-link"
-          onClick={() => setShowWhatsNew(true)}
-        >
-          What's New
-        </button>
-      </footer>
     </div>
   );
 }

@@ -45,6 +45,9 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
   const [loading, setLoading] = useState(true);
   const loadingRef = useRef(false); // Track if data is currently being loaded
   const [recoveryPlans, setRecoveryPlans] = useState([]); // Track active recovery plans
+  const [inconsistencies, setInconsistencies] = useState(null); // Inconsistency report data
+  const [showTipsModal, setShowTipsModal] = useState(false); // Modal for tips
+  const [showWhatsNewModal, setShowWhatsNewModal] = useState(false); // Modal for what's new
 
   // Tips from the TipsSplash component
   const allTips = [
@@ -510,6 +513,16 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
         console.log('Could not load feedback:', feedbackErr.message);
       }
       setFeedback(feedbackList);
+
+      // Fetch inconsistency report
+      try {
+        if (currentUser) {
+          const inconsistencyResponse = await api.get('/inconsistency-report');
+          setInconsistencies(inconsistencyResponse.data);
+        }
+      } catch (inconsistencyErr) {
+        console.log('Could not load inconsistency report:', inconsistencyErr.message);
+      }
     } catch (err) {
       console.error('Failed to load home page data:', err);
     } finally {
@@ -797,19 +810,98 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
           </div>
         </div>
 
-        {/* Bottom Right - Tips */}
-        <div className="home-quadrant tips-quadrant">
+        {/* Bottom Right - Inconsistency Report */}
+        <div className="home-quadrant inconsistency-quadrant">
           <div className="quadrant-header">
-            <MdLightbulb className="quadrant-icon tip" />
-            <h2>Tips & Best Practices</h2>
+            <MdWarning className="quadrant-icon warning" />
+            <h2>Inconsistencies</h2>
           </div>
           <div className="quadrant-content">
-            <div className="tips-list">
-              {randomTips.map((tip, index) => (
-                <div key={index} className="tip-item">
-                  <div className="tip-icon-wrapper">
-                    {tip.icon}
+            {!inconsistencies ? (
+              <div className="loading-text">Loading...</div>
+            ) : inconsistencies.total_inconsistencies === 0 ? (
+              <div className="no-inconsistencies">
+                <MdCheckCircle style={{ fontSize: '48px', color: '#10b981', marginBottom: '8px' }} />
+                <p>No inconsistencies found</p>
+              </div>
+            ) : (
+              <div className="inconsistency-list">
+                {inconsistencies.summary.map((pmData, index) => (
+                  <div key={index} className="inconsistency-pm-item">
+                    <div className="inconsistency-pm-header">
+                      <span className="pm-name">{pmData.pm_name}</span>
+                      <div className="inconsistency-counts">
+                        <span className="total-count">{pmData.total}</span>
+                      </div>
+                    </div>
+                    {pmData.issues.slice(0, 3).map((issue, idx) => {
+                      // Create natural title based on issue type
+                      let issueTitle = '';
+                      let targetEntity = '';
+                      let targetProjectId = issue.project_id;
+
+                      if (issue.type === 'missing_metric_description' && issue.metric_name) {
+                        issueTitle = `${issue.metric_name} is Missing a Description`;
+                        targetEntity = issue.metric_name;
+                      } else if (issue.type === 'missing_project_description' || issue.details === 'Project missing description') {
+                        issueTitle = `${issue.project_name} is Missing a Description`;
+                        targetEntity = issue.project_name;
+                      } else if (issue.type === 'missing_documentation') {
+                        issueTitle = `${issue.project_name} has No Documentation Links`;
+                        targetEntity = issue.project_name;
+                      } else if (issue.type === 'missing_recovery_plan') {
+                        issueTitle = `${issue.metric_name || issue.project_name} is Missing a Recovery Plan`;
+                        targetEntity = issue.metric_name || issue.project_name;
+                      } else {
+                        issueTitle = issue.details;
+                        targetEntity = issue.metric_name || issue.project_name;
+                      }
+
+                      return (
+                        <div
+                          key={idx}
+                          className="inconsistency-detail"
+                          onClick={() => handleProjectNavigation(targetProjectId)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <div className="issue-content">
+                            <div className="issue-title">{issueTitle}</div>
+                            <div className="issue-subtitle">
+                              {issue.project_name}
+                              {issue.age_days > 0 && (
+                                <span className="issue-age"> • {issue.age_days}d old</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {pmData.issues.length > 3 && (
+                      <div className="more-issues">
+                        +{pmData.issues.length - 3} more
+                      </div>
+                    )}
                   </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
+      {showTipsModal && (
+        <div className="modal-overlay" onClick={() => setShowTipsModal(false)}>
+          <div className="modal-content tips-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <MdLightbulb className="modal-icon" />
+              <h2>Tips & Best Practices</h2>
+              <button className="modal-close" onClick={() => setShowTipsModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              {allTips.map((tip, index) => (
+                <div key={index} className="modal-tip-item">
+                  <div className="tip-icon-wrapper">{tip.icon}</div>
                   <div className="tip-content">
                     <h3 className="tip-title">{tip.title}</h3>
                     <p className="tip-description">{tip.description}</p>
@@ -819,7 +911,49 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {showWhatsNewModal && (
+        <div className="modal-overlay" onClick={() => setShowWhatsNewModal(false)}>
+          <div className="modal-content whats-new-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <MdNotifications className="modal-icon" />
+              <h2>What's New</h2>
+              <button className="modal-close" onClick={() => setShowWhatsNewModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="whats-new-item">
+                <div className="feature-icon"><MdWarning /></div>
+                <div className="feature-content">
+                  <h3>Inconsistency Report</h3>
+                  <p>Automatically identifies data quality issues including missing recovery plans, descriptions, and documentation. Shows issues grouped by PM with severity indicators.</p>
+                </div>
+              </div>
+              <div className="whats-new-item">
+                <div className="feature-icon"><MdBuild /></div>
+                <div className="feature-content">
+                  <h3>Recovery Plans</h3>
+                  <p>Create and track recovery plans for red and amber metrics. Set target dates, monitor progress, and document completion.</p>
+                </div>
+              </div>
+              <div className="whats-new-item">
+                <div className="feature-icon"><MdVisibility /></div>
+                <div className="feature-content">
+                  <h3>Page Analytics</h3>
+                  <p>Track page views and user navigation patterns. View heatmaps showing most visited pages and user engagement.</p>
+                </div>
+              </div>
+              <div className="whats-new-item">
+                <div className="feature-icon"><MdFileDownload /></div>
+                <div className="feature-content">
+                  <h3>Chart Export</h3>
+                  <p>Export metric charts as PNG images or PDF documents. Perfect for sharing with stakeholders or including in presentations.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Feedback Section - Full Width - Only show if there's feedback */}
       {!loading && feedback.length > 0 && (
@@ -857,6 +991,16 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
           </div>
         </div>
       )}
+
+      {/* Footer Links */}
+      <div className="homepage-footer">
+        <button className="footer-link" onClick={() => setShowTipsModal(true)}>
+          <MdLightbulb /> Tips & Best Practices
+        </button>
+        <button className="footer-link" onClick={() => setShowWhatsNewModal(true)}>
+          <MdNotifications /> What's New
+        </button>
+      </div>
     </div>
   );
 };

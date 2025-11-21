@@ -154,48 +154,42 @@
 
 .issue-header {
   background: #fafbfc;
-  padding: 10px 14px;
+  padding: 14px 14px;
   border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
 }
 
-.issue-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.severity-badge {
-  display: inline-block;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.severity-high {
-  background-color: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fca5a5;
-}
-
-.severity-warning {
-  background-color: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fcd34d;
-}
-
-.severity-info {
-  background-color: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #93c5fd;
-}
-
-.issue-type {
-  font-size: 13px;
+.issue-details-primary {
+  font-size: 14px;
   font-weight: 600;
   color: #1f2937;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.issue-title-link {
+  color: #00aeef;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.issue-title-link:hover {
+  color: #003c71;
+  text-decoration: underline;
+}
+
+.issue-project-secondary {
+  font-size: 11px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.metric-name {
+  color: #6b7280;
 }
 
 .issue-body {
@@ -221,24 +215,18 @@
 
 .pm-name {
   color: #6b7280;
-  font-size: 11px;
 }
 
 .project-link {
   color: #00aeef;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
   transition: color 0.2s;
 }
 
 .project-link:hover {
   color: #003c71;
   text-decoration: underline;
-}
-
-.issue-details {
-  color: #1f2937;
-  font-weight: 500;
 }
 
 .issue-data {
@@ -356,26 +344,34 @@
   border-bottom-color: #374151;
 }
 
-:root.dark-mode .issue-type {
+:root.dark-mode .issue-details-primary {
   color: #f9fafb;
 }
 
+:root.dark-mode .issue-title-link {
+  color: #00aeef;
+}
+
+:root.dark-mode .issue-title-link:hover {
+  color: #60c5f1;
+}
+
+:root.dark-mode .issue-project-secondary {
+  color: #9ca3af;
+}
+
+:root.dark-mode .pm-name,
+:root.dark-mode .metric-name {
+  color: #9ca3af;
+}
+
 :root.dark-mode .issue-project,
-:root.dark-mode .issue-metric,
-:root.dark-mode .issue-details {
+:root.dark-mode .issue-metric {
   color: #d1d5db;
 }
 
 :root.dark-mode .issue-project strong,
 :root.dark-mode .issue-metric strong {
-  color: #f9fafb;
-}
-
-:root.dark-mode .pm-name {
-  color: #9ca3af;
-}
-
-:root.dark-mode .issue-details {
   color: #f9fafb;
 }
 

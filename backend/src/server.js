@@ -3646,6 +3646,133 @@ function createApp(dbPath) {
     }
   });
 
+  // Endpoint to get inconsistency report (all users can see, shows issues by PM)
+  app.get('/api/inconsistency-report', authenticateToken, async (req, res) => {
+    try {
+      const inconsistencies = [];
+
+      // TODO: Implement RAG status calculation for metrics without recovery plans
+      // For now, just check other types of inconsistencies
+
+      // 1. Projects without descriptions
+      const projectsWithoutDesc = await dbAll(`
+        SELECT
+          p.id as project_id,
+          p.name as project_name,
+          p.initiative_manager as pm_name,
+          p.created_at as first_detected
+        FROM projects p
+        WHERE p.description IS NULL OR p.description = ''
+        ORDER BY p.initiative_manager, p.name
+      `);
+
+      for (const project of projectsWithoutDesc) {
+        inconsistencies.push({
+          type: 'missing_project_description',
+          severity: 'low',
+          pm_name: project.pm_name,
+          project_id: project.project_id,
+          project_name: project.project_name,
+          metric_id: null,
+          metric_name: null,
+          details: 'Project missing description',
+          first_detected: project.first_detected,
+          age_days: Math.floor((Date.now() - new Date(project.first_detected)) / (1000 * 60 * 60 * 24))
+        });
+      }
+
+      // 2. Metrics without descriptions
+      const metricsWithoutDescriptions = await dbAll(`
+        SELECT
+          m.id as metric_id,
+          m.name as metric_name,
+          m.project_id,
+          p.name as project_name,
+          p.initiative_manager as pm_name,
+          m.created_at as first_detected
+        FROM metrics m
+        JOIN projects p ON m.project_id = p.id
+        WHERE m.description IS NULL OR TRIM(m.description) = ''
+        ORDER BY p.initiative_manager, p.name, m.name
+      `);
+
+      for (const metric of metricsWithoutDescriptions) {
+        inconsistencies.push({
+          type: 'missing_metric_description',
+          severity: 'low',
+          pm_name: metric.pm_name,
+          project_id: metric.project_id,
+          project_name: metric.project_name,
+          metric_id: metric.metric_id,
+          metric_name: metric.metric_name,
+          details: 'Metric missing description',
+          first_detected: metric.first_detected,
+          age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
+        });
+      }
+
+      // 3. Projects without documentation links
+      const projectsWithoutDocs = await dbAll(`
+        SELECT
+          p.id as project_id,
+          p.name as project_name,
+          p.initiative_manager as pm_name,
+          p.created_at as first_detected
+        FROM projects p
+        LEFT JOIN project_links pl ON p.id = pl.project_id
+        WHERE pl.id IS NULL
+        ORDER BY p.initiative_manager, p.name
+      `);
+
+      for (const proj of projectsWithoutDocs) {
+        inconsistencies.push({
+          type: 'missing_documentation',
+          severity: 'medium',
+          pm_name: proj.pm_name,
+          project_id: proj.project_id,
+          project_name: proj.project_name,
+          details: 'Project has no documentation links',
+          first_detected: proj.first_detected,
+          age_days: Math.floor((Date.now() - new Date(proj.first_detected)) / (1000 * 60 * 60 * 24))
+        });
+      }
+
+      // Group by PM and count
+      const byPM = inconsistencies.reduce((acc, item) => {
+        if (!acc[item.pm_name]) {
+          acc[item.pm_name] = {
+            pm_name: item.pm_name,
+            total: 0,
+            high: 0,
+            medium: 0,
+            low: 0,
+            issues: []
+          };
+        }
+        acc[item.pm_name].total++;
+        acc[item.pm_name][item.severity]++;
+        acc[item.pm_name].issues.push(item);
+        return acc;
+      }, {});
+
+      // Convert to array and sort by total descending
+      const summary = Object.values(byPM).sort((a, b) => b.total - a.total);
+
+      res.json({
+        summary,
+        total_inconsistencies: inconsistencies.length,
+        by_severity: {
+          high: inconsistencies.filter(i => i.severity === 'high').length,
+          medium: inconsistencies.filter(i => i.severity === 'medium').length,
+          low: inconsistencies.filter(i => i.severity === 'low').length
+        }
+      });
+    } catch (err) {
+      console.error('Error generating inconsistency report:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Auto-generate consistency feedback on server start (after a delay to ensure DB is ready)
   // Skip in test mode to avoid interfering with tests
   if (process.env.NODE_ENV !== 'test') {
