@@ -3864,6 +3864,9 @@ function createApp(dbPath) {
       }
 
       // 4. Metrics that are red or amber but have no recovery plan
+      // TODO: This requires dynamic RAG status calculation since rag_status is not stored in the database
+      // Commenting out for now to avoid SQL errors
+      /*
       const metricsNeedingRecovery = await dbAll(`
         SELECT DISTINCT
           p.id as project_id,
@@ -3905,6 +3908,7 @@ function createApp(dbPath) {
           age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
         });
       }
+      */
 
       // Group by PM and count
       const byPM = inconsistencies.reduce((acc, item) => {
