@@ -1316,7 +1316,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                   }}
                   title={canEdit && onDescriptionChange ? 'Click to edit description' : ''}
                 >
-                  {sortedData[0]?.metric_description || (canEdit && onDescriptionChange ? 'Click to add description...' : '')}
+                  {sortedData[0]?.metric_description || (canEdit && onDescriptionChange ? 'Add a description of precisely what the metric measures here...' : '')}
                 </span>
               )}
             </div>

@@ -1268,7 +1268,7 @@ function App() {
                         onChange={(e) => setEditProjectDescValue(e.target.value)}
                         onKeyDown={handleProjectDescKeyDown}
                         onBlur={handleSaveProjectDesc}
-                        placeholder="Enter project description..."
+                        placeholder="Add a description of what the project will achieve here..."
                         rows={3}
                         autoFocus
                         style={{ textAlign: 'right' }}

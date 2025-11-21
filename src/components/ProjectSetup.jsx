@@ -226,7 +226,7 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
               type="text"
               value={projectDesc}
               onChange={(e) => setProjectDesc(e.target.value)}
-              placeholder="Enter project description..."
+              placeholder="Add a description of what the project will achieve here..."
               maxLength={250}
             />
           </div>
