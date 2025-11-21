@@ -794,7 +794,7 @@ html.dark-mode .quadrant-content {
 }
 
 .getting-started li {
-  font-size: 14px;
+  font-size: 16px;
   color: #4b5563;
   line-height: 1.7;
   margin-bottom: 10px;
@@ -823,6 +823,10 @@ html.dark-mode .quadrant-content {
 
 :root.dark-mode .stat-value.red {
   color: #fca5a5;
+}
+
+:root.dark-mode .stat-value.green {
+  color: #10b981;
 }
 
 :root.dark-mode .stat-label {
