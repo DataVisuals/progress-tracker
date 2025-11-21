@@ -1454,7 +1454,11 @@ function createApp(dbPath) {
       // 2. Delete comments for all metrics in this project
       await dbRun(`
         DELETE FROM comments
-        WHERE metric_id IN (SELECT id FROM metrics WHERE project_id = ?)
+        WHERE period_id IN (
+          SELECT mp.id FROM metric_periods mp
+          JOIN metrics m ON mp.metric_id = m.id
+          WHERE m.project_id = ?
+        )
       `, [req.params.id]);
 
       // 3. Delete recovery plans for all metrics in this project
