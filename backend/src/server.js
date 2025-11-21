@@ -2763,604 +2763,6 @@ function createApp(dbPath) {
       res.status(500).json({ error: err.message });
     }
   });
-  
-  // ===== DATA CONSISTENCY REPORT (Admin Only) =====
-  app.get('/api/admin/consistency-report', authenticateToken, async (req, res) => {
-    try {
-      // Check if user is admin
-      if (!isAdmin(req.user)) {
-        return res.status(403).json({ error: 'Admin access required' });
-      }
-  
-      const { portfolio_id } = req.query;
-      const portfolioFilter = portfolio_id ? 'AND p.portfolio_id = ?' : '';
-      const portfolioParams = portfolio_id ? [portfolio_id] : [];
-  
-      const issues = [];
-  
-      // 1. Find metrics with unusual growth in January or August (vacation months)
-      // January 1 reporting indicates work done in December (vacation month)
-      // August 1 reporting indicates work done in July/August (vacation month)
-      const vacationMonthGrowth = await dbAll(`
-        WITH growth_calc AS (
-          SELECT
-            p.id as project_id,
-            p.name as project_name,
-            p.initiative_manager as pm_name,
-            m.id as metric_id,
-            m.name as metric_name,
-            mp.reporting_date,
-            mp.complete,
-            LAG(mp.complete) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as prev_complete
-          FROM metric_periods mp
-          JOIN metrics m ON mp.metric_id = m.id
-          JOIN projects p ON m.project_id = p.id
-          WHERE CAST(strftime('%m', mp.reporting_date) AS INTEGER) IN (1, 8)
-          ${portfolioFilter}
-        )
-        SELECT
-          project_id,
-          project_name,
-          pm_name,
-          metric_id,
-          metric_name,
-          reporting_date,
-          complete,
-          prev_complete,
-          complete - prev_complete as growth
-        FROM growth_calc
-        WHERE complete > COALESCE(prev_complete, 0)
-        AND (complete - prev_complete) IS NOT NULL
-        ORDER BY project_name, metric_name, reporting_date
-      `, portfolioParams);
-  
-      // Group by metric and check if growth is above average
-      const metricsWithVacationGrowth = new Map();
-      for (const row of vacationMonthGrowth) {
-        if (!row.prev_complete || row.growth === null) continue;
-  
-        const key = `${row.project_id}-${row.metric_id}`;
-        if (!metricsWithVacationGrowth.has(key)) {
-          metricsWithVacationGrowth.set(key, {
-            project_id: row.project_id,
-            project_name: row.project_name,
-            pm_name: row.pm_name,
-            metric_id: row.metric_id,
-            metric_name: row.metric_name,
-            vacation_periods: []
-          });
-        }
-  
-        // Get average growth for this metric
-        const avgGrowth = await dbGet(`
-          WITH lag_calc AS (
-            SELECT
-              mp.complete,
-              LAG(mp.complete) OVER (PARTITION BY mp.metric_id ORDER BY mp.reporting_date) as prev_complete
-            FROM metric_periods mp
-            WHERE mp.metric_id = ?
-          ),
-          growth_all AS (
-            SELECT
-              complete - prev_complete as growth
-            FROM lag_calc
-          )
-          SELECT AVG(growth) as avg_growth
-          FROM growth_all
-          WHERE growth IS NOT NULL AND growth > 0
-        `, [row.metric_id]);
-  
-        if (avgGrowth && avgGrowth.avg_growth && row.growth > avgGrowth.avg_growth * 0.8) {
-          metricsWithVacationGrowth.get(key).vacation_periods.push({
-            date: row.reporting_date,
-            growth: row.growth,
-            avg_growth: avgGrowth.avg_growth
-          });
-        }
-      }
-  
-      for (const [, value] of metricsWithVacationGrowth) {
-        if (value.vacation_periods.length > 0) {
-          const months = value.vacation_periods.map(p => {
-            const month = new Date(p.date).getMonth() + 1;
-            return month === 1 ? 'January (December work)' : 'August (July/August work)';
-          });
-          issues.push({
-            type: 'vacation_month_growth',
-            severity: 'warning',
-            project_id: value.project_id,
-            project_name: value.project_name,
-            pm_name: value.pm_name,
-            metric_id: value.metric_id,
-            metric_name: value.metric_name,
-            details: `Normal or accelerated growth detected during vacation months: ${months.join(', ')}. Reporting dates: ${value.vacation_periods.map(p => p.date).join(', ')}`,
-            periods: value.vacation_periods
-          });
-        }
-      }
-  
-      // 2. Find projects with only back-loaded growth curves
-      const backLoadedMetrics = await dbAll(`
-        WITH lag_calc AS (
-          SELECT
-            m.id as metric_id,
-            m.name as metric_name,
-            m.project_id,
-            p.name as project_name,
-            p.initiative_manager as pm_name,
-            mp.reporting_date,
-            mp.complete,
-            LAG(mp.complete, 1, 0) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as prev_complete
-          FROM metric_periods mp
-          JOIN metrics m ON mp.metric_id = m.id
-          JOIN projects p ON m.project_id = p.id
-          WHERE 1=1 ${portfolioFilter}
-        ),
-        period_growth AS (
-          SELECT
-            metric_id,
-            metric_name,
-            project_id,
-            project_name,
-            pm_name,
-            reporting_date,
-            ROW_NUMBER() OVER (PARTITION BY metric_id ORDER BY reporting_date) as period_num,
-            COUNT(*) OVER (PARTITION BY metric_id) as total_periods,
-            complete - prev_complete as growth
-          FROM lag_calc
-        ),
-        first_half_growth AS (
-          SELECT
-            metric_id,
-            metric_name,
-            project_id,
-            project_name,
-            pm_name,
-            SUM(growth) as first_half_total,
-            AVG(growth) as first_half_avg
-          FROM period_growth
-          WHERE period_num <= total_periods / 2
-          GROUP BY metric_id, metric_name, project_id, project_name, pm_name
-        ),
-        second_half_growth AS (
-          SELECT
-            metric_id,
-            SUM(growth) as second_half_total,
-            AVG(growth) as second_half_avg
-          FROM period_growth
-          WHERE period_num > total_periods / 2
-          GROUP BY metric_id
-        )
-        SELECT
-          f.project_id,
-          f.project_name,
-          f.pm_name,
-          f.metric_id,
-          f.metric_name,
-          f.first_half_total,
-          f.first_half_avg,
-          s.second_half_total,
-          s.second_half_avg
-        FROM first_half_growth f
-        JOIN second_half_growth s ON f.metric_id = s.metric_id
-        WHERE s.second_half_total > f.first_half_total * 2
-      `, portfolioParams);
-  
-      // Group by project to check if ALL metrics are back-loaded
-      const projectMetrics = new Map();
-      for (const metric of backLoadedMetrics) {
-        if (!projectMetrics.has(metric.project_id)) {
-          projectMetrics.set(metric.project_id, {
-            project_name: metric.project_name,
-            pm_name: metric.pm_name,
-            back_loaded: [],
-            total: 0
-          });
-        }
-        projectMetrics.get(metric.project_id).back_loaded.push(metric);
-      }
-  
-      // Get total metric counts
-      for (const [projectId, data] of projectMetrics) {
-        const totalMetrics = await dbGet(
-          'SELECT COUNT(*) as count FROM metrics WHERE project_id = ?',
-          [projectId]
-        );
-        data.total = totalMetrics.count;
-  
-        // Only flag if ALL or most metrics are back-loaded
-        if (data.back_loaded.length === data.total && data.total > 0) {
-          issues.push({
-            type: 'all_back_loaded',
-            severity: 'high',
-            project_id: projectId,
-            project_name: data.project_name,
-            pm_name: data.pm_name,
-            details: `All ${data.total} metric(s) show back-loaded growth (majority of progress in second half)`,
-            metrics: data.back_loaded.map(m => ({
-              metric_id: m.metric_id,
-              metric_name: m.metric_name,
-              first_half_avg: m.first_half_avg,
-              second_half_avg: m.second_half_avg
-            }))
-          });
-        }
-      }
-  
-      // 3. Find projects with only one metric
-      const singleMetricProjects = await dbAll(`
-        WITH project_metric_counts AS (
-          SELECT
-            p.id as project_id,
-            p.name as project_name,
-            p.initiative_manager as pm_name,
-            m.id as metric_id,
-            m.name as metric_name,
-            COUNT(m.id) OVER (PARTITION BY p.id) as metric_count
-          FROM projects p
-          LEFT JOIN metrics m ON p.id = m.project_id
-          WHERE 1=1 ${portfolioFilter}
-        )
-        SELECT *
-        FROM project_metric_counts
-        WHERE metric_count = 1
-      `, portfolioParams);
-  
-      for (const project of singleMetricProjects) {
-        issues.push({
-          type: 'single_metric',
-          severity: 'info',
-          project_id: project.project_id,
-          project_name: project.project_name,
-          pm_name: project.pm_name,
-          metric_id: project.metric_id,
-          metric_name: project.metric_name,
-          details: 'Project has only one metric'
-        });
-      }
-  
-      // 4. Find projects with no lead metrics (only lag metrics)
-      const projectsWithoutLeadMetrics = await dbAll(`
-        WITH project_metrics AS (
-          SELECT
-            p.id as project_id,
-            p.name as project_name,
-            p.initiative_manager as pm_name,
-            COUNT(m.id) as total_metrics,
-            SUM(CASE WHEN m.metric_type = 'lead' OR m.metric_type IS NULL THEN 1 ELSE 0 END) as lead_count,
-            SUM(CASE WHEN m.metric_type = 'lag' THEN 1 ELSE 0 END) as lag_count
-          FROM projects p
-          LEFT JOIN metrics m ON p.id = m.project_id
-          WHERE 1=1 ${portfolioFilter}
-          GROUP BY p.id, p.name, p.initiative_manager
-        )
-        SELECT
-          project_id,
-          project_name,
-          pm_name,
-          total_metrics,
-          lead_count,
-          lag_count
-        FROM project_metrics
-        WHERE total_metrics > 0 AND lead_count = 0
-      `, portfolioParams);
-  
-      for (const project of projectsWithoutLeadMetrics) {
-        issues.push({
-          type: 'no_lead_metrics',
-          severity: 'warning',
-          project_id: project.project_id,
-          project_name: project.project_name,
-          pm_name: project.pm_name,
-          details: `Project has ${project.lag_count} lag metric(s) but no lead metrics. Lead metrics provide early indicators of progress, while lag metrics measure outcomes at the end. Consider adding lead metrics for better progress tracking.`
-        });
-      }
-  
-      // 5. Find metrics where declared type doesn't match progression pattern
-      // Lag metrics should be back-loaded (most progress in final 30% of periods)
-      // Lead metrics should show progressive change throughout
-      const metricTypeMismatches = await dbAll(`
-        WITH growth_calc AS (
-          SELECT
-            m.id as metric_id,
-            m.name as metric_name,
-            m.metric_type,
-            m.project_id,
-            p.name as project_name,
-            p.initiative_manager as pm_name,
-            mp.reporting_date,
-            mp.complete,
-            LAG(mp.complete, 1, 0) OVER (PARTITION BY m.id ORDER BY mp.reporting_date) as prev_complete
-          FROM metric_periods mp
-          JOIN metrics m ON mp.metric_id = m.id
-          JOIN projects p ON m.project_id = p.id
-          WHERE mp.complete IS NOT NULL
-        ),
-        period_analysis AS (
-          SELECT
-            metric_id,
-            metric_name,
-            metric_type,
-            project_id,
-            project_name,
-            pm_name,
-            ROW_NUMBER() OVER (PARTITION BY metric_id ORDER BY reporting_date) as period_num,
-            COUNT(*) OVER (PARTITION BY metric_id) as total_periods,
-            complete - prev_complete as growth,
-            SUM(complete - prev_complete) OVER (PARTITION BY metric_id) as total_growth
-          FROM growth_calc
-        ),
-        final_30_percent AS (
-          SELECT
-            metric_id,
-            metric_name,
-            metric_type,
-            project_id,
-            project_name,
-            pm_name,
-            total_periods,
-            SUM(growth) as final_30_growth,
-            MAX(total_growth) as total_growth
-          FROM period_analysis
-          WHERE period_num > (total_periods * 0.7)
-          GROUP BY metric_id, metric_name, metric_type, project_id, project_name, pm_name, total_periods
-        )
-        SELECT
-          metric_id,
-          metric_name,
-          metric_type,
-          project_id,
-          project_name,
-          pm_name,
-          total_periods,
-          final_30_growth,
-          total_growth,
-          CAST(final_30_growth AS REAL) / NULLIF(total_growth, 0) as final_30_percent
-        FROM final_30_percent
-        WHERE total_growth > 0
-          AND (
-            (metric_type = 'lag' AND (final_30_growth / NULLIF(total_growth, 0)) < 0.5)
-            OR
-            (metric_type = 'lead' AND (final_30_growth / NULLIF(total_growth, 0)) > 0.7)
-          )
-      `);
-  
-      for (const metric of metricTypeMismatches) {
-        const percentInFinal = (metric.final_30_percent * 100).toFixed(1);
-        if (metric.metric_type === 'lag') {
-          issues.push({
-            type: 'metric_type_mismatch',
-            severity: 'warning',
-            project_id: metric.project_id,
-            project_name: metric.project_name,
-            pm_name: metric.pm_name,
-            metric_id: metric.metric_id,
-            metric_name: metric.metric_name,
-            details: `Metric is declared as 'lag' but shows progressive pattern with only ${percentInFinal}% of progress in final 30% of periods. Lag metrics typically have 50%+ progress concentrated at the end. Consider changing to 'lead' type.`
-          });
-        } else {
-          issues.push({
-            type: 'metric_type_mismatch',
-            severity: 'warning',
-            project_id: metric.project_id,
-            project_name: metric.project_name,
-            pm_name: metric.pm_name,
-            metric_id: metric.metric_id,
-            metric_name: metric.metric_name,
-            details: `Metric is declared as 'lead' but shows back-loaded pattern with ${percentInFinal}% of progress in final 30% of periods. Lead metrics should show progressive change throughout. Consider changing to 'lag' type.`
-          });
-        }
-      }
-  
-      // Check for project timeline gaps (periods not covered by any metric)
-      const projectGaps = await dbAll(`
-        WITH RECURSIVE dates AS (
-          SELECT
-            p.id as project_id,
-            p.name as project_name,
-            p.initiative_manager as pm_name,
-            DATE(p.start_date) as date,
-            DATE(p.end_date) as end_date
-          FROM projects p
-          UNION ALL
-          SELECT
-            project_id,
-            project_name,
-            pm_name,
-            DATE(date, '+1 day'),
-            end_date
-          FROM dates
-          WHERE DATE(date, '+1 day') <= end_date
-        ),
-        metric_coverage AS (
-          SELECT
-            m.project_id,
-            DATE(m.start_date) as start_date,
-            DATE(m.end_date) as end_date
-          FROM metrics m
-        ),
-        uncovered_dates AS (
-          SELECT
-            d.project_id,
-            d.project_name,
-            d.pm_name,
-            d.date,
-            (SELECT COUNT(*)
-             FROM metric_coverage mc
-             WHERE mc.project_id = d.project_id
-               AND d.date >= mc.start_date
-               AND d.date <= mc.end_date) as coverage_count
-          FROM dates d
-        ),
-        gap_ranges AS (
-          SELECT
-            project_id,
-            project_name,
-            pm_name,
-            MIN(date) as gap_start,
-            MAX(date) as gap_end,
-            COUNT(*) as gap_days
-          FROM uncovered_dates
-          WHERE coverage_count = 0
-          GROUP BY project_id, project_name, pm_name
-          HAVING gap_days > 0
-        )
-        SELECT * FROM gap_ranges
-      `);
-  
-      for (const gap of projectGaps) {
-        const duration = gap.gap_days === 1 ? '1 day' : `${gap.gap_days} days`;
-        issues.push({
-          type: 'timeline_gap',
-          severity: 'warning',
-          project_id: gap.project_id,
-          project_name: gap.project_name,
-          pm_name: gap.pm_name,
-          details: `Project has ${duration} not covered by any metric (${gap.gap_start} to ${gap.gap_end}). Consider adding metrics to cover this period or adjusting the project timeline.`
-        });
-      }
-
-      // 6. Find metrics that are red or amber but have no recovery plan
-      const metricsNeedingRecovery = await dbAll(`
-        SELECT DISTINCT
-          p.id as project_id,
-          p.name as project_name,
-          p.initiative_manager as pm_name,
-          m.id as metric_id,
-          m.name as metric_name,
-          mp.rag_status,
-          mp.reporting_date
-        FROM metric_periods mp
-        JOIN metrics m ON mp.metric_id = m.id
-        JOIN projects p ON m.project_id = p.id
-        LEFT JOIN recovery_plans rp ON m.id = rp.metric_id AND rp.status = 'active'
-        WHERE mp.rag_status IN ('red', 'amber')
-        AND rp.id IS NULL
-        AND mp.reporting_date = (
-          SELECT MAX(mp2.reporting_date)
-          FROM metric_periods mp2
-          WHERE mp2.metric_id = mp.metric_id
-        )
-        ${portfolioFilter}
-        ORDER BY
-          CASE mp.rag_status WHEN 'red' THEN 0 WHEN 'amber' THEN 1 END,
-          p.name, m.name
-      `, portfolioParams);
-
-      for (const metric of metricsNeedingRecovery) {
-        issues.push({
-          type: 'missing_recovery_plan',
-          severity: metric.rag_status === 'red' ? 'high' : 'warning',
-          project_id: metric.project_id,
-          project_name: metric.project_name,
-          pm_name: metric.pm_name,
-          metric_id: metric.metric_id,
-          metric_name: metric.metric_name,
-          details: `${metric.metric_name} is ${metric.rag_status.toUpperCase()} but has no recovery plan`,
-          rag_status: metric.rag_status
-        });
-      }
-
-      // 7. Find metrics missing historic data (gaps in periods)
-      const metricsWithGaps = await dbAll(`
-        WITH RECURSIVE expected_dates AS (
-          SELECT
-            m.id as metric_id,
-            m.name as metric_name,
-            m.project_id,
-            p.name as project_name,
-            p.initiative_manager as pm_name,
-            m.frequency,
-            DATE(m.start_date) as expected_date,
-            DATE(m.end_date) as end_date
-          FROM metrics m
-          JOIN projects p ON m.project_id = p.id
-          WHERE 1=1 ${portfolioFilter}
-
-          UNION ALL
-
-          SELECT
-            metric_id,
-            metric_name,
-            project_id,
-            project_name,
-            pm_name,
-            frequency,
-            CASE frequency
-              WHEN 'weekly' THEN DATE(expected_date, '+7 days')
-              WHEN 'monthly' THEN DATE(expected_date, '+1 month')
-              WHEN 'quarterly' THEN DATE(expected_date, '+3 months')
-              ELSE DATE(expected_date, '+1 day')
-            END,
-            end_date
-          FROM expected_dates
-          WHERE expected_date < end_date
-        ),
-        missing_periods AS (
-          SELECT
-            ed.metric_id,
-            ed.metric_name,
-            ed.project_id,
-            ed.project_name,
-            ed.pm_name,
-            ed.expected_date,
-            mp.reporting_date
-          FROM expected_dates ed
-          LEFT JOIN metric_periods mp ON ed.metric_id = mp.metric_id
-            AND DATE(mp.reporting_date) = ed.expected_date
-          WHERE mp.reporting_date IS NULL
-          AND ed.expected_date < DATE('now')
-        ),
-        gap_summary AS (
-          SELECT
-            metric_id,
-            metric_name,
-            project_id,
-            project_name,
-            pm_name,
-            COUNT(*) as missing_count,
-            MIN(expected_date) as first_gap,
-            MAX(expected_date) as last_gap
-          FROM missing_periods
-          GROUP BY metric_id, metric_name, project_id, project_name, pm_name
-          HAVING missing_count > 0
-        )
-        SELECT *
-        FROM gap_summary
-        ORDER BY missing_count DESC, project_name, metric_name
-      `, portfolioParams);
-
-      for (const metric of metricsWithGaps) {
-        issues.push({
-          type: 'missing_historic_data',
-          severity: 'warning',
-          project_id: metric.project_id,
-          project_name: metric.project_name,
-          pm_name: metric.pm_name,
-          metric_id: metric.metric_id,
-          metric_name: metric.metric_name,
-          details: `${metric.metric_name} is missing ${metric.missing_count} period(s) of historic data between ${metric.first_gap} and ${metric.last_gap}`,
-          missing_count: metric.missing_count,
-          first_gap: metric.first_gap,
-          last_gap: metric.last_gap
-        });
-      }
-
-      res.json({
-        generated_at: new Date().toISOString(),
-        total_issues: issues.length,
-        issues: issues.sort((a, b) => {
-          const severityOrder = { high: 0, warning: 1, info: 2 };
-          return severityOrder[a.severity] - severityOrder[b.severity];
-        })
-      });
-  
-    } catch (err) {
-      console.error('Consistency report error:', err);
-      console.error('Error stack:', err.stack);
-      res.status(500).json({ error: err.message, details: err.toString() });
-    }
-  });
 
   // ===== AUTO-GENERATE FEEDBACK FROM CONSISTENCY ISSUES =====
   // Helper function to create or get system user
@@ -3898,7 +3300,7 @@ function createApp(dbPath) {
       for (const proj of projectsWithoutDocs) {
         inconsistencies.push({
           type: 'missing_documentation',
-          severity: 'medium',
+          severity: 'low',
           pm_name: proj.pm_name,
           project_id: proj.project_id,
           project_name: proj.project_name,
@@ -3909,51 +3311,115 @@ function createApp(dbPath) {
       }
 
       // 4. Metrics that are red or amber but have no recovery plan
-      // TODO: This requires dynamic RAG status calculation since rag_status is not stored in the database
-      // Commenting out for now to avoid SQL errors
-      /*
-      const metricsNeedingRecovery = await dbAll(`
-        SELECT DISTINCT
-          p.id as project_id,
-          p.name as project_name,
-          p.initiative_manager as pm_name,
+      // RAG status is calculated dynamically since it's not stored in the database
+      const allMetrics = await dbAll(`
+        SELECT
           m.id as metric_id,
           m.name as metric_name,
-          mp.rag_status,
-          mp.reporting_date,
+          m.project_id,
+          m.amber_tolerance,
+          m.red_tolerance,
+          p.name as project_name,
+          p.initiative_manager as pm_name,
           m.created_at as first_detected
-        FROM metric_periods mp
-        JOIN metrics m ON mp.metric_id = m.id
+        FROM metrics m
         JOIN projects p ON m.project_id = p.id
         LEFT JOIN recovery_plans rp ON m.id = rp.metric_id AND rp.status = 'active'
-        WHERE mp.rag_status IN ('red', 'amber')
-        AND rp.id IS NULL
-        AND mp.reporting_date = (
-          SELECT MAX(mp2.reporting_date)
-          FROM metric_periods mp2
-          WHERE mp2.metric_id = mp.metric_id
-        )
-        ORDER BY
-          CASE mp.rag_status WHEN 'red' THEN 0 WHEN 'amber' THEN 1 END,
-          p.initiative_manager, p.name, m.name
+        WHERE rp.id IS NULL
+        ORDER BY p.initiative_manager, p.name, m.name
       `);
 
-      for (const metric of metricsNeedingRecovery) {
-        inconsistencies.push({
-          type: 'missing_recovery_plan',
-          severity: metric.rag_status === 'red' ? 'high' : 'medium',
-          pm_name: metric.pm_name,
-          project_id: metric.project_id,
-          project_name: metric.project_name,
-          metric_id: metric.metric_id,
-          metric_name: metric.metric_name,
-          details: `${metric.metric_name} is ${metric.rag_status.toUpperCase()} but has no recovery plan`,
-          rag_status: metric.rag_status,
-          first_detected: metric.first_detected,
-          age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
-        });
+      for (const metric of allMetrics) {
+        // Get all periods for this metric, sorted by date
+        const periods = await dbAll(`
+          SELECT id, reporting_date, complete, expected
+          FROM metric_periods
+          WHERE metric_id = ?
+          ORDER BY reporting_date ASC
+        `, [metric.metric_id]);
+
+        if (periods.length === 0) continue;
+
+        // Find the current period (matches logic in backend/src/server.js:570-598)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let currentPeriodIndex = -1;
+        for (let i = 0; i < periods.length; i++) {
+          const periodStart = new Date(periods[i].reporting_date);
+          periodStart.setHours(0, 0, 0, 0);
+
+          if (periodStart <= today) {
+            if (i + 1 < periods.length) {
+              const nextPeriodStart = new Date(periods[i + 1].reporting_date);
+              nextPeriodStart.setHours(0, 0, 0, 0);
+              if (today < nextPeriodStart) {
+                currentPeriodIndex = i;
+                break;
+              }
+            } else {
+              currentPeriodIndex = i;
+            }
+          }
+        }
+
+        if (currentPeriodIndex === -1) continue;
+
+        const currentPeriod = periods[currentPeriodIndex];
+        const isInCurrentPeriod = currentPeriodIndex === periods.length - 1 ||
+          today < new Date(periods[currentPeriodIndex + 1].reporting_date);
+
+        // Helper function to calculate RAG for a specific period
+        const calculateRAGForPeriod = (period) => {
+          if (period.complete === null || period.expected === null) {
+            return 'grey';
+          }
+
+          const variance = period.complete - period.expected;
+          const variancePercent = period.expected > 0
+            ? Math.abs((variance / period.expected) * 100)
+            : 0;
+
+          const amberTolerance = parseFloat(metric.amber_tolerance) || 5.0;
+          const redTolerance = parseFloat(metric.red_tolerance) || 10.0;
+
+          if (period.expected === 0) return 'grey';
+          if (variance >= 0) return 'green';
+          if (variancePercent > redTolerance) return 'red';
+          if (variancePercent > amberTolerance) return 'amber';
+          return 'green';
+        };
+
+        // Determine RAG status (matches logic in backend/src/server.js:635-659)
+        let ragStatus;
+        if (isInCurrentPeriod) {
+          const currentComplete = currentPeriod.complete || 0;
+          if (currentComplete === 0 && currentPeriodIndex > 0) {
+            ragStatus = calculateRAGForPeriod(periods[currentPeriodIndex - 1]);
+          } else {
+            ragStatus = calculateRAGForPeriod(currentPeriod);
+          }
+        } else {
+          ragStatus = calculateRAGForPeriod(currentPeriod);
+        }
+
+        // Add to inconsistencies if red or amber
+        if (ragStatus === 'red' || ragStatus === 'amber') {
+          inconsistencies.push({
+            type: 'missing_recovery_plan',
+            severity: 'high',
+            pm_name: metric.pm_name,
+            project_id: metric.project_id,
+            project_name: metric.project_name,
+            metric_id: metric.metric_id,
+            metric_name: metric.metric_name,
+            details: `${metric.metric_name} is ${ragStatus.toUpperCase()} but has no recovery plan`,
+            rag_status: ragStatus,
+            first_detected: metric.first_detected,
+            age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
       }
-      */
 
       // Group by PM and count
       const byPM = inconsistencies.reduce((acc, item) => {

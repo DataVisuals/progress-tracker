@@ -107,9 +107,6 @@ export const api = {
   updateProjectLink: (id, data) => client.put(`/project-links/${id}`, data),
   deleteProjectLink: (id) => client.delete(`/project-links/${id}`),
 
-  // Consistency Report
-  getConsistencyReport: () => client.get('/admin/consistency-report'),
-
   // Feedback
   getFeedback: (params) => {
     const queryString = new URLSearchParams(params).toString();
