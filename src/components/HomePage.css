@@ -1344,8 +1344,8 @@ html.dark-mode .quadrant-content {
 .modal-content {
   background: white;
   border-radius: 12px;
-  max-width: none;
-  width: 70%;
+  max-width: none !important;
+  width: 70% !important;
   max-height: 85vh;
   overflow: hidden;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
