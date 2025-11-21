@@ -845,7 +845,10 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
                         let targetEntity = '';
                         let targetProjectId = issue.project_id;
 
-                        if (issue.type === 'missing_metric_description' && issue.metric_name) {
+                        if (issue.type === 'missing_recovery_plan' && issue.metric_name) {
+                          issueTitle = `${issue.metric_name} is ${issue.rag_status?.toUpperCase()} but has No Recovery Plan`;
+                          targetEntity = issue.metric_name;
+                        } else if (issue.type === 'missing_metric_description' && issue.metric_name) {
                           issueTitle = `${issue.metric_name} is Missing a Description`;
                           targetEntity = issue.metric_name;
                         } else if (issue.type === 'missing_project_description' || issue.details === 'Project missing description') {
@@ -854,9 +857,6 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
                         } else if (issue.type === 'missing_documentation') {
                           issueTitle = `${issue.project_name} has No Documentation Links`;
                           targetEntity = issue.project_name;
-                        } else if (issue.type === 'missing_recovery_plan') {
-                          issueTitle = `${issue.metric_name || issue.project_name} is Missing a Recovery Plan`;
-                          targetEntity = issue.metric_name || issue.project_name;
                         } else {
                           issueTitle = issue.details;
                           targetEntity = issue.metric_name || issue.project_name;

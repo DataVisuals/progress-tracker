@@ -3863,6 +3863,49 @@ function createApp(dbPath) {
         });
       }
 
+      // 4. Metrics that are red or amber but have no recovery plan
+      const metricsNeedingRecovery = await dbAll(`
+        SELECT DISTINCT
+          p.id as project_id,
+          p.name as project_name,
+          p.initiative_manager as pm_name,
+          m.id as metric_id,
+          m.name as metric_name,
+          mp.rag_status,
+          mp.reporting_date,
+          m.created_at as first_detected
+        FROM metric_periods mp
+        JOIN metrics m ON mp.metric_id = m.id
+        JOIN projects p ON m.project_id = p.id
+        LEFT JOIN recovery_plans rp ON m.id = rp.metric_id AND rp.status = 'active'
+        WHERE mp.rag_status IN ('red', 'amber')
+        AND rp.id IS NULL
+        AND mp.reporting_date = (
+          SELECT MAX(mp2.reporting_date)
+          FROM metric_periods mp2
+          WHERE mp2.metric_id = mp.metric_id
+        )
+        ORDER BY
+          CASE mp.rag_status WHEN 'red' THEN 0 WHEN 'amber' THEN 1 END,
+          p.initiative_manager, p.name, m.name
+      `);
+
+      for (const metric of metricsNeedingRecovery) {
+        inconsistencies.push({
+          type: 'missing_recovery_plan',
+          severity: metric.rag_status === 'red' ? 'high' : 'medium',
+          pm_name: metric.pm_name,
+          project_id: metric.project_id,
+          project_name: metric.project_name,
+          metric_id: metric.metric_id,
+          metric_name: metric.metric_name,
+          details: `${metric.metric_name} is ${metric.rag_status.toUpperCase()} but has no recovery plan`,
+          rag_status: metric.rag_status,
+          first_detected: metric.first_detected,
+          age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
+        });
+      }
+
       // Group by PM and count
       const byPM = inconsistencies.reduce((acc, item) => {
         if (!acc[item.pm_name]) {
