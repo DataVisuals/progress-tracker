@@ -436,7 +436,7 @@ function App() {
       await loadProjects();
     } catch (err) {
       console.error('Failed to delete project:', err);
-      alert('Failed to delete project');
+      alert('Failed to delete project: ' + (err.response?.data?.error || err.message));
     }
   };
 
