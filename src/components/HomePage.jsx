@@ -274,11 +274,9 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
     setLoading(true);
     try {
       // Get recent commentary from audit log - filter for metric_periods table
-      // Note: This requires authentication
       let enrichedCommentary = [];
-      if (currentUser) {
-        try {
-          const commentsResponse = await api.get('/comments/recent?limit=10');
+      try {
+        const commentsResponse = await api.get('/comments/recent?limit=10');
 
         enrichedCommentary = (commentsResponse.data || []).map(comment => {
           // Find portfolio info from projects
@@ -298,9 +296,8 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
             portfolioName: projectInfo ? projectInfo[1].portfolio_name : null
           };
         });
-        } catch (commentsErr) {
-          console.log('Could not load recent comments:', commentsErr.message);
-        }
+      } catch (commentsErr) {
+        console.log('Could not load recent comments:', commentsErr.message);
       }
 
       // Group commentary by portfolio and sort
@@ -518,10 +515,8 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
 
       // Fetch inconsistency report
       try {
-        if (currentUser) {
-          const inconsistencyResponse = await api.get('/inconsistency-report');
-          setInconsistencies(inconsistencyResponse.data);
-        }
+        const inconsistencyResponse = await api.get('/inconsistency-report');
+        setInconsistencies(inconsistencyResponse.data);
       } catch (inconsistencyErr) {
         console.log('Could not load inconsistency report:', inconsistencyErr.message);
       }
