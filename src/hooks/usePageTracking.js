@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { api } from '../api/client';
 
 // Generate a session ID that persists for the browser session
 const getSessionId = () => {
@@ -15,29 +16,15 @@ export const trackPage = (pageName) => {
   const path = pageName || document.title || window.location.pathname;
 
   try {
-    const data = JSON.stringify({
+    // Use the api client which handles CORS and credentials properly
+    api.post('/analytics/pageview', {
       path: path,
       session_id: getSessionId()
+    }).catch(() => {
+      // Silently fail - never interrupt user experience
     });
-
-    const apiUrl = 'http://localhost:3001/api/analytics/pageview';
-
-    // Use sendBeacon for non-blocking fire-and-forget
-    if (navigator.sendBeacon) {
-      const blob = new Blob([data], { type: 'application/json' });
-      navigator.sendBeacon(apiUrl, blob);
-    } else {
-      // Fallback to fetch
-      fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: data,
-        keepalive: true
-      }).catch(() => {}); // Silently fail
-    }
   } catch (err) {
     // Silently fail - never interrupt user experience
-    console.debug('Page tracking failed:', err);
   }
 };
 
