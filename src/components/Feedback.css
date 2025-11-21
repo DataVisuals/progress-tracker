@@ -205,8 +205,23 @@
   color: #065f46;
 }
 
-.thread-content {
+.thread-content-wrapper {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
   margin-bottom: 8px;
+}
+
+.thread-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.thread-content-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: flex-start;
 }
 
 .thread-title {
@@ -223,6 +238,33 @@
   margin: 0;
   white-space: pre-wrap;
   font-size: 13px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.severity-icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.severity-icon-info {
+  color: #3b82f6;
+}
+
+.severity-icon-warning {
+  color: #f59e0b;
+}
+
+.severity-icon-error {
+  color: #dc2626;
+}
+
+.severity-icon-success {
+  color: #10b981;
 }
 
 .thread-response {
@@ -259,14 +301,35 @@
   font-size: 13px;
 }
 
-.thread-actions {
+.response-section {
   margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid #e5e7eb;
+  padding: 12px;
+  background: #f0f9ff;
+  border: 1px solid #00aeef;
+  border-radius: 6px;
 }
 
-.response-input-container {
-  margin-bottom: 6px;
+.response-section-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn-respond-toggle {
+  background: #00aeef;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.btn-respond-toggle:hover {
+  background: #0095d1;
 }
 
 .response-input {
@@ -277,7 +340,7 @@
   font-size: 13px;
   font-family: inherit;
   resize: vertical;
-  margin-bottom: 6px;
+  min-height: 70px;
 }
 
 .response-input:focus {
@@ -302,10 +365,6 @@
   background: #0095d1;
 }
 
-.status-actions {
-  display: flex;
-  gap: 10px;
-}
 
 .btn-resolve {
   background: #10b981;
@@ -472,8 +531,9 @@
   color: #f9fafb;
 }
 
-:root.dark-mode .thread-actions {
-  border-top-color: #374151;
+:root.dark-mode .response-section {
+  background: #164e63;
+  border-color: #00aeef;
 }
 
 :root.dark-mode .response-input {
@@ -492,4 +552,20 @@
 
 :root.dark-mode .btn-edit-small:hover {
   color: #00aeef;
+}
+
+:root.dark-mode .severity-icon-info {
+  color: #60a5fa;
+}
+
+:root.dark-mode .severity-icon-warning {
+  color: #fbbf24;
+}
+
+:root.dark-mode .severity-icon-error {
+  color: #ef4444;
+}
+
+:root.dark-mode .severity-icon-success {
+  color: #34d399;
 }

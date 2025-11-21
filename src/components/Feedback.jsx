@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { MdInfo, MdWarning, MdError, MdCheckCircle } from 'react-icons/md';
 import { api } from '../api/client';
 import './Feedback.css';
 
@@ -13,6 +14,7 @@ const Feedback = ({ currentUser, projectId }) => {
   const [editingFeedback, setEditingFeedback] = useState(null);
   const [editingResponse, setEditingResponse] = useState(null);
   const [editText, setEditText] = useState({});
+  const [respondingTo, setRespondingTo] = useState(null);
 
   const isPMOrAbove = currentUser && (currentUser.role === 'pm' || currentUser.role === 'admin');
 
@@ -66,6 +68,7 @@ const Feedback = ({ currentUser, projectId }) => {
     try {
       await api.put(`/feedback/${feedbackId}/respond`, { pm_response: response });
       setResponseText({ ...responseText, [feedbackId]: '' });
+      setRespondingTo(null);
       loadFeedback();
     } catch (err) {
       console.error('Failed to respond to feedback:', err);
@@ -143,6 +146,50 @@ const Feedback = ({ currentUser, projectId }) => {
     return status === 'resolved' ? 'status-resolved' : 'status-open';
   };
 
+  const renderFeedbackText = (text) => {
+    // Match severity tags like [INFO], [WARNING], [ERROR], [HIGH]
+    const severityMatch = text.match(/^\[(INFO|WARNING|ERROR|HIGH|SUCCESS)\]\s*/);
+
+    if (!severityMatch) {
+      return <p className="thread-description">{text}</p>;
+    }
+
+    const severity = severityMatch[1];
+    const textWithoutTag = text.substring(severityMatch[0].length);
+
+    let icon;
+    let iconClass;
+
+    switch (severity) {
+      case 'INFO':
+        icon = <MdInfo />;
+        iconClass = 'severity-icon-info';
+        break;
+      case 'WARNING':
+        icon = <MdWarning />;
+        iconClass = 'severity-icon-warning';
+        break;
+      case 'ERROR':
+      case 'HIGH':
+        icon = <MdError />;
+        iconClass = 'severity-icon-error';
+        break;
+      case 'SUCCESS':
+        icon = <MdCheckCircle />;
+        iconClass = 'severity-icon-success';
+        break;
+      default:
+        return <p className="thread-description">{text}</p>;
+    }
+
+    return (
+      <p className="thread-description">
+        <span className={`severity-icon ${iconClass}`}>{icon}</span>
+        {textWithoutTag}
+      </p>
+    );
+  };
+
   return (
     <div className="feedback-container">
       <div className="feedback-header">
@@ -216,39 +263,80 @@ const Feedback = ({ currentUser, projectId }) => {
                 </div>
               </div>
 
-              <div className="thread-content">
-                {editingFeedback === item.id ? (
-                  <div className="edit-container">
-                    <textarea
-                      className="response-input"
-                      value={editText[item.id]}
-                      onChange={(e) => setEditText({ ...editText, [item.id]: e.target.value })}
-                      rows="3"
-                      autoFocus
-                    />
-                    <div className="edit-actions">
-                      <button className="btn-respond" onClick={() => handleEditFeedback(item.id)}>
-                        Save
-                      </button>
-                      <button className="btn-cancel" onClick={() => setEditingFeedback(null)}>
-                        Cancel
-                      </button>
+              <div className="thread-content-wrapper">
+                <div className="thread-content">
+                  {editingFeedback === item.id ? (
+                    <div className="edit-container">
+                      <textarea
+                        className="response-input"
+                        value={editText[item.id]}
+                        onChange={(e) => setEditText({ ...editText, [item.id]: e.target.value })}
+                        rows="3"
+                        autoFocus
+                      />
+                      <div className="edit-actions">
+                        <button className="btn-respond" onClick={() => handleEditFeedback(item.id)}>
+                          Save
+                        </button>
+                        <button className="btn-cancel" onClick={() => setEditingFeedback(null)}>
+                          Cancel
+                        </button>
+                      </div>
                     </div>
+                  ) : (
+                    <div>
+                      {renderFeedbackText(item.text)}
+                      {currentUser && currentUser.userId === item.user_id && (
+                        <button
+                          className="btn-edit-small"
+                          onClick={() => {
+                            setEditingFeedback(item.id);
+                            setEditText({ ...editText, [item.id]: item.text });
+                          }}
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {isPMOrAbove && !item.pm_response && item.status === 'open' && (
+                  <div className="thread-content-actions">
+                    <button
+                      className="btn-respond-toggle"
+                      onClick={() => setRespondingTo(respondingTo === item.id ? null : item.id)}
+                    >
+                      Respond
+                    </button>
+                    <button
+                      className="btn-resolve"
+                      onClick={() => handleResolve(item.id, true)}
+                    >
+                      Mark as Resolved
+                    </button>
                   </div>
-                ) : (
-                  <div>
-                    <p className="thread-description">{item.text}</p>
-                    {currentUser && currentUser.userId === item.user_id && (
-                      <button
-                        className="btn-edit-small"
-                        onClick={() => {
-                          setEditingFeedback(item.id);
-                          setEditText({ ...editText, [item.id]: item.text });
-                        }}
-                      >
-                        Edit
-                      </button>
-                    )}
+                )}
+
+                {isPMOrAbove && item.pm_response && item.status === 'open' && (
+                  <div className="thread-content-actions">
+                    <button
+                      className="btn-resolve"
+                      onClick={() => handleResolve(item.id, true)}
+                    >
+                      Mark as Resolved
+                    </button>
+                  </div>
+                )}
+
+                {isPMOrAbove && item.status === 'resolved' && (
+                  <div className="thread-content-actions">
+                    <button
+                      className="btn-reopen"
+                      onClick={() => handleResolve(item.id, false)}
+                    >
+                      Reopen
+                    </button>
                   </div>
                 )}
               </div>
@@ -296,42 +384,29 @@ const Feedback = ({ currentUser, projectId }) => {
                 </div>
               )}
 
-              {isPMOrAbove && (
-                <div className="thread-actions">
-                  {!item.pm_response && item.status === 'open' && (
-                    <div className="response-input-container">
-                      <textarea
-                        className="response-input"
-                        placeholder="Type your response..."
-                        value={responseText[item.id] || ''}
-                        onChange={(e) => setResponseText({ ...responseText, [item.id]: e.target.value })}
-                        rows="2"
-                      />
-                      <button
-                        className="btn-respond"
-                        onClick={() => handleRespond(item.id)}
-                      >
-                        Respond
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="status-actions">
-                    {item.status === 'open' ? (
-                      <button
-                        className="btn-resolve"
-                        onClick={() => handleResolve(item.id, true)}
-                      >
-                        Mark as Resolved
-                      </button>
-                    ) : (
-                      <button
-                        className="btn-reopen"
-                        onClick={() => handleResolve(item.id, false)}
-                      >
-                        Reopen
-                      </button>
-                    )}
+              {isPMOrAbove && respondingTo === item.id && !item.pm_response && item.status === 'open' && (
+                <div className="response-section">
+                  <textarea
+                    className="response-input"
+                    placeholder="Type your response..."
+                    value={responseText[item.id] || ''}
+                    onChange={(e) => setResponseText({ ...responseText, [item.id]: e.target.value })}
+                    rows="3"
+                    autoFocus
+                  />
+                  <div className="response-section-actions">
+                    <button
+                      className="btn-respond"
+                      onClick={() => handleRespond(item.id)}
+                    >
+                      Submit Response
+                    </button>
+                    <button
+                      className="btn-cancel"
+                      onClick={() => setRespondingTo(null)}
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </div>
               )}

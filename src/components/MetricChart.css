@@ -18,6 +18,13 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 174, 239, 0.1);
   min-width: 220px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  z-index: 99999 !important;
+  position: relative !important;
+}
+
+/* Ensure Recharts tooltip wrapper has high z-index */
+.recharts-tooltip-wrapper {
+  z-index: 99999 !important;
 }
 
 .tooltip-header {
@@ -77,20 +84,20 @@
 }
 
 .tooltip-value.positive {
-  color: #10b981;
+  color: var(--rag-green);
 }
 
 .tooltip-value.negative {
-  color: #ef4444;
+  color: var(--rag-red);
 }
 
 .tooltip-value.amber {
-  color: #f59e0b;
+  color: var(--rag-amber);
   font-weight: 600;
 }
 
 .tooltip-value.red {
-  color: #ef4444;
+  color: var(--rag-red);
   font-weight: 600;
 }
 
@@ -149,51 +156,44 @@
 .metric-date-range {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 10px 16px;
-  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
-  border: 1px solid #0891b2;
-  border-radius: 8px;
-  font-size: 13px;
-  box-shadow: 0 2px 6px rgba(0, 174, 239, 0.15);
+  gap: 10px;
+  padding: 6px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 12px;
   flex: 1;
 }
 
 .date-range-item {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
 }
 
 .date-label {
-  font-weight: 700;
-  color: #0c4a6e;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 12px;
 }
 
 .date-value {
-  font-weight: 800;
-  color: #003c71;
-  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .date-value.duration {
-  color: #0c4a6e;
-  font-weight: 800;
-  background: rgba(255, 255, 255, 0.4);
-  padding: 2px 8px;
-  border-radius: 4px;
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 11px;
 }
 
 .date-range-separator {
-  color: #0369a1;
-  font-weight: 700;
-  font-size: 18px;
-  opacity: 0.7;
+  color: #9ca3af;
+  font-weight: 400;
+  font-size: 14px;
 }
 
 /* Metric Properties Row */
@@ -296,7 +296,7 @@
   display: inline-block;
   width: 8px;
   height: 8px;
-  background-color: #ef4444;
+  background-color: var(--rag-red);
   border-radius: 50%;
   margin-left: 6px;
   vertical-align: middle;
@@ -310,6 +310,42 @@
   50% {
     opacity: 0.5;
   }
+}
+
+/* Warning indicator for tabs that need attention */
+.warning-indicator {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 14px;
+  vertical-align: middle;
+  animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+/* Tab button that needs action */
+.tab-button.needs-action {
+  position: relative;
+}
+
+.tab-button.needs-action::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(251, 146, 60, 0.1);
+  pointer-events: none;
 }
 
 .tab-content {
@@ -887,26 +923,46 @@
   font-size: 12px;
 }
 
+/* Editable cell styling */
+.number-cell.editable-cell {
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+
+.number-cell.editable-cell:hover {
+  background-color: rgba(0, 174, 239, 0.05);
+}
+
+.number-cell.editable-cell:hover::after {
+  content: '✎';
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 10px;
+  color: #00aeef;
+  opacity: 0.6;
+}
+
 /* Status colors for Complete row cells */
 .number-cell.status-green {
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-  color: #065f46;
+  background: rgba(220, 252, 231, 0.3);
+  color: var(--rag-green);
   font-weight: 700;
-  box-shadow: inset 0 1px 2px rgba(16, 185, 129, 0.1);
+  border-left: 2px solid var(--rag-green);
 }
 
 .number-cell.status-amber {
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-  color: #92400e;
+  background: rgba(254, 243, 199, 0.3);
+  color: var(--rag-amber);
   font-weight: 700;
-  box-shadow: inset 0 1px 2px rgba(245, 158, 11, 0.1);
+  border-left: 2px solid var(--rag-amber);
 }
 
 .number-cell.status-red {
-  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
-  color: #991b1b;
+  background: rgba(254, 226, 226, 0.3);
+  color: var(--rag-red);
   font-weight: 700;
-  box-shadow: inset 0 1px 2px rgba(239, 68, 68, 0.1);
+  border-left: 2px solid var(--rag-red);
 }
 
 .variance-cell {
@@ -1086,26 +1142,24 @@
 }
 
 :root.dark-mode .metric-date-range {
-  background: linear-gradient(135deg, #1e3a5f 0%, #0c4a6e 50%, #164e63 100%);
-  border-color: #0891b2;
+  background: #1f2937;
+  border-color: #374151;
 }
 
 :root.dark-mode .date-label {
-  color: #93c5fd;
+  color: #9ca3af;
 }
 
 :root.dark-mode .date-value {
-  color: #e0f2fe;
-  text-shadow: none;
+  color: #d1d5db;
 }
 
 :root.dark-mode .date-value.duration {
-  color: #e0f2fe;
-  background: rgba(0, 0, 0, 0.3);
+  color: #9ca3af;
 }
 
 :root.dark-mode .date-range-separator {
-  color: #7dd3fc;
+  color: #6b7280;
 }
 
 :root.dark-mode .property-label {
@@ -1325,18 +1379,27 @@
   color: #f9fafb;
 }
 
+:root.dark-mode .number-cell.editable-cell:hover {
+  background-color: rgba(0, 174, 239, 0.15);
+}
+
+:root.dark-mode .number-cell.editable-cell:hover::after {
+  color: #7dd3fc;
+  opacity: 0.8;
+}
+
 :root.dark-mode .number-cell.status-green {
-  background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+  background: rgba(6, 78, 59, 0.3);
   color: #a7f3d0;
 }
 
 :root.dark-mode .number-cell.status-amber {
-  background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+  background: rgba(120, 53, 15, 0.3);
   color: #fef3c7;
 }
 
 :root.dark-mode .number-cell.status-red {
-  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+  background: rgba(127, 29, 29, 0.3);
   color: #fecaca;
 }
 
@@ -1509,6 +1572,76 @@
   .commentary-section {
     margin-top: 8px;
     padding: 8px;
+  }
+}
+
+/* Laptop screen optimizations - reduce vertical padding */
+@media (min-width: 768px) and (max-height: 900px) {
+  .metric-chart-container {
+    padding: 12px;
+  }
+
+  .tooltip-header {
+    padding: 8px 14px;
+  }
+
+  .tooltip-body {
+    padding: 10px 14px;
+  }
+
+  .tooltip-row {
+    padding: 4px 0;
+  }
+
+  .metric-header {
+    padding: 8px 14px;
+  }
+
+  .metric-actions {
+    padding: 8px 14px;
+  }
+
+  .tab-button {
+    padding: 6px 16px;
+  }
+
+  .tab-content {
+    padding: 3px 6px;
+  }
+
+  .metric-details {
+    padding: 8px;
+  }
+
+  .commentary-section {
+    padding: 8px;
+  }
+
+  .commentary-content {
+    padding: 6px 16px;
+  }
+
+  .data-grid-section {
+    padding: 6px 16px;
+  }
+
+  .table-cell,
+  .number-cell {
+    padding: 6px 6px;
+  }
+
+  .table-header-cell {
+    padding: 6px 8px;
+  }
+
+  .btn-edit-tolerances,
+  .btn-save-tolerances,
+  .btn-cancel-tolerances {
+    padding: 5px 10px;
+  }
+
+  .legend-controls {
+    padding: 6px 18px;
   }
 }
 
