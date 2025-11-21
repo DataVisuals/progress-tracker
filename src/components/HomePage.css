@@ -1185,7 +1185,7 @@ html.dark-mode .quadrant-content {
   gap: 12px;
   padding: 16px;
   overflow-y: auto;
-  max-height: 400px;
+  height: 100%;
   align-items: flex-start;
 }
 
