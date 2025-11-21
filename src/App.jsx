@@ -22,6 +22,7 @@ import HomePage from './components/HomePage';
 import { api } from './api/client';
 import { selectStyles } from './components/SelectStyles';
 import { MdShowChart, MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
+import { trackPage } from './hooks/usePageTracking';
 import './App.css';
 
 function App() {
@@ -165,8 +166,14 @@ function App() {
       loadProjectData();
       loadProjectMetrics();
       loadProjectLinks();
+
+      // Track page view for analytics
+      const project = projects.find(p => p.id === parseInt(selectedProject));
+      if (project) {
+        trackPage(`Project: ${project.name}`);
+      }
     }
-  }, [selectedProject]);
+  }, [selectedProject, projects]);
 
   // Auto-select first metric when metrics load
   useEffect(() => {
