@@ -789,15 +789,26 @@ html.dark-mode .quadrant-content {
 
 .getting-started ul {
   margin: 0;
-  padding-left: 20px;
-  list-style-type: disc;
+  padding-left: 0;
+  list-style-type: none;
 }
 
 .getting-started li {
   font-size: 16px;
   color: #4b5563;
   line-height: 1.7;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.getting-started .step-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: #00aeef;
+  margin-top: 2px;
 }
 
 .getting-started li:last-child {
@@ -1029,6 +1040,10 @@ html.dark-mode .quadrant-content {
 
 :root.dark-mode .getting-started li {
   color: #d1d5db;
+}
+
+:root.dark-mode .getting-started .step-icon {
+  color: #00aeef;
 }
 
 :root.dark-mode .empty-state p {

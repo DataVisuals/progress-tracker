@@ -608,12 +608,51 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
           <div className="quadrant-content">
             <div className="getting-started">
               <ul>
-                <li>Add a project to a portfolio giving it a description that clearly defines the business outcome</li>
-                <li>Define measures that move each reporting period (lead measures) and measures that demonstrate success (lag measures). Give them sensible names and describe precisely what they measure.</li>
-                <li>Describe the trajectory of these measures over time as an expected curve.</li>
-                <li>Define tolerances for deviation from the curve.</li>
-                <li>Each period update the completed values for each metric. If these are out of tolerance, provide commentary and a recovery plan.</li>
-                <li>Keep an eye on the consistency panel of the home page for data quality issues.</li>
+                <li>
+                  <svg className="step-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 7V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M3 7L10 5H14L21 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span>Add a project to a portfolio giving it a description that clearly defines the business outcome</span>
+                </li>
+                <li>
+                  <svg className="step-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 3V6M15 3V6M3 10H21M5 5H19C20.1046 5 21 5.89543 21 7V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V7C3 5.89543 3.89543 5 5 5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <circle cx="12" cy="15" r="1.5" fill="currentColor"/>
+                  </svg>
+                  <span>Define measures that move each reporting period (lead measures) and measures that demonstrate success (lag measures). Give them sensible names and describe precisely what they measure.</span>
+                </li>
+                <li>
+                  <svg className="step-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 17L6 14L10 18L18 7L21 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M3 20H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <span>Describe the trajectory of these measures over time as an expected curve.</span>
+                </li>
+                <li>
+                  <svg className="step-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M4 8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.4"/>
+                    <path d="M4 16H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.4"/>
+                    <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                    <path d="M8 8V16M16 8V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.6"/>
+                  </svg>
+                  <span>Define tolerances for deviation from the curve.</span>
+                </li>
+                <li>
+                  <svg className="step-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 12L9 17L20 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="19" cy="19" r="3" fill="currentColor"/>
+                  </svg>
+                  <span>Each period update the completed values for each metric. If these are out of tolerance, provide commentary and a recovery plan.</span>
+                </li>
+                <li>
+                  <svg className="step-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <span>Keep an eye on the consistency panel of the home page for data quality issues.</span>
+                </li>
               </ul>
             </div>
           </div>
