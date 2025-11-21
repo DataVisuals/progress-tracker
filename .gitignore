@@ -7,6 +7,8 @@ backend/data/*.db
 backend/data/*.db-journal
 *.db
 *.db-journal
+*.sqlite
+*.sqlite-journal
 
 # Environment files
 .env
@@ -34,6 +36,10 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# PID files
+.pids/
+*.pid
 
 # SQLite WAL files
 *.db-shm
