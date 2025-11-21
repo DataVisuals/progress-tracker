@@ -1708,7 +1708,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                   <td
                     key={index}
                     className={`number-cell ${statusClass} ${allowDataEdits && !isFuture ? 'editable-cell' : ''}`}
-                    onClick={() => !isFuture && handleCellClick(item.id, 'complete', item.complete)}
+                    onClick={() => allowDataEdits && !isFuture && handleCellClick(item.id, 'complete', item.complete)}
                     style={allowDataEdits && !isFuture ? { cursor: 'pointer' } : {}}
                   >
                     {isEditing ? (

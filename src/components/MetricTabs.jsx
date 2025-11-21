@@ -262,11 +262,19 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
           }}
         >
           <div className="metric-dropdown">
-            <button onMouseDown={() => handleRename(showDropdown)}>
+            <button onMouseDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              handleRename(showDropdown);
+            }}>
               Rename Metric
             </button>
             <button
-              onMouseDown={() => handleDelete(showDropdown)}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                handleDelete(showDropdown);
+              }}
               className="delete-option"
             >
               Delete Metric
