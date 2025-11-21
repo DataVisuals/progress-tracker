@@ -48,6 +48,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
   const [inconsistencies, setInconsistencies] = useState(null); // Inconsistency report data
   const [showTipsModal, setShowTipsModal] = useState(false); // Modal for tips
   const [showWhatsNewModal, setShowWhatsNewModal] = useState(false); // Modal for what's new
+  const [expandedPMs, setExpandedPMs] = useState({}); // Track which PMs are expanded in inconsistency report
 
   // Tips from the TipsSplash component
   const allTips = [
@@ -826,63 +827,77 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
               </div>
             ) : (
               <div className="inconsistency-list">
-                {inconsistencies.summary.map((pmData, index) => (
-                  <div key={index} className="inconsistency-pm-item">
-                    <div className="inconsistency-pm-header">
-                      <span className="pm-name">{pmData.pm_name}</span>
-                      <div className="inconsistency-counts">
-                        <span className="total-count">{pmData.total}</span>
+                {inconsistencies.summary.map((pmData, index) => {
+                  const isExpanded = expandedPMs[pmData.pm_name];
+                  const displayedIssues = isExpanded ? pmData.issues : pmData.issues.slice(0, 3);
+
+                  return (
+                    <div key={index} className="inconsistency-pm-item">
+                      <div className="inconsistency-pm-header">
+                        <span className="pm-name">{pmData.pm_name}</span>
+                        <div className="inconsistency-counts">
+                          <span className="total-count">{pmData.total}</span>
+                        </div>
                       </div>
-                    </div>
-                    {pmData.issues.slice(0, 3).map((issue, idx) => {
-                      // Create natural title based on issue type
-                      let issueTitle = '';
-                      let targetEntity = '';
-                      let targetProjectId = issue.project_id;
+                      {displayedIssues.map((issue, idx) => {
+                        // Create natural title based on issue type
+                        let issueTitle = '';
+                        let targetEntity = '';
+                        let targetProjectId = issue.project_id;
 
-                      if (issue.type === 'missing_metric_description' && issue.metric_name) {
-                        issueTitle = `${issue.metric_name} is Missing a Description`;
-                        targetEntity = issue.metric_name;
-                      } else if (issue.type === 'missing_project_description' || issue.details === 'Project missing description') {
-                        issueTitle = `${issue.project_name} is Missing a Description`;
-                        targetEntity = issue.project_name;
-                      } else if (issue.type === 'missing_documentation') {
-                        issueTitle = `${issue.project_name} has No Documentation Links`;
-                        targetEntity = issue.project_name;
-                      } else if (issue.type === 'missing_recovery_plan') {
-                        issueTitle = `${issue.metric_name || issue.project_name} is Missing a Recovery Plan`;
-                        targetEntity = issue.metric_name || issue.project_name;
-                      } else {
-                        issueTitle = issue.details;
-                        targetEntity = issue.metric_name || issue.project_name;
-                      }
+                        if (issue.type === 'missing_metric_description' && issue.metric_name) {
+                          issueTitle = `${issue.metric_name} is Missing a Description`;
+                          targetEntity = issue.metric_name;
+                        } else if (issue.type === 'missing_project_description' || issue.details === 'Project missing description') {
+                          issueTitle = `${issue.project_name} is Missing a Description`;
+                          targetEntity = issue.project_name;
+                        } else if (issue.type === 'missing_documentation') {
+                          issueTitle = `${issue.project_name} has No Documentation Links`;
+                          targetEntity = issue.project_name;
+                        } else if (issue.type === 'missing_recovery_plan') {
+                          issueTitle = `${issue.metric_name || issue.project_name} is Missing a Recovery Plan`;
+                          targetEntity = issue.metric_name || issue.project_name;
+                        } else {
+                          issueTitle = issue.details;
+                          targetEntity = issue.metric_name || issue.project_name;
+                        }
 
-                      return (
-                        <div
-                          key={idx}
-                          className="inconsistency-detail"
-                          onClick={() => handleProjectNavigation(targetProjectId)}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          <div className="issue-content">
-                            <div className="issue-title">{issueTitle}</div>
-                            <div className="issue-subtitle">
-                              {issue.project_name}
-                              {issue.age_days > 0 && (
-                                <span className="issue-age"> • {issue.age_days}d old</span>
-                              )}
+                        return (
+                          <div
+                            key={idx}
+                            className="inconsistency-detail"
+                            onClick={() => handleProjectNavigation(targetProjectId)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <div className="issue-content">
+                              <div className="issue-title">{issueTitle}</div>
+                              <div className="issue-subtitle">
+                                {issue.project_name}
+                                {issue.age_days > 0 && (
+                                  <span className="issue-age"> • {issue.age_days}d old</span>
+                                )}
+                              </div>
                             </div>
                           </div>
+                        );
+                      })}
+                      {pmData.issues.length > 3 && (
+                        <div
+                          className="more-issues"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedPMs(prev => ({
+                              ...prev,
+                              [pmData.pm_name]: !prev[pmData.pm_name]
+                            }));
+                          }}
+                        >
+                          {isExpanded ? 'Show less' : `+${pmData.issues.length - 3} more`}
                         </div>
-                      );
-                    })}
-                    {pmData.issues.length > 3 && (
-                      <div className="more-issues">
-                        +{pmData.issues.length - 3} more
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

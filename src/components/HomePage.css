@@ -1295,11 +1295,18 @@ html.dark-mode .quadrant-content {
 
 .more-issues {
   text-align: left;
-  color: #6b7280;
+  color: #00aeef;
   font-size: 12px;
-  font-style: italic;
+  font-weight: 500;
   margin-top: 4px;
   padding-left: 8px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.more-issues:hover {
+  color: #0088bb;
+  text-decoration: underline;
 }
 
 .no-inconsistencies {
@@ -1542,7 +1549,11 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .more-issues {
-  color: #9ca3af;
+  color: #60a5fa;
+}
+
+:root.dark-mode .more-issues:hover {
+  color: #93c5fd;
 }
 
 :root.dark-mode .no-inconsistencies {
