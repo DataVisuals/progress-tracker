@@ -607,7 +607,6 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
           </div>
           <div className="quadrant-content">
             <div className="getting-started">
-              <h3>Quick Start Guide</h3>
               <ul>
                 <li>Add a project to a portfolio giving it a description that clearly defines the business outcome</li>
                 <li>Define measures that move each reporting period (lead measures) and measures that demonstrate success (lag measures). Give them sensible names and describe precisely what they measure.</li>
