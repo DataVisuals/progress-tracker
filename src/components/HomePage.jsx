@@ -627,10 +627,12 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
             <div className="getting-started">
               <h3>Getting Started</h3>
               <ul>
-                <li>Select a project from the dropdown above</li>
-                <li>Review metrics with red or amber status</li>
-                <li>Add commentary to explain variances</li>
-                <li>Use the data grid for bulk updates</li>
+                <li>Add a project to a portfolio giving it a description that clearly defines the business outcome</li>
+                <li>Define measures that move each reporting period (lead measures) and measures that demonstrate success (lag measures). Give them sensible names and describe precisely what they measure.</li>
+                <li>Describe the trajectory of these measures over time as an expected curve.</li>
+                <li>Define tolerances for deviation from the curve.</li>
+                <li>Each period update the completed values for each metric. If these are out of tolerance, provide commentary and a recovery plan.</li>
+                <li>Keep an eye on the consistency panel of the home page for data quality issues.</li>
               </ul>
             </div>
           </div>
