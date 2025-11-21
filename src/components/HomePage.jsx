@@ -588,6 +588,10 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
             <span className="stat-label">Metrics</span>
           </div>
           <div className="stat-item">
+            <span className="stat-value green">{metricCount - atRiskMetrics.length}</span>
+            <span className="stat-label">On Track</span>
+          </div>
+          <div className="stat-item">
             <span className="stat-value red">{atRiskMetrics.length}</span>
             <span className="stat-label">At Risk</span>
           </div>
@@ -595,33 +599,15 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
       </div>
 
       <div className={`home-grid ${feedback.length === 0 ? 'no-feedback' : ''}`}>
-        {/* Top Left - Quick Overview */}
+        {/* Top Left - Getting Started */}
         <div className="home-quadrant summary-quadrant">
           <div className="quadrant-header">
             <MdTrendingUp className="quadrant-icon" />
-            <h2>Quick Overview</h2>
+            <h2>Getting Started</h2>
           </div>
           <div className="quadrant-content">
-            <div className="summary-grid">
-              <div className="summary-card">
-                <div className="summary-number">{projectCount}</div>
-                <div className="summary-label">Active Projects</div>
-              </div>
-              <div className="summary-card">
-                <div className="summary-number">{metricCount}</div>
-                <div className="summary-label">Total Metrics</div>
-              </div>
-              <div className="summary-card warning">
-                <div className="summary-number">{atRiskMetrics.length}</div>
-                <div className="summary-label">At Risk</div>
-              </div>
-              <div className="summary-card success">
-                <div className="summary-number">{metricCount - atRiskMetrics.length}</div>
-                <div className="summary-label">On Track</div>
-              </div>
-            </div>
             <div className="getting-started">
-              <h3>Getting Started</h3>
+              <h3>Quick Start Guide</h3>
               <ul>
                 <li>Add a project to a portfolio giving it a description that clearly defines the business outcome</li>
                 <li>Define measures that move each reporting period (lead measures) and measures that demonstrate success (lag measures). Give them sensible names and describe precisely what they measure.</li>
@@ -832,7 +818,10 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
                   return (
                     <div key={index} className="inconsistency-pm-item">
                       <div className="inconsistency-pm-header">
-                        <span className="pm-name">{pmData.pm_name}</span>
+                        <div className="pm-name-wrapper">
+                          <MdPeople className="pm-icon" />
+                          <span className="pm-name">{pmData.pm_name}</span>
+                        </div>
                         <div className="inconsistency-counts">
                           <span className="total-count">{pmData.total}</span>
                         </div>
