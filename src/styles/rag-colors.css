@@ -1,0 +1,87 @@
+/**
+ * Centralized RAG (Red-Amber-Green) status colors
+ * Import this file in components that use RAG status indicators
+ *
+ * Usage:
+ * - Use .rag-red, .rag-amber, .rag-green, .rag-grey classes
+ * - Or use CSS variables: var(--rag-red), var(--rag-amber), etc.
+ */
+
+:root {
+  /* Light mode RAG colors - distinct and accessible */
+  --rag-red: #dc2626;
+  --rag-amber: #d97706;   /* Darker amber for better distinction from red */
+  --rag-green: #16a34a;
+  --rag-grey: #6b7280;
+
+  /* RAG colors with transparency */
+  --rag-red-light: rgba(220, 38, 38, 0.1);
+  --rag-amber-light: rgba(217, 119, 6, 0.1);
+  --rag-green-light: rgba(22, 163, 74, 0.1);
+  --rag-grey-light: rgba(107, 114, 128, 0.1);
+}
+
+:root.dark-mode {
+  /* Dark mode RAG colors - lighter for visibility on dark backgrounds */
+  --rag-red: #ef4444;
+  --rag-amber: #f59e0b;
+  --rag-green: #22c55e;
+  --rag-grey: #9ca3af;
+
+  /* RAG colors with transparency for dark mode */
+  --rag-red-light: rgba(239, 68, 68, 0.2);
+  --rag-amber-light: rgba(245, 158, 11, 0.2);
+  --rag-green-light: rgba(34, 197, 94, 0.2);
+  --rag-grey-light: rgba(156, 163, 175, 0.2);
+}
+
+/* Utility classes for RAG colors */
+.rag-red {
+  color: var(--rag-red);
+}
+
+.rag-amber {
+  color: var(--rag-amber);
+}
+
+.rag-green {
+  color: var(--rag-green);
+}
+
+.rag-grey {
+  color: var(--rag-grey);
+}
+
+/* Background utility classes */
+.rag-red-bg {
+  background-color: var(--rag-red);
+}
+
+.rag-amber-bg {
+  background-color: var(--rag-amber);
+}
+
+.rag-green-bg {
+  background-color: var(--rag-green);
+}
+
+.rag-grey-bg {
+  background-color: var(--rag-grey);
+}
+
+/* Light background utility classes */
+.rag-red-bg-light {
+  background-color: var(--rag-red-light);
+}
+
+.rag-amber-bg-light {
+  background-color: var(--rag-amber-light);
+}
+
+.rag-green-bg-light {
+  background-color: var(--rag-green-light);
+}
+
+.rag-grey-bg-light {
+  background-color: var(--rag-grey-light);
+}

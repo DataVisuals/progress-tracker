@@ -1,0 +1,491 @@
+.recovery-plans-container {
+  padding: 0;
+  max-width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.recovery-suggestion-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fef3c7;
+  border: 2px solid #f59e0b;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.suggestion-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.suggestion-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.suggestion-title {
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 4px;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.suggestion-subtitle {
+  font-weight: 500;
+  color: #92400e;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.suggestion-metrics {
+  color: #78350f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.suggestion-metrics .metric-name {
+  font-weight: 500;
+}
+
+.btn-suggestion-action {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 13px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-suggestion-action:hover {
+  background: #d97706;
+}
+
+.recovery-plans-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.recovery-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-add-plan {
+  background: #00aeef;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 13px;
+}
+
+.btn-add-plan:hover {
+  background: #0095d1;
+}
+
+.plan-form {
+  background: #fef3c7;
+  border: 2px solid #f59e0b;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 20px;
+}
+
+.form-field {
+  margin-bottom: 12px;
+}
+
+.form-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.metric-select,
+.date-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  background: white;
+}
+
+.metric-select:focus,
+.date-input:focus,
+.plan-description-input:focus {
+  outline: none;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.1);
+}
+
+.plan-description-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.loading,
+.no-plans {
+  text-align: center;
+  padding: 20px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.plan-threads {
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.plan-thread {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px 14px;
+  transition: box-shadow 0.2s;
+}
+
+.plan-thread:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.plan-thread.completed {
+  opacity: 0.85;
+  background: #f9fafb;
+  border-left: 4px solid #10b981;
+}
+
+.plan-thread.cancelled {
+  opacity: 0.7;
+  background: #fef2f2;
+  border-left: 4px solid #ef4444;
+}
+
+.plan-thread.active {
+  border-left: 4px solid #f59e0b;
+}
+
+.metric-badge {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.metric-badge.metric-green {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.metric-badge.metric-yellow {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.metric-badge.metric-red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.metric-badge.metric-unknown {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.thread-status.status-active {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.thread-status.status-completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.thread-status.status-cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.target-date {
+  margin-top: 6px;
+  padding: 4px 10px;
+  background: #f0f9ff;
+  border-left: 3px solid #00aeef;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #0c4a6e;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.plan-edit-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+  margin-bottom: 8px;
+}
+
+.plan-edit-input:focus {
+  outline: none;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.1);
+}
+
+.completion-section {
+  background: #f0fdf4;
+  border-left: 3px solid #10b981;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.completion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.completion-label {
+  font-weight: 600;
+  color: #065f46;
+  font-size: 12px;
+}
+
+.completion-date {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.completion-notes {
+  color: #1f2937;
+  line-height: 1.4;
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 13px;
+}
+
+.completion-input-container {
+  margin-bottom: 8px;
+}
+
+.completion-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.completion-input:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+.btn-complete {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 13px;
+}
+
+.btn-complete:hover {
+  background: #059669;
+}
+
+.btn-cancel-plan {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 13px;
+}
+
+.btn-cancel-plan:hover {
+  background: #dc2626;
+}
+
+.btn-reactivate {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 13px;
+}
+
+.btn-reactivate:hover {
+  background: #d97706;
+}
+
+/* Dark Mode Styles */
+:root.dark-mode .recovery-suggestion-banner {
+  background: #78350f;
+  border-color: #f59e0b;
+}
+
+:root.dark-mode .suggestion-title {
+  color: #fde68a;
+}
+
+:root.dark-mode .suggestion-subtitle {
+  color: #fde68a;
+}
+
+:root.dark-mode .suggestion-metrics {
+  color: #fde68a;
+}
+
+:root.dark-mode .recovery-plans-header {
+  background: #111827;
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .plan-form {
+  background: #78350f;
+  border-color: #f59e0b;
+}
+
+:root.dark-mode .form-field label {
+  color: #f9fafb;
+}
+
+:root.dark-mode .metric-select,
+:root.dark-mode .date-input,
+:root.dark-mode .plan-description-input {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:root.dark-mode .loading,
+:root.dark-mode .no-plans {
+  color: #9ca3af;
+}
+
+:root.dark-mode .plan-thread {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:root.dark-mode .plan-thread.completed {
+  background: #111827;
+}
+
+:root.dark-mode .plan-thread.cancelled {
+  background: #1f1414;
+}
+
+:root.dark-mode .metric-badge.metric-green {
+  background: #064e3b;
+  color: #a7f3d0;
+}
+
+:root.dark-mode .metric-badge.metric-yellow {
+  background: #78350f;
+  color: #fde047;
+}
+
+:root.dark-mode .metric-badge.metric-red {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+:root.dark-mode .thread-status.status-active {
+  background: #78350f;
+  color: #fde047;
+}
+
+:root.dark-mode .thread-status.status-completed {
+  background: #064e3b;
+  color: #a7f3d0;
+}
+
+:root.dark-mode .thread-status.status-cancelled {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+:root.dark-mode .target-date {
+  background: #164e63;
+  color: #7dd3fc;
+}
+
+:root.dark-mode .plan-edit-input {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:root.dark-mode .completion-section {
+  background: #064e3b;
+}
+
+:root.dark-mode .completion-label {
+  color: #a7f3d0;
+}
+
+:root.dark-mode .completion-notes {
+  color: #f9fafb;
+}
+
+:root.dark-mode .completion-input {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}

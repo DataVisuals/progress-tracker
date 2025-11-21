@@ -1,5 +1,5 @@
 .home-page {
-  padding: 0 24px 24px 24px;
+  padding: 0 20px 20px 20px;
   max-width: none;
   width: calc(100vw - 80px);
   margin: 0 auto;
@@ -7,10 +7,11 @@
 
 .home-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
+  gap: 24px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -64,19 +65,20 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
-  gap: 12px;
-  height: calc(100vh - 360px);
-  min-height: 320px;
+  gap: 8px;
+  height: calc(100vh - 280px);
+  min-height: 400px;
 }
 
 /* Expand grid when no feedback section */
 .home-grid.no-feedback {
-  height: calc(100vh - 200px);
+  height: calc(100vh - 160px);
+  min-height: 500px;
 }
 
 /* Feedback Section */
 .feedback-section {
-  margin-top: 12px;
+  margin-top: 8px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -106,7 +108,7 @@
 }
 
 .feedback-content {
-  padding: 16px 20px;
+  padding: 12px 16px;
   max-height: 200px;
   overflow-y: auto;
 }
@@ -257,6 +259,7 @@
 .quadrant-header {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
   padding: 10px 16px;
   border-bottom: 1px solid #e5e7eb;
@@ -269,6 +272,7 @@
   font-weight: 600;
   color: #374151;
   flex: 1;
+  text-align: left;
 }
 
 .rag-filter-buttons {
@@ -329,7 +333,7 @@
 .quadrant-content {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 20px;
+  padding: 12px 16px;
   background-color: white;
 }
 
@@ -420,6 +424,14 @@ html.dark-mode .quadrant-content {
   align-items: center;
   gap: 4px;
   white-space: nowrap;
+}
+
+.commentary-portfolio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-right: 4px;
 }
 
 .commentary-label {
@@ -528,6 +540,7 @@ html.dark-mode .quadrant-content {
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid #fecaca;
+  text-align: left;
 }
 
 .metric-item:hover {
@@ -551,6 +564,7 @@ html.dark-mode .quadrant-content {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  align-items: flex-start;
 }
 
 .metric-right {
@@ -564,6 +578,13 @@ html.dark-mode .quadrant-content {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.metric-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
   min-width: 0;
 }
 
@@ -581,6 +602,30 @@ html.dark-mode .quadrant-content {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.recovery-plan-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #f59e0b;
+  font-size: 16px;
+  cursor: help;
+  flex-shrink: 0;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.recovery-plan-indicator:hover {
+  color: #d97706;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 .metric-name {
@@ -672,8 +717,8 @@ html.dark-mode .quadrant-content {
 .summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .summary-card {
@@ -882,6 +927,14 @@ html.dark-mode .quadrant-content {
   color: #e0f2fe;
 }
 
+:root.dark-mode .recovery-plan-indicator {
+  color: #fbbf24;
+}
+
+:root.dark-mode .recovery-plan-indicator:hover {
+  color: #fde047;
+}
+
 :root.dark-mode .metric-name {
   color: #d1d5db;
 }
@@ -1023,50 +1076,6 @@ html.dark-mode .quadrant-content {
 /* Compact spacing for laptop screens with limited vertical space */
 @media (max-height: 900px) {
   .home-page {
-    padding: 0 20px 20px 20px;
-  }
-
-  .home-header {
-    margin-bottom: 10px;
-    padding-bottom: 10px;
-  }
-
-  .home-grid {
-    gap: 20px;
-  }
-
-  .quadrant-content {
-    padding: 14px 18px;
-  }
-
-  .summary-grid {
-    gap: 10px;
-  }
-
-  .summary-card {
-    padding: 8px 14px;
-  }
-
-  .getting-started {
-    padding: 16px;
-    margin-top: 10px;
-  }
-
-  .metric-item,
-  .commentary-item,
-  .tip-item {
-    padding: 8px;
-    gap: 6px;
-  }
-
-  .feedback-section {
-    margin-top: 16px;
-    padding: 14px 18px;
-  }
-}
-
-@media (max-height: 768px) {
-  .home-page {
     padding: 0 16px 16px 16px;
   }
 
@@ -1076,11 +1085,11 @@ html.dark-mode .quadrant-content {
   }
 
   .home-grid {
-    gap: 16px;
+    gap: 8px;
   }
 
   .quadrant-content {
-    padding: 12px 16px;
+    padding: 10px 14px;
   }
 
   .summary-grid {
@@ -1088,7 +1097,7 @@ html.dark-mode .quadrant-content {
   }
 
   .summary-card {
-    padding: 6px 12px;
+    padding: 10px 14px;
   }
 
   .getting-started {
@@ -1099,13 +1108,63 @@ html.dark-mode .quadrant-content {
   .metric-item,
   .commentary-item,
   .tip-item {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .feedback-section {
+    margin-top: 8px;
+  }
+
+  .feedback-content {
+    padding: 10px 14px;
+  }
+}
+
+@media (max-height: 768px) {
+  .home-page {
+    padding: 0 12px 12px 12px;
+  }
+
+  .home-header {
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+  }
+
+  .home-grid {
+    gap: 6px;
+  }
+
+  .quadrant-content {
+    padding: 8px 12px;
+  }
+
+  .summary-grid {
+    gap: 6px;
+  }
+
+  .summary-card {
+    padding: 8px 12px;
+  }
+
+  .getting-started {
+    padding: 10px;
+    margin-top: 6px;
+  }
+
+  .metric-item,
+  .commentary-item,
+  .tip-item {
     padding: 6px;
     gap: 4px;
   }
 
   .feedback-section {
-    margin-top: 12px;
-    padding: 12px 16px;
+    margin-top: 6px;
+  }
+
+  .feedback-content {
+    padding: 8px 12px;
   }
 }
 

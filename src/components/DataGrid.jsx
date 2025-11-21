@@ -91,6 +91,45 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
     });
   };
 
+  // Auto-save a single cell when it loses focus
+  const handleCellBlur = async (id, field) => {
+    const row = editedData.find(r => r.id === id);
+    if (!row) return;
+
+    // Find the original row to check if it actually changed
+    const original = data.find(p => p.id === row.id && p.metric_id === row.metric_id);
+    if (!original) return; // New rows aren't auto-saved, only edited existing rows
+
+    // Check if this field actually changed
+    if (original[field] === row[field]) return;
+
+    try {
+      // Save just this row's changes
+      await api.updatePeriod(row.id, {
+        reporting_date: row.reporting_date,
+        complete: row.complete,
+        expected: row.expected,
+        target: row.final_target
+      });
+
+      // Refresh all data by calling the parent's onDataChange with current state
+      // This will trigger loadProjectData() and loadProjectMetrics() in App.jsx
+      onDataChange(editedData);
+    } catch (err) {
+      console.error('Auto-save failed:', err);
+      // Revert the change on error
+      setEditedData(prev => prev.map(r =>
+        r.id === id ? { ...r, [field]: original[field] } : r
+      ));
+
+      if (err.response?.data?.isHistoricEdit) {
+        alert(err.response.data.error + '\n\nOnly administrators can edit completion values for past periods.');
+      } else {
+        alert('Failed to save changes: ' + (err.response?.data?.error || err.message));
+      }
+    }
+  };
+
   const handleSave = () => {
     console.log('DataGrid.handleSave - Saving', editedData.length, 'periods');
     console.log('Periods being saved:', editedData.map(d => ({
@@ -384,6 +423,7 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
                       type="date"
                       value={row.reporting_date}
                       onChange={(e) => handleCellChange(row.id, 'reporting_date', e.target.value)}
+                      onBlur={() => handleCellBlur(row.id, 'reporting_date')}
                       style={{width: '100%'}}
                     />
                   </td>
@@ -402,6 +442,7 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
                       inputMode="numeric"
                       value={row.expected}
                       onChange={(e) => handleCellChange(row.id, 'expected', parseFloat(e.target.value) || 0)}
+                      onBlur={() => handleCellBlur(row.id, 'expected')}
                       style={{width: '100%'}}
                     />
                   </td>
@@ -411,6 +452,7 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
                       inputMode="numeric"
                       value={row.final_target}
                       onChange={(e) => handleCellChange(row.id, 'final_target', parseFloat(e.target.value) || 0)}
+                      onBlur={() => handleCellBlur(row.id, 'final_target')}
                       style={{width: '100%'}}
                     />
                   </td>
@@ -420,6 +462,7 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
                       inputMode="numeric"
                       value={row.complete}
                       onChange={(e) => handleCellChange(row.id, 'complete', parseFloat(e.target.value) || 0)}
+                      onBlur={() => handleCellBlur(row.id, 'complete')}
                       className={isFuture ? 'readonly-input' : ''}
                       style={{width: '100%'}}
                       readOnly={isFuture}

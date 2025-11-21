@@ -1,3 +1,6 @@
+/* Import centralized RAG colors */
+@import './styles/rag-colors.css';
+
 /* CSS Variables for theming */
 :root {
   --bg-primary: #f5f5f5;

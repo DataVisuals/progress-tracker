@@ -30,7 +30,8 @@ import {
   MdVisibility,
   MdNotifications,
   MdCalendarToday,
-  MdFeedback
+  MdFeedback,
+  MdErrorOutline
 } from 'react-icons/md';
 import { api } from '../api/client';
 import './HomePage.css';
@@ -43,6 +44,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(true);
   const loadingRef = useRef(false); // Track if data is currently being loaded
+  const [recoveryPlans, setRecoveryPlans] = useState([]); // Track active recovery plans
 
   // Tips from the TipsSplash component
   const allTips = [
@@ -245,10 +247,10 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
 
   // Load data when projects or projectsData change
   useEffect(() => {
-    const projectCount = Object.keys(projects).length;
-    const projectDataCount = Object.keys(projectsData).length;
+    const numProjects = Object.keys(projects).length;
+    const numProjectData = Object.keys(projectsData).length;
 
-    if (projectCount > 0 && projectDataCount > 0) {
+    if (numProjects > 0 && numProjectData > 0) {
       if (!loadingRef.current) {
         loadHomePageData();
       }
@@ -423,6 +425,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
             atRiskMetricsList.push({
               projectId,
               projectName: projectInfo.name,
+              metricId: currentPeriod.metric_id,
               metricName,
               complete,
               expected,
@@ -452,6 +455,26 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
 
       console.log('At-risk metrics found:', sortedAtRiskMetrics.length, '(red:', sortedAtRiskMetrics.filter(m => m.ragStatus === 'red').length, ', amber:', sortedAtRiskMetrics.filter(m => m.ragStatus === 'amber').length, ')');
       setAtRiskMetrics(sortedAtRiskMetrics);
+
+      // Load recovery plans for all projects to check which red metrics have active plans
+      let recoveryPlansList = [];
+      try {
+        const allProjectIds = Object.keys(projects);
+        const planPromises = allProjectIds.map(async (projectId) => {
+          try {
+            const response = await api.get(`/recovery-plans?project_id=${projectId}`);
+            return response.data || [];
+          } catch (err) {
+            console.log(`Could not load recovery plans for project ${projectId}:`, err.message);
+            return [];
+          }
+        });
+        const allPlansArrays = await Promise.all(planPromises);
+        recoveryPlansList = allPlansArrays.flat();
+      } catch (err) {
+        console.log('Could not load recovery plans:', err.message);
+      }
+      setRecoveryPlans(recoveryPlansList);
 
       // Load feedback for current user's projects
       let feedbackList = [];
@@ -501,6 +524,13 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
     }
   };
 
+  // Check if a red metric needs a recovery plan
+  const needsRecoveryPlan = (metricId) => {
+    return !recoveryPlans.some(plan =>
+      plan.metric_id === metricId && plan.status === 'active'
+    );
+  };
+
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -521,6 +551,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
     const metrics = new Set(data.map(d => d.metric));
     return sum + metrics.size;
   }, 0);
+
 
   // Filter metrics based on RAG filter
   const filteredMetrics = ragFilter === 'all'
@@ -660,9 +691,16 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
                       >
                         <div className="metric-left">
                           <div className="metric-header">
-                            <span className="metric-project">{item.projectName}</span>
+                            <div className="metric-text">
+                              <span className="metric-project">{item.projectName}</span>
+                              <span className="metric-name">{item.metricName}</span>
+                            </div>
+                            {item.ragStatus === 'red' && needsRecoveryPlan(item.metricId) && (
+                              <div className="recovery-plan-indicator" title="Recovery Plan Required">
+                                <MdErrorOutline />
+                              </div>
+                            )}
                           </div>
-                          <span className="metric-name">{item.metricName}</span>
                         </div>
                         <div className="metric-right">
                           <span className={`metric-variance ${item.ragStatus}`}>-{item.variancePercent}%</span>
@@ -725,6 +763,12 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
                       >
                         <div className="commentary-header">
                           <div className="commentary-context">
+                            {item.portfolioColor && (
+                              <span
+                                className="commentary-portfolio-dot"
+                                style={{ backgroundColor: item.portfolioColor }}
+                              />
+                            )}
                             <span className="commentary-label">Project:</span>
                             <span className="commentary-project">{item.projectName}</span>
                           </div>

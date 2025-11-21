@@ -1067,6 +1067,219 @@ function createApp(dbPath) {
     }
   });
 
+  // ===== RECOVERY PLANS (Return to Green) =====
+
+  // Get recovery plans for a metric or project
+  app.get('/api/recovery-plans', authenticateToken, async (req, res) => {
+    try {
+      const { metric_id, project_id, status } = req.query;
+
+      let query = `
+        SELECT rp.*,
+               u.name as creator_name,
+               m.name as metric_name,
+               p.name as project_name
+        FROM recovery_plans rp
+        LEFT JOIN users u ON rp.created_by = u.id
+        LEFT JOIN metrics m ON rp.metric_id = m.id
+        LEFT JOIN projects p ON rp.project_id = p.id
+        WHERE 1=1
+      `;
+      const params = [];
+
+      if (metric_id) {
+        query += ' AND rp.metric_id = ?';
+        params.push(metric_id);
+      }
+
+      if (project_id) {
+        query += ' AND rp.project_id = ?';
+        params.push(project_id);
+      }
+
+      if (status) {
+        query += ' AND rp.status = ?';
+        params.push(status);
+      }
+
+      query += ' ORDER BY rp.created_at DESC';
+
+      const plans = await dbAll(query, params);
+      res.json(plans);
+    } catch (err) {
+      console.error('Get recovery plans error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Create a new recovery plan
+  app.post('/api/recovery-plans', authenticateToken, async (req, res) => {
+    try {
+      const { metric_id, project_id, plan_text, target_recovery_date } = req.body;
+
+      if (!isPMOrAbove(req.user)) {
+        return res.status(403).json({ error: 'Only PMs and admins can create recovery plans' });
+      }
+
+      if (!metric_id || !project_id || !plan_text) {
+        return res.status(400).json({ error: 'metric_id, project_id, and plan_text are required' });
+      }
+
+      const result = await dbRun(
+        `INSERT INTO recovery_plans (metric_id, project_id, plan_text, target_recovery_date, created_by)
+         VALUES (?, ?, ?, ?, ?)`,
+        [metric_id, project_id, plan_text, target_recovery_date || null, req.user.userId]
+      );
+
+      const newPlan = await dbGet(
+        `SELECT rp.*,
+                u.name as creator_name,
+                m.name as metric_name,
+                p.name as project_name
+         FROM recovery_plans rp
+         LEFT JOIN users u ON rp.created_by = u.id
+         LEFT JOIN metrics m ON rp.metric_id = m.id
+         LEFT JOIN projects p ON rp.project_id = p.id
+         WHERE rp.id = ?`,
+        [result.lastID]
+      );
+
+      // Audit log
+      await logAudit(
+        req.user.userId,
+        'CREATE',
+        'recovery_plans',
+        result.lastID,
+        null,
+        JSON.stringify(newPlan),
+        req.ip
+      );
+
+      res.json(newPlan);
+    } catch (err) {
+      console.error('Create recovery plan error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Update a recovery plan
+  app.put('/api/recovery-plans/:id', authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { plan_text, target_recovery_date, status, completion_notes } = req.body;
+
+      if (!isPMOrAbove(req.user)) {
+        return res.status(403).json({ error: 'Only PMs and admins can update recovery plans' });
+      }
+
+      const existingPlan = await dbGet('SELECT * FROM recovery_plans WHERE id = ?', [id]);
+      if (!existingPlan) {
+        return res.status(404).json({ error: 'Recovery plan not found' });
+      }
+
+      const updates = [];
+      const params = [];
+
+      if (plan_text !== undefined) {
+        updates.push('plan_text = ?');
+        params.push(plan_text);
+      }
+
+      if (target_recovery_date !== undefined) {
+        updates.push('target_recovery_date = ?');
+        params.push(target_recovery_date);
+      }
+
+      if (status !== undefined) {
+        updates.push('status = ?');
+        params.push(status);
+
+        if (status === 'completed' || status === 'cancelled') {
+          updates.push('completed_at = CURRENT_TIMESTAMP');
+        }
+      }
+
+      if (completion_notes !== undefined) {
+        updates.push('completion_notes = ?');
+        params.push(completion_notes);
+      }
+
+      if (updates.length === 0) {
+        return res.status(400).json({ error: 'No fields to update' });
+      }
+
+      params.push(id);
+
+      await dbRun(
+        `UPDATE recovery_plans SET ${updates.join(', ')} WHERE id = ?`,
+        params
+      );
+
+      const updatedPlan = await dbGet(
+        `SELECT rp.*,
+                u.name as creator_name,
+                m.name as metric_name,
+                p.name as project_name
+         FROM recovery_plans rp
+         LEFT JOIN users u ON rp.created_by = u.id
+         LEFT JOIN metrics m ON rp.metric_id = m.id
+         LEFT JOIN projects p ON rp.project_id = p.id
+         WHERE rp.id = ?`,
+        [id]
+      );
+
+      // Audit log
+      await logAudit(
+        req.user.userId,
+        'UPDATE',
+        'recovery_plans',
+        id,
+        JSON.stringify(existingPlan),
+        JSON.stringify(updatedPlan),
+        req.ip
+      );
+
+      res.json(updatedPlan);
+    } catch (err) {
+      console.error('Update recovery plan error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Delete a recovery plan
+  app.delete('/api/recovery-plans/:id', authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      if (!isPMOrAbove(req.user)) {
+        return res.status(403).json({ error: 'Only PMs and admins can delete recovery plans' });
+      }
+
+      const existingPlan = await dbGet('SELECT * FROM recovery_plans WHERE id = ?', [id]);
+      if (!existingPlan) {
+        return res.status(404).json({ error: 'Recovery plan not found' });
+      }
+
+      await dbRun('DELETE FROM recovery_plans WHERE id = ?', [id]);
+
+      // Audit log
+      await logAudit(
+        req.user.userId,
+        'DELETE',
+        'recovery_plans',
+        id,
+        JSON.stringify(existingPlan),
+        null,
+        req.ip
+      );
+
+      res.json({ message: 'Recovery plan deleted successfully' });
+    } catch (err) {
+      console.error('Delete recovery plan error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== PROJECTS =====
   app.get('/api/projects', async (req, res) => {
     try {
@@ -1088,7 +1301,7 @@ function createApp(dbPath) {
     }
   });
 
-  app.get('/api/projects/:id', authenticateToken, async (req, res) => {
+  app.get('/api/projects/:id', async (req, res) => {
     try {
       const project = await dbGet(
         'SELECT p.*, po.name as portfolio_name, po.color as portfolio_color FROM projects p LEFT JOIN portfolios po ON p.portfolio_id = po.id WHERE p.id = ?',
@@ -4508,6 +4721,33 @@ function createApp(dbPath) {
       await dbRun(`CREATE INDEX IF NOT EXISTS idx_page_views_created ON page_views(created_at)`);
       await dbRun(`CREATE INDEX IF NOT EXISTS idx_page_views_user ON page_views(user_id)`);
       console.log('✅ Created page_views table');
+    } catch (err) {
+      // Table already exists, that's fine
+    }
+
+    // Migration: Create recovery_plans table for Return to Green plans
+    try {
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS recovery_plans (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          metric_id INTEGER NOT NULL,
+          project_id INTEGER NOT NULL,
+          plan_text TEXT NOT NULL,
+          target_recovery_date DATE,
+          created_by INTEGER NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          status TEXT DEFAULT 'active' CHECK(status IN ('active', 'completed', 'cancelled')),
+          completed_at DATETIME,
+          completion_notes TEXT,
+          FOREIGN KEY (metric_id) REFERENCES metrics(id) ON DELETE CASCADE,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+          FOREIGN KEY (created_by) REFERENCES users(id)
+        )
+      `);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_recovery_plans_metric ON recovery_plans(metric_id)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_recovery_plans_project ON recovery_plans(project_id)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_recovery_plans_status ON recovery_plans(status)`);
+      console.log('✅ Created recovery_plans table');
     } catch (err) {
       // Table already exists, that's fine
     }

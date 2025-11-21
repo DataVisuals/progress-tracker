@@ -14,10 +14,10 @@ import UserSelector from './components/UserSelector';
 import ProjectSetup from './components/ProjectSetup';
 import ProjectLinksEditor from './components/ProjectLinksEditor';
 import UserProfile from './components/UserProfile';
-import ConsistencyReport from './components/ConsistencyReport';
 import ImportData from './components/ImportData';
 import WhatsNew from './components/WhatsNew';
 import UserActivityReport from './components/UserActivityReport';
+import PageHeatmapReport from './components/PageHeatmapReport';
 import HomePage from './components/HomePage';
 import { api } from './api/client';
 import { selectStyles } from './components/SelectStyles';
@@ -58,12 +58,12 @@ function App() {
   const [timeTravelTimestamp, setTimeTravelTimestamp] = useState(null);
   const [projectLinks, setProjectLinks] = useState([]);
   const [showLinksEditor, setShowLinksEditor] = useState(false);
-  const [showConsistencyReport, setShowConsistencyReport] = useState(false);
   const [showImportData, setShowImportData] = useState(false);
   const [showPortfolioManager, setShowPortfolioManager] = useState(false);
   const [showPortfolioReport, setShowPortfolioReport] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [showUserActivity, setShowUserActivity] = useState(false);
+  const [showPageHeatmap, setShowPageHeatmap] = useState(false);
   const [targetChangePrompt, setTargetChangePrompt] = useState(null); // { newTarget, resolve }
   const [allProjectsData, setAllProjectsData] = useState({}); // For HomePage red metrics
   const [darkMode, setDarkMode] = useState(() => {
@@ -953,11 +953,11 @@ function App() {
                     <button onMouseDown={() => { setShowAuditLog(true); setShowAdminDropdown(false); }}>
                       Audit Log
                     </button>
-                    <button onMouseDown={() => { setShowConsistencyReport(true); setShowAdminDropdown(false); }}>
-                      Consistency Report
-                    </button>
                     <button onMouseDown={() => { setShowUserActivity(true); setShowAdminDropdown(false); }}>
                       User Activity Report
+                    </button>
+                    <button onMouseDown={() => { setShowPageHeatmap(true); setShowAdminDropdown(false); }}>
+                      Page Heatmap
                     </button>
                   </div>
                 )}
@@ -1405,22 +1405,12 @@ function App() {
         </div>
       )}
 
-      {showConsistencyReport && (
-        <div className="modal-overlay" onClick={() => setShowConsistencyReport(false)}>
-          <div className="modal-content audit-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setShowConsistencyReport(false)}>×</button>
-            <ConsistencyReport
-              onNavigate={(projectId) => {
-                setSelectedProject(projectId);
-                setShowConsistencyReport(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
-
       {showUserActivity && (
         <UserActivityReport onClose={() => setShowUserActivity(false)} />
+      )}
+
+      {showPageHeatmap && (
+        <PageHeatmapReport onClose={() => setShowPageHeatmap(false)} />
       )}
 
       {showNewProject && (

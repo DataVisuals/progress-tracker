@@ -109,15 +109,15 @@
 }
 
 .metric-rag-marker.green {
-  background-color: #539668;
+  background-color: #16a34a;
 }
 
 .metric-rag-marker.amber {
-  background-color: #f5ad5b;
+  background-color: #d97706;
 }
 
 .metric-rag-marker.red {
-  background-color: #D0704d;
+  background-color: #dc2626;
 }
 
 .metric-rag-marker.grey {

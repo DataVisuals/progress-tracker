@@ -17,10 +17,15 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { api } from '../api/client';
+import { RAG_COLORS } from '../constants/colors';
 import TimeTravel from './TimeTravel';
 import Feedback from './Feedback';
+import RecoveryPlans from './RecoveryPlans';
 // import CRAIDs from './CRAIDs'; // DISABLED: CRAIDs feature hidden
 import './MetricChart.css';
+
+// Barclays blue color for expected line
+const BARCLAYS_BLUE = '#00aeef';
 
 // Helper function to format numbers with commas
 const formatNumber = (num) => {
@@ -130,7 +135,7 @@ const CustomExpectedDot = (props) => {
       cx={cx}
       cy={cy}
       r={8}
-      fill="#10b981"
+      fill={BARCLAYS_BLUE}
       stroke="#fff"
       strokeWidth={2}
       style={{ cursor: 'ns-resize' }}
@@ -236,6 +241,8 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   const [tempProgressionValue, setTempProgressionValue] = useState('');
   const [editingDescription, setEditingDescription] = useState(false);
   const [tempDescriptionValue, setTempDescriptionValue] = useState('');
+  const [editingCell, setEditingCell] = useState(null); // { periodId, field }
+  const [tempCellValue, setTempCellValue] = useState('');
 
   // Sync tolerances when props change
   useEffect(() => {
@@ -388,8 +395,9 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   const [highlightedSeries, setHighlightedSeries] = useState(null);
   const [isCommentaryCollapsed, setIsCommentaryCollapsed] = useState(true);
   const [isDataTableCollapsed, setIsDataTableCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState('table'); // 'table', 'commentary', 'feedback', 'timetravel', or 'dependencies'
+  const [activeTab, setActiveTab] = useState('table'); // 'table', 'commentary', 'feedback', 'recovery', 'timetravel', or 'dependencies'
   const [feedbackData, setFeedbackData] = useState([]); // For checking recent feedback
+  const [recoveryPlansData, setRecoveryPlansData] = useState([]); // For checking recent recovery plans
   const chartContainerRef = useRef(null);
   const [tableWidth, setTableWidth] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -509,6 +517,21 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     loadFeedback();
   }, [projectId]);
 
+  // Load recovery plans data for checking recent items
+  useEffect(() => {
+    const loadRecoveryPlans = async () => {
+      if (!projectId) return;
+      try {
+        const response = await api.get(`/recovery-plans?project_id=${projectId}`);
+        setRecoveryPlansData(response.data);
+      } catch (err) {
+        console.error('Failed to load recovery plans for indicators:', err);
+        setRecoveryPlansData([]);
+      }
+    };
+    loadRecoveryPlans();
+  }, [projectId]);
+
   // Helper function to check if there are recent items (within last 24 hours)
   const hasRecentComments = () => {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -525,6 +548,11 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   const hasRecentFeedback = () => {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     return feedbackData.some(item => new Date(item.created_at) > twentyFourHoursAgo);
+  };
+
+  const hasRecentRecoveryPlans = () => {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    return recoveryPlansData.some(item => new Date(item.created_at) > twentyFourHoursAgo);
   };
 
   // Get baseline target (first period's target)
@@ -582,6 +610,38 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       currentPeriodX2 = chartData[currentPeriodIndex].name;
     }
   }
+
+  // Check if the metric needs a recovery plan (red/amber status without active plan)
+  const needsRecoveryPlan = () => {
+    // Get current period RAG status
+    if (currentPeriodIndex < 0 || currentPeriodIndex >= sortedData.length) return false;
+    const currentPeriod = sortedData[currentPeriodIndex];
+    if (!currentPeriod) return false;
+
+    // Calculate RAG status based on complete vs expected
+    const complete = currentPeriod.complete || 0;
+    const expected = currentPeriod.expected || 0;
+
+    let ragStatus = 'green';
+    if (complete === 0 && expected === 0) {
+      ragStatus = 'grey';
+    } else {
+      const variance = ((complete - expected) / expected) * 100;
+      if (variance < -redTolerance) {
+        ragStatus = 'red';
+      } else if (variance < -amberTolerance) {
+        ragStatus = 'amber';
+      }
+    }
+
+    // Check if red or amber and has no active recovery plan
+    if (ragStatus === 'red' || ragStatus === 'amber') {
+      const hasActivePlan = recoveryPlansData.some(plan => plan.status === 'active');
+      return !hasActivePlan;
+    }
+
+    return false;
+  };
 
   // Pagination calculations for data table
   const totalPeriods = chartData.length;
@@ -737,6 +797,88 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     setIsAdding(false);
     setSelectedDate('');
     setNewCommentText('');
+  };
+
+  // Handle cell click to start editing
+  const handleCellClick = (periodId, field, currentValue) => {
+    if (!allowDataEdits) return;
+
+    // Don't allow editing future periods' complete values
+    const period = sortedData.find(p => p.id === periodId);
+    if (!period) return;
+
+    const periodDate = new Date(period.reporting_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (field === 'complete' && periodDate > today) {
+      return; // Can't edit future complete values
+    }
+
+    setEditingCell({ periodId, field });
+    setTempCellValue(currentValue);
+  };
+
+  // Handle cell value change
+  const handleCellChange = (e) => {
+    setTempCellValue(e.target.value);
+  };
+
+  // Save cell value on blur
+  const handleCellBlur = async () => {
+    if (!editingCell) return;
+
+    const { periodId, field } = editingCell;
+    const period = sortedData.find(p => p.id === periodId);
+    if (!period) {
+      setEditingCell(null);
+      return;
+    }
+
+    const numericValue = parseFloat(tempCellValue);
+    if (isNaN(numericValue) || tempCellValue === '') {
+      // Invalid value, revert
+      setEditingCell(null);
+      return;
+    }
+
+    // Check if value actually changed
+    if (numericValue === period[field]) {
+      setEditingCell(null);
+      return;
+    }
+
+    try {
+      // Save the change
+      await api.updatePeriod(periodId, {
+        [field]: numericValue
+      });
+
+      // Refresh data to update chart
+      if (onDataChange) {
+        onDataChange();
+      }
+
+      setEditingCell(null);
+    } catch (err) {
+      console.error('Failed to save cell value:', err);
+      if (err.response?.data?.isHistoricEdit) {
+        alert(err.response.data.error + '\n\nOnly administrators can edit completion values for past periods.');
+      } else {
+        alert('Failed to save changes: ' + (err.response?.data?.error || err.message));
+      }
+      setEditingCell(null);
+    }
+  };
+
+  // Handle Enter key to save
+  const handleCellKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleCellBlur();
+    } else if (e.key === 'Escape') {
+      setEditingCell(null);
+    }
   };
 
   // Handle dragging expected line points
@@ -1209,7 +1351,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               const variancePercent = entry.expected > 0 ? Math.abs((variance / entry.expected) * 100) : 0;
 
               // Determine color based on variance and tolerances
-              let barColor = '#539668'; // Green - on track or ahead
+              let barColor = RAG_COLORS.green; // Green - on track or ahead
               let barCategory = 'green';
 
               // Check if period has actual completion data
@@ -1231,15 +1373,15 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               // If period is still ongoing and no data, keep it green (grey would be better but we don't have that option for bars)
               if (hasData && variance < 0) { // Behind schedule with data
                 if (variancePercent > redTolerance) {
-                  barColor = '#D0704d'; // Red
+                  barColor = RAG_COLORS.red; // Red
                   barCategory = 'red';
                 } else if (variancePercent > amberTolerance) {
-                  barColor = '#f5ad5b'; // Amber
+                  barColor = RAG_COLORS.amber; // Amber
                   barCategory = 'amber';
                 }
               } else if (!hasData && periodHasEnded) {
                 // Period has ended but no data - mark as red
-                barColor = '#D0704d';
+                barColor = RAG_COLORS.red;
                 barCategory = 'red';
               }
 
@@ -1261,7 +1403,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                   <text
                     x={x + width / 2}
                     y={y - 10}
-                    fill="#ef4444"
+                    fill={RAG_COLORS.red}
                     textAnchor="middle"
                     fontSize="20"
                   >
@@ -1284,16 +1426,16 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           <Line
             type="monotone"
             dataKey="expected"
-            stroke="#10b981"
+            stroke={BARCLAYS_BLUE}
             strokeWidth={2}
             name="Expected"
             animationDuration={1000}
             animationBegin={400}
             strokeOpacity={highlightedSeries === null || highlightedSeries === 'expected' ? 1 : 0.3}
-            dot={canEdit ? { r: 5, fill: "#10b981", stroke: "#fff", strokeWidth: 2, cursor: 'pointer' } : { r: 4 }}
+            dot={canEdit ? { r: 5, fill: BARCLAYS_BLUE, stroke: "#fff", strokeWidth: 2, cursor: 'pointer' } : { r: 4 }}
             activeDot={canEdit ? {
               r: 12,
-              fill: "#10b981",
+              fill: BARCLAYS_BLUE,
               stroke: "#fff",
               strokeWidth: 2,
               cursor: 'ns-resize',
@@ -1324,7 +1466,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               onMouseEnter={() => setHighlightedSeries('green')}
               onMouseLeave={() => setHighlightedSeries(null)}
             >
-              <div className="legend-indicator" style={{ backgroundColor: '#539668' }}></div>
+              <div className="legend-indicator" style={{ backgroundColor: RAG_COLORS.green }}></div>
               <span className="legend-text">Green: On track or ahead</span>
             </div>
             <div
@@ -1332,7 +1474,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               onMouseEnter={() => setHighlightedSeries('amber')}
               onMouseLeave={() => setHighlightedSeries(null)}
             >
-              <div className="legend-indicator" style={{ backgroundColor: '#f5ad5b' }}></div>
+              <div className="legend-indicator" style={{ backgroundColor: RAG_COLORS.amber }}></div>
               {editingTolerance === 'amber' ? (
                 <span className="legend-text">
                   Amber: &gt;
@@ -1366,7 +1508,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               onMouseEnter={() => setHighlightedSeries('red')}
               onMouseLeave={() => setHighlightedSeries(null)}
             >
-              <div className="legend-indicator" style={{ backgroundColor: '#D0704d' }}></div>
+              <div className="legend-indicator" style={{ backgroundColor: RAG_COLORS.red }}></div>
               {editingTolerance === 'red' ? (
                 <span className="legend-text">
                   Red: &gt;
@@ -1408,7 +1550,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               onMouseEnter={() => setHighlightedSeries('expected')}
               onMouseLeave={() => setHighlightedSeries(null)}
             >
-              <div className="legend-indicator line" style={{ backgroundColor: '#10b981' }}></div>
+              <div className="legend-indicator line" style={{ backgroundColor: BARCLAYS_BLUE }}></div>
               <span className="legend-text">Expected</span>
             </div>
           </div>
@@ -1438,6 +1580,16 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             >
               Feedback
               {hasRecentFeedback() && <span className="recent-indicator" title="New in last 24 hours" />}
+            </button>
+          )}
+          {currentUser && (currentUser.role === 'pm' || currentUser.role === 'admin') && (
+            <button
+              className={`tab-button ${activeTab === 'recovery' ? 'active' : ''} ${needsRecoveryPlan() ? 'needs-action' : ''}`}
+              onClick={() => setActiveTab('recovery')}
+            >
+              Recovery Plan
+              {hasRecentRecoveryPlans() && <span className="recent-indicator" title="New in last 24 hours" />}
+              {needsRecoveryPlan() && <span className="warning-indicator" title="Recovery plan needed for delinquent metric">⚠️</span>}
             </button>
           )}
           {projectId && onTimeTravelChange && currentUser && (
@@ -1534,6 +1686,10 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                 const cutoffDate = timeTravelTimestamp ? new Date(timeTravelTimestamp) : new Date();
                 const periodDate = new Date(item.name);
                 const isPastOrCurrent = periodDate <= cutoffDate;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isFuture = periodDate > today;
+                const isEditing = editingCell?.periodId === item.id && editingCell?.field === 'complete';
 
                 let statusClass = '';
                 if (isPastOrCurrent && variance < 0) {
@@ -1551,9 +1707,23 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                 return (
                   <td
                     key={index}
-                    className={`number-cell ${statusClass}`}
+                    className={`number-cell ${statusClass} ${allowDataEdits && !isFuture ? 'editable-cell' : ''}`}
+                    onClick={() => !isFuture && handleCellClick(item.id, 'complete', item.complete)}
+                    style={allowDataEdits && !isFuture ? { cursor: 'pointer' } : {}}
                   >
-                    {formatNumber(item.complete)}
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        value={tempCellValue}
+                        onChange={handleCellChange}
+                        onBlur={handleCellBlur}
+                        onKeyDown={handleCellKeyDown}
+                        autoFocus
+                        style={{ width: '100%', textAlign: 'right' }}
+                      />
+                    ) : (
+                      formatNumber(item.complete)
+                    )}
                   </td>
                 );
               })}
@@ -1562,14 +1732,31 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             {/* Expected Row */}
             <tr className="data-row">
               <td className="row-label">Expected</td>
-              {paginatedChartData.map((item, index) => (
-                <td
-                  key={index}
-                  className="number-cell"
-                >
-                  {formatNumber(item.expected)}
-                </td>
-              ))}
+              {paginatedChartData.map((item, index) => {
+                const isEditing = editingCell?.periodId === item.id && editingCell?.field === 'expected';
+                return (
+                  <td
+                    key={index}
+                    className={`number-cell ${allowDataEdits ? 'editable-cell' : ''}`}
+                    onClick={() => handleCellClick(item.id, 'expected', item.expected)}
+                    style={allowDataEdits ? { cursor: 'pointer' } : {}}
+                  >
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        value={tempCellValue}
+                        onChange={handleCellChange}
+                        onBlur={handleCellBlur}
+                        onKeyDown={handleCellKeyDown}
+                        autoFocus
+                        style={{ width: '100%', textAlign: 'right' }}
+                      />
+                    ) : (
+                      formatNumber(item.expected)
+                    )}
+                  </td>
+                );
+              })}
             </tr>
 
             {/* Target Row */}
@@ -1582,14 +1769,38 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                 </svg>
                 Target
               </td>
-              {paginatedChartData.map((item, index) => (
-                <td
-                  key={index}
-                  className="number-cell target-cell"
-                >
-                  {formatNumber(item.final_target)}
-                </td>
-              ))}
+              {paginatedChartData.map((item, index) => {
+                const isEditing = editingCell?.periodId === item.id && editingCell?.field === 'final_target';
+                return (
+                  <td
+                    key={index}
+                    className={`number-cell target-cell ${allowDataEdits ? 'editable-cell' : ''}`}
+                    onClick={() => allowDataEdits && handleCellClick(item.id, 'final_target', item.final_target)}
+                    style={allowDataEdits ? { cursor: 'pointer' } : {}}
+                  >
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        value={tempCellValue}
+                        onChange={handleCellChange}
+                        onBlur={handleCellBlur}
+                        onKeyDown={handleCellKeyDown}
+                        autoFocus
+                        style={{
+                          width: '100%',
+                          textAlign: 'right',
+                          padding: '4px',
+                          border: '1px solid #00aeef',
+                          borderRadius: '2px',
+                          fontSize: '13px'
+                        }}
+                      />
+                    ) : (
+                      formatNumber(item.final_target)
+                    )}
+                  </td>
+                );
+              })}
             </tr>
           </tbody>
         </table>
@@ -1730,6 +1941,16 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
         {activeTab === 'feedback' && currentUser && projectId && (
           <div className="tab-content">
             <Feedback currentUser={currentUser} projectId={projectId} />
+          </div>
+        )}
+
+        {/* Recovery Plan Tab Content */}
+        {activeTab === 'recovery' && currentUser && projectId && (
+          <div className="tab-content">
+            <RecoveryPlans
+              currentUser={currentUser}
+              projectId={projectId}
+            />
           </div>
         )}
 

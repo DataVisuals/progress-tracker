@@ -28,6 +28,38 @@
   background: white;
 }
 
+.activity-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0 20px;
+}
+
+.tab-btn {
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  position: relative;
+  top: 2px;
+}
+
+.tab-btn:hover {
+  color: #003c71;
+  background: rgba(0, 60, 113, 0.05);
+}
+
+.tab-btn.active {
+  color: #003c71;
+  border-bottom-color: #00aeef;
+}
+
 .activity-content {
   padding: 20px;
 }
@@ -123,6 +155,25 @@
   background: #374151;
   border-color: #4b5563;
   color: #f9fafb;
+}
+
+:root.dark-mode .activity-tabs {
+  background: #111827;
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .tab-btn {
+  color: #9ca3af;
+}
+
+:root.dark-mode .tab-btn:hover {
+  color: #00aeef;
+  background: rgba(0, 174, 239, 0.1);
+}
+
+:root.dark-mode .tab-btn.active {
+  color: #00aeef;
+  border-bottom-color: #00aeef;
 }
 
 :root.dark-mode .chart-container {

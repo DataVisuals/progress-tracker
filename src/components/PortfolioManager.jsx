@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
+import { PORTFOLIO_COLORS } from '../constants/colors';
 import './PortfolioManager.css';
 
 export default function PortfolioManager({ onClose, onPortfolioCreated }) {
@@ -9,21 +10,12 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    color: '#3b82f6',
+    color: PORTFOLIO_COLORS[0].value,
     display_order: 0
   });
   const [error, setError] = useState('');
 
-  const colorOptions = [
-    { value: '#3b82f6', label: 'Blue' },
-    { value: '#10b981', label: 'Green' },
-    { value: '#f59e0b', label: 'Orange' },
-    { value: '#ef4444', label: 'Red' },
-    { value: '#8b5cf6', label: 'Purple' },
-    { value: '#ec4899', label: 'Pink' },
-    { value: '#06b6d4', label: 'Cyan' },
-    { value: '#84cc16', label: 'Lime' }
-  ];
+  const colorOptions = PORTFOLIO_COLORS;
 
   // Get first unused color
   const getUnusedColor = () => {
@@ -78,7 +70,7 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
     setFormData({
       name: portfolio.name,
       description: portfolio.description || '',
-      color: portfolio.color || '#3b82f6',
+      color: portfolio.color || PORTFOLIO_COLORS[0].value,
       display_order: portfolio.display_order || 0
     });
     setEditingId(portfolio.id);
