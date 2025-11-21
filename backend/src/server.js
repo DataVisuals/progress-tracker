@@ -1443,27 +1443,39 @@ function createApp(dbPath) {
         return res.status(404).json({ error: 'Project not found' });
       }
 
-      // Check for dependencies that would prevent deletion
-      const metrics = await dbAll('SELECT id, name FROM metrics WHERE project_id = ?', [req.params.id]);
-      const links = await dbAll('SELECT id FROM project_links WHERE project_id = ?', [req.params.id]);
-      const permissions = await dbAll('SELECT id FROM project_permissions WHERE project_id = ?', [req.params.id]);
+      // Cascade delete: delete all related data first
 
-      if (metrics.length > 0) {
-        const metricNames = metrics.map(m => m.name).join(', ');
-        return res.status(400).json({
-          error: `Cannot delete project "${oldProject.name}" because it has ${metrics.length} metric(s): ${metricNames}. Please delete the metrics first.`
-        });
-      }
+      // 1. Delete metric periods for all metrics in this project
+      await dbRun(`
+        DELETE FROM metric_periods
+        WHERE metric_id IN (SELECT id FROM metrics WHERE project_id = ?)
+      `, [req.params.id]);
 
-      // Delete related data first
-      if (links.length > 0) {
-        await dbRun('DELETE FROM project_links WHERE project_id = ?', [req.params.id]);
-      }
-      if (permissions.length > 0) {
-        await dbRun('DELETE FROM project_permissions WHERE project_id = ?', [req.params.id]);
-      }
+      // 2. Delete comments for all metrics in this project
+      await dbRun(`
+        DELETE FROM comments
+        WHERE metric_id IN (SELECT id FROM metrics WHERE project_id = ?)
+      `, [req.params.id]);
 
-      // Now delete the project
+      // 3. Delete recovery plans for all metrics in this project
+      await dbRun(`
+        DELETE FROM recovery_plans
+        WHERE metric_id IN (SELECT id FROM metrics WHERE project_id = ?)
+      `, [req.params.id]);
+
+      // 4. Delete metrics
+      await dbRun('DELETE FROM metrics WHERE project_id = ?', [req.params.id]);
+
+      // 5. Delete project links
+      await dbRun('DELETE FROM project_links WHERE project_id = ?', [req.params.id]);
+
+      // 6. Delete project permissions
+      await dbRun('DELETE FROM project_permissions WHERE project_id = ?', [req.params.id]);
+
+      // 7. Delete feedback for this project
+      await dbRun('DELETE FROM feedback WHERE project_id = ?', [req.params.id]);
+
+      // 8. Finally delete the project
       await dbRun('DELETE FROM projects WHERE id = ?', [req.params.id]);
 
       await logAudit(req.user, 'DELETE', 'projects', req.params.id,
