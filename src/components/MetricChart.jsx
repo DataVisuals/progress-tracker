@@ -1309,10 +1309,9 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               ) : (
                 <span
                   onClick={handleDescriptionClick}
+                  className={`metric-description-text ${sortedData[0]?.metric_description ? 'filled' : 'placeholder'}`}
                   style={{
-                    cursor: canEdit && onDescriptionChange ? 'pointer' : 'default',
-                    color: sortedData[0]?.metric_description ? '#374151' : '#9ca3af',
-                    fontStyle: sortedData[0]?.metric_description ? 'normal' : 'italic'
+                    cursor: canEdit && onDescriptionChange ? 'pointer' : 'default'
                   }}
                   title={canEdit && onDescriptionChange ? 'Click to edit description' : ''}
                 >

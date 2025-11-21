@@ -1102,6 +1102,17 @@
   }
 }
 
+/* Metric Description Styles */
+.metric-description-text.filled {
+  color: #374151;
+  font-style: normal;
+}
+
+.metric-description-text.placeholder {
+  color: #9ca3af;
+  font-style: italic;
+}
+
 /* Dark Mode Styles */
 :root.dark-mode .metric-chart-container {
   background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
@@ -1511,6 +1522,15 @@
     margin-top: 10px;
     padding: 10px;
   }
+}
+
+/* Dark mode overrides for metric description */
+:root.dark-mode .metric-description-text.filled {
+  color: #d1d5db;
+}
+
+:root.dark-mode .metric-description-text.placeholder {
+  color: #6b7280;
 }
 
 @media (max-height: 768px) {
