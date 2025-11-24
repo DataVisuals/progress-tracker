@@ -391,7 +391,150 @@ function createApp(dbPath) {
       res.status(500).json({ error: 'Failed to update profile' });
     }
   });
-  
+
+  // Update user's default space
+  app.put('/api/auth/default-space', authenticateToken, async (req, res) => {
+    try {
+      const { default_space_id } = req.body;
+      const userId = req.user.id;
+
+      await dbRun(
+        'UPDATE users SET default_space_id = ? WHERE id = ?',
+        [default_space_id || null, userId]
+      );
+
+      res.json({ success: true, default_space_id });
+    } catch (err) {
+      console.error('Update default space error:', err);
+      res.status(500).json({ error: 'Failed to update default space' });
+    }
+  });
+
+  // ===== SPACES =====
+
+  // Get all spaces
+  app.get('/api/spaces', async (req, res) => {
+    try {
+      const spaces = await dbAll('SELECT * FROM spaces ORDER BY display_order, name');
+      res.json(spaces);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Create a new space (admin only)
+  app.post('/api/spaces', authenticateToken, async (req, res) => {
+    try {
+      const { name, description, color, display_order } = req.body;
+
+      if (!name) {
+        return res.status(400).json({ error: 'Space name is required' });
+      }
+
+      if (!isAdmin(req.user)) {
+        return res.status(403).json({ error: 'Only admins can create spaces' });
+      }
+
+      const result = await dbRun(
+        'INSERT INTO spaces (name, description, color, display_order) VALUES (?, ?, ?, ?)',
+        [name, description || null, color || '#6366f1', display_order || 0]
+      );
+
+      await logAudit(
+        req.user,
+        'CREATE',
+        'spaces',
+        result.lastID,
+        null,
+        { name, description, color, display_order },
+        `Created space: ${name}`,
+        req.ip
+      );
+
+      logger.asset.create(req.user, 'space', { name, description, color }, null);
+
+      res.status(201).json({ id: result.lastID, name, description, color, display_order });
+    } catch (err) {
+      logger.exception('SPACE', 'Error creating space', err, { requestBody: req.body });
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Update a space (admin only)
+  app.put('/api/spaces/:id', authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, description, color, display_order } = req.body;
+
+      if (!isAdmin(req.user)) {
+        return res.status(403).json({ error: 'Only admins can update spaces' });
+      }
+
+      const oldSpace = await dbGet('SELECT * FROM spaces WHERE id = ?', [id]);
+      if (!oldSpace) {
+        return res.status(404).json({ error: 'Space not found' });
+      }
+
+      await dbRun(
+        'UPDATE spaces SET name = ?, description = ?, color = ?, display_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [name, description, color, display_order, id]
+      );
+
+      await logAudit(
+        req.user,
+        'UPDATE',
+        'spaces',
+        id,
+        oldSpace,
+        { name, description, color, display_order },
+        `Updated space: ${name}`,
+        req.ip
+      );
+
+      res.json({ id, name, description, color, display_order });
+    } catch (err) {
+      console.error('Update space error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Delete a space (admin only)
+  app.delete('/api/spaces/:id', authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      if (!isAdmin(req.user)) {
+        return res.status(403).json({ error: 'Only admins can delete spaces' });
+      }
+
+      const space = await dbGet('SELECT * FROM spaces WHERE id = ?', [id]);
+      if (!space) {
+        return res.status(404).json({ error: 'Space not found' });
+      }
+
+      // Set space_id to NULL for all portfolios in this space
+      await dbRun('UPDATE portfolios SET space_id = NULL WHERE space_id = ?', [id]);
+
+      await dbRun('DELETE FROM spaces WHERE id = ?', [id]);
+
+      await logAudit(
+        req.user,
+        'DELETE',
+        'spaces',
+        id,
+        space,
+        null,
+        `Deleted space: ${space.name}`,
+        req.ip
+      );
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error('Delete space error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== PORTFOLIOS =====
   app.get('/api/portfolios', async (req, res) => {
     try {
@@ -404,36 +547,36 @@ function createApp(dbPath) {
   
   app.post('/api/portfolios', authenticateToken, async (req, res) => {
     try {
-      const { name, description, color, display_order } = req.body;
-  
+      const { name, description, color, display_order, space_id } = req.body;
+
       if (!name) {
         return res.status(400).json({ error: 'Portfolio name is required' });
       }
-  
+
       // Check if user has permission to create portfolios (admin only)
       if (!isAdmin(req.user)) {
         return res.status(403).json({ error: 'Only admins can create portfolios' });
       }
-  
+
       const result = await dbRun(
-        'INSERT INTO portfolios (name, description, color, display_order) VALUES (?, ?, ?, ?)',
-        [name, description || null, color || '#3b82f6', display_order || 0]
+        'INSERT INTO portfolios (name, description, color, display_order, space_id) VALUES (?, ?, ?, ?, ?)',
+        [name, description || null, color || '#3b82f6', display_order || 0, space_id || null]
       );
-  
+
       await logAudit(
         req.user,
         'CREATE',
         'portfolios',
         result.lastID,
         null,
-        { name, description, color, display_order },
+        { name, description, color, display_order, space_id },
         `Created portfolio: ${name}`,
         req.ip
       );
-  
-      logger.asset.create(req.user, 'portfolio', { name, description, color }, null);
-  
-      res.status(201).json({ id: result.lastID, name, description, color, display_order });
+
+      logger.asset.create(req.user, 'portfolio', { name, description, color, space_id }, null);
+
+      res.status(201).json({ id: result.lastID, name, description, color, display_order, space_id });
     } catch (err) {
       logger.exception('PORTFOLIO', 'Error creating portfolio', err, { requestBody: req.body });
       res.status(500).json({ error: err.message });
@@ -443,34 +586,34 @@ function createApp(dbPath) {
   app.put('/api/portfolios/:id', authenticateToken, async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, description, color, display_order } = req.body;
-  
+      const { name, description, color, display_order, space_id } = req.body;
+
       if (!isAdmin(req.user)) {
         return res.status(403).json({ error: 'Only admins can update portfolios' });
       }
-  
+
       const oldPortfolio = await dbGet('SELECT * FROM portfolios WHERE id = ?', [id]);
       if (!oldPortfolio) {
         return res.status(404).json({ error: 'Portfolio not found' });
       }
-  
+
       await dbRun(
-        'UPDATE portfolios SET name = ?, description = ?, color = ?, display_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [name, description, color, display_order, id]
+        'UPDATE portfolios SET name = ?, description = ?, color = ?, display_order = ?, space_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [name, description, color, display_order, space_id || null, id]
       );
-  
+
       await logAudit(
         req.user,
         'UPDATE',
         'portfolios',
         id,
         oldPortfolio,
-        { name, description, color, display_order },
+        { name, description, color, display_order, space_id },
         `Updated portfolio: ${name}`,
         req.ip
       );
-  
-      res.json({ id, name, description, color, display_order });
+
+      res.json({ id, name, description, color, display_order, space_id });
     } catch (err) {
       console.error('Update portfolio error:', err);
       res.status(500).json({ error: err.message });

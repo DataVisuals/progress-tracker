@@ -129,6 +129,15 @@ export const api = {
       },
     });
   },
+
+  // Spaces
+  getSpaces: () => client.get('/spaces'),
+  createSpace: (data) => client.post('/spaces', data),
+  updateSpace: (id, data) => client.put(`/spaces/${id}`, data),
+  deleteSpace: (id) => client.delete(`/spaces/${id}`),
+
+  // User Preferences
+  updateDefaultSpace: (spaceId) => client.put('/auth/default-space', { default_space_id: spaceId }),
 };
 
 export default api;
