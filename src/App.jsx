@@ -3,8 +3,11 @@ import Select from 'react-select';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';
 import PortfolioSelector from './components/PortfolioSelector';
+import SpaceSelector from './components/SpaceSelector';
 import PortfolioManager from './components/PortfolioManager';
-import PortfolioReport from './components/PortfolioReport';
+import SpaceManager from './components/SpaceManager';
+import AdminReport from './components/AdminReport';
+import ReportSelector from './components/ReportSelector';
 import MetricChart from './components/MetricChart';
 import MetricTabs from './components/MetricTabs';
 import DataGrid from './components/DataGrid';
@@ -32,6 +35,8 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [portfolios, setPortfolios] = useState([]);
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
+  const [spaces, setSpaces] = useState([]);
+  const [selectedSpace, setSelectedSpace] = useState('all');
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [projectData, setProjectData] = useState([]);
@@ -63,7 +68,10 @@ function App() {
   const [showLinksEditor, setShowLinksEditor] = useState(false);
   const [showImportData, setShowImportData] = useState(false);
   const [showPortfolioManager, setShowPortfolioManager] = useState(false);
-  const [showPortfolioReport, setShowPortfolioReport] = useState(false);
+  const [showSpaceManager, setShowSpaceManager] = useState(false);
+  const [showAdminReport, setShowAdminReport] = useState(false);
+  const [adminReportConfig, setAdminReportConfig] = useState({ type: null, id: null, name: null });
+  const [showReportSelector, setShowReportSelector] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [showUserActivity, setShowUserActivity] = useState(false);
   const [showPageHeatmap, setShowPageHeatmap] = useState(false);
@@ -82,6 +90,7 @@ function App() {
       setIsAuthenticated(true);
       setCurrentUser(JSON.parse(userStr));
     }
+    loadSpaces();
     loadPortfolios();
     // Note: Don't call loadProjects() here - let the selectedPortfolio useEffect handle it
 
@@ -183,6 +192,31 @@ function App() {
       setSelectedMetric(projectMetrics[0].name);
     }
   }, [projectMetrics]);
+
+  const loadSpaces = async () => {
+    try {
+      const response = await api.getSpaces();
+      const loadedSpaces = response.data || [];
+      setSpaces(loadedSpaces);
+
+      // Reset to 'all' if no spaces exist
+      if (loadedSpaces.length === 0) {
+        setSelectedSpace('all');
+        return; // Exit early, no need to check for default space
+      }
+
+      // Only set default space if it exists in loaded spaces
+      if (currentUser && currentUser.default_space_id) {
+        const spaceExists = loadedSpaces.some(s => s.id === currentUser.default_space_id);
+        if (spaceExists) {
+          setSelectedSpace(currentUser.default_space_id.toString());
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load spaces:', err);
+      // Keep selectedSpace as 'all' on error
+    }
+  };
 
   const loadPortfolios = async () => {
     try {
@@ -844,6 +878,7 @@ function App() {
 
   // Helper functions for role checks
   const isAdmin = () => currentUser?.role === 'admin';
+  const isPMOrHigher = () => currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm');
   const canEdit = () => currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm' || currentUser.role === 'editor');
 
   // Copy current URL to clipboard
@@ -877,23 +912,29 @@ function App() {
             </h1>
           </div>
           <div className="header-right">
+            <SpaceSelector
+              spaces={spaces}
+              selectedSpace={selectedSpace}
+              onSpaceChange={async (spaceId) => {
+                setSelectedSpace(spaceId);
+                // Save user's default space preference
+                if (currentUser && spaceId !== 'all') {
+                  try {
+                    await api.updateDefaultSpace(parseInt(spaceId));
+                  } catch (err) {
+                    console.error('Could not save default space:', err);
+                  }
+                }
+              }}
+              onManageSpaces={isAdmin() ? () => setShowSpaceManager(true) : null}
+            />
             <PortfolioSelector
-              key={`portfolio-${portfolios.length}`} // Force re-render when portfolios list changes
-              portfolios={portfolios}
+              key={`portfolio-${portfolios.length}-${selectedSpace}`} // Force re-render when portfolios or space changes
+              portfolios={selectedSpace === 'all' ? portfolios : portfolios.filter(p => p.space_id && p.space_id === parseInt(selectedSpace))}
               selectedPortfolio={selectedPortfolio}
               onPortfolioChange={setSelectedPortfolio}
               onManagePortfolios={isAdmin() ? () => setShowPortfolioManager(true) : null}
             />
-            {selectedPortfolio && (
-              <button
-                className="portfolio-report-btn"
-                onClick={() => setShowPortfolioReport(true)}
-                title="View Portfolio Status Report"
-              >
-                <MdShowChart size={18} />
-                Portfolio Report
-              </button>
-            )}
             <ProjectSelector
               key={`project-${projects.length}`} // Force re-render when projects list changes
               projects={projectsObject}
@@ -902,7 +943,7 @@ function App() {
             />
 
             {/* Project Actions Dropdown */}
-            {canEdit() && (
+            {isPMOrHigher() && (
               <div className="dropdown-container">
                 <button
                   className="dropdown-btn"
@@ -917,13 +958,20 @@ function App() {
                 </button>
                 {showProjectDropdown && (
                   <div className="dropdown-menu">
-                    <button onMouseDown={() => { setShowNewProject(true); setShowProjectDropdown(false); }}>
-                      New Project
+                    {canEdit() && (
+                      <>
+                        <button onMouseDown={() => { setShowNewProject(true); setShowProjectDropdown(false); }}>
+                          New Project
+                        </button>
+                        <button onMouseDown={() => { setShowImportData(true); setShowProjectDropdown(false); }}>
+                          Import Data
+                        </button>
+                      </>
+                    )}
+                    <button onMouseDown={() => { setShowReportSelector(true); setShowProjectDropdown(false); }}>
+                      View Reports
                     </button>
-                    <button onMouseDown={() => { setShowImportData(true); setShowProjectDropdown(false); }}>
-                      Import Data
-                    </button>
-                    {selectedProject && (
+                    {selectedProject && canEdit() && (
                       <>
                         <button onMouseDown={() => { setShowDataGrid(true); setShowProjectDropdown(false); }}>
                           Edit Data
@@ -954,6 +1002,9 @@ function App() {
                 </button>
                 {showAdminDropdown && (
                   <div className="dropdown-menu">
+                    <button onMouseDown={() => { setShowSpaceManager(true); setShowAdminDropdown(false); }}>
+                      Manage Spaces
+                    </button>
                     <button onMouseDown={() => { setShowPortfolioManager(true); setShowAdminDropdown(false); }}>
                       Manage Portfolios
                     </button>
@@ -1386,6 +1437,8 @@ function App() {
             projectsData={allProjectsData}
             onNavigateToProject={handleNavigateToProject}
             currentUser={currentUser}
+            selectedSpace={selectedSpace}
+            spaces={spaces}
             portfolios={portfolios}
           />
         )}
@@ -1453,19 +1506,6 @@ function App() {
           onPortfolioCreated={() => {
             loadPortfolios();
             loadProjects();
-          }}
-        />
-      )}
-
-      {showPortfolioReport && selectedPortfolio && (
-        <PortfolioReport
-          portfolioId={selectedPortfolio}
-          onClose={() => setShowPortfolioReport(false)}
-          onMetricClick={(projectId, metricName) => {
-            setSelectedProject(projectId.toString());
-            setSelectedMetric(metricName);
-            updateURL(projectId.toString(), metricName);
-            setShowPortfolioReport(false);
           }}
         />
       )}
@@ -1542,6 +1582,44 @@ function App() {
       {showWhatsNew && (
         <WhatsNew
           onClose={() => setShowWhatsNew(false)}
+        />
+      )}
+
+      {showSpaceManager && (
+        <SpaceManager
+          onClose={() => setShowSpaceManager(false)}
+          onSpaceCreated={() => {
+            loadSpaces();
+            loadPortfolios();
+            loadProjects();
+          }}
+        />
+      )}
+
+      {showReportSelector && (
+        <ReportSelector
+          onClose={() => setShowReportSelector(false)}
+          onGenerate={(config) => {
+            setAdminReportConfig(config);
+            setShowAdminReport(true);
+            setShowReportSelector(false);
+          }}
+          portfolios={portfolios}
+          spaces={spaces}
+        />
+      )}
+
+      {showAdminReport && (
+        <AdminReport
+          type={adminReportConfig.type}
+          id={adminReportConfig.id}
+          name={adminReportConfig.name}
+          onClose={() => setShowAdminReport(false)}
+          onMetricClick={(projectId, metricName) => {
+            setSelectedProject(projectId);
+            setSelectedMetric(metricName);
+            setShowAdminReport(false);
+          }}
         />
       )}
     </div>

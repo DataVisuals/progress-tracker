@@ -574,7 +574,10 @@ const HomePage = ({
                   // Filter issues for this PM
                   const filteredIssues = pmData.issues.filter(issue => {
                     const projectData = projects[issue.project_id];
-                    return projectData && spacePortfolioIds.includes(projectData.portfolio_id);
+                    if (!projectData) return false;
+                    // Exclude projects without portfolio_id
+                    if (!projectData.portfolio_id) return false;
+                    return spacePortfolioIds.includes(projectData.portfolio_id);
                   });
 
                 // Recalculate severity counts
@@ -711,7 +714,7 @@ const HomePage = ({
           <h1>
             {selectedSpace === 'all'
               ? 'All Spaces'
-              : spaces.find(s => s.id === Number(selectedSpace))?.name || 'All Spaces'}
+              : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space'}
           </h1>
         </div>
         <div className="home-stats">
@@ -855,7 +858,7 @@ const HomePage = ({
                   No metrics at risk for{' '}
                   {selectedSpace === 'all'
                     ? 'All Spaces'
-                    : spaces.find(s => s.id === Number(selectedSpace))?.name || 'All Spaces'}
+                    : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space'}
                 </span>
               </div>
             ) : filteredMetrics.length === 0 ? (
@@ -867,7 +870,7 @@ const HomePage = ({
                   {portfolioFilter === 'all'
                     ? (selectedSpace === 'all'
                         ? 'All Spaces'
-                        : spaces.find(s => s.id === Number(selectedSpace))?.name || 'All Spaces')
+                        : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space')
                     : portfoliosInMetrics.find(p => p.id === parseInt(portfolioFilter))?.name || 'selected portfolio'}
                 </span>
               </div>
@@ -945,7 +948,7 @@ const HomePage = ({
                   No commentary for{' '}
                   {selectedSpace === 'all'
                     ? 'All Spaces'
-                    : spaces.find(s => s.id === Number(selectedSpace))?.name || 'All Spaces'}
+                    : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space'}
                 </span>
               </div>
             ) : (

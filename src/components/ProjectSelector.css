@@ -16,8 +16,8 @@
 
 .custom-select-container {
   position: relative;
-  min-width: 320px;
-  max-width: 400px;
+  min-width: 140px;
+  max-width: 140px;
 }
 
 .custom-select-trigger {

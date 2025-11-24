@@ -76,7 +76,7 @@ export default function PortfolioSelector({
                 <span className="selected-text">{selectedPortfolioData.name}</span>
               </>
             ) : (
-              <span className="placeholder-text">All Projects</span>
+              <span className="placeholder-text">Portfolio...</span>
             )}
           </div>
           <svg
@@ -119,7 +119,6 @@ export default function PortfolioSelector({
                 aria-selected={!selectedPortfolio}
               >
                 <div className="option-content">
-                  <span className="all-projects-icon">◆</span>
                   <span className="option-name">All Projects</span>
                 </div>
               </div>

@@ -87,7 +87,7 @@ export default function SpaceSelector({
                 >
                   {getShapeIcon(selectedSpaceData.icon)}
                 </span>
-                <span className="selected-text">{selectedSpaceData.name}</span>
+                <span className="selected-text">{selectedSpaceData.name || 'Unnamed Space'}</span>
               </>
             ) : (
               <span className="placeholder-text">Space...</span>
@@ -153,7 +153,7 @@ export default function SpaceSelector({
                     >
                       {getShapeIcon(space.icon)}
                     </span>
-                    <span className="option-name">{space.name}</span>
+                    <span className="option-name">{space.name || `Space ${space.id}`}</span>
                   </div>
                 </div>
               ))}

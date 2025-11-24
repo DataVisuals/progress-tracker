@@ -61,9 +61,26 @@ class ErrorBoundary extends React.Component {
             }}>
               <strong>Error:</strong> {this.state.error.toString()}
               {this.state.error.stack && (
-                <pre style={{ marginTop: '10px', whiteSpace: 'pre-wrap' }}>
-                  {this.state.error.stack}
-                </pre>
+                <>
+                  <details style={{ marginTop: '10px' }}>
+                    <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '5px' }}>
+                      JavaScript Stack Trace
+                    </summary>
+                    <pre style={{ marginTop: '10px', whiteSpace: 'pre-wrap', fontSize: '12px', overflow: 'auto' }}>
+                      {this.state.error.stack}
+                    </pre>
+                  </details>
+                </>
+              )}
+              {this.state.errorInfo && this.state.errorInfo.componentStack && (
+                <details style={{ marginTop: '10px' }}>
+                  <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '5px' }}>
+                    React Component Stack
+                  </summary>
+                  <pre style={{ marginTop: '10px', whiteSpace: 'pre-wrap', fontSize: '12px', overflow: 'auto' }}>
+                    {this.state.errorInfo.componentStack}
+                  </pre>
+                </details>
               )}
             </div>
           )}

@@ -84,7 +84,7 @@ const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
 
   return (
     <div className="project-selector" ref={dropdownRef}>
-      <label className="selector-label">Select Project:</label>
+      <label className="selector-label">Project:</label>
       <div className="custom-select-container">
         <div
           className={`custom-select-trigger ${isOpen ? 'open' : ''}`}
@@ -105,7 +105,7 @@ const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
               />
             )}
             <span className={selectedProject ? 'selected-text' : 'placeholder-text'}>
-              {selectedProjectName || '-- Choose a Project --'}
+              {selectedProjectName || 'Project...'}
             </span>
           </div>
           <svg

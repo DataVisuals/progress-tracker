@@ -35,3 +35,17 @@ export const PORTFOLIO_COLORS = [
   { value: '#a855f7', label: 'Violet' },
   { value: '#64748b', label: 'Slate' }
 ];
+
+// Space shapes/icons - used to visually distinguish spaces
+export const SPACE_SHAPES = [
+  { value: 'circle', label: 'Circle', icon: '○' },
+  { value: 'square', label: 'Square', icon: '□' },
+  { value: 'triangle', label: 'Triangle', icon: '△' },
+  { value: 'diamond', label: 'Diamond', icon: '◇' },
+  { value: 'star', label: 'Star', icon: '☆' },
+  { value: 'diamond-suit', label: 'Diamond Suit', icon: '♢' },
+  { value: 'triangle-down', label: 'Triangle Down', icon: '▽' },
+  { value: 'circle-large', label: 'Large Circle', icon: '◯' },
+  { value: 'hexagon', label: 'Hexagon', icon: '⬡' },
+  { value: 'pentagon', label: 'Pentagon', icon: '⬠' }
+];

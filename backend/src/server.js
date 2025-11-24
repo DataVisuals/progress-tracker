@@ -909,6 +909,514 @@ function createApp(dbPath) {
     }
   });
 
+  // ===== ALL SPACES REPORT =====
+  app.get('/api/reports/all', async (req, res) => {
+    try {
+      // Get all projects across all portfolios
+      const projects = await dbAll(`
+        SELECT p.id, p.name, p.description, p.initiative_manager, p.start_date, p.end_date, p.portfolio_id
+        FROM projects p
+        ORDER BY p.name
+      `);
+
+      // Get all portfolios for the portfolio map
+      const portfolios = await dbAll(`SELECT id, name, color FROM portfolios`);
+      const portfolioMap = {};
+      portfolios.forEach(p => {
+        portfolioMap[p.id] = p;
+      });
+
+      const projectsWithMetrics = [];
+
+      for (const project of projects) {
+        // Get all metrics for this project
+        const metrics = await dbAll(`
+          SELECT m.id, m.name, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date
+          FROM metrics m
+          WHERE m.project_id = ?
+          ORDER BY m.name
+        `, [project.id]);
+
+        const metricsWithStatus = [];
+
+        for (const metric of metrics) {
+          // Get all periods for this metric, sorted by date
+          const periods = await dbAll(`
+            SELECT mp.id, mp.reporting_date, mp.complete, mp.expected, mp.target
+            FROM metric_periods mp
+            WHERE mp.metric_id = ?
+            ORDER BY mp.reporting_date ASC
+          `, [metric.id]);
+
+          if (periods.length === 0) continue;
+
+          // Find the current period (period has started but next period hasn't started yet)
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          let currentPeriod = null;
+          for (let i = 0; i < periods.length; i++) {
+            const periodStart = new Date(periods[i].reporting_date);
+            periodStart.setHours(0, 0, 0, 0);
+
+            // Check if this period has started
+            if (periodStart <= today) {
+              // Check if next period has started
+              if (i + 1 < periods.length) {
+                const nextPeriodStart = new Date(periods[i + 1].reporting_date);
+                nextPeriodStart.setHours(0, 0, 0, 0);
+                if (today < nextPeriodStart) {
+                  // We're in this period (started but next hasn't started)
+                  currentPeriod = periods[i];
+                  break;
+                }
+              } else {
+                // This is the last period and it has started
+                currentPeriod = periods[i];
+              }
+            }
+          }
+
+          // Calculate RAG status
+          let ragStatus = 'grey';
+          let variance = 0;
+          let variancePercent = 0;
+
+          // If no current period found (all periods are in the future), show as grey
+          if (!currentPeriod) {
+            // Use the first period for display but show grey status
+            const firstPeriod = periods[0];
+            metricsWithStatus.push({
+              id: metric.id,
+              name: metric.name,
+              ragStatus: 'grey',
+              variance: 0,
+              variancePercent: 0,
+              complete: firstPeriod.complete || 0,
+              expected: firstPeriod.expected || 0,
+              reporting_date: firstPeriod.reporting_date,
+              latestComment: null
+            });
+            continue;
+          }
+
+          // Check if we're still in the current period (haven't passed to next period yet)
+          const currentPeriodIndex = periods.findIndex(p => p.id === currentPeriod.id);
+          const isInCurrentPeriod = currentPeriodIndex === periods.length - 1 ||
+            today < new Date(periods[currentPeriodIndex + 1].reporting_date);
+
+          // Helper function to calculate RAG for a specific period
+          const calculateRAGForPeriod = (period) => {
+            if (period.complete === null || period.expected === null) {
+              return { ragStatus: 'grey', variance: 0, variancePercent: 0 };
+            }
+
+            const periodVariance = period.complete - period.expected;
+            const periodVariancePercent = period.expected > 0
+              ? Math.abs((periodVariance / period.expected) * 100)
+              : 0;
+
+            const amberTolerance = parseFloat(metric.amber_tolerance) || 5.0;
+            const redTolerance = parseFloat(metric.red_tolerance) || 10.0;
+
+            let status = 'grey';
+            if (period.expected === 0) {
+              status = 'grey';
+            } else if (periodVariance >= 0) {
+              status = 'green';
+            } else if (periodVariancePercent > redTolerance) {
+              status = 'red';
+            } else if (periodVariancePercent > amberTolerance) {
+              status = 'amber';
+            } else {
+              status = 'green';
+            }
+
+            return { ragStatus: status, variance: periodVariance, variancePercent: periodVariancePercent };
+          };
+
+          // If we're in the current period and it has no data, use previous period's status
+          if (isInCurrentPeriod) {
+            const currentComplete = currentPeriod.complete || 0;
+
+            // If current period has no meaningful data (complete is 0 or null), use previous period
+            if (currentComplete === 0 && currentPeriodIndex > 0) {
+              const previousPeriod = periods[currentPeriodIndex - 1];
+              const previousRAG = calculateRAGForPeriod(previousPeriod);
+              ragStatus = previousRAG.ragStatus;
+              variance = previousRAG.variance;
+              variancePercent = previousRAG.variancePercent;
+            } else {
+              // Current period has data - calculate its RAG
+              const currentRAG = calculateRAGForPeriod(currentPeriod);
+              ragStatus = currentRAG.ragStatus;
+              variance = currentRAG.variance;
+              variancePercent = currentRAG.variancePercent;
+            }
+          } else {
+            // For completed periods, calculate normally
+            const periodRAG = calculateRAGForPeriod(currentPeriod);
+            ragStatus = periodRAG.ragStatus;
+            variance = periodRAG.variance;
+            variancePercent = periodRAG.variancePercent;
+          }
+
+          // Get latest comment for this period (for red and amber metrics)
+          let latestComment = null;
+          if (ragStatus === 'red' || ragStatus === 'amber') {
+            const comments = await dbAll(`
+              SELECT comment_text, created_at, created_by
+              FROM comments
+              WHERE period_id = ?
+              ORDER BY created_at DESC
+              LIMIT 1
+            `, [currentPeriod.id]);
+
+            if (comments.length > 0) {
+              latestComment = comments[0];
+            }
+          }
+
+          metricsWithStatus.push({
+            id: metric.id,
+            name: metric.name,
+            ragStatus,
+            variance,
+            variancePercent,
+            complete: currentPeriod.complete,
+            expected: currentPeriod.expected,
+            reporting_date: currentPeriod.reporting_date,
+            latestComment
+          });
+        }
+
+        // Only include projects that have metrics
+        if (metricsWithStatus.length > 0) {
+          // Sort metrics by variance (ascending, so most negative/worst first)
+          metricsWithStatus.sort((a, b) => a.variance - b.variance);
+
+          const portfolio = portfolioMap[project.portfolio_id];
+          projectsWithMetrics.push({
+            id: project.id,
+            name: project.name,
+            description: project.description,
+            initiative_manager: project.initiative_manager,
+            start_date: project.start_date,
+            end_date: project.end_date,
+            portfolio_name: portfolio ? portfolio.name : null,
+            portfolio_color: portfolio ? portfolio.color : null,
+            metrics: metricsWithStatus
+          });
+        }
+      }
+
+      // Group projects by worst RAG status
+      const redProjects = projectsWithMetrics.filter(p =>
+        p.metrics.some(m => m.ragStatus === 'red')
+      );
+      const amberProjects = projectsWithMetrics.filter(p =>
+        p.metrics.some(m => m.ragStatus === 'amber') &&
+        !p.metrics.some(m => m.ragStatus === 'red')
+      );
+      const greenProjects = projectsWithMetrics.filter(p =>
+        p.metrics.every(m => m.ragStatus === 'green' || m.ragStatus === 'grey')
+      );
+
+      // Summary statistics
+      const summary = {
+        totalProjects: projectsWithMetrics.length,
+        redCount: redProjects.length,
+        amberCount: amberProjects.length,
+        greenCount: greenProjects.length,
+        totalMetrics: projectsWithMetrics.reduce((sum, p) => sum + p.metrics.length, 0)
+      };
+
+      res.json({
+        summary,
+        redProjects,
+        amberProjects,
+        greenProjects
+      });
+    } catch (err) {
+      console.error('All spaces report error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ===== SPACES REPORT =====
+  app.get('/api/spaces/:id/report', async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Get space info
+      const space = await dbGet('SELECT * FROM spaces WHERE id = ?', [id]);
+      if (!space) {
+        return res.status(404).json({ error: 'Space not found' });
+      }
+
+      // Get all portfolios in this space
+      const portfolios = await dbAll(`
+        SELECT id, name, color
+        FROM portfolios
+        WHERE space_id = ?
+      `, [id]);
+
+      const portfolioIds = portfolios.map(p => p.id);
+      const portfolioMap = {};
+      portfolios.forEach(p => {
+        portfolioMap[p.id] = p;
+      });
+
+      if (portfolioIds.length === 0) {
+        // No portfolios in this space
+        return res.json({
+          space,
+          summary: {
+            totalProjects: 0,
+            redCount: 0,
+            amberCount: 0,
+            greenCount: 0,
+            totalMetrics: 0
+          },
+          redProjects: [],
+          amberProjects: [],
+          greenProjects: []
+        });
+      }
+
+      // Get all projects in these portfolios with their metrics
+      const placeholders = portfolioIds.map(() => '?').join(',');
+      const projects = await dbAll(`
+        SELECT p.id, p.name, p.description, p.initiative_manager, p.start_date, p.end_date, p.portfolio_id
+        FROM projects p
+        WHERE p.portfolio_id IN (${placeholders})
+        ORDER BY p.name
+      `, portfolioIds);
+
+      const projectsWithMetrics = [];
+
+      for (const project of projects) {
+        // Get all metrics for this project
+        const metrics = await dbAll(`
+          SELECT m.id, m.name, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date
+          FROM metrics m
+          WHERE m.project_id = ?
+          ORDER BY m.name
+        `, [project.id]);
+
+        const metricsWithStatus = [];
+
+        for (const metric of metrics) {
+          // Get all periods for this metric, sorted by date
+          const periods = await dbAll(`
+            SELECT mp.id, mp.reporting_date, mp.complete, mp.expected, mp.target
+            FROM metric_periods mp
+            WHERE mp.metric_id = ?
+            ORDER BY mp.reporting_date ASC
+          `, [metric.id]);
+
+          if (periods.length === 0) continue;
+
+          // Find the current period (period has started but next period hasn't started yet)
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          let currentPeriod = null;
+          for (let i = 0; i < periods.length; i++) {
+            const periodStart = new Date(periods[i].reporting_date);
+            periodStart.setHours(0, 0, 0, 0);
+
+            // Check if this period has started
+            if (periodStart <= today) {
+              // Check if next period has started
+              if (i + 1 < periods.length) {
+                const nextPeriodStart = new Date(periods[i + 1].reporting_date);
+                nextPeriodStart.setHours(0, 0, 0, 0);
+                if (today < nextPeriodStart) {
+                  // We're in this period (started but next hasn't started)
+                  currentPeriod = periods[i];
+                  break;
+                }
+              } else {
+                // This is the last period and it has started
+                currentPeriod = periods[i];
+              }
+            }
+          }
+
+          // Calculate RAG status
+          let ragStatus = 'grey';
+          let variance = 0;
+          let variancePercent = 0;
+
+          // If no current period found (all periods are in the future), show as grey
+          if (!currentPeriod) {
+            // Use the first period for display but show grey status
+            const firstPeriod = periods[0];
+            metricsWithStatus.push({
+              id: metric.id,
+              name: metric.name,
+              ragStatus: 'grey',
+              variance: 0,
+              variancePercent: 0,
+              complete: firstPeriod.complete || 0,
+              expected: firstPeriod.expected || 0,
+              reporting_date: firstPeriod.reporting_date,
+              latestComment: null
+            });
+            continue;
+          }
+
+          // Check if we're still in the current period (haven't passed to next period yet)
+          // Find the index of current period
+          const currentPeriodIndex = periods.findIndex(p => p.id === currentPeriod.id);
+
+          // We're in the current period if:
+          // 1. There's a next period and we haven't reached it yet, OR
+          // Check if we're still in the current period (next period hasn't started yet)
+          // This matches the frontend logic in MetricTabs.jsx exactly
+          const isInCurrentPeriod = currentPeriodIndex === periods.length - 1 ||
+            today < new Date(periods[currentPeriodIndex + 1].reporting_date);
+
+          // Helper function to calculate RAG for a specific period
+          const calculateRAGForPeriod = (period) => {
+            if (period.complete === null || period.expected === null) {
+              return { ragStatus: 'grey', variance: 0, variancePercent: 0 };
+            }
+
+            const periodVariance = period.complete - period.expected;
+            const periodVariancePercent = period.expected > 0
+              ? Math.abs((periodVariance / period.expected) * 100)
+              : 0;
+
+            const amberTolerance = parseFloat(metric.amber_tolerance) || 5.0;
+            const redTolerance = parseFloat(metric.red_tolerance) || 10.0;
+
+            let status = 'grey';
+            if (period.expected === 0) {
+              status = 'grey';
+            } else if (periodVariance >= 0) {
+              status = 'green';
+            } else if (periodVariancePercent > redTolerance) {
+              status = 'red';
+            } else if (periodVariancePercent > amberTolerance) {
+              status = 'amber';
+            } else {
+              status = 'green';
+            }
+
+            return { ragStatus: status, variance: periodVariance, variancePercent: periodVariancePercent };
+          };
+
+          // If we're in the current period and it has no data, use previous period's status
+          if (isInCurrentPeriod) {
+            const currentComplete = currentPeriod.complete || 0;
+
+            // If current period has no meaningful data (complete is 0 or null), use previous period
+            if (currentComplete === 0 && currentPeriodIndex > 0) {
+              const previousPeriod = periods[currentPeriodIndex - 1];
+              const previousRAG = calculateRAGForPeriod(previousPeriod);
+              ragStatus = previousRAG.ragStatus;
+              variance = previousRAG.variance;
+              variancePercent = previousRAG.variancePercent;
+            } else {
+              // Current period has data - calculate its RAG
+              const currentRAG = calculateRAGForPeriod(currentPeriod);
+              ragStatus = currentRAG.ragStatus;
+              variance = currentRAG.variance;
+              variancePercent = currentRAG.variancePercent;
+            }
+          } else {
+            // For completed periods, calculate normally
+            const periodRAG = calculateRAGForPeriod(currentPeriod);
+            ragStatus = periodRAG.ragStatus;
+            variance = periodRAG.variance;
+            variancePercent = periodRAG.variancePercent;
+          }
+
+          // Get latest comment for this period (for red and amber metrics)
+          let latestComment = null;
+          if (ragStatus === 'red' || ragStatus === 'amber') {
+            const comments = await dbAll(`
+              SELECT comment_text, created_at, created_by
+              FROM comments
+              WHERE period_id = ?
+              ORDER BY created_at DESC
+              LIMIT 1
+            `, [currentPeriod.id]);
+
+            if (comments.length > 0) {
+              latestComment = comments[0];
+            }
+          }
+
+          metricsWithStatus.push({
+            id: metric.id,
+            name: metric.name,
+            ragStatus,
+            variance,
+            variancePercent,
+            complete: currentPeriod.complete,
+            expected: currentPeriod.expected,
+            reporting_date: currentPeriod.reporting_date,
+            latestComment
+          });
+        }
+
+        // Only include projects that have metrics
+        if (metricsWithStatus.length > 0) {
+          // Sort metrics by variance (ascending, so most negative/worst first)
+          metricsWithStatus.sort((a, b) => a.variance - b.variance);
+
+          const portfolio = portfolioMap[project.portfolio_id];
+          projectsWithMetrics.push({
+            id: project.id,
+            name: project.name,
+            description: project.description,
+            initiative_manager: project.initiative_manager,
+            start_date: project.start_date,
+            end_date: project.end_date,
+            portfolio_name: portfolio ? portfolio.name : null,
+            portfolio_color: portfolio ? portfolio.color : null,
+            metrics: metricsWithStatus
+          });
+        }
+      }
+
+      // Group projects by worst RAG status
+      const redProjects = projectsWithMetrics.filter(p =>
+        p.metrics.some(m => m.ragStatus === 'red')
+      );
+      const amberProjects = projectsWithMetrics.filter(p =>
+        p.metrics.some(m => m.ragStatus === 'amber') &&
+        !p.metrics.some(m => m.ragStatus === 'red')
+      );
+      const greenProjects = projectsWithMetrics.filter(p =>
+        p.metrics.every(m => m.ragStatus === 'green' || m.ragStatus === 'grey')
+      );
+
+      // Summary statistics
+      const summary = {
+        totalProjects: projectsWithMetrics.length,
+        redCount: redProjects.length,
+        amberCount: amberProjects.length,
+        greenCount: greenProjects.length,
+        totalMetrics: projectsWithMetrics.reduce((sum, p) => sum + p.metrics.length, 0)
+      };
+
+      res.json({
+        space,
+        summary,
+        redProjects,
+        amberProjects,
+        greenProjects
+      });
+    } catch (err) {
+      console.error('Space report error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== FEEDBACK =====
   app.get('/api/feedback', async (req, res) => {
     try {
@@ -4716,6 +5224,63 @@ function createApp(dbPath) {
       console.log('✅ Created recovery_plans table');
     } catch (err) {
       // Table already exists, that's fine
+    }
+
+    // Migration: Create spaces table
+    try {
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS spaces (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL UNIQUE,
+          description TEXT,
+          color TEXT DEFAULT '#6366f1',
+          icon TEXT,
+          display_order INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('✅ Created spaces table');
+    } catch (err) {
+      console.error('Error creating spaces table:', err);
+    }
+
+    // Migration: Add space_id to portfolios table
+    try {
+      await dbRun(`ALTER TABLE portfolios ADD COLUMN space_id INTEGER REFERENCES spaces(id) ON DELETE SET NULL`);
+      console.log('✅ Added space_id column to portfolios table');
+    } catch (err) {
+      // Column already exists, that's fine
+    }
+
+    // Migration: Add default_space_id to users table
+    try {
+      await dbRun(`ALTER TABLE users ADD COLUMN default_space_id INTEGER REFERENCES spaces(id) ON DELETE SET NULL`);
+      console.log('✅ Added default_space_id column to users table');
+    } catch (err) {
+      // Column already exists, that's fine
+    }
+
+    // Migration: Create index for space_id in portfolios
+    try {
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_portfolios_space ON portfolios(space_id)`);
+      console.log('✅ Created index for space_id in portfolios');
+    } catch (err) {
+      // Index already exists, that's fine
+    }
+
+    // Migration: Insert default space if none exists
+    try {
+      const existingSpaces = await dbAll('SELECT id FROM spaces');
+      if (existingSpaces.length === 0) {
+        await dbRun(
+          `INSERT INTO spaces (id, name, description, color, icon, display_order) VALUES (?, ?, ?, ?, ?, ?)`,
+          [1, 'Default Space', 'Default space for all portfolios', '#6366f1', 'circle', 0]
+        );
+        console.log('✅ Created default space');
+      }
+    } catch (err) {
+      // Space already exists, that's fine
     }
 
     // Create default admin user if none exists

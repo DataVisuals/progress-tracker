@@ -35,10 +35,21 @@ try {
   console.error('=== FATAL ERROR DURING RENDER ===');
   console.error(error);
   document.body.innerHTML = `
-    <div style="padding: 40px; font-family: system-ui;">
+    <div style="padding: 40px; font-family: system-ui; max-width: 800px; margin: 0 auto;">
       <h1 style="color: #dc2626;">Fatal Error</h1>
       <p>Failed to start the application. Check the console for details.</p>
-      <pre style="background: #fee2e2; padding: 20px; border-radius: 8px;">${error.toString()}</pre>
+      <div style="background: #fee2e2; padding: 20px; border-radius: 8px; margin-top: 20px; font-family: monospace; font-size: 14px;">
+        <strong>Error:</strong> ${error.toString()}
+        ${error.stack ? `
+          <details style="margin-top: 10px;">
+            <summary style="cursor: pointer; font-weight: bold; margin-bottom: 5px;">Stack Trace</summary>
+            <pre style="margin-top: 10px; white-space: pre-wrap; font-size: 12px; overflow: auto;">${error.stack}</pre>
+          </details>
+        ` : ''}
+      </div>
+      <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #003c71; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+        Reload Page
+      </button>
     </div>
   `;
 }

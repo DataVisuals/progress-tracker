@@ -18,7 +18,7 @@
 .portfolio-select-container {
   position: relative;
   min-width: 140px;
-  max-width: 200px;
+  max-width: 140px;
 }
 
 .portfolio-select-trigger {
@@ -51,9 +51,8 @@
 .portfolio-color-dot {
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: 0px;
   flex-shrink: 0;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
 .selected-text {
@@ -194,9 +193,8 @@
 .portfolio-color-dot-large {
   width: 10px;
   height: 10px;
-  border-radius: 2px;
+  border-radius: 0px;
   flex-shrink: 0;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
 .portfolio-option-item .option-name {
