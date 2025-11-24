@@ -281,12 +281,3 @@
 :root.dark-mode .all-projects-icon {
   color: #9ca3af;
 }
-
-/* Space Shape Icons */
-.space-shape-icon {
-  color: #003c71;
-}
-
-:root.dark-mode .space-shape-icon {
-  color: #93c5fd;
-}

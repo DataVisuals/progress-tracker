@@ -5234,7 +5234,6 @@ function createApp(dbPath) {
           name TEXT NOT NULL UNIQUE,
           description TEXT,
           color TEXT DEFAULT '#6366f1',
-          icon TEXT,
           display_order INTEGER DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP

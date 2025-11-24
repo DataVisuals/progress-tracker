@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
-import { SPACE_SHAPES } from '../constants/colors';
 import './PortfolioManager.css'; // Reuse portfolio manager styles
 
 export default function SpaceManager({ onClose, onSpaceCreated }) {
@@ -10,33 +9,13 @@ export default function SpaceManager({ onClose, onSpaceCreated }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    icon: SPACE_SHAPES[0].value,
     display_order: 0
   });
   const [error, setError] = useState('');
 
-  const shapeOptions = SPACE_SHAPES;
-
-  // Get first unused shape
-  const getUnusedShape = () => {
-    const usedShapes = spaces.map(s => s.icon);
-    const unusedShape = shapeOptions.find(option => !usedShapes.includes(option.value));
-    return unusedShape ? unusedShape.value : SPACE_SHAPES[0].value;
-  };
-
   useEffect(() => {
     loadSpaces();
   }, []);
-
-  // Update form icon when opening new form or when spaces change
-  useEffect(() => {
-    if (showNewForm && !editingId && spaces.length > 0) {
-      setFormData(prev => ({
-        ...prev,
-        icon: getUnusedShape()
-      }));
-    }
-  }, [showNewForm, editingId, spaces]);
 
   const loadSpaces = async () => {
     try {
@@ -70,7 +49,6 @@ export default function SpaceManager({ onClose, onSpaceCreated }) {
     setFormData({
       name: space.name,
       description: space.description || '',
-      icon: space.icon || SPACE_SHAPES[0].value,
       display_order: space.display_order || 0
     });
     setEditingId(space.id);
@@ -95,7 +73,6 @@ export default function SpaceManager({ onClose, onSpaceCreated }) {
     setFormData({
       name: '',
       description: '',
-      icon: getUnusedShape(),
       display_order: 0
     });
     setEditingId(null);
@@ -126,25 +103,17 @@ export default function SpaceManager({ onClose, onSpaceCreated }) {
                 {spaces.length === 0 ? (
                   <p className="text-muted">No spaces yet. Create one to group your portfolios.</p>
                 ) : (
-                  spaces.map(space => {
-                    const shape = SPACE_SHAPES.find(s => s.value === space.icon);
-                    return (
-                      <div key={space.id} className="portfolio-item">
-                        <div className="portfolio-info">
-                          <div
-                            className="portfolio-color-indicator"
-                            style={{ fontSize: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#003c71' }}
-                          >
-                            {shape?.icon || '●'}
-                          </div>
-                          <div className="portfolio-details">
-                            <h3>{space.name}</h3>
-                            {space.description && (
-                              <p className="portfolio-description">{space.description}</p>
-                            )}
-                            <span className="portfolio-order">Order: {space.display_order}</span>
-                          </div>
+                  spaces.map(space => (
+                    <div key={space.id} className="portfolio-item">
+                      <div className="portfolio-info">
+                        <div className="portfolio-details">
+                          <h3>{space.name}</h3>
+                          {space.description && (
+                            <p className="portfolio-description">{space.description}</p>
+                          )}
+                          <span className="portfolio-order">Order: {space.display_order}</span>
                         </div>
+                      </div>
                       <div className="portfolio-actions">
                         <button
                           className="btn-secondary"
@@ -160,8 +129,7 @@ export default function SpaceManager({ onClose, onSpaceCreated }) {
                         </button>
                       </div>
                     </div>
-                    );
-                  })
+                  ))
                 )}
               </div>
             </>
@@ -188,32 +156,6 @@ export default function SpaceManager({ onClose, onSpaceCreated }) {
                   placeholder="Optional description..."
                   rows={3}
                 />
-              </div>
-
-              <div className="form-group">
-                <label>Shape</label>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {shapeOptions.map(option => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      className={`shape-option ${formData.icon === option.value ? 'selected' : ''}`}
-                      onClick={() => setFormData({ ...formData, icon: option.value })}
-                      title={option.label}
-                      style={{
-                        padding: '8px 12px',
-                        border: formData.icon === option.value ? '2px solid #00aeef' : '1px solid #d1d5db',
-                        borderRadius: '4px',
-                        background: formData.icon === option.value ? '#e0f2fe' : 'white',
-                        fontSize: '20px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      {option.icon}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               <div className="form-group">

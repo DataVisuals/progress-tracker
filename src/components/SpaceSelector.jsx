@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SPACE_SHAPES } from '../constants/colors';
 import './PortfolioSelector.css'; // Reuse the same styles
 
 export default function SpaceSelector({
@@ -15,12 +14,6 @@ export default function SpaceSelector({
   const selectedSpaceData = selectedSpace !== 'all'
     ? spaces.find(s => s.id === Number(selectedSpace))
     : null;
-
-  // Get shape icon for a space
-  const getShapeIcon = (iconValue) => {
-    const shape = SPACE_SHAPES.find(s => s.value === iconValue);
-    return shape?.icon || '●';
-  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -80,15 +73,7 @@ export default function SpaceSelector({
         >
           <div className="trigger-content">
             {selectedSpaceData ? (
-              <>
-                <span
-                  className="space-icon-display space-shape-icon"
-                  style={{ fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: '16px', height: '16px' }}
-                >
-                  {getShapeIcon(selectedSpaceData.icon)}
-                </span>
-                <span className="selected-text">{selectedSpaceData.name || 'Unnamed Space'}</span>
-              </>
+              <span className="selected-text">{selectedSpaceData.name || 'Unnamed Space'}</span>
             ) : (
               <span className="placeholder-text">Space...</span>
             )}
@@ -147,12 +132,6 @@ export default function SpaceSelector({
                   aria-selected={selectedSpace === space.id || Number(selectedSpace) === space.id}
                 >
                   <div className="option-content">
-                    <span
-                      className="portfolio-color-dot-large space-shape-icon"
-                      style={{ fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      {getShapeIcon(space.icon)}
-                    </span>
                     <span className="option-name">{space.name || `Space ${space.id}`}</span>
                   </div>
                 </div>

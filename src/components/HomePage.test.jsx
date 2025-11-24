@@ -47,6 +47,7 @@ vi.mock('react-icons/md', () => ({
   MdNotifications: () => <div>NotificationsIcon</div>,
   MdCalendarToday: () => <div>CalendarTodayIcon</div>,
   MdFeedback: () => <div>FeedbackIcon</div>,
+  MdBugReport: () => <div>BugReportIcon</div>,
 }));
 
 describe('HomePage - Recovery Plan Indicator Tests', () => {
