@@ -32,20 +32,18 @@ import {
   MdNotifications,
   MdCalendarToday,
   MdFeedback,
-  MdErrorOutline
+  MdErrorOutline,
+  MdBugReport
 } from 'react-icons/md';
 import { api } from '../api/client';
 import { selectStyles } from './SelectStyles';
 import './HomePage.css';
 import './MetricTabs.css';
 
-const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) => {
+const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser, selectedSpace, spaces, portfolios }) => {
   const [recentCommentary, setRecentCommentary] = useState([]);
   const [atRiskMetrics, setAtRiskMetrics] = useState([]);
   const [ragFilter, setRagFilter] = useState('all'); // 'all', 'red', 'amber'
-  const [spaces, setSpaces] = useState([]); // All available spaces
-  const [spaceFilter, setSpaceFilter] = useState('all'); // 'all' or space_id
-  const [portfolios, setPortfolios] = useState([]); // All portfolios
   const [portfolioFilter, setPortfolioFilter] = useState('all'); // 'all' or portfolio_id
   const [randomTips, setRandomTips] = useState([]);
   const [feedback, setFeedback] = useState([]);
@@ -266,7 +264,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
         loadHomePageData();
       }
     }
-  }, [Object.keys(projects).length, Object.keys(projectsData).length]); // Re-run when counts change
+  }, [Object.keys(projects).length, Object.keys(projectsData).length, selectedSpace, portfolios]); // Re-run when counts change or space/portfolios change
 
   const selectRandomTips = () => {
     const shuffled = [...allTips].sort(() => 0.5 - Math.random());
@@ -279,23 +277,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
     loadingRef.current = true;
     setLoading(true);
     try {
-      // Load spaces and portfolios
-      try {
-        const [spacesResponse, portfoliosResponse] = await Promise.all([
-          api.getSpaces(),
-          api.get('/portfolios')
-        ]);
-
-        setSpaces(spacesResponse.data || []);
-        setPortfolios(portfoliosResponse.data || []);
-
-        // If user has a default space, set it
-        if (currentUser && currentUser.default_space_id) {
-          setSpaceFilter(currentUser.default_space_id.toString());
-        }
-      } catch (err) {
-        console.log('Could not load spaces/portfolios:', err.message);
-      }
+      // Spaces and portfolios are now passed in as props from App.jsx
 
       // Get recent commentary from audit log - filter for metric_periods table
       let enrichedCommentary = [];
@@ -316,10 +298,21 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
             metricName: comment.metric_name,
             periodName: comment.reporting_date,
             createdBy: comment.created_by_name,
+            portfolioId: projectInfo ? projectInfo[1].portfolio_id : null,
             portfolioColor: projectInfo ? projectInfo[1].portfolio_color : null,
             portfolioName: projectInfo ? projectInfo[1].portfolio_name : null
           };
         });
+
+        // Filter by selected space
+        if (selectedSpace && selectedSpace !== 'all') {
+          const spacePortfolioIds = portfolios
+            .filter(p => p.space_id === parseInt(selectedSpace))
+            .map(p => p.id);
+          enrichedCommentary = enrichedCommentary.filter(comment =>
+            !comment.portfolioId || spacePortfolioIds.includes(comment.portfolioId)
+          );
+        }
       } catch (commentsErr) {
         console.log('Could not load recent comments:', commentsErr.message);
       }
@@ -541,7 +534,60 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
       // Fetch inconsistency report
       try {
         const inconsistencyResponse = await api.get('/inconsistency-report');
-        setInconsistencies(inconsistencyResponse.data);
+        let inconsistencyData = inconsistencyResponse.data;
+
+        // Filter by selected space
+        if (selectedSpace && selectedSpace !== 'all' && inconsistencyData && inconsistencyData.summary) {
+          const spacePortfolioIds = portfolios
+            .filter(p => p.space_id === parseInt(selectedSpace))
+            .map(p => p.id);
+
+          console.log('Filtering inconsistencies by space:', selectedSpace);
+          console.log('Space portfolio IDs:', spacePortfolioIds);
+          console.log('Inconsistency data structure:', inconsistencyData);
+
+          // Filter the summary to only include issues for projects in the selected space
+          inconsistencyData = {
+            ...inconsistencyData,
+            summary: inconsistencyData.summary
+              .map(pmData => {
+                // Filter issues for this PM
+                const filteredIssues = pmData.issues.filter(issue => {
+                  const projectData = projects[issue.project_id];
+                  return projectData && spacePortfolioIds.includes(projectData.portfolio_id);
+                });
+
+                // Recalculate severity counts
+                const severityCounts = {
+                  high: filteredIssues.filter(i => i.severity === 'high').length,
+                  medium: filteredIssues.filter(i => i.severity === 'medium').length,
+                  low: filteredIssues.filter(i => i.severity === 'low').length
+                };
+
+                // Return filtered PM data
+                return {
+                  ...pmData,
+                  issues: filteredIssues,
+                  total: filteredIssues.length,
+                  high: severityCounts.high,
+                  medium: severityCounts.medium,
+                  low: severityCounts.low
+                };
+              })
+              .filter(pmData => pmData.total > 0), // Remove PMs with no issues
+            total_inconsistencies: 0 // Recalculate below
+          };
+
+          // Recalculate total inconsistencies
+          inconsistencyData.total_inconsistencies = inconsistencyData.summary.reduce(
+            (sum, pmData) => sum + pmData.total,
+            0
+          );
+
+          console.log('Filtered inconsistencies:', inconsistencyData.total_inconsistencies);
+        }
+
+        setInconsistencies(inconsistencyData);
       } catch (inconsistencyErr) {
         console.log('Could not load inconsistency report:', inconsistencyErr.message);
       }
@@ -595,7 +641,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
       // Find the portfolio to check its space_id
       const portfolio = portfolios.find(p => p.id === m.portfolioId);
       // Only include if space filter matches or is 'all'
-      if (spaceFilter === 'all' || (portfolio && portfolio.space_id === parseInt(spaceFilter))) {
+      if (selectedSpace === 'all' || (portfolio && portfolio.space_id === parseInt(selectedSpace))) {
         portfolioMap.set(m.portfolioId, {
           id: m.portfolioId,
           name: m.portfolioName || 'No Portfolio',
@@ -610,10 +656,10 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
   let filteredMetrics = atRiskMetrics;
 
   // Apply space filter
-  if (spaceFilter !== 'all') {
+  if (selectedSpace !== 'all') {
     filteredMetrics = filteredMetrics.filter(m => {
       const portfolio = portfolios.find(p => p.id === m.portfolioId);
-      return portfolio && portfolio.space_id === parseInt(spaceFilter);
+      return portfolio && portfolio.space_id === parseInt(selectedSpace);
     });
   }
 
@@ -635,7 +681,11 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
       <div className="home-header">
         <div className="home-title">
           <MdHome className="home-icon" />
-          <h1>Dashboard</h1>
+          <h1>
+            {selectedSpace === 'all'
+              ? 'All Spaces'
+              : spaces.find(s => s.id === Number(selectedSpace))?.name || 'All Spaces'}
+          </h1>
         </div>
         <div className="home-stats">
           <div className="stat-item">
@@ -720,7 +770,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
         {/* Top Right - Metrics at Risk */}
         <div className="home-quadrant metrics-quadrant">
           <div className="quadrant-header">
-            <MdWarning className="quadrant-icon warning" />
+            <MdSpeed className="quadrant-icon warning" />
             <h2>Metrics at Risk</h2>
             <div className="filter-controls">
               <div className="rag-filter-buttons">
@@ -743,40 +793,6 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
                   Amber ({amberCount})
                 </button>
               </div>
-              {spaces.length > 0 && (
-                <Select
-                  className="portfolio-filter-dropdown"
-                  styles={selectStyles}
-                  value={
-                    spaceFilter === 'all'
-                      ? { value: 'all', label: 'All Spaces' }
-                      : spaces.find(s => s.id === parseInt(spaceFilter))
-                        ? { value: spaces.find(s => s.id === parseInt(spaceFilter)).id, label: spaces.find(s => s.id === parseInt(spaceFilter)).name }
-                        : { value: 'all', label: 'All Spaces' }
-                  }
-                  onChange={async (option) => {
-                    const newSpaceFilter = option.value.toString();
-                    setSpaceFilter(newSpaceFilter);
-                    setPortfolioFilter('all'); // Reset portfolio filter when space changes
-                    // Save user's preference if logged in
-                    if (currentUser && newSpaceFilter !== 'all') {
-                      try {
-                        await api.updateDefaultSpace(parseInt(newSpaceFilter));
-                      } catch (err) {
-                        console.log('Could not save default space:', err.message);
-                      }
-                    }
-                  }}
-                  options={[
-                    { value: 'all', label: 'All Spaces' },
-                    ...spaces.map(space => ({
-                      value: space.id,
-                      label: space.name
-                    }))
-                  ]}
-                  isSearchable={false}
-                />
-              )}
               {portfoliosInMetrics.length > 1 && (
                 <Select
                   className="portfolio-filter-dropdown"
@@ -808,13 +824,25 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
               <div className="empty-state success">
                 <MdTrendingUp className="empty-icon" />
                 <p>All metrics on track!</p>
-                <span>No metrics are currently at risk</span>
+                <span>
+                  No metrics at risk for{' '}
+                  {selectedSpace === 'all'
+                    ? 'All Spaces'
+                    : spaces.find(s => s.id === Number(selectedSpace))?.name || 'All Spaces'}
+                </span>
               </div>
             ) : filteredMetrics.length === 0 ? (
               <div className="empty-state success">
                 <MdTrendingUp className="empty-icon" />
-                <p>No {ragFilter} metrics!</p>
-                <span>Try selecting a different filter</span>
+                <p>No {ragFilter === 'all' ? 'at-risk' : ragFilter} metrics!</p>
+                <span>
+                  No {ragFilter === 'all' ? 'at-risk' : ragFilter} metrics for{' '}
+                  {portfolioFilter === 'all'
+                    ? (selectedSpace === 'all'
+                        ? 'All Spaces'
+                        : spaces.find(s => s.id === Number(selectedSpace))?.name || 'All Spaces')
+                    : portfoliosInMetrics.find(p => p.id === parseInt(portfolioFilter))?.name || 'selected portfolio'}
+                </span>
               </div>
             ) : (
               <div className="metrics-list">
@@ -886,7 +914,12 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
               <div className="empty-state">
                 <MdComment className="empty-icon" />
                 <p>No recent commentary</p>
-                <span>Add commentary to metrics to provide context</span>
+                <span>
+                  No commentary for{' '}
+                  {selectedSpace === 'all'
+                    ? 'All Spaces'
+                    : spaces.find(s => s.id === Number(selectedSpace))?.name || 'All Spaces'}
+                </span>
               </div>
             ) : (
               <div className="commentary-list">
@@ -953,7 +986,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
         {/* Bottom Right - Inconsistency Report */}
         <div className="home-quadrant inconsistency-quadrant">
           <div className="quadrant-header">
-            <MdWarning className="quadrant-icon warning" />
+            <MdBugReport className="quadrant-icon warning" />
             <h2>Inconsistencies</h2>
           </div>
           <div className="quadrant-content">
@@ -963,6 +996,11 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
               <div className="no-inconsistencies">
                 <MdCheckCircle style={{ fontSize: '48px', color: '#10b981', marginBottom: '8px' }} />
                 <p>No inconsistencies found</p>
+                <span style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                  {selectedSpace === 'all'
+                    ? 'All projects across all spaces'
+                    : `All projects in ${spaces.find(s => s.id === Number(selectedSpace))?.name || 'this space'}`}
+                </span>
               </div>
             ) : (
               <div className="inconsistency-list">

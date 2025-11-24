@@ -13,32 +13,32 @@
   justify-content: space-between;
   align-items: center;
   gap: 24px;
-  margin-bottom: 8px;
-  padding-bottom: 8px;
+  margin-bottom: 2px;
+  padding-bottom: 2px;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .home-title {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .home-title h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
   color: #003c71;
 }
 
 .home-icon {
-  font-size: 28px;
+  font-size: 24px;
   color: #00aeef;
 }
 
 .home-stats {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   margin-left: auto;
 }
 
@@ -48,7 +48,7 @@
 
 .stat-value {
   display: block;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: #003c71;
   line-height: 1.2;
@@ -298,6 +298,36 @@
 
 .portfolio-filter-dropdown {
   min-width: 150px;
+  text-align: left;
+}
+
+/* Override react-select height to match RAG filter buttons */
+.portfolio-filter-dropdown .react-select__control {
+  min-height: 27px;
+  height: 27px;
+  font-size: 11px;
+}
+
+.portfolio-filter-dropdown .react-select__value-container {
+  padding: 0 8px;
+  height: 25px;
+}
+
+.portfolio-filter-dropdown .react-select__input-container {
+  margin: 0;
+  padding: 0;
+}
+
+.portfolio-filter-dropdown .react-select__indicator {
+  padding: 2px 4px;
+}
+
+.portfolio-filter-dropdown .react-select__single-value {
+  font-size: 11px;
+}
+
+.portfolio-filter-dropdown .react-select__placeholder {
+  font-size: 11px;
 }
 
 .rag-filter-btn {
@@ -312,6 +342,9 @@
   transition: all 0.2s;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  height: 27px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .rag-filter-btn:hover {
@@ -895,21 +928,6 @@ html.dark-mode .quadrant-content {
   color: #1f2937;
 }
 
-:root.dark-mode .portfolio-filter-dropdown {
-  background: #1f2937;
-  border-color: #4b5563;
-  color: #e5e7eb;
-}
-
-:root.dark-mode .portfolio-filter-dropdown:hover {
-  border-color: #6b7280;
-}
-
-:root.dark-mode .portfolio-filter-dropdown:focus {
-  border-color: #00aeef;
-}
-
-
 :root.dark-mode .commentary-item {
   background-color: #374151;
   border-color: #4b5563;
@@ -1379,6 +1397,7 @@ html.dark-mode .quadrant-content {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  height: 100%;
   padding: 40px 20px;
   color: #6b7280;
   text-align: center;
@@ -1548,7 +1567,7 @@ html.dark-mode .quadrant-content {
   display: flex;
   justify-content: center;
   gap: 24px;
-  padding: 20px;
+  padding: 8px;
   border-top: 1px solid #e5e7eb;
   background: #f9fafb;
   margin-top: auto;
@@ -1564,7 +1583,7 @@ html.dark-mode .quadrant-content {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  padding: 8px 12px;
+  padding: 6px 8px;
   border-radius: 6px;
   transition: all 0.2s;
 }
