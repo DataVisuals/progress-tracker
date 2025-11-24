@@ -3326,114 +3326,98 @@ function createApp(dbPath) {
       }
 
       // 4. Metrics that are red or amber but have no recovery plan
-      // RAG status is calculated dynamically since it's not stored in the database
-      const allMetrics = await dbAll(`
+      // Calculate RAG status in SQL using window functions
+      const metricsNeedingRecovery = await dbAll(`
+        WITH CurrentPeriods AS (
+          SELECT
+            mp.metric_id,
+            mp.reporting_date,
+            mp.complete,
+            mp.expected,
+            ROW_NUMBER() OVER (PARTITION BY mp.metric_id ORDER BY mp.reporting_date DESC) as rn,
+            LAG(mp.complete) OVER (PARTITION BY mp.metric_id ORDER BY mp.reporting_date) as prev_complete,
+            LAG(mp.expected) OVER (PARTITION BY mp.metric_id ORDER BY mp.reporting_date) as prev_expected,
+            LEAD(mp.reporting_date) OVER (PARTITION BY mp.metric_id ORDER BY mp.reporting_date) as next_date
+          FROM metric_periods mp
+          WHERE mp.reporting_date <= DATE('now')
+        ),
+        LatestPeriods AS (
+          SELECT
+            metric_id,
+            reporting_date,
+            complete,
+            expected,
+            prev_complete,
+            prev_expected,
+            next_date,
+            CASE
+              WHEN next_date IS NULL OR DATE('now') < next_date THEN 1
+              ELSE 0
+            END as is_current_period
+          FROM CurrentPeriods
+          WHERE rn = 1
+        ),
+        RAGCalculation AS (
+          SELECT
+            lp.metric_id,
+            m.name as metric_name,
+            m.project_id,
+            p.name as project_name,
+            p.initiative_manager as pm_name,
+            m.amber_tolerance,
+            m.red_tolerance,
+            m.created_at as first_detected,
+            CASE
+              -- Use previous period if current period has no data and we're in current period
+              WHEN lp.is_current_period = 1 AND COALESCE(lp.complete, 0) = 0 AND lp.prev_complete IS NOT NULL
+                THEN lp.prev_complete
+              ELSE lp.complete
+            END as use_complete,
+            CASE
+              WHEN lp.is_current_period = 1 AND COALESCE(lp.complete, 0) = 0 AND lp.prev_expected IS NOT NULL
+                THEN lp.prev_expected
+              ELSE lp.expected
+            END as use_expected
+          FROM LatestPeriods lp
+          JOIN metrics m ON lp.metric_id = m.id
+          JOIN projects p ON m.project_id = p.id
+          LEFT JOIN recovery_plans rp ON m.id = rp.metric_id AND rp.status = 'active'
+          WHERE rp.id IS NULL
+        )
         SELECT
-          m.id as metric_id,
-          m.name as metric_name,
-          m.project_id,
-          m.amber_tolerance,
-          m.red_tolerance,
-          p.name as project_name,
-          p.initiative_manager as pm_name,
-          m.created_at as first_detected
-        FROM metrics m
-        JOIN projects p ON m.project_id = p.id
-        LEFT JOIN recovery_plans rp ON m.id = rp.metric_id AND rp.status = 'active'
-        WHERE rp.id IS NULL
-        ORDER BY p.initiative_manager, p.name, m.name
+          metric_id,
+          metric_name,
+          project_id,
+          project_name,
+          pm_name,
+          first_detected,
+          CASE
+            WHEN use_complete IS NULL OR use_expected IS NULL THEN 'grey'
+            WHEN use_expected = 0 THEN 'grey'
+            WHEN use_complete >= use_expected THEN 'green'
+            WHEN ABS((use_complete - use_expected) * 100.0 / use_expected) > red_tolerance THEN 'red'
+            WHEN ABS((use_complete - use_expected) * 100.0 / use_expected) > amber_tolerance THEN 'amber'
+            ELSE 'green'
+          END as rag_status
+        FROM RAGCalculation
+        WHERE rag_status IN ('red', 'amber')
+        ORDER BY pm_name, project_name, metric_name
       `);
 
-      for (const metric of allMetrics) {
-        // Get all periods for this metric, sorted by date
-        const periods = await dbAll(`
-          SELECT id, reporting_date, complete, expected
-          FROM metric_periods
-          WHERE metric_id = ?
-          ORDER BY reporting_date ASC
-        `, [metric.metric_id]);
-
-        if (periods.length === 0) continue;
-
-        // Find the current period (matches logic in backend/src/server.js:570-598)
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        let currentPeriodIndex = -1;
-        for (let i = 0; i < periods.length; i++) {
-          const periodStart = new Date(periods[i].reporting_date);
-          periodStart.setHours(0, 0, 0, 0);
-
-          if (periodStart <= today) {
-            if (i + 1 < periods.length) {
-              const nextPeriodStart = new Date(periods[i + 1].reporting_date);
-              nextPeriodStart.setHours(0, 0, 0, 0);
-              if (today < nextPeriodStart) {
-                currentPeriodIndex = i;
-                break;
-              }
-            } else {
-              currentPeriodIndex = i;
-            }
-          }
-        }
-
-        if (currentPeriodIndex === -1) continue;
-
-        const currentPeriod = periods[currentPeriodIndex];
-        const isInCurrentPeriod = currentPeriodIndex === periods.length - 1 ||
-          today < new Date(periods[currentPeriodIndex + 1].reporting_date);
-
-        // Helper function to calculate RAG for a specific period
-        const calculateRAGForPeriod = (period) => {
-          if (period.complete === null || period.expected === null) {
-            return 'grey';
-          }
-
-          const variance = period.complete - period.expected;
-          const variancePercent = period.expected > 0
-            ? Math.abs((variance / period.expected) * 100)
-            : 0;
-
-          const amberTolerance = parseFloat(metric.amber_tolerance) || 5.0;
-          const redTolerance = parseFloat(metric.red_tolerance) || 10.0;
-
-          if (period.expected === 0) return 'grey';
-          if (variance >= 0) return 'green';
-          if (variancePercent > redTolerance) return 'red';
-          if (variancePercent > amberTolerance) return 'amber';
-          return 'green';
-        };
-
-        // Determine RAG status (matches logic in backend/src/server.js:635-659)
-        let ragStatus;
-        if (isInCurrentPeriod) {
-          const currentComplete = currentPeriod.complete || 0;
-          if (currentComplete === 0 && currentPeriodIndex > 0) {
-            ragStatus = calculateRAGForPeriod(periods[currentPeriodIndex - 1]);
-          } else {
-            ragStatus = calculateRAGForPeriod(currentPeriod);
-          }
-        } else {
-          ragStatus = calculateRAGForPeriod(currentPeriod);
-        }
-
-        // Add to inconsistencies if red or amber
-        if (ragStatus === 'red' || ragStatus === 'amber') {
-          inconsistencies.push({
-            type: 'missing_recovery_plan',
-            severity: 'high',
-            pm_name: metric.pm_name,
-            project_id: metric.project_id,
-            project_name: metric.project_name,
-            metric_id: metric.metric_id,
-            metric_name: metric.metric_name,
-            details: `${metric.metric_name} is ${ragStatus.toUpperCase()} but has no recovery plan`,
-            rag_status: ragStatus,
-            first_detected: metric.first_detected,
-            age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
-          });
-        }
+      for (const metric of metricsNeedingRecovery) {
+        inconsistencies.push({
+          type: 'missing_recovery_plan',
+          severity: 'high',
+          pm_name: metric.pm_name,
+          project_id: metric.project_id,
+          project_name: metric.project_name,
+          metric_id: metric.metric_id,
+          metric_name: metric.metric_name,
+          details: `${metric.metric_name} is ${metric.rag_status.toUpperCase()} but has no recovery plan`,
+          rag_status: metric.rag_status,
+          first_detected: metric.first_detected,
+          age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
+        });
       }
 
       // Group by PM and count

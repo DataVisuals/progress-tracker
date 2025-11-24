@@ -41,6 +41,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
   const [recentCommentary, setRecentCommentary] = useState([]);
   const [atRiskMetrics, setAtRiskMetrics] = useState([]);
   const [ragFilter, setRagFilter] = useState('all'); // 'all', 'red', 'amber'
+  const [portfolioFilter, setPortfolioFilter] = useState('all'); // 'all' or portfolio_id
   const [randomTips, setRandomTips] = useState([]);
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -563,10 +564,24 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
   }, 0);
 
 
-  // Filter metrics based on RAG filter
-  const filteredMetrics = ragFilter === 'all'
-    ? atRiskMetrics
-    : atRiskMetrics.filter(m => m.ragStatus === ragFilter);
+  // Get unique portfolios from at-risk metrics
+  const portfoliosInMetrics = [...new Set(atRiskMetrics.map(m => ({
+    id: m.portfolioId,
+    name: m.portfolioName || 'No Portfolio'
+  })).filter(p => p.id).map(JSON.stringify))].map(JSON.parse);
+
+  // Filter metrics based on RAG filter and portfolio filter
+  let filteredMetrics = atRiskMetrics;
+
+  // Apply RAG filter
+  if (ragFilter !== 'all') {
+    filteredMetrics = filteredMetrics.filter(m => m.ragStatus === ragFilter);
+  }
+
+  // Apply portfolio filter
+  if (portfolioFilter !== 'all') {
+    filteredMetrics = filteredMetrics.filter(m => m.portfolioId === parseInt(portfolioFilter));
+  }
 
   const redCount = atRiskMetrics.filter(m => m.ragStatus === 'red').length;
   const amberCount = atRiskMetrics.filter(m => m.ragStatus === 'amber').length;
@@ -663,25 +678,41 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
           <div className="quadrant-header">
             <MdWarning className="quadrant-icon warning" />
             <h2>Metrics at Risk</h2>
-            <div className="rag-filter-buttons">
-              <button
-                className={`rag-filter-btn ${ragFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setRagFilter('all')}
-              >
-                All ({atRiskMetrics.length})
-              </button>
-              <button
-                className={`rag-filter-btn red ${ragFilter === 'red' ? 'active' : ''}`}
-                onClick={() => setRagFilter('red')}
-              >
-                Red ({redCount})
-              </button>
-              <button
-                className={`rag-filter-btn amber ${ragFilter === 'amber' ? 'active' : ''}`}
-                onClick={() => setRagFilter('amber')}
-              >
-                Amber ({amberCount})
-              </button>
+            <div className="filter-controls">
+              <div className="rag-filter-buttons">
+                <button
+                  className={`rag-filter-btn ${ragFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setRagFilter('all')}
+                >
+                  All ({atRiskMetrics.length})
+                </button>
+                <button
+                  className={`rag-filter-btn red ${ragFilter === 'red' ? 'active' : ''}`}
+                  onClick={() => setRagFilter('red')}
+                >
+                  Red ({redCount})
+                </button>
+                <button
+                  className={`rag-filter-btn amber ${ragFilter === 'amber' ? 'active' : ''}`}
+                  onClick={() => setRagFilter('amber')}
+                >
+                  Amber ({amberCount})
+                </button>
+              </div>
+              {portfoliosInMetrics.length > 1 && (
+                <select
+                  className="portfolio-filter-dropdown"
+                  value={portfolioFilter}
+                  onChange={(e) => setPortfolioFilter(e.target.value)}
+                >
+                  <option value="all">All Portfolios</option>
+                  {portfoliosInMetrics.map(portfolio => (
+                    <option key={portfolio.id} value={portfolio.id}>
+                      {portfolio.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
           <div className="quadrant-content">

@@ -285,10 +285,39 @@
   text-align: left;
 }
 
+.filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
 .rag-filter-buttons {
   display: flex;
   gap: 4px;
-  margin-left: auto;
+}
+
+.portfolio-filter-dropdown {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 120px;
+}
+
+.portfolio-filter-dropdown:hover {
+  border-color: #9ca3af;
+}
+
+.portfolio-filter-dropdown:focus {
+  outline: none;
+  border-color: #00aeef;
+  box-shadow: 0 0 0 2px rgba(0, 174, 239, 0.1);
 }
 
 .rag-filter-btn {
@@ -884,6 +913,20 @@ html.dark-mode .quadrant-content {
   background: #f5ad5b;
   border-color: #f5ad5b;
   color: #1f2937;
+}
+
+:root.dark-mode .portfolio-filter-dropdown {
+  background: #1f2937;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:root.dark-mode .portfolio-filter-dropdown:hover {
+  border-color: #6b7280;
+}
+
+:root.dark-mode .portfolio-filter-dropdown:focus {
+  border-color: #00aeef;
 }
 
 
