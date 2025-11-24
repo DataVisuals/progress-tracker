@@ -319,14 +319,17 @@ const HomePage = ({
           };
         });
 
-        // Filter by selected space
-        if (selectedSpace && selectedSpace !== 'all') {
-          const spacePortfolioIds = portfolios
-            .filter(p => p.space_id === parseInt(selectedSpace))
-            .map(p => p.id);
-          enrichedCommentary = enrichedCommentary.filter(comment =>
-            !comment.portfolioId || spacePortfolioIds.includes(comment.portfolioId)
-          );
+        // Filter by selected space (defensive: only if portfolios have space_id)
+        if (selectedSpace && selectedSpace !== 'all' && portfolios && portfolios.length > 0) {
+          const hasSpaceIds = portfolios.some(p => p.space_id !== undefined);
+          if (hasSpaceIds) {
+            const spacePortfolioIds = portfolios
+              .filter(p => p.space_id === parseInt(selectedSpace))
+              .map(p => p.id);
+            enrichedCommentary = enrichedCommentary.filter(comment =>
+              !comment.portfolioId || spacePortfolioIds.includes(comment.portfolioId)
+            );
+          }
         }
       } catch (commentsErr) {
         console.log('Could not load recent comments:', commentsErr.message);
@@ -551,26 +554,28 @@ const HomePage = ({
         const inconsistencyResponse = await api.get('/inconsistency-report');
         let inconsistencyData = inconsistencyResponse.data;
 
-        // Filter by selected space
-        if (selectedSpace && selectedSpace !== 'all' && inconsistencyData && inconsistencyData.summary) {
-          const spacePortfolioIds = portfolios
-            .filter(p => p.space_id === parseInt(selectedSpace))
-            .map(p => p.id);
+        // Filter by selected space (defensive: only if portfolios have space_id)
+        if (selectedSpace && selectedSpace !== 'all' && inconsistencyData && inconsistencyData.summary && portfolios && portfolios.length > 0) {
+          const hasSpaceIds = portfolios.some(p => p.space_id !== undefined);
+          if (hasSpaceIds) {
+            const spacePortfolioIds = portfolios
+              .filter(p => p.space_id === parseInt(selectedSpace))
+              .map(p => p.id);
 
-          console.log('Filtering inconsistencies by space:', selectedSpace);
-          console.log('Space portfolio IDs:', spacePortfolioIds);
-          console.log('Inconsistency data structure:', inconsistencyData);
+            console.log('Filtering inconsistencies by space:', selectedSpace);
+            console.log('Space portfolio IDs:', spacePortfolioIds);
+            console.log('Inconsistency data structure:', inconsistencyData);
 
-          // Filter the summary to only include issues for projects in the selected space
-          inconsistencyData = {
-            ...inconsistencyData,
-            summary: inconsistencyData.summary
-              .map(pmData => {
-                // Filter issues for this PM
-                const filteredIssues = pmData.issues.filter(issue => {
-                  const projectData = projects[issue.project_id];
-                  return projectData && spacePortfolioIds.includes(projectData.portfolio_id);
-                });
+            // Filter the summary to only include issues for projects in the selected space
+            inconsistencyData = {
+              ...inconsistencyData,
+              summary: inconsistencyData.summary
+                .map(pmData => {
+                  // Filter issues for this PM
+                  const filteredIssues = pmData.issues.filter(issue => {
+                    const projectData = projects[issue.project_id];
+                    return projectData && spacePortfolioIds.includes(projectData.portfolio_id);
+                  });
 
                 // Recalculate severity counts
                 const severityCounts = {
@@ -593,13 +598,14 @@ const HomePage = ({
             total_inconsistencies: 0 // Recalculate below
           };
 
-          // Recalculate total inconsistencies
-          inconsistencyData.total_inconsistencies = inconsistencyData.summary.reduce(
-            (sum, pmData) => sum + pmData.total,
-            0
-          );
+            // Recalculate total inconsistencies
+            inconsistencyData.total_inconsistencies = inconsistencyData.summary.reduce(
+              (sum, pmData) => sum + pmData.total,
+              0
+            );
 
-          console.log('Filtered inconsistencies:', inconsistencyData.total_inconsistencies);
+            console.log('Filtered inconsistencies:', inconsistencyData.total_inconsistencies);
+          }
         }
 
         setInconsistencies(inconsistencyData);
@@ -651,12 +657,18 @@ const HomePage = ({
 
   // Get unique portfolios from at-risk metrics, filtered by space
   const portfolioMap = new Map();
+  const hasSpaceIds = portfolios && portfolios.length > 0 && portfolios.some(p => p.space_id !== undefined);
+
   atRiskMetrics.forEach(m => {
     if (m.portfolioId && !portfolioMap.has(m.portfolioId)) {
       // Find the portfolio to check its space_id
       const portfolio = portfolios.find(p => p.id === m.portfolioId);
-      // Only include if space filter matches or is 'all'
-      if (selectedSpace === 'all' || (portfolio && portfolio.space_id === parseInt(selectedSpace))) {
+      // Only include if space filter matches or is 'all' (defensive: only check space_id if it exists)
+      const matchesSpace = selectedSpace === 'all' ||
+        !hasSpaceIds ||
+        (portfolio && portfolio.space_id === parseInt(selectedSpace));
+
+      if (matchesSpace) {
         portfolioMap.set(m.portfolioId, {
           id: m.portfolioId,
           name: m.portfolioName || 'No Portfolio',
@@ -670,8 +682,8 @@ const HomePage = ({
   // Filter metrics based on space, RAG filter, and portfolio filter
   let filteredMetrics = atRiskMetrics;
 
-  // Apply space filter
-  if (selectedSpace !== 'all') {
+  // Apply space filter (defensive: only if portfolios have space_id)
+  if (selectedSpace !== 'all' && hasSpaceIds) {
     filteredMetrics = filteredMetrics.filter(m => {
       const portfolio = portfolios.find(p => p.id === m.portfolioId);
       return portfolio && portfolio.space_id === parseInt(selectedSpace);
