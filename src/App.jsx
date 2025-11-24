@@ -784,6 +784,7 @@ function App() {
     return projects.reduce((acc, project) => {
       acc[project.id] = {
         name: project.name,
+        portfolio_id: project.portfolio_id,
         portfolio_name: project.portfolio_name,
         portfolio_color: project.portfolio_color
       };

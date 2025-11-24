@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Select from 'react-select';
 import {
   MdComment,
   MdWarning,
@@ -34,6 +35,7 @@ import {
   MdErrorOutline
 } from 'react-icons/md';
 import { api } from '../api/client';
+import { selectStyles } from './SelectStyles';
 import './HomePage.css';
 import './MetricTabs.css';
 
@@ -433,6 +435,7 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
               complete,
               expected,
               variancePercent: variancePercent.toFixed(1),
+              portfolioId: projectInfo.portfolio_id,
               portfolioColor: projectInfo.portfolio_color,
               portfolioName: projectInfo.portfolio_name,
               ragStatus
@@ -565,10 +568,16 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
 
 
   // Get unique portfolios from at-risk metrics
-  const portfoliosInMetrics = [...new Set(atRiskMetrics.map(m => ({
-    id: m.portfolioId,
-    name: m.portfolioName || 'No Portfolio'
-  })).filter(p => p.id).map(JSON.stringify))].map(JSON.parse);
+  const portfolioMap = new Map();
+  atRiskMetrics.forEach(m => {
+    if (m.portfolioId && !portfolioMap.has(m.portfolioId)) {
+      portfolioMap.set(m.portfolioId, {
+        id: m.portfolioId,
+        name: m.portfolioName || 'No Portfolio'
+      });
+    }
+  });
+  const portfoliosInMetrics = Array.from(portfolioMap.values());
 
   // Filter metrics based on RAG filter and portfolio filter
   let filteredMetrics = atRiskMetrics;
@@ -700,18 +709,26 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
                 </button>
               </div>
               {portfoliosInMetrics.length > 1 && (
-                <select
+                <Select
                   className="portfolio-filter-dropdown"
-                  value={portfolioFilter}
-                  onChange={(e) => setPortfolioFilter(e.target.value)}
-                >
-                  <option value="all">All Portfolios</option>
-                  {portfoliosInMetrics.map(portfolio => (
-                    <option key={portfolio.id} value={portfolio.id}>
-                      {portfolio.name}
-                    </option>
-                  ))}
-                </select>
+                  styles={selectStyles}
+                  value={
+                    portfolioFilter === 'all'
+                      ? { value: 'all', label: 'All Portfolios' }
+                      : portfoliosInMetrics.find(p => p.id === parseInt(portfolioFilter))
+                        ? { value: portfoliosInMetrics.find(p => p.id === parseInt(portfolioFilter)).id, label: portfoliosInMetrics.find(p => p.id === parseInt(portfolioFilter)).name }
+                        : { value: 'all', label: 'All Portfolios' }
+                  }
+                  onChange={(option) => setPortfolioFilter(option.value.toString())}
+                  options={[
+                    { value: 'all', label: 'All Portfolios' },
+                    ...portfoliosInMetrics.map(portfolio => ({
+                      value: portfolio.id,
+                      label: portfolio.name
+                    }))
+                  ]}
+                  isSearchable={false}
+                />
               )}
             </div>
           </div>

@@ -1085,7 +1085,7 @@ function createApp(dbPath) {
   // ===== RECOVERY PLANS (Return to Green) =====
 
   // Get recovery plans for a metric or project
-  app.get('/api/recovery-plans', authenticateToken, async (req, res) => {
+  app.get('/api/recovery-plans', optionalAuthenticateToken, async (req, res) => {
     try {
       const { metric_id, project_id, status } = req.query;
 
