@@ -43,6 +43,9 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
   const [recentCommentary, setRecentCommentary] = useState([]);
   const [atRiskMetrics, setAtRiskMetrics] = useState([]);
   const [ragFilter, setRagFilter] = useState('all'); // 'all', 'red', 'amber'
+  const [spaces, setSpaces] = useState([]); // All available spaces
+  const [spaceFilter, setSpaceFilter] = useState('all'); // 'all' or space_id
+  const [portfolios, setPortfolios] = useState([]); // All portfolios
   const [portfolioFilter, setPortfolioFilter] = useState('all'); // 'all' or portfolio_id
   const [randomTips, setRandomTips] = useState([]);
   const [feedback, setFeedback] = useState([]);
@@ -276,6 +279,24 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
     loadingRef.current = true;
     setLoading(true);
     try {
+      // Load spaces and portfolios
+      try {
+        const [spacesResponse, portfoliosResponse] = await Promise.all([
+          api.getSpaces(),
+          api.get('/portfolios')
+        ]);
+
+        setSpaces(spacesResponse.data || []);
+        setPortfolios(portfoliosResponse.data || []);
+
+        // If user has a default space, set it
+        if (currentUser && currentUser.default_space_id) {
+          setSpaceFilter(currentUser.default_space_id.toString());
+        }
+      } catch (err) {
+        console.log('Could not load spaces/portfolios:', err.message);
+      }
+
       // Get recent commentary from audit log - filter for metric_periods table
       let enrichedCommentary = [];
       try {
@@ -567,20 +588,34 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
   }, 0);
 
 
-  // Get unique portfolios from at-risk metrics
+  // Get unique portfolios from at-risk metrics, filtered by space
   const portfolioMap = new Map();
   atRiskMetrics.forEach(m => {
     if (m.portfolioId && !portfolioMap.has(m.portfolioId)) {
-      portfolioMap.set(m.portfolioId, {
-        id: m.portfolioId,
-        name: m.portfolioName || 'No Portfolio'
-      });
+      // Find the portfolio to check its space_id
+      const portfolio = portfolios.find(p => p.id === m.portfolioId);
+      // Only include if space filter matches or is 'all'
+      if (spaceFilter === 'all' || (portfolio && portfolio.space_id === parseInt(spaceFilter))) {
+        portfolioMap.set(m.portfolioId, {
+          id: m.portfolioId,
+          name: m.portfolioName || 'No Portfolio',
+          spaceId: portfolio ? portfolio.space_id : null
+        });
+      }
     }
   });
   const portfoliosInMetrics = Array.from(portfolioMap.values());
 
-  // Filter metrics based on RAG filter and portfolio filter
+  // Filter metrics based on space, RAG filter, and portfolio filter
   let filteredMetrics = atRiskMetrics;
+
+  // Apply space filter
+  if (spaceFilter !== 'all') {
+    filteredMetrics = filteredMetrics.filter(m => {
+      const portfolio = portfolios.find(p => p.id === m.portfolioId);
+      return portfolio && portfolio.space_id === parseInt(spaceFilter);
+    });
+  }
 
   // Apply RAG filter
   if (ragFilter !== 'all') {
@@ -708,6 +743,40 @@ const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser }) 
                   Amber ({amberCount})
                 </button>
               </div>
+              {spaces.length > 0 && (
+                <Select
+                  className="portfolio-filter-dropdown"
+                  styles={selectStyles}
+                  value={
+                    spaceFilter === 'all'
+                      ? { value: 'all', label: 'All Spaces' }
+                      : spaces.find(s => s.id === parseInt(spaceFilter))
+                        ? { value: spaces.find(s => s.id === parseInt(spaceFilter)).id, label: spaces.find(s => s.id === parseInt(spaceFilter)).name }
+                        : { value: 'all', label: 'All Spaces' }
+                  }
+                  onChange={async (option) => {
+                    const newSpaceFilter = option.value.toString();
+                    setSpaceFilter(newSpaceFilter);
+                    setPortfolioFilter('all'); // Reset portfolio filter when space changes
+                    // Save user's preference if logged in
+                    if (currentUser && newSpaceFilter !== 'all') {
+                      try {
+                        await api.updateDefaultSpace(parseInt(newSpaceFilter));
+                      } catch (err) {
+                        console.log('Could not save default space:', err.message);
+                      }
+                    }
+                  }}
+                  options={[
+                    { value: 'all', label: 'All Spaces' },
+                    ...spaces.map(space => ({
+                      value: space.id,
+                      label: space.name
+                    }))
+                  ]}
+                  isSearchable={false}
+                />
+              )}
               {portfoliosInMetrics.length > 1 && (
                 <Select
                   className="portfolio-filter-dropdown"
