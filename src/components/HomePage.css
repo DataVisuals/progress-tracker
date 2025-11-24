@@ -1,7 +1,7 @@
 .home-page {
   padding: 0 20px 0 20px;
   max-width: none;
-  width: calc(100vw - 80px);
+  width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -289,7 +289,6 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-left: auto;
 }
 
 .rag-filter-buttons {
@@ -298,26 +297,7 @@
 }
 
 .portfolio-filter-dropdown {
-  padding: 4px 8px;
-  font-size: 11px;
-  font-weight: 500;
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #374151;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-  min-width: 120px;
-}
-
-.portfolio-filter-dropdown:hover {
-  border-color: #9ca3af;
-}
-
-.portfolio-filter-dropdown:focus {
-  outline: none;
-  border-color: #00aeef;
-  box-shadow: 0 0 0 2px rgba(0, 174, 239, 0.1);
+  min-width: 150px;
 }
 
 .rag-filter-btn {
