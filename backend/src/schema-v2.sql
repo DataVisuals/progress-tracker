@@ -122,8 +122,10 @@ CREATE TABLE IF NOT EXISTS audit_log (
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_metric_periods_metric ON metric_periods(metric_id);
+CREATE INDEX IF NOT EXISTS idx_metric_periods_date ON metric_periods(reporting_date);
 CREATE INDEX IF NOT EXISTS idx_metrics_project ON metrics(project_id);
 CREATE INDEX IF NOT EXISTS idx_comments_period ON comments(period_id);
+CREATE INDEX IF NOT EXISTS idx_comments_created ON comments(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_craids_project ON craids(project_id);
 CREATE INDEX IF NOT EXISTS idx_craids_period ON craids(period_id);
 CREATE INDEX IF NOT EXISTS idx_project_links_project ON project_links(project_id);

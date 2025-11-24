@@ -115,7 +115,7 @@ function createApp(dbPath) {
       logger.auth.tokenValidation(false, null, 'No token provided');
       return res.status(401).json({ error: 'No token provided' });
     }
-  
+
     jwt.verify(token, JWT_SECRET, (err, user) => {
       if (err) {
         logger.auth.tokenValidation(false, null, err.message);
@@ -124,6 +124,21 @@ function createApp(dbPath) {
       logger.auth.tokenValidation(true, user.userId);
       req.user = user;
       next();
+    });
+  }
+
+  // Optional authentication - sets req.user if token exists, but continues even without token
+  function optionalAuthenticateToken(req, res, next) {
+    const token = req.headers['authorization']?.split(' ')[1];
+    if (!token) {
+      return next(); // No token, continue without user
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+      if (!err) {
+        req.user = user; // Token valid, set user
+      }
+      next(); // Continue regardless of token validity
     });
   }
   
@@ -3470,8 +3485,8 @@ function createApp(dbPath) {
   }
 
   // ===== PAGE ANALYTICS =====
-  // Track page view (no authentication required for tracking)
-  app.post('/api/analytics/pageview', async (req, res) => {
+  // Track page view (optional authentication - captures user if logged in)
+  app.post('/api/analytics/pageview', optionalAuthenticateToken, async (req, res) => {
     try {
       const { path, session_id } = req.body;
       const userId = req.user?.userId || null;

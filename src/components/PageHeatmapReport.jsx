@@ -113,6 +113,7 @@ const PageHeatmapReport = ({ onClose }) => {
           <label>
             Time Period:
             <select value={days} onChange={(e) => setDays(parseInt(e.target.value))}>
+              <option value={1}>Last 24 hours</option>
               <option value={7}>Last 7 days</option>
               <option value={30}>Last 30 days</option>
               <option value={90}>Last 90 days</option>
