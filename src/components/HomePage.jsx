@@ -40,7 +40,22 @@ import { selectStyles } from './SelectStyles';
 import './HomePage.css';
 import './MetricTabs.css';
 
-const HomePage = ({ projects, projectsData, onNavigateToProject, currentUser, selectedSpace, spaces, portfolios }) => {
+const HomePage = ({
+  projects,
+  projectsData,
+  onNavigateToProject,
+  currentUser,
+  selectedSpace = 'all',
+  spaces = [],
+  portfolios = []
+}) => {
+  console.log('=== HomePage Rendering ===');
+  console.log('Projects:', Object.keys(projects || {}).length);
+  console.log('ProjectsData keys:', Object.keys(projectsData || {}).length);
+  console.log('SelectedSpace:', selectedSpace);
+  console.log('Spaces:', spaces?.length);
+  console.log('Portfolios:', portfolios?.length);
+
   const [recentCommentary, setRecentCommentary] = useState([]);
   const [atRiskMetrics, setAtRiskMetrics] = useState([]);
   const [ragFilter, setRagFilter] = useState('all'); // 'all', 'red', 'amber'

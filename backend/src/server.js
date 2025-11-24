@@ -107,7 +107,20 @@ function createApp(dbPath) {
       uptime: process.uptime()
     });
   });
-  
+
+  // Frontend error logging endpoint (no auth required for error reporting)
+  app.post('/api/log-frontend-error', async (req, res) => {
+    const { error, stack, componentStack, timestamp } = req.body;
+    console.error('=== FRONTEND ERROR LOGGED ===');
+    console.error('Timestamp:', timestamp);
+    console.error('Error:', error);
+    console.error('Stack:', stack);
+    console.error('Component Stack:', componentStack);
+    console.error('User Agent:', req.headers['user-agent']);
+    console.error('IP:', req.ip);
+    res.status(200).json({ success: true });
+  });
+
   // ===== AUTH MIDDLEWARE =====
   function authenticateToken(req, res, next) {
     const token = req.headers['authorization']?.split(' ')[1];

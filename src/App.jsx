@@ -26,6 +26,8 @@ import { trackPage } from './hooks/usePageTracking';
 import './App.css';
 
 function App() {
+  console.log('=== App Component Rendering ===');
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [portfolios, setPortfolios] = useState([]);
@@ -1384,6 +1386,7 @@ function App() {
             projectsData={allProjectsData}
             onNavigateToProject={handleNavigateToProject}
             currentUser={currentUser}
+            portfolios={portfolios}
           />
         )}
       </div>
