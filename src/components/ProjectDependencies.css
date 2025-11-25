@@ -1,0 +1,290 @@
+.project-dependencies {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+}
+
+/* Main link text */
+.depends-on-link {
+  color: #6b7280;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  white-space: nowrap;
+}
+
+.depends-on-link:hover {
+  color: #00aeef;
+}
+
+.edit-deps-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 1px 4px;
+  margin-left: 4px;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+}
+
+.edit-deps-btn:hover {
+  color: #00aeef;
+  background: rgba(0, 174, 239, 0.08);
+}
+
+.add-dependency-link {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.add-dependency-link:hover {
+  color: #00aeef;
+  background: rgba(0, 174, 239, 0.05);
+}
+
+/* Hover popup with all dependencies */
+.dependencies-hover {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  max-width: 280px;
+}
+
+.hover-dep-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.hover-dep-row:hover {
+  background: #f3f4f6;
+}
+
+.hover-rag {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.hover-dep-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hover-dep-name {
+  font-weight: 500;
+  color: #111827;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hover-dep-portfolio {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.hover-hint {
+  font-size: 10px;
+  color: #9ca3af;
+  padding: 6px 12px 4px;
+  border-top: 1px solid #f3f4f6;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* Selector Modal */
+.dependency-selector-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 120px;
+}
+
+.dependency-selector {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  width: 360px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.dependency-selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dependency-selector-header h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.dependency-selector-header button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.dependency-selector-header button:hover {
+  color: #6b7280;
+}
+
+/* Current dependencies list in modal */
+.current-dependencies {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.current-deps-label {
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.current-dep-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #f9fafb;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.dep-rag-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dep-name {
+  flex: 1;
+  font-size: 13px;
+  color: #374151;
+}
+
+.dep-remove-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+  line-height: 1;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.dep-remove-btn:hover {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+}
+
+/* Add section in modal */
+.add-dep-section {
+  margin-top: 8px;
+}
+
+.add-dep-label {
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+/* Dark mode */
+:root.dark-mode .depends-on-link {
+  color: #9ca3af;
+}
+
+:root.dark-mode .depends-on-link:hover {
+  color: #00aeef;
+}
+
+:root.dark-mode .add-dependency-link {
+  color: #6b7280;
+}
+
+:root.dark-mode .edit-deps-btn {
+  color: #6b7280;
+}
+
+:root.dark-mode .edit-deps-btn:hover {
+  color: #00aeef;
+  background: rgba(0, 174, 239, 0.15);
+}
+
+:root.dark-mode .dependencies-hover {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:root.dark-mode .hover-dep-row:hover {
+  background: #374151;
+}
+
+:root.dark-mode .hover-dep-name {
+  color: #f3f4f6;
+}
+
+:root.dark-mode .hover-hint {
+  border-color: #374151;
+}
+
+:root.dark-mode .dependency-selector {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:root.dark-mode .dependency-selector-header h4 {
+  color: #f3f4f6;
+}
+
+:root.dark-mode .current-dependencies {
+  border-color: #374151;
+}
+
+:root.dark-mode .current-dep-item {
+  background: #374151;
+}
+
+:root.dark-mode .dep-name {
+  color: #e5e7eb;
+}

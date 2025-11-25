@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Select from 'react-select';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';
@@ -16,6 +16,8 @@ import UserManagement from './components/UserManagement';
 import UserSelector from './components/UserSelector';
 import ProjectSetup from './components/ProjectSetup';
 import ProjectLinksEditor from './components/ProjectLinksEditor';
+import ProjectDependencies from './components/ProjectDependencies';
+import AddMetricModal from './components/AddMetricModal';
 import UserProfile from './components/UserProfile';
 import ImportData from './components/ImportData';
 import WhatsNew from './components/WhatsNew';
@@ -43,6 +45,7 @@ function App() {
   const [projectMetrics, setProjectMetrics] = useState([]);
   const [selectedMetric, setSelectedMetric] = useState('');
   const [showDataGrid, setShowDataGrid] = useState(false);
+  const [showAddMetric, setShowAddMetric] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
   const [editingProjectName, setEditingProjectName] = useState(false);
   const [editProjectNameValue, setEditProjectNameValue] = useState('');
@@ -90,6 +93,32 @@ function App() {
       return false;
     }
   });
+  const [clipboardAvailable, setClipboardAvailable] = useState(true);
+
+  // Check clipboard availability on mount
+  useEffect(() => {
+    const checkClipboard = async () => {
+      // Check if clipboard API exists and is allowed
+      if (!navigator.clipboard || !navigator.clipboard.writeText) {
+        setClipboardAvailable(false);
+        return;
+      }
+      // Try a test write to check if policy allows it
+      try {
+        // Some browsers require user interaction, so we just check permissions
+        if (navigator.permissions) {
+          const result = await navigator.permissions.query({ name: 'clipboard-write' });
+          if (result.state === 'denied') {
+            setClipboardAvailable(false);
+          }
+        }
+      } catch (err) {
+        // Permission query not supported, assume clipboard might work
+        console.log('Clipboard permission check not supported');
+      }
+    };
+    checkClipboard();
+  }, []);
 
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
@@ -497,6 +526,21 @@ function App() {
     setSelectedProject(projectId.toString());
   };
 
+  // Track mousedown target to prevent closing modal when drag starts inside
+  const modalMouseDownTarget = useRef(null);
+
+  const handleModalMouseDown = (e) => {
+    modalMouseDownTarget.current = e.target;
+  };
+
+  const handleModalClick = (e, closeHandler) => {
+    // Only close if both mousedown and click (mouseup) were on the overlay itself
+    if (modalMouseDownTarget.current === e.target && e.target === e.currentTarget) {
+      closeHandler();
+    }
+    modalMouseDownTarget.current = null;
+  };
+
   const handleProjectSetupCancel = () => {
     setShowNewProject(false);
   };
@@ -853,6 +897,27 @@ function App() {
     }
   };
 
+  const handleMetricDatesChange = async (newStartDate, newEndDate) => {
+    try {
+      // Find the metric ID from the currently selected metric
+      const metric = projectMetrics.find(m => m.name === selectedMetric);
+      if (!metric) return;
+
+      await api.updateMetric(metric.id, {
+        start_date: newStartDate,
+        end_date: newEndDate
+      });
+
+      // Reload both project data and metrics to reflect the new dates
+      await loadProjectData();
+      await loadProjectMetrics();
+    } catch (err) {
+      console.error('Failed to update metric dates:', err);
+      alert('Failed to update metric dates: ' + (err.response?.data?.error || err.message));
+      throw err;
+    }
+  };
+
   // Convert projects array to object format for ProjectSelector
   const projectsObject = useMemo(() => {
     return projects.reduce((acc, project) => {
@@ -938,6 +1003,8 @@ function App() {
       alert('Link copied to clipboard!');
     } catch (err) {
       console.error('Failed to copy link:', err);
+      // Clipboard blocked by policy - hide the button for future
+      setClipboardAvailable(false);
       // Fallback: show the URL in a prompt
       prompt('Copy this link:', window.location.href);
     }
@@ -1171,35 +1238,35 @@ function App() {
                       </div>
                     )}
                     {editingProjectDates ? (
-                      <div className="project-dates-editor">
+                      <div className="date-editor">
                         <input
                           type="date"
                           value={editProjectStartDate}
                           onChange={(e) => setEditProjectStartDate(e.target.value)}
                           autoFocus
                         />
-                        <span className="project-timeline-separator">{'\u2192'}</span>
+                        <span className="date-range-separator">{'\u2192'}</span>
                         <input
                           type="date"
                           value={editProjectEndDate}
                           onChange={(e) => setEditProjectEndDate(e.target.value)}
                         />
-                        <button onClick={handleSaveProjectDates} className="save-btn">
+                        <button className="save-btn" onClick={handleSaveProjectDates}>
                           Save
                         </button>
-                        <button onClick={() => setEditingProjectDates(false)} className="cancel-btn">
+                        <button className="cancel-btn" onClick={() => setEditingProjectDates(false)}>
                           Cancel
                         </button>
                       </div>
                     ) : currentProject?.start_date && currentProject?.end_date ? (
                       <div
                         className={`project-timeline-display ${canEdit() ? 'editable' : ''}`}
-                        onDoubleClick={canEdit() ? () => {
+                        onClick={canEdit() ? () => {
                           setEditProjectStartDate(currentProject.start_date);
                           setEditProjectEndDate(currentProject.end_date);
                           setEditingProjectDates(true);
                         } : undefined}
-                        title={canEdit() ? "Double-click to edit dates" : undefined}
+                        title={canEdit() ? "Click to edit dates" : undefined}
                       >
                         <span className="project-timeline-date">{formatDate(currentProject.start_date)}</span>
                         <span className="project-timeline-separator">{'\u2192'}</span>
@@ -1208,9 +1275,9 @@ function App() {
                           <>
                             <span className="project-timeline-separator">•</span>
                             <span className="project-timeline-duration">
-                              {projectDuration.months > 1
+                              {projectDuration.months >= 2
                                 ? `${projectDuration.months} months`
-                                : projectDuration.weeks > 1
+                                : projectDuration.weeks >= 2
                                 ? `${projectDuration.weeks} weeks`
                                 : `${projectDuration.days} days`}
                             </span>
@@ -1352,16 +1419,18 @@ function App() {
 
                       {/* Links and Share - under IMs */}
                       <div className="project-links-inline">
-                        {projectLinks.map((link) => (
-                          <a
-                            key={link.id}
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="project-link-btn"
-                          >
-                            {link.label}
-                          </a>
+                        {projectLinks.map((link, index) => (
+                          <React.Fragment key={link.id}>
+                            {index > 0 && <span className="links-separator">|</span>}
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="project-link-btn"
+                            >
+                              {link.label}
+                            </a>
+                          </React.Fragment>
                         ))}
                         {canEdit() && (
                           <button
@@ -1372,13 +1441,22 @@ function App() {
                             {projectLinks.length === 0 ? '+ Links' : 'Edit'}
                           </button>
                         )}
-                        <button
-                          onClick={handleShareLink}
-                          className="share-link-btn"
-                          title="Copy link to this page"
-                        >
-                          <MdShare />
-                        </button>
+                        <span className="links-separator">|</span>
+                        <ProjectDependencies
+                          projectId={selectedProject}
+                          allProjects={projectsObject}
+                          canEdit={canEdit()}
+                          onNavigateToProject={handleNavigateToProject}
+                        />
+                        {clipboardAvailable && (
+                          <button
+                            onClick={handleShareLink}
+                            className="share-link-btn"
+                            title="Copy link to this page"
+                          >
+                            <MdShare />
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -1466,6 +1544,7 @@ function App() {
                 onMetricRename={handleMetricRename}
                 onMetricDelete={handleMetricDelete}
                 canEdit={canEdit()}
+                onAddMetric={() => setShowAddMetric(true)}
               />
             )}
 
@@ -1485,6 +1564,7 @@ function App() {
                   onTargetChange={handleTargetChange}
                   onProgressionChange={handleProgressionChange}
                   onDescriptionChange={handleDescriptionChange}
+                  onDatesChange={handleMetricDatesChange}
                   timeTravelTimestamp={timeTravelTimestamp}
                   projectId={selectedProject}
                   onTimeTravelChange={handleTimeTravelChange}
@@ -1509,6 +1589,7 @@ function App() {
             selectedSpace={selectedSpace}
             spaces={spaces}
             portfolios={portfolios}
+            darkMode={darkMode}
           />
         )}
       </div>
@@ -1526,8 +1607,20 @@ function App() {
         />
       )}
 
+      {showAddMetric && selectedProject && (
+        <AddMetricModal
+          projectId={selectedProject}
+          onClose={() => setShowAddMetric(false)}
+          onMetricCreated={handleMetricCreated}
+        />
+      )}
+
       {showAuditLog && (
-        <div className="modal-overlay" onClick={() => setShowAuditLog(false)}>
+        <div
+          className="modal-overlay"
+          onMouseDown={handleModalMouseDown}
+          onClick={(e) => handleModalClick(e, () => setShowAuditLog(false))}
+        >
           <div className="modal-content audit-modal" onClick={(e) => e.stopPropagation()}>
             <button className="close-btn" onClick={() => setShowAuditLog(false)}>×</button>
             <div className="modal-header">
@@ -1555,7 +1648,11 @@ function App() {
       )}
 
       {showNewProject && (
-        <div className="modal-overlay" onClick={handleProjectSetupCancel}>
+        <div
+          className="modal-overlay"
+          onMouseDown={handleModalMouseDown}
+          onClick={(e) => handleModalClick(e, handleProjectSetupCancel)}
+        >
           <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
             <ProjectSetup
               onComplete={handleProjectSetupComplete}
@@ -1566,7 +1663,11 @@ function App() {
       )}
 
       {showLinksEditor && selectedProject && (
-        <div className="modal-overlay" onClick={() => setShowLinksEditor(false)}>
+        <div
+          className="modal-overlay"
+          onMouseDown={handleModalMouseDown}
+          onClick={(e) => handleModalClick(e, () => setShowLinksEditor(false))}
+        >
           <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
             <ProjectLinksEditor
               projectId={selectedProject}
@@ -1674,7 +1775,11 @@ function App() {
       )}
 
       {showSpaceEmails && (
-        <div className="modal-overlay" onClick={() => setShowSpaceEmails(false)}>
+        <div
+          className="modal-overlay"
+          onMouseDown={handleModalMouseDown}
+          onClick={(e) => handleModalClick(e, () => setShowSpaceEmails(false))}
+        >
           <div className="modal-content emails-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>All Project Manager Emails ({spaceEmailsData.count})</h2>
