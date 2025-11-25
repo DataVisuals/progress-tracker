@@ -118,69 +118,56 @@
 .export-chart-button {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  gap: 4px;
+  padding: 4px 8px;
+  background: #f3f4f6;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
-  color: #374151;
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: 4px;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.15s ease;
 }
 
 .export-chart-button:hover {
-  background: linear-gradient(135deg, #00aeef 0%, #0891b2 100%);
-  border-color: #0891b2;
+  background: #00aeef;
+  border-color: #00aeef;
   color: #ffffff;
-  box-shadow: 0 3px 8px rgba(0, 174, 239, 0.25);
-  transform: translateY(-1px);
-}
-
-.export-chart-button:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 3px rgba(0, 174, 239, 0.2);
 }
 
 .export-chart-button svg {
   flex-shrink: 0;
-  transition: transform 0.2s;
-}
-
-.export-chart-button:hover svg {
-  transform: scale(1.1);
+  width: 12px;
+  height: 12px;
 }
 
 .metric-date-range {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 12px;
-  flex: 1;
+  gap: 4px;
+  font-size: 11px;
+  white-space: nowrap;
 }
 
-.date-range-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.metric-date-range.editable {
+  cursor: pointer;
+}
+
+.metric-date-range.editable:hover .date-value {
+  color: #00aeef;
 }
 
 .date-label {
   font-weight: 500;
   color: #6b7280;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .date-value {
   font-weight: 500;
   color: #374151;
-  font-size: 12px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -192,20 +179,68 @@
 
 .date-range-separator {
   color: #9ca3af;
-  font-weight: 400;
-  font-size: 14px;
+  font-size: 12px;
+}
+
+/* Date editor styling - shared with project dates */
+.date-editor {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.date-editor input[type="date"] {
+  padding: 4px 6px;
+  border: 2px solid #00aeef;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.date-editor input[type="date"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 174, 239, 0.2);
+}
+
+.date-editor button {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.date-editor button.save-btn {
+  background: #00aeef;
+  color: white;
+}
+
+.date-editor button.save-btn:hover {
+  background: #0284c7;
+}
+
+.date-editor button.cancel-btn {
+  background: #6b7280;
+  color: white;
+}
+
+.date-editor button.cancel-btn:hover {
+  background: #4b5563;
 }
 
 /* Metric Properties Row */
 .metric-properties-row {
-  margin: 8px 0;
+  margin: 4px 0;
 }
 
 .metric-property {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 5px;
+  font-size: 12px;
 }
 
 .property-label {
@@ -216,7 +251,7 @@
 .property-value {
   font-weight: 500;
   color: #003c71;
-  padding: 2px 8px;
+  padding: 2px 6px;
   border-radius: 4px;
   background-color: #f3f4f6;
   transition: all 0.2s;
@@ -1103,6 +1138,12 @@
 }
 
 /* Metric Description Styles */
+.metric-description-text {
+  flex: 1;
+  min-width: 250px;
+  font-size: 12px;
+}
+
 .metric-description-text.filled {
   color: #374151;
   font-style: normal;
@@ -1142,19 +1183,15 @@
 }
 
 :root.dark-mode .export-chart-button {
-  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+  background: #374151;
   border-color: #4b5563;
-  color: #f9fafb;
+  color: #9ca3af;
 }
 
 :root.dark-mode .export-chart-button:hover {
-  background: linear-gradient(135deg, #00aeef 0%, #0891b2 100%);
-  border-color: #0891b2;
-}
-
-:root.dark-mode .metric-date-range {
-  background: #1f2937;
-  border-color: #374151;
+  background: #00aeef;
+  border-color: #00aeef;
+  color: #ffffff;
 }
 
 :root.dark-mode .date-label {
@@ -1165,12 +1202,22 @@
   color: #d1d5db;
 }
 
+:root.dark-mode .metric-date-range.editable:hover .date-value {
+  color: #00aeef;
+}
+
 :root.dark-mode .date-value.duration {
   color: #9ca3af;
 }
 
 :root.dark-mode .date-range-separator {
   color: #6b7280;
+}
+
+:root.dark-mode .date-editor input[type="date"] {
+  background: #1f2937;
+  border-color: #00aeef;
+  color: #f9fafb;
 }
 
 :root.dark-mode .property-label {

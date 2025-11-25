@@ -225,7 +225,7 @@ const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance })
   return null;
 };
 
-const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange, onTargetChange, onProgressionChange, onDescriptionChange, currentUser }) => {
+const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange, onTargetChange, onProgressionChange, onDescriptionChange, onDatesChange, currentUser }) => {
   console.log('MetricChart rendered with canEdit:', canEdit, 'canEditData:', canEditData);
   // canEditData is for commentary/data changes (blocked during time travel)
   // If not provided, default to canEdit for backwards compatibility
@@ -243,6 +243,9 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   const [tempDescriptionValue, setTempDescriptionValue] = useState('');
   const [editingCell, setEditingCell] = useState(null); // { periodId, field }
   const [tempCellValue, setTempCellValue] = useState('');
+  const [editingDates, setEditingDates] = useState(false);
+  const [tempStartDate, setTempStartDate] = useState('');
+  const [tempEndDate, setTempEndDate] = useState('');
 
   // Sync tolerances when props change
   useEffect(() => {
@@ -381,6 +384,44 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       handleDescriptionSave();
     } else if (e.key === 'Escape') {
       setEditingDescription(false);
+    }
+  };
+
+  const handleDatesClick = () => {
+    if (!canEdit || !onDatesChange) return;
+    setEditingDates(true);
+    setTempStartDate(metricMetadata?.start_date || '');
+    setTempEndDate(metricMetadata?.end_date || '');
+  };
+
+  const handleDatesSave = async () => {
+    if (!onDatesChange) return;
+
+    // Validate dates
+    if (!tempStartDate || !tempEndDate) {
+      alert('Both start and end dates are required');
+      return;
+    }
+
+    if (new Date(tempStartDate) >= new Date(tempEndDate)) {
+      alert('End date must be after start date');
+      return;
+    }
+
+    try {
+      await onDatesChange(tempStartDate, tempEndDate);
+      setEditingDates(false);
+    } catch (err) {
+      console.error('Failed to update dates:', err);
+      alert('Failed to update dates');
+    }
+  };
+
+  const handleDatesKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleDatesSave();
+    } else if (e.key === 'Escape') {
+      setEditingDates(false);
     }
   };
 
@@ -589,6 +630,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
 
   // Find current period (closest date to today that is <= today)
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   let currentPeriodIndex = -1;
   for (let i = chartData.length - 1; i >= 0; i--) {
     const periodDate = new Date(chartData[i].name);
@@ -598,10 +640,20 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     }
   }
 
+  // Check if today is within the metric's date range
+  const metricStartDate = metricMetadata?.start_date ? new Date(metricMetadata.start_date) : null;
+  const metricEndDate = metricMetadata?.end_date ? new Date(metricMetadata.end_date) : null;
+  if (metricStartDate) metricStartDate.setHours(0, 0, 0, 0);
+  if (metricEndDate) metricEndDate.setHours(0, 0, 0, 0);
+
+  const isTodayInMetricRange = metricStartDate && metricEndDate &&
+    today >= metricStartDate && today <= metricEndDate;
+
   // Calculate ReferenceArea bounds for current period highlight
+  // Only show current period marker if today is within the metric's date range
   let currentPeriodX1 = null;
   let currentPeriodX2 = null;
-  if (currentPeriodIndex >= 0) {
+  if (currentPeriodIndex >= 0 && isTodayInMetricRange) {
     currentPeriodX1 = chartData[currentPeriodIndex].name;
     // Highlight extends to next period or slightly beyond current if it's the last
     if (currentPeriodIndex < chartData.length - 1) {
@@ -1007,20 +1059,16 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
-  // Determine best duration display based on frequency
+  // Determine best duration display - single unit only
   const getDurationDisplay = () => {
-    if (!duration || !metricMetadata) return '';
+    if (!duration) return '';
 
-    const { frequency } = metricMetadata;
     const { days, months, weeks } = duration;
 
-    if (frequency === 'weekly') {
-      return `${weeks} week${weeks !== 1 ? 's' : ''} (${days} days)`;
-    } else if (frequency === 'monthly') {
-      return `${months} month${months !== 1 ? 's' : ''} (${days} days)`;
-    } else if (frequency === 'quarterly') {
-      const quarters = Math.round(months / 3);
-      return `${quarters} quarter${quarters !== 1 ? 's' : ''} (${months} months)`;
+    if (months >= 2) {
+      return `${months} months`;
+    } else if (weeks >= 2) {
+      return `${weeks} weeks`;
     } else {
       return `${days} days`;
     }
@@ -1175,25 +1223,45 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     <div className="metric-chart-container">
       {metricMetadata && (
         <div className="metric-header-row">
-          <div className="metric-date-range">
-            <div className="date-range-item">
+          {editingDates ? (
+            <div className="date-editor">
+              <span className="date-label">Metric Period:</span>
+              <input
+                type="date"
+                value={tempStartDate}
+                onChange={(e) => setTempStartDate(e.target.value)}
+                onKeyDown={handleDatesKeyDown}
+                autoFocus
+              />
+              <span className="date-range-separator">{'\u2192'}</span>
+              <input
+                type="date"
+                value={tempEndDate}
+                onChange={(e) => setTempEndDate(e.target.value)}
+                onKeyDown={handleDatesKeyDown}
+              />
+              <button className="save-btn" onClick={handleDatesSave}>Save</button>
+              <button className="cancel-btn" onClick={() => setEditingDates(false)}>Cancel</button>
+            </div>
+          ) : (
+            <div
+              className={`metric-date-range ${canEdit && onDatesChange ? 'editable' : ''}`}
+              onClick={canEdit && onDatesChange ? handleDatesClick : undefined}
+              title={canEdit && onDatesChange ? 'Click to edit dates' : ''}
+            >
               <span className="date-label">Metric Period:</span>
               <span className="date-value">{formatDate(metricMetadata.start_date)}</span>
-            </div>
-            <div className="date-range-separator">{'\u2192'}</div>
-            <div className="date-range-item">
+              <span className="date-range-separator">{'\u2192'}</span>
               <span className="date-value">{formatDate(metricMetadata.end_date)}</span>
-            </div>
-            {duration && (
-              <>
-                <div className="date-range-separator">•</div>
-                <div className="date-range-item">
+              {duration && (
+                <>
+                  <span className="date-range-separator">•</span>
                   <span className="date-value duration">{getDurationDisplay()}</span>
-                </div>
-              </>
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+                </>
+              )}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '4px' }}>
             <button
               className="export-chart-button"
               onClick={handleExportChart}
@@ -1222,7 +1290,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
 
       {/* Metric Properties Row */}
       {metricMetadata && (
-        <div className="metric-properties-row" style={{ display: 'flex', gap: '20px', padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}>
+        <div className="metric-properties-row" style={{ display: 'flex', gap: '12px', padding: '4px 0', borderBottom: '1px solid #e5e7eb' }}>
           <div className="metric-property">
             <span className="property-label">Target:</span>
             {editingTarget && onTargetChange ? (
@@ -1617,9 +1685,9 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                 <div className="pagination-controls">
                   <button
                     onClick={goToCurrentPeriod}
-                    disabled={currentPeriodIndex < 0}
+                    disabled={currentPeriodIndex < 0 || !isTodayInMetricRange}
                     className="pagination-btn"
-                    title="Jump to current period"
+                    title={isTodayInMetricRange ? "Jump to current period" : "Current date is outside metric range"}
                   >
                     Current
                   </button>
