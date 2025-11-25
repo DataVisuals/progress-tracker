@@ -1170,56 +1170,67 @@ function App() {
                         </span>
                       </div>
                     )}
-                    {currentProject?.start_date && currentProject?.end_date && (
-                      editingProjectDates ? (
-                        <div className="project-dates-editor">
-                          <input
-                            type="date"
-                            value={editProjectStartDate}
-                            onChange={(e) => setEditProjectStartDate(e.target.value)}
-                            autoFocus
-                          />
-                          <span className="project-timeline-separator">{'\u2192'}</span>
-                          <input
-                            type="date"
-                            value={editProjectEndDate}
-                            onChange={(e) => setEditProjectEndDate(e.target.value)}
-                          />
-                          <button onClick={handleSaveProjectDates} className="save-btn">
-                            Save
-                          </button>
-                          <button onClick={() => setEditingProjectDates(false)} className="cancel-btn">
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <div
-                          className={`project-timeline-display ${canEdit() ? 'editable' : ''}`}
-                          onDoubleClick={canEdit() ? () => {
-                            setEditProjectStartDate(currentProject.start_date);
-                            setEditProjectEndDate(currentProject.end_date);
-                            setEditingProjectDates(true);
-                          } : undefined}
-                          title={canEdit() ? "Double-click to edit dates" : undefined}
-                        >
-                          <span className="project-timeline-date">{formatDate(currentProject.start_date)}</span>
-                          <span className="project-timeline-separator">{'\u2192'}</span>
-                          <span className="project-timeline-date">{formatDate(currentProject.end_date)}</span>
-                          {projectDuration && (
-                            <>
-                              <span className="project-timeline-separator">•</span>
-                              <span className="project-timeline-duration">
-                                {projectDuration.months > 1
-                                  ? `${projectDuration.months} months`
-                                  : projectDuration.weeks > 1
-                                  ? `${projectDuration.weeks} weeks`
-                                  : `${projectDuration.days} days`}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      )
-                    )}
+                    {editingProjectDates ? (
+                      <div className="project-dates-editor">
+                        <input
+                          type="date"
+                          value={editProjectStartDate}
+                          onChange={(e) => setEditProjectStartDate(e.target.value)}
+                          autoFocus
+                        />
+                        <span className="project-timeline-separator">{'\u2192'}</span>
+                        <input
+                          type="date"
+                          value={editProjectEndDate}
+                          onChange={(e) => setEditProjectEndDate(e.target.value)}
+                        />
+                        <button onClick={handleSaveProjectDates} className="save-btn">
+                          Save
+                        </button>
+                        <button onClick={() => setEditingProjectDates(false)} className="cancel-btn">
+                          Cancel
+                        </button>
+                      </div>
+                    ) : currentProject?.start_date && currentProject?.end_date ? (
+                      <div
+                        className={`project-timeline-display ${canEdit() ? 'editable' : ''}`}
+                        onDoubleClick={canEdit() ? () => {
+                          setEditProjectStartDate(currentProject.start_date);
+                          setEditProjectEndDate(currentProject.end_date);
+                          setEditingProjectDates(true);
+                        } : undefined}
+                        title={canEdit() ? "Double-click to edit dates" : undefined}
+                      >
+                        <span className="project-timeline-date">{formatDate(currentProject.start_date)}</span>
+                        <span className="project-timeline-separator">{'\u2192'}</span>
+                        <span className="project-timeline-date">{formatDate(currentProject.end_date)}</span>
+                        {projectDuration && (
+                          <>
+                            <span className="project-timeline-separator">•</span>
+                            <span className="project-timeline-duration">
+                              {projectDuration.months > 1
+                                ? `${projectDuration.months} months`
+                                : projectDuration.weeks > 1
+                                ? `${projectDuration.weeks} weeks`
+                                : `${projectDuration.days} days`}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    ) : canEdit() ? (
+                      <button
+                        className="add-dates-btn"
+                        onClick={() => {
+                          const today = new Date().toISOString().split('T')[0];
+                          const oneYearLater = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                          setEditProjectStartDate(today);
+                          setEditProjectEndDate(oneYearLater);
+                          setEditingProjectDates(true);
+                        }}
+                      >
+                        + Add dates
+                      </button>
+                    ) : null}
                   </div>
                   {/* Second row: IMs and Links combined */}
                   <div className="project-meta-row">

@@ -69,6 +69,7 @@ const HomePage = ({
   const [showTipsModal, setShowTipsModal] = useState(false); // Modal for tips
   const [selectedTipsCategory, setSelectedTipsCategory] = useState('Metric Design'); // Selected category in tips modal
   const [showWhatsNewModal, setShowWhatsNewModal] = useState(false); // Modal for what's new
+  const [selectedWhatsNewCategory, setSelectedWhatsNewCategory] = useState('Recent Updates'); // Selected category in what's new modal
   const [showUserInconsistenciesModal, setShowUserInconsistenciesModal] = useState(false); // Modal for user's own inconsistencies
   const [userInconsistenciesDismissed, setUserInconsistenciesDismissed] = useState(false); // Track if user dismissed the modal
   const [expandedPMs, setExpandedPMs] = useState({}); // Track which PMs are expanded in inconsistency report
@@ -273,6 +274,93 @@ const HomePage = ({
         icon: <MdNotifications />,
         title: "Set Up Alerts",
         description: "Use consistency reports to catch data issues before they become problems."
+      }
+    ]
+  };
+
+  // What's New organized by category
+  const whatsNewByCategory = {
+    "Recent Updates": [
+      {
+        icon: <MdFolderSpecial />,
+        title: "Spaces Feature",
+        description: "Organize portfolios into spaces for team or department-level grouping. Filter the entire app by space."
+      },
+      {
+        icon: <MdWarning />,
+        title: "Personal Alerts",
+        description: "When you log in, you'll see issues with your own projects that need attention - missing descriptions, recovery plans, or documentation."
+      },
+      {
+        icon: <MdLightbulb />,
+        title: "Tips & Best Practices",
+        description: "New categorized tips modal with tabbed navigation. Access from the Getting Started guide."
+      },
+      {
+        icon: <MdArrowForward />,
+        title: "Browser Navigation",
+        description: "Use your browser's back button to return to the home page after viewing a project."
+      }
+    ],
+    "Data Entry": [
+      {
+        icon: <MdEdit />,
+        title: "Historic Data Editing",
+        description: "Project managers can now edit historic metric values, not just the current period."
+      },
+      {
+        icon: <MdEventNote />,
+        title: "Interim Periods",
+        description: "Add data points between regular reporting periods for more granular tracking."
+      },
+      {
+        icon: <MdTune />,
+        title: "Enhanced Metric Setup",
+        description: "New progression types (linear, S-curve, exponential) and frequency options when creating metrics."
+      },
+      {
+        icon: <MdTimeline />,
+        title: "Dynamic Target Updates",
+        description: "Gray bars now correctly reflect metric target changes over time."
+      }
+    ],
+    "Data Quality": [
+      {
+        icon: <MdBugReport />,
+        title: "Inconsistency Report",
+        description: "Automatically identifies missing recovery plans, descriptions, and documentation links."
+      },
+      {
+        icon: <MdCheckCircle />,
+        title: "Severity Ordering",
+        description: "Issues sorted by severity - missing recovery plans for red metrics appear first."
+      },
+      {
+        icon: <MdBuild />,
+        title: "Recovery Plans",
+        description: "Create and track recovery plans for red and amber metrics with target dates and status."
+      }
+    ],
+    "Admin & Reporting": [
+      {
+        icon: <MdPeople />,
+        title: "Simplified Roles",
+        description: "Removed viewer role - all authenticated users can view everything. Only admin and PM roles remain."
+      },
+      {
+        icon: <MdPeople />,
+        title: "Get All Emails",
+        description: "Admins can export a list of all project manager email addresses from the Admin menu."
+      },
+      {
+        icon: <MdVisibility />,
+        title: "Page Heatmap",
+        description: "Track page views and user navigation patterns with visual heatmaps."
+      },
+      {
+        icon: <MdAssignment />,
+        title: "User Activity Report",
+        description: "See who has been active in the system and what actions they've taken."
       }
     ]
   };
@@ -1234,41 +1322,35 @@ const HomePage = ({
       )}
 
       {showWhatsNewModal && (
-        <div className="modal-overlay" onClick={() => setShowWhatsNewModal(false)}>
-          <div className="modal-content whats-new-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={() => { setShowWhatsNewModal(false); setSelectedWhatsNewCategory('Recent Updates'); }}>
+          <div className="modal-content tips-modal-tabbed" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <MdNotifications className="modal-icon" />
               <h2>What's New</h2>
-              <button className="modal-close" onClick={() => setShowWhatsNewModal(false)}>×</button>
+              <button className="modal-close" onClick={() => { setShowWhatsNewModal(false); setSelectedWhatsNewCategory('Recent Updates'); }}>×</button>
             </div>
-            <div className="modal-body">
-              <div className="whats-new-item">
-                <div className="feature-icon"><MdWarning /></div>
-                <div className="feature-content">
-                  <h3>Inconsistency Report</h3>
-                  <p>Automatically identifies data quality issues including missing recovery plans, descriptions, and documentation. Shows issues grouped by PM with severity indicators.</p>
-                </div>
-              </div>
-              <div className="whats-new-item">
-                <div className="feature-icon"><MdBuild /></div>
-                <div className="feature-content">
-                  <h3>Recovery Plans</h3>
-                  <p>Create and track recovery plans for red and amber metrics. Set target dates, monitor progress, and document completion.</p>
-                </div>
-              </div>
-              <div className="whats-new-item">
-                <div className="feature-icon"><MdVisibility /></div>
-                <div className="feature-content">
-                  <h3>Page Analytics</h3>
-                  <p>Track page views and user navigation patterns. View heatmaps showing most visited pages and user engagement.</p>
-                </div>
-              </div>
-              <div className="whats-new-item">
-                <div className="feature-icon"><MdFileDownload /></div>
-                <div className="feature-content">
-                  <h3>Chart Export</h3>
-                  <p>Export metric charts as PNG images or PDF documents. Perfect for sharing with stakeholders or including in presentations.</p>
-                </div>
+            <div className="tips-tabs">
+              {Object.keys(whatsNewByCategory).map((category) => (
+                <button
+                  key={category}
+                  className={`tips-tab ${selectedWhatsNewCategory === category ? 'active' : ''}`}
+                  onClick={() => setSelectedWhatsNewCategory(category)}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+            <div className="modal-body tips-tabbed-content">
+              <div className="tips-grid">
+                {whatsNewByCategory[selectedWhatsNewCategory].map((item, index) => (
+                  <div key={index} className="modal-tip-card">
+                    <div className="tip-icon-wrapper">{item.icon}</div>
+                    <div className="tip-content">
+                      <h4 className="tip-title">{item.title}</h4>
+                      <p className="tip-description">{item.description}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
