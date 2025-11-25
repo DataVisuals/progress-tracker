@@ -1586,6 +1586,10 @@ html.dark-mode .quadrant-content {
   color: #f59e0b;
 }
 
+.user-inconsistencies-modal .modal-body {
+  padding: 16px 20px;
+}
+
 .inconsistency-intro {
   margin: 0 0 12px 0;
   color: #4b5563;
