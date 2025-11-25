@@ -930,6 +930,12 @@ const HomePage = ({
             <div className="getting-started">
               <ul>
                 <li>
+                  <button className="tips-link-btn" onClick={() => setShowTipsModal(true)}>
+                    <MdLightbulb className="step-icon" />
+                    <span>Purpose of Progress Tracker and Best Practices</span>
+                  </button>
+                </li>
+                <li>
                   <svg className="step-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M3 7V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/>
                     <path d="M3 7L10 5H14L21 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -973,12 +979,6 @@ const HomePage = ({
                     <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
                   <span>Keep an eye on the consistency panel of the home page for data quality issues.</span>
-                </li>
-                <li>
-                  <button className="tips-link-btn" onClick={() => setShowTipsModal(true)}>
-                    <MdLightbulb className="step-icon" />
-                    <span>Purpose of Progress Tracker and Best Practices</span>
-                  </button>
                 </li>
               </ul>
             </div>
