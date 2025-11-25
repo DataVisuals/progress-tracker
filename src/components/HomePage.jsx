@@ -67,7 +67,7 @@ const HomePage = ({
   const [recoveryPlans, setRecoveryPlans] = useState([]); // Track active recovery plans
   const [inconsistencies, setInconsistencies] = useState(null); // Inconsistency report data
   const [showTipsModal, setShowTipsModal] = useState(false); // Modal for tips
-  const [selectedTipsCategory, setSelectedTipsCategory] = useState('Metric Design'); // Selected category in tips modal
+  const [selectedTipsCategory, setSelectedTipsCategory] = useState('Purpose'); // Selected category in tips modal
   const [showWhatsNewModal, setShowWhatsNewModal] = useState(false); // Modal for what's new
   const [selectedWhatsNewCategory, setSelectedWhatsNewCategory] = useState('Recent Updates'); // Selected category in what's new modal
   const [showUserInconsistenciesModal, setShowUserInconsistenciesModal] = useState(false); // Modal for user's own inconsistencies
@@ -76,6 +76,38 @@ const HomePage = ({
 
   // Tips organized by theme
   const tipsByCategory = {
+    "Purpose": [
+      {
+        icon: <MdTrackChanges />,
+        title: "Objective Status Measurement",
+        description: "Replace subjective RAG assessments with data-driven metrics. Know exactly where you stand, not where someone thinks you stand."
+      },
+      {
+        icon: <MdTrendingUp />,
+        title: "Predict, Don't Explain",
+        description: "Focus on whether you'll hit your dates, not why you missed them. Early warning beats post-mortem analysis."
+      },
+      {
+        icon: <MdBuild />,
+        title: "Course Correct as You Go",
+        description: "When metrics show you're off track, create recovery plans immediately. Small adjustments now prevent big problems later."
+      },
+      {
+        icon: <MdPeople />,
+        title: "Meaningful to Everyone",
+        description: "Progress described in ways that executives, stakeholders, and team members all understand. One version of the truth."
+      },
+      {
+        icon: <MdDashboard />,
+        title: "Everything in One Place",
+        description: "All projects, metrics, commentary, and recovery plans in a single system. No more scattered spreadsheets and status emails."
+      },
+      {
+        icon: <MdVisibility />,
+        title: "Transparency Builds Trust",
+        description: "When everyone sees the same data, conversations shift from blame to problem-solving. Bad news travels fast, enabling faster fixes."
+      }
+    ],
     "Metric Design": [
       {
         icon: <MdTrackChanges />,
@@ -293,8 +325,8 @@ const HomePage = ({
       },
       {
         icon: <MdLightbulb />,
-        title: "Tips & Best Practices",
-        description: "New categorized tips modal with tabbed navigation. Access from the Getting Started guide."
+        title: "Purpose & Best Practices",
+        description: "New categorized modal explaining the purpose of Progress Tracker and best practices. Access from Getting Started."
       },
       {
         icon: <MdArrowForward />,
@@ -945,7 +977,7 @@ const HomePage = ({
                 <li>
                   <button className="tips-link-btn" onClick={() => setShowTipsModal(true)}>
                     <MdLightbulb className="step-icon" />
-                    <span>See Tips & Best Practices</span>
+                    <span>Purpose of Progress Tracker and Best Practices</span>
                   </button>
                 </li>
               </ul>
@@ -1283,7 +1315,7 @@ const HomePage = ({
           <div className="modal-content tips-modal-tabbed" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <MdLightbulb className="modal-icon" />
-              <h2>Tips & Best Practices</h2>
+              <h2>Purpose & Best Practices</h2>
               <button className="modal-close" onClick={() => { setShowTipsModal(false); setSelectedTipsCategory(null); }}>×</button>
             </div>
             <div className="tips-tabs">
