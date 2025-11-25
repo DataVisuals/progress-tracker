@@ -46,6 +46,13 @@
   text-align: center;
 }
 
+.stat-divider {
+  width: 1px;
+  background-color: #d1d5db;
+  align-self: stretch;
+  margin: 4px 4px;
+}
+
 .stat-value {
   display: block;
   font-size: 16px;
@@ -887,6 +894,10 @@ html.dark-mode .quadrant-content {
 
 :root.dark-mode .stat-label {
   color: #9ca3af;
+}
+
+:root.dark-mode .stat-divider {
+  background-color: #4b5563;
 }
 
 :root.dark-mode .home-quadrant {

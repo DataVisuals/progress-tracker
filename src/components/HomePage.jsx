@@ -753,6 +753,7 @@ const HomePage = ({
             <span className="stat-value">{projectCount}</span>
             <span className="stat-label">Projects</span>
           </div>
+          <div className="stat-divider"></div>
           <div className="stat-item">
             <span className="stat-value">{metricCount}</span>
             <span className="stat-label">Metrics</span>
