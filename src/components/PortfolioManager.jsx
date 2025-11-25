@@ -154,6 +154,11 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
                           {portfolio.description && (
                             <p className="portfolio-description">{portfolio.description}</p>
                           )}
+                          <span className="portfolio-order">
+                            Space: {portfolio.space_id
+                              ? spaces.find(s => s.id === portfolio.space_id)?.name || 'Unknown'
+                              : 'No space'}
+                          </span>
                           <span className="portfolio-order">Order: {portfolio.display_order}</span>
                         </div>
                       </div>
