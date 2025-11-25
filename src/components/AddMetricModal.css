@@ -1,0 +1,125 @@
+.add-metric-modal {
+  max-width: 500px;
+  padding: 24px;
+}
+
+.add-metric-modal h2 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #003c71;
+}
+
+.add-metric-modal .form-group {
+  margin-bottom: 16px;
+}
+
+.add-metric-modal .form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.add-metric-modal .form-group input[type="text"],
+.add-metric-modal .form-group input[type="number"],
+.add-metric-modal .form-group input[type="date"] {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.add-metric-modal .form-group input:focus {
+  outline: none;
+  border-color: #00aeef;
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.1);
+}
+
+.add-metric-modal .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.add-metric-modal .modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.add-metric-modal .save-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: #00aeef;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-metric-modal .save-btn:hover {
+  background: #0095d1;
+}
+
+.add-metric-modal .cancel-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-metric-modal .cancel-btn:hover {
+  background: #e5e7eb;
+}
+
+/* Dark mode */
+:root.dark-mode .add-metric-modal h2 {
+  color: #e0f2fe;
+}
+
+:root.dark-mode .add-metric-modal .form-group label {
+  color: #d1d5db;
+}
+
+:root.dark-mode .add-metric-modal .form-group input[type="text"],
+:root.dark-mode .add-metric-modal .form-group input[type="number"],
+:root.dark-mode .add-metric-modal .form-group input[type="date"] {
+  background: #1f2937;
+  border-color: #374151;
+  color: #f9fafb;
+}
+
+:root.dark-mode .add-metric-modal .form-group input:focus {
+  border-color: #00aeef;
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.2);
+}
+
+:root.dark-mode .add-metric-modal .modal-actions {
+  border-top-color: #374151;
+}
+
+:root.dark-mode .add-metric-modal .cancel-btn {
+  background: #374151;
+  color: #f9fafb;
+  border-color: #4b5563;
+}
+
+:root.dark-mode .add-metric-modal .cancel-btn:hover {
+  background: #4b5563;
+}

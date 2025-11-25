@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './MetricTabs.css';
 
-const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMetricRename, onMetricDelete, canEdit }) => {
+const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMetricRename, onMetricDelete, canEdit, onAddMetric }) => {
   const [editingMetric, setEditingMetric] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [showDropdown, setShowDropdown] = useState(null);
@@ -247,6 +247,15 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
             </div>
           );
         })}
+        {canEdit && onAddMetric && (
+          <button
+            className="metric-tab add-metric-tab"
+            onClick={onAddMetric}
+            title="Add new metric"
+          >
+            <span className="add-metric-plus">+</span>
+          </button>
+        )}
       </div>
 
       {/* Fixed position dropdown portal */}
