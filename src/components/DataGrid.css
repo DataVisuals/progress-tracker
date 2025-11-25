@@ -51,17 +51,16 @@
 
 .metric-selector-inline {
   flex: 1;
-  max-width: 300px;
 }
 
 .bulk-add-btn {
   background-color: #10b981;
   color: white;
   border: none;
-  padding: 8px 16px;
+  padding: 5px 12px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -135,10 +134,10 @@
   background-color: #00aeef;
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
+  padding: 5px 12px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
   transition: all 0.2s;
@@ -231,7 +230,7 @@
 }
 
 .data-grid-table {
-  width: max-content;
+  width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 13px;
@@ -370,13 +369,13 @@
 }
 
 .data-grid-actions .cancel-btn {
-  padding: 10px 24px;
+  padding: 6px 16px;
   background-color: #6b7280;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
 }
 
@@ -385,13 +384,13 @@
 }
 
 .data-grid-actions .save-btn {
-  padding: 10px 24px;
+  padding: 6px 16px;
   background-color: #00aeef;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
 }
 
@@ -730,4 +729,9 @@
 
 :root.dark-mode .metric-creation-modal {
   background: #1f2937;
+}
+
+/* Dark mode date picker calendar icon */
+:root.dark-mode input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
 }
