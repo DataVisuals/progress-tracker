@@ -2464,13 +2464,9 @@ function createApp(dbPath) {
         const today = new Date().toISOString().split('T')[0];
 
         for (let i = 0; i < periods.length; i++) {
-          // If recalculate_expected is 'future', only update periods after today
+          // If recalculate_expected is 'future', skip past/current periods entirely
+          // Historical targets should be preserved to reflect scope at that point in time
           if (recalculate_expected === 'future' && periods[i].reporting_date <= today) {
-            // Only update the target for past/current periods, not the expected value
-            await dbRun(
-              'UPDATE metric_periods SET target = ? WHERE id = ?',
-              [updatedMetric.final_target, periods[i].id]
-            );
             continue;
           }
 
