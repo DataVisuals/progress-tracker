@@ -4354,6 +4354,49 @@ function createApp(dbPath) {
     }
   });
 
+  // ===== GET EMAILS BY SPACE (Admin only) =====
+  app.get('/api/admin/space-emails/:spaceId', authenticateToken, async (req, res) => {
+    try {
+      if (!isAdmin(req.user)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { spaceId } = req.params;
+
+      let emails;
+      if (spaceId === 'all') {
+        // Get all unique initiative managers across all projects
+        emails = await dbAll(`
+          SELECT DISTINCT u.email
+          FROM users u
+          INNER JOIN projects p ON u.name = p.initiative_manager
+          WHERE u.email IS NOT NULL
+          ORDER BY u.email
+        `);
+      } else {
+        // Get initiative managers for projects in portfolios belonging to this space
+        emails = await dbAll(`
+          SELECT DISTINCT u.email
+          FROM users u
+          INNER JOIN projects p ON u.name = p.initiative_manager
+          INNER JOIN portfolios po ON p.portfolio_id = po.id
+          WHERE po.space_id = ? AND u.email IS NOT NULL
+          ORDER BY u.email
+        `, [spaceId]);
+      }
+
+      const emailList = emails.map(e => e.email).join('; ');
+
+      res.json({
+        count: emails.length,
+        emails: emailList
+      });
+    } catch (err) {
+      console.error('Get space emails error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== TIME TRAVEL (Reconstruct historical state from audit log) =====
   app.get('/api/projects/:projectId/data/time-travel', authenticateToken, async (req, res) => {
     try {

@@ -69,6 +69,8 @@ function App() {
   const [showImportData, setShowImportData] = useState(false);
   const [showPortfolioManager, setShowPortfolioManager] = useState(false);
   const [showSpaceManager, setShowSpaceManager] = useState(false);
+  const [showSpaceEmails, setShowSpaceEmails] = useState(false);
+  const [spaceEmailsData, setSpaceEmailsData] = useState({ count: 0, emails: '' });
   const [showAdminReport, setShowAdminReport] = useState(false);
   const [adminReportConfig, setAdminReportConfig] = useState({ type: null, id: null, name: null });
   const [showReportSelector, setShowReportSelector] = useState(false);
@@ -902,6 +904,18 @@ function App() {
   const isPMOrHigher = () => currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm');
   const canEdit = () => currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm' || currentUser.role === 'editor');
 
+  // Get emails for a space (admin only)
+  const handleGetSpaceEmails = async (spaceId) => {
+    try {
+      const response = await api.get(`/admin/space-emails/${spaceId}`);
+      setSpaceEmailsData(response.data);
+      setShowSpaceEmails(true);
+    } catch (err) {
+      console.error('Failed to get space emails:', err);
+      alert('Failed to get emails: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
   // Copy current URL to clipboard
   const handleShareLink = async () => {
     try {
@@ -953,6 +967,7 @@ function App() {
                 }
               }}
               onManageSpaces={isAdmin() ? () => setShowSpaceManager(true) : null}
+              onGetEmails={isAdmin() ? handleGetSpaceEmails : null}
             />
             <PortfolioSelector
               key={`portfolio-${portfolios.length}-${selectedSpace}`} // Force re-render when portfolios or space changes
@@ -1628,6 +1643,39 @@ function App() {
             loadProjects();
           }}
         />
+      )}
+
+      {showSpaceEmails && (
+        <div className="modal-overlay" onClick={() => setShowSpaceEmails(false)}>
+          <div className="modal-content emails-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Email Addresses ({spaceEmailsData.count})</h2>
+              <button className="close-btn" onClick={() => setShowSpaceEmails(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p className="emails-description">
+                {selectedSpace === 'all'
+                  ? 'Project managers across all spaces:'
+                  : `Project managers in ${spaces.find(s => s.id === Number(selectedSpace))?.name || 'selected space'}:`}
+              </p>
+              <textarea
+                className="emails-textarea"
+                value={spaceEmailsData.emails}
+                readOnly
+                rows={Math.min(10, Math.max(3, spaceEmailsData.count))}
+              />
+              <button
+                className="copy-btn"
+                onClick={() => {
+                  navigator.clipboard.writeText(spaceEmailsData.emails);
+                  alert('Emails copied to clipboard!');
+                }}
+              >
+                Copy to Clipboard
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showReportSelector && (

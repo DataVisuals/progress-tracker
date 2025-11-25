@@ -5,7 +5,8 @@ export default function SpaceSelector({
   spaces,
   selectedSpace,
   onSpaceChange,
-  onManageSpaces
+  onManageSpaces,
+  onGetEmails
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -35,6 +36,13 @@ export default function SpaceSelector({
   const handleManageClick = () => {
     if (onManageSpaces) {
       onManageSpaces();
+    }
+    setIsOpen(false);
+  };
+
+  const handleGetEmailsClick = () => {
+    if (onGetEmails) {
+      onGetEmails(selectedSpace);
     }
     setIsOpen(false);
   };
@@ -98,16 +106,29 @@ export default function SpaceSelector({
 
         {isOpen && (
           <div className="portfolio-select-dropdown" role="listbox">
-            {onManageSpaces && (
+            {(onManageSpaces || onGetEmails) && (
               <div className="portfolio-dropdown-header">
                 <span className="header-title">Spaces</span>
-                <button
-                  className="portfolio-manage-btn"
-                  onClick={handleManageClick}
-                  title="Manage Spaces"
-                >
-                  Manage
-                </button>
+                <div className="header-buttons">
+                  {onGetEmails && (
+                    <button
+                      className="portfolio-manage-btn"
+                      onClick={handleGetEmailsClick}
+                      title="Get emails for this space"
+                    >
+                      Emails
+                    </button>
+                  )}
+                  {onManageSpaces && (
+                    <button
+                      className="portfolio-manage-btn"
+                      onClick={handleManageClick}
+                      title="Manage Spaces"
+                    >
+                      Manage
+                    </button>
+                  )}
+                </div>
               </div>
             )}
             <div className="portfolio-options-list">
