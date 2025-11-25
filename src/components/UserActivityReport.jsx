@@ -308,7 +308,6 @@ const UserActivityReport = ({ onClose, selectedSpace = 'all', spaces = [] }) => 
                         />
                         <YAxis />
                         <Tooltip content={<TimelineTooltip />} />
-                        <Legend wrapperStyle={{ fontSize: '12px' }} />
                         {getTimelineUsers().map((user, index) => (
                           <Bar
                             key={user}
