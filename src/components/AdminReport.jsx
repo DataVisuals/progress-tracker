@@ -79,22 +79,23 @@ const AdminReport = ({ type, id, name, onClose, onMetricClick }) => {
           <div key={project.id} className="report-project">
             <div className="project-header">
               <h4>{project.name}</h4>
-              {project.initiative_manager && (
-                <span className="project-manager">PM: {project.initiative_manager}</span>
-              )}
-              {(type === 'space' || type === 'all') && project.portfolio_name && (
-                <span className="project-portfolio" style={{
-                  backgroundColor: project.portfolio_color || '#6366f1',
-                  color: 'white',
-                  padding: '2px 8px',
-                  borderRadius: '4px',
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  marginLeft: '8px'
-                }}>
-                  {project.portfolio_name}
-                </span>
-              )}
+              <div className="project-header-right">
+                {project.initiative_manager && (
+                  <span className="project-manager">PM: {project.initiative_manager}</span>
+                )}
+                {(type === 'space' || type === 'all') && project.portfolio_name && (
+                  <span className="project-portfolio" style={{
+                    backgroundColor: project.portfolio_color || '#6366f1',
+                    color: 'white',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontWeight: '600'
+                  }}>
+                    {project.portfolio_name}
+                  </span>
+                )}
+              </div>
             </div>
             {project.description && (
               <p className="project-description">{project.description}</p>

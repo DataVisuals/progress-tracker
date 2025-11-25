@@ -47,7 +47,8 @@ const HomePage = ({
   currentUser,
   selectedSpace = 'all',
   spaces = [],
-  portfolios = []
+  portfolios = [],
+  darkMode = false
 }) => {
   console.log('=== HomePage Rendering ===');
   console.log('Projects:', Object.keys(projects || {}).length);
@@ -1033,6 +1034,7 @@ const HomePage = ({
               </div>
               {portfoliosInMetrics.length > 1 && (
                 <Select
+                  key={`metrics-portfolio-${darkMode}`}
                   className="portfolio-filter-dropdown"
                   styles={smallSelectStyles}
                   value={
@@ -1146,6 +1148,7 @@ const HomePage = ({
             <h2>Recent Commentary</h2>
             {portfoliosInCommentary.length > 1 && (
               <Select
+                key={`commentary-portfolio-${darkMode}`}
                 className="portfolio-filter-dropdown"
                 styles={smallSelectStyles}
                 value={
