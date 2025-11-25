@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
 import { api } from '../api/client';
 import { PORTFOLIO_COLORS } from '../constants/colors';
+import { selectStyles } from './SelectStyles';
 import './PortfolioManager.css';
 
 export default function PortfolioManager({ onClose, onPortfolioCreated }) {
   const [portfolios, setPortfolios] = useState([]);
+  const [spaces, setSpaces] = useState([]);
   const [showNewForm, setShowNewForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     color: PORTFOLIO_COLORS[0].value,
+    space_id: null,
     display_order: 0
   });
   const [error, setError] = useState('');
@@ -26,6 +30,7 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
 
   useEffect(() => {
     loadPortfolios();
+    loadSpaces();
   }, []);
 
   // Update form color when opening new form or when portfolios change
@@ -44,6 +49,15 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
       setPortfolios(response.data);
     } catch (err) {
       setError('Failed to load portfolios');
+    }
+  };
+
+  const loadSpaces = async () => {
+    try {
+      const response = await api.getSpaces();
+      setSpaces(response.data || []);
+    } catch (err) {
+      console.error('Failed to load spaces:', err);
     }
   };
 
@@ -71,6 +85,7 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
       name: portfolio.name,
       description: portfolio.description || '',
       color: portfolio.color || PORTFOLIO_COLORS[0].value,
+      space_id: portfolio.space_id || null,
       display_order: portfolio.display_order || 0
     });
     setEditingId(portfolio.id);
@@ -96,6 +111,7 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
       name: '',
       description: '',
       color: getUnusedColor(),
+      space_id: null,
       display_order: 0
     });
     setEditingId(null);
@@ -183,6 +199,22 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
                   placeholder="Optional description..."
                   rows={3}
                 />
+              </div>
+
+              <div className="form-group">
+                <label>Space</label>
+                <Select
+                  styles={selectStyles}
+                  value={formData.space_id ? { value: formData.space_id, label: spaces.find(s => s.id === formData.space_id)?.name } : null}
+                  onChange={(option) => setFormData({ ...formData, space_id: option?.value || null })}
+                  options={spaces.map(space => ({
+                    value: space.id,
+                    label: space.name
+                  }))}
+                  isClearable
+                  placeholder="Select a space (optional)..."
+                />
+                <small className="form-hint">Assign this portfolio to a space for organization</small>
               </div>
 
               <div className="form-group">

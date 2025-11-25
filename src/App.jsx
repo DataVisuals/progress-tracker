@@ -78,8 +78,15 @@ function App() {
   const [targetChangePrompt, setTargetChangePrompt] = useState(null); // { newTarget, resolve }
   const [allProjectsData, setAllProjectsData] = useState({}); // For HomePage red metrics
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : false;
+    try {
+      const saved = localStorage.getItem('darkMode');
+      return saved ? JSON.parse(saved) : false;
+    } catch (err) {
+      console.error('Failed to parse darkMode from localStorage:', err);
+      // Clean up corrupted data
+      localStorage.removeItem('darkMode');
+      return false;
+    }
   });
 
   // Load user on mount and load projects regardless of auth
@@ -87,8 +94,17 @@ function App() {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
     if (token && userStr) {
-      setIsAuthenticated(true);
-      setCurrentUser(JSON.parse(userStr));
+      try {
+        setIsAuthenticated(true);
+        setCurrentUser(JSON.parse(userStr));
+      } catch (err) {
+        console.error('Failed to parse user from localStorage:', err);
+        // Clean up corrupted data and log out
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+      }
     }
     loadSpaces();
     loadPortfolios();
