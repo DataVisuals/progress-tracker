@@ -259,10 +259,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  max-width: 1800px;
   width: 100%;
-  margin: 0 auto;
-  padding: 16px;
+  padding: 12px 8px;
   overflow: hidden;
 }
 
@@ -304,7 +302,7 @@
   padding: 12px 16px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -447,53 +445,48 @@
   display: flex;
   gap: 6px;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.links-separator {
+  color: #d1d5db;
+  font-size: 12px;
+  margin: 0 2px;
+}
+
+:root.dark-mode .links-separator {
+  color: #4b5563;
 }
 
 .project-timeline-display {
-  padding: 3px 8px;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border: 1px solid #bae6fd;
-  border-radius: 4px;
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  box-shadow: 0 1px 2px rgba(0, 174, 239, 0.06);
   white-space: nowrap;
 }
 
 .project-timeline-display.editable {
   cursor: pointer;
-  transition: all 0.2s;
 }
 
-.project-timeline-display.editable:hover {
-  border-color: #7dd3fc;
-  box-shadow: 0 2px 4px rgba(0, 174, 239, 0.12);
-}
-
-.project-timeline-label {
-  color: #0c4a6e;
-  font-weight: 600;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.project-timeline-display.editable:hover .project-timeline-date {
+  color: #00aeef;
 }
 
 .project-timeline-date {
-  font-weight: 600;
-  color: #003c71;
+  font-weight: 500;
+  color: #374151;
 }
 
 .project-timeline-separator {
-  color: #0284c7;
-  font-weight: 600;
-  opacity: 0.6;
+  color: #9ca3af;
+  font-size: 12px;
 }
 
 .project-timeline-duration {
-  font-weight: 700;
-  color: #00aeef;
+  font-weight: 500;
+  color: #6b7280;
 }
 
 .add-dates-btn {
@@ -514,47 +507,58 @@
   background: #f0f9ff;
 }
 
-.project-dates-editor {
+/* Shared date editor styling */
+.date-editor {
   display: flex;
   gap: 8px;
   align-items: center;
 }
 
-.project-dates-editor input[type="date"] {
-  padding: 6px 8px;
+.date-editor input[type="date"] {
+  padding: 4px 6px;
   border: 2px solid #00aeef;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   font-family: inherit;
 }
 
-.project-dates-editor button {
-  padding: 6px 12px;
+.date-editor input[type="date"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 174, 239, 0.2);
+}
+
+.date-editor button {
+  padding: 4px 8px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   transition: all 0.2s;
 }
 
-.project-dates-editor button.save-btn {
+.date-editor button.save-btn {
   background: #00aeef;
   color: white;
 }
 
-.project-dates-editor button.save-btn:hover {
+.date-editor button.save-btn:hover {
   background: #0284c7;
 }
 
-.project-dates-editor button.cancel-btn {
+.date-editor button.cancel-btn {
   background: #6b7280;
   color: white;
 }
 
-.project-dates-editor button.cancel-btn:hover {
+.date-editor button.cancel-btn:hover {
   background: #4b5563;
+}
+
+.date-range-separator {
+  color: #9ca3af;
+  font-size: 12px;
 }
 
 .project-description {
@@ -596,25 +600,21 @@
 }
 
 .project-link-btn {
-  background-color: #00aeef;
-  color: white;
-  padding: 4px 10px;
-  border-radius: 4px;
+  color: #6b7280;
   text-decoration: none;
-  font-size: 12px;
-  font-weight: 500;
-  transition: background-color 0.2s;
+  font-size: 11px;
+  transition: color 0.15s ease;
   display: inline-block;
 }
 
 .project-link-btn:hover {
-  background-color: #003c71;
+  color: #00aeef;
 }
 
 .edit-links-btn {
   background-color: transparent;
   color: #6b7280;
-  border: 1px solid #d1d5db;
+  border: none;
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 11px;
@@ -625,7 +625,7 @@
 
 .edit-links-btn:hover {
   background-color: #f3f4f6;
-  border-color: #9ca3af;
+  color: #374151;
 }
 
 .edit-links-btn.placeholder {
@@ -645,7 +645,7 @@
 .share-link-btn {
   background-color: transparent;
   color: #6b7280;
-  border: 1px solid #d1d5db;
+  border: none;
   padding: 4px 6px;
   border-radius: 4px;
   font-size: 12px;
@@ -659,7 +659,6 @@
 
 .share-link-btn:hover {
   background-color: #f3f4f6;
-  border-color: #9ca3af;
   color: #374151;
 }
 
@@ -1182,7 +1181,7 @@
   }
 
   .app-container {
-    padding: 24px 16px;
+    padding: 16px 8px;
   }
 
   .controls-section {
@@ -1410,31 +1409,20 @@
   color: var(--text-secondary);
 }
 
-:root.dark-mode .project-timeline-display {
-  background: linear-gradient(135deg, rgba(0, 60, 113, 0.3) 0%, rgba(0, 174, 239, 0.2) 100%);
-  border-color: rgba(0, 174, 239, 0.4);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-:root.dark-mode .project-timeline-display.editable:hover {
-  border-color: rgba(0, 174, 239, 0.6);
-  box-shadow: 0 2px 4px rgba(0, 174, 239, 0.2);
-}
-
-:root.dark-mode .project-timeline-label {
-  color: rgba(255, 255, 255, 0.7);
-}
-
 :root.dark-mode .project-timeline-date {
-  color: rgba(255, 255, 255, 0.95);
+  color: #d1d5db;
+}
+
+:root.dark-mode .project-timeline-display.editable:hover .project-timeline-date {
+  color: #00aeef;
 }
 
 :root.dark-mode .project-timeline-separator {
-  color: rgba(0, 174, 239, 0.8);
+  color: #6b7280;
 }
 
 :root.dark-mode .project-timeline-duration {
-  color: rgba(255, 255, 255, 0.7);
+  color: #9ca3af;
 }
 
 :root.dark-mode .add-dates-btn {
@@ -1447,6 +1435,29 @@
   color: #00aeef;
   border-color: #00aeef;
   background: rgba(0, 174, 239, 0.1);
+}
+
+:root.dark-mode .date-editor input[type="date"] {
+  background: #1f2937;
+  border-color: #00aeef;
+  color: #f9fafb;
+}
+
+/* Dark mode date picker calendar icon - global */
+:root.dark-mode input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+:root.dark-mode .date-range-separator {
+  color: #6b7280;
+}
+
+:root.dark-mode .project-link-btn {
+  color: #9ca3af;
+}
+
+:root.dark-mode .project-link-btn:hover {
+  color: #00aeef;
 }
 
 :root.dark-mode .empty-state {
