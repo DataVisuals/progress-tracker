@@ -157,11 +157,11 @@ const UserManagement = ({ currentUser, onClose }) => {
     try {
       await api.register(newUser.email, newUser.name, newUser.password);
 
-      // Now update the role if it's not viewer (default)
+      // Now update the role if it's not the default
       const usersResponse = await api.getUsers();
       const createdUser = usersResponse.data.find(u => u.email === newUser.email);
 
-      if (createdUser && newUser.role !== 'viewer') {
+      if (createdUser && newUser.role !== 'pm') {
         await api.updateUserRole(createdUser.id, newUser.role);
       }
 
@@ -179,7 +179,6 @@ const UserManagement = ({ currentUser, onClose }) => {
     switch (role) {
       case 'admin': return 'role-badge-admin';
       case 'pm': return 'role-badge-pm';
-      case 'viewer': return 'role-badge-viewer';
       default: return '';
     }
   };
@@ -235,8 +234,7 @@ const UserManagement = ({ currentUser, onClose }) => {
                             onChange={(option) => handleChangeRole(user.id, option.value)}
                             options={[
                               { value: 'admin', label: 'ADMIN' },
-                              { value: 'pm', label: 'PM' },
-                              { value: 'viewer', label: 'VIEWER' }
+                              { value: 'pm', label: 'PM' }
                             ]}
                             styles={compactSelectStyles}
                             className="role-select"
@@ -309,7 +307,6 @@ const UserManagement = ({ currentUser, onClose }) => {
               <h3>{selectedUser.name}</h3>
               <p className="role-description">
                 {selectedUser.role === 'admin' && 'Admins have full access to all projects and can manage users.'}
-                {selectedUser.role === 'viewer' && 'Viewers have read-only access to all projects.'}
               </p>
             </div>
           )}

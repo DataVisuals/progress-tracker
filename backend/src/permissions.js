@@ -4,8 +4,7 @@ const { dbGet, dbAll } = require('./db');
 const ROLES = {
   ADMIN: 'admin',
   PM: 'pm',
-  EDITOR: 'editor', // Legacy role - treat as PM
-  VIEWER: 'viewer'
+  EDITOR: 'editor' // Legacy role - treat as PM
 };
 
 // Check if user can edit a project
@@ -15,11 +14,6 @@ async function canEditProject(userId, projectId) {
   // Admins can edit anything
   if (user.role === ROLES.ADMIN) {
     return true;
-  }
-
-  // Viewers can't edit anything
-  if (user.role === ROLES.VIEWER) {
-    return false;
   }
 
   // PMs and Editors can edit if they have permission
@@ -68,7 +62,7 @@ async function getEditableProjects(userId) {
     `, [userId]);
   }
 
-  // Viewers can't edit any projects
+  // Default: no editable projects
   return [];
 }
 

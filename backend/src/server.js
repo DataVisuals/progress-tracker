@@ -33,8 +33,7 @@ function createApp(dbPath) {
   const ROLES = {
     ADMIN: 'admin',
     PM: 'pm',
-    EDITOR: 'editor', // Legacy role - treat as PM
-    VIEWER: 'viewer'
+    EDITOR: 'editor' // Legacy role - treat as PM
   };
 
   // Check if user can edit a project
@@ -44,11 +43,6 @@ function createApp(dbPath) {
     // Admins can edit anything
     if (user.role === ROLES.ADMIN) {
       return true;
-    }
-
-    // Viewers can't edit anything
-    if (user.role === ROLES.VIEWER) {
-      return false;
     }
 
     // PMs and Editors can edit if they have permission
@@ -3189,7 +3183,7 @@ function createApp(dbPath) {
       }
   
       const { role } = req.body;
-      if (!['admin', 'pm', 'viewer'].includes(role)) {
+      if (!['admin', 'pm'].includes(role)) {
         return res.status(400).json({ error: 'Invalid role' });
       }
   
@@ -3452,7 +3446,7 @@ function createApp(dbPath) {
       const hash = await hashPassword(Math.random().toString(36));
       const result = await dbRun(
         'INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)',
-        ['system@progress-tracker', 'System', hash, 'viewer']
+        ['system@progress-tracker', 'System', hash, 'pm']
       );
       systemUser = { id: result.lastID };
       console.log('✅ Created system user for automated feedback');
@@ -4165,30 +4159,37 @@ function createApp(dbPath) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
-      const { days = 30 } = req.query;
+      const { days = 30, space_id } = req.query;
       const daysAgo = new Date();
       const parsedDays = parseInt(days) || 30; // Default to 30 if invalid
       daysAgo.setDate(daysAgo.getDate() - parsedDays);
 
-      // Get page view counts (only Project pages)
+      // Build space filter
+      const spaceFilter = space_id ? `AND po.space_id = ${parseInt(space_id)}` : '';
+
+      // Get page view counts (only Project pages), filtered by space if provided
       const pageViewCounts = await dbAll(`
-        SELECT path, COUNT(*) as view_count
-        FROM page_views
-        WHERE created_at >= ? AND path LIKE 'Project:%'
-        GROUP BY path
+        SELECT pv.path, COUNT(*) as view_count
+        FROM page_views pv
+        LEFT JOIN projects p ON pv.path = 'Project: ' || p.name
+        LEFT JOIN portfolios po ON p.portfolio_id = po.id
+        WHERE pv.created_at >= ? AND pv.path LIKE 'Project:%' ${spaceFilter}
+        GROUP BY pv.path
         ORDER BY view_count DESC
       `, [daysAgo.toISOString()]);
 
-      // Get timeline data (views by date)
+      // Get timeline data (views by date), filtered by space
       const timeline = await dbAll(`
-        SELECT DATE(created_at) as date, COUNT(*) as views
-        FROM page_views
-        WHERE created_at >= ? AND path LIKE 'Project:%'
-        GROUP BY DATE(created_at)
+        SELECT DATE(pv.created_at) as date, COUNT(*) as views
+        FROM page_views pv
+        LEFT JOIN projects p ON pv.path = 'Project: ' || p.name
+        LEFT JOIN portfolios po ON p.portfolio_id = po.id
+        WHERE pv.created_at >= ? AND pv.path LIKE 'Project:%' ${spaceFilter}
+        GROUP BY DATE(pv.created_at)
         ORDER BY date
       `, [daysAgo.toISOString()]);
 
-      // Get top users by view count
+      // Get top users by view count, filtered by space
       const topUsers = await dbAll(`
         SELECT
           COALESCE(u.name, 'Anonymous') as user_name,
@@ -4196,7 +4197,9 @@ function createApp(dbPath) {
           COUNT(*) as view_count
         FROM page_views pv
         LEFT JOIN users u ON pv.user_id = u.id
-        WHERE pv.created_at >= ? AND pv.path LIKE 'Project:%'
+        LEFT JOIN projects p ON pv.path = 'Project: ' || p.name
+        LEFT JOIN portfolios po ON p.portfolio_id = po.id
+        WHERE pv.created_at >= ? AND pv.path LIKE 'Project:%' ${spaceFilter}
         GROUP BY pv.user_id, u.name, u.email
         ORDER BY view_count DESC
         LIMIT 10
@@ -4222,9 +4225,45 @@ function createApp(dbPath) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
-      const { days = 30 } = req.query;
+      const { days = 30, space_id } = req.query;
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - parseInt(days));
+
+      // Build space filter - only filter project-related tables
+      let spaceFilter = '';
+      if (space_id) {
+        spaceFilter = `
+          AND (
+            a.table_name NOT IN ('projects', 'metrics', 'metric_periods', 'comments')
+            OR (a.table_name = 'projects' AND a.entity_id IN (
+              SELECT p.id FROM projects p
+              LEFT JOIN portfolios po ON p.portfolio_id = po.id
+              WHERE po.space_id = ${parseInt(space_id)}
+            ))
+            OR (a.table_name = 'metrics' AND a.entity_id IN (
+              SELECT m.id FROM metrics m
+              LEFT JOIN projects p ON m.project_id = p.id
+              LEFT JOIN portfolios po ON p.portfolio_id = po.id
+              WHERE po.space_id = ${parseInt(space_id)}
+            ))
+            OR (a.table_name = 'metric_periods' AND a.entity_id IN (
+              SELECT mp.id FROM metric_periods mp
+              LEFT JOIN metrics m ON mp.metric_id = m.id
+              LEFT JOIN projects p ON m.project_id = p.id
+              LEFT JOIN portfolios po ON p.portfolio_id = po.id
+              WHERE po.space_id = ${parseInt(space_id)}
+            ))
+            OR (a.table_name = 'comments' AND a.entity_id IN (
+              SELECT c.id FROM comments c
+              LEFT JOIN metric_periods mp ON c.period_id = mp.id
+              LEFT JOIN metrics m ON mp.metric_id = m.id
+              LEFT JOIN projects p ON m.project_id = p.id
+              LEFT JOIN portfolios po ON p.portfolio_id = po.id
+              WHERE po.space_id = ${parseInt(space_id)}
+            ))
+          )
+        `;
+      }
 
       // Get activity counts by user and activity type
       const activityByUser = await dbAll(`
@@ -4236,7 +4275,7 @@ function createApp(dbPath) {
           COUNT(*) as count
         FROM audit_log a
         LEFT JOIN users u ON a.user_id = u.id
-        WHERE a.created_at >= ?
+        WHERE a.created_at >= ? ${spaceFilter}
         GROUP BY COALESCE(u.name, a.user_email, 'Unknown'), a.action, a.table_name
         ORDER BY user_name, count DESC
       `, [daysAgo.toISOString()]);
@@ -4249,7 +4288,7 @@ function createApp(dbPath) {
           COUNT(*) as total_activity
         FROM audit_log a
         LEFT JOIN users u ON a.user_id = u.id
-        WHERE a.created_at >= ?
+        WHERE a.created_at >= ? ${spaceFilter}
         GROUP BY COALESCE(u.name, a.user_email, 'Unknown')
         ORDER BY total_activity DESC
       `, [daysAgo.toISOString()]);
@@ -4262,7 +4301,7 @@ function createApp(dbPath) {
           COUNT(*) as count
         FROM audit_log a
         LEFT JOIN users u ON a.user_id = u.id
-        WHERE a.created_at >= ?
+        WHERE a.created_at >= ? ${spaceFilter}
         GROUP BY DATE(a.created_at), COALESCE(u.name, a.user_email, 'Unknown')
         ORDER BY date DESC
       `, [daysAgo.toISOString()]);
@@ -4926,18 +4965,20 @@ function createApp(dbPath) {
   async function runMigrations() {
     // Migration: Add role column if it doesn't exist
     try {
-      await dbRun(`ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'viewer'`);
+      await dbRun(`ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'pm'`);
       console.log('✅ Added role column to users table');
     } catch (err) {
       // Column already exists, that's fine
     }
-  
+
     // Migration: Clean up invalid roles and convert to valid ones
     try {
       // Convert 'editor' to 'pm' (Project Manager is the closest equivalent)
       await dbRun(`UPDATE users SET role = 'pm' WHERE role = 'editor'`);
-      // Set any null or empty roles to 'viewer'
-      await dbRun(`UPDATE users SET role = 'viewer' WHERE role IS NULL OR role = ''`);
+      // Convert 'viewer' to 'pm' (viewer role removed - all users can view everything)
+      await dbRun(`UPDATE users SET role = 'pm' WHERE role = 'viewer'`);
+      // Set any null or empty roles to 'pm'
+      await dbRun(`UPDATE users SET role = 'pm' WHERE role IS NULL OR role = ''`);
       console.log('✅ Cleaned up user roles');
     } catch (err) {
       console.error('Error updating user roles:', err);
