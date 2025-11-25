@@ -867,6 +867,31 @@ html.dark-mode .quadrant-content {
   margin-bottom: 0;
 }
 
+.tips-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 16px;
+  color: #00aeef;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.tips-link-btn:hover {
+  color: #0095d1;
+  text-decoration: underline;
+}
+
+.tips-link-btn .step-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
 /* Dark Mode Styles */
 :root.dark-mode .home-page {
   background-color: transparent;
@@ -1099,6 +1124,14 @@ html.dark-mode .quadrant-content {
 
 :root.dark-mode .getting-started .step-icon {
   color: #00aeef;
+}
+
+:root.dark-mode .tips-link-btn {
+  color: #00aeef;
+}
+
+:root.dark-mode .tips-link-btn:hover {
+  color: #60d0ff;
 }
 
 :root.dark-mode .empty-state p {
@@ -1537,6 +1570,237 @@ html.dark-mode .quadrant-content {
   line-height: 1.6;
 }
 
+/* Tips Modal - Grouped layout */
+.tips-grouped {
+  max-height: 70vh;
+}
+
+.tips-category {
+  margin-bottom: 24px;
+}
+
+.tips-category:last-child {
+  margin-bottom: 0;
+}
+
+.tips-category-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #003c71;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #00aeef;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tips-category-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tips-category-items .modal-tip-item {
+  padding: 12px;
+  margin-bottom: 0;
+}
+
+.tips-category-items .tip-icon-wrapper {
+  font-size: 24px;
+}
+
+.tips-category-items .tip-title {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.tips-category-items .tip-description {
+  font-size: 13px;
+}
+
+/* Tabbed Tips Modal */
+.tips-modal-tabbed {
+  max-width: 1100px !important;
+  width: 95% !important;
+  max-height: 80vh;
+}
+
+.tips-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 24px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+}
+
+.tips-tab {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tips-tab:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.tips-tab.active {
+  background: #00aeef;
+  border-color: #00aeef;
+  color: white;
+}
+
+.tips-tabbed-content {
+  padding: 24px;
+  min-height: 300px;
+}
+
+.tips-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.modal-tip-card {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.modal-tip-card:hover {
+  background: #f0f9ff;
+  border-color: #00aeef;
+}
+
+.modal-tip-card .tip-icon-wrapper {
+  font-size: 24px;
+  color: #00aeef;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.modal-tip-card .tip-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+}
+
+.modal-tip-card .tip-description {
+  font-size: 13px;
+  color: #4b5563;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.tips-select-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 250px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.tips-select-prompt .prompt-icon {
+  font-size: 48px;
+  color: #d1d5db;
+  margin-bottom: 12px;
+}
+
+.tips-select-prompt p {
+  font-size: 16px;
+  margin: 0;
+  color: #6b7280;
+}
+
+/* Responsive for tabbed tips */
+@media (max-width: 768px) {
+  .tips-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tips-tabs {
+    padding: 8px 16px;
+  }
+
+  .tips-tab {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Dark mode for tabbed tips */
+:root.dark-mode .tips-tabs {
+  background: #111827;
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .tips-tab {
+  background: #1f2937;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:root.dark-mode .tips-tab:hover {
+  background: #374151;
+  border-color: #6b7280;
+}
+
+:root.dark-mode .tips-tab.active {
+  background: #00aeef;
+  border-color: #00aeef;
+  color: white;
+}
+
+:root.dark-mode .modal-tip-card {
+  background: #111827;
+  border-color: #374151;
+}
+
+:root.dark-mode .modal-tip-card:hover {
+  background: #1f2937;
+  border-color: #00aeef;
+}
+
+:root.dark-mode .modal-tip-card .tip-title {
+  color: #f9fafb;
+}
+
+:root.dark-mode .modal-tip-card .tip-description {
+  color: #d1d5db;
+}
+
+:root.dark-mode .tips-select-prompt {
+  color: #6b7280;
+}
+
+:root.dark-mode .tips-select-prompt .prompt-icon {
+  color: #4b5563;
+}
+
+:root.dark-mode .tips-select-prompt p {
+  color: #9ca3af;
+}
+
 /* What's New Modal */
 .whats-new-item {
   display: flex;
@@ -1818,6 +2082,11 @@ html.dark-mode .quadrant-content {
 
 :root.dark-mode .tip-description {
   color: #d1d5db;
+}
+
+:root.dark-mode .tips-category-title {
+  color: #e0f2fe;
+  border-bottom-color: #00aeef;
 }
 
 :root.dark-mode .whats-new-item {
