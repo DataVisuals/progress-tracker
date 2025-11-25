@@ -4252,25 +4252,25 @@ function createApp(dbPath) {
         spaceFilter = `
           AND (
             a.table_name NOT IN ('projects', 'metrics', 'metric_periods', 'comments')
-            OR (a.table_name = 'projects' AND a.entity_id IN (
+            OR (a.table_name = 'projects' AND a.record_id IN (
               SELECT p.id FROM projects p
               LEFT JOIN portfolios po ON p.portfolio_id = po.id
               WHERE po.space_id = ${parseInt(space_id)}
             ))
-            OR (a.table_name = 'metrics' AND a.entity_id IN (
+            OR (a.table_name = 'metrics' AND a.record_id IN (
               SELECT m.id FROM metrics m
               LEFT JOIN projects p ON m.project_id = p.id
               LEFT JOIN portfolios po ON p.portfolio_id = po.id
               WHERE po.space_id = ${parseInt(space_id)}
             ))
-            OR (a.table_name = 'metric_periods' AND a.entity_id IN (
+            OR (a.table_name = 'metric_periods' AND a.record_id IN (
               SELECT mp.id FROM metric_periods mp
               LEFT JOIN metrics m ON mp.metric_id = m.id
               LEFT JOIN projects p ON m.project_id = p.id
               LEFT JOIN portfolios po ON p.portfolio_id = po.id
               WHERE po.space_id = ${parseInt(space_id)}
             ))
-            OR (a.table_name = 'comments' AND a.entity_id IN (
+            OR (a.table_name = 'comments' AND a.record_id IN (
               SELECT c.id FROM comments c
               LEFT JOIN metric_periods mp ON c.period_id = mp.id
               LEFT JOIN metrics m ON mp.metric_id = m.id
