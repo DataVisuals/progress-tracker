@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Select from 'react-select';
 import {
   MdComment,
@@ -36,7 +36,7 @@ import {
   MdBugReport
 } from 'react-icons/md';
 import { api } from '../api/client';
-import { selectStyles } from './SelectStyles';
+import { smallSelectStyles } from './SelectStyles';
 import './HomePage.css';
 import './MetricTabs.css';
 
@@ -59,7 +59,8 @@ const HomePage = ({
   const [recentCommentary, setRecentCommentary] = useState([]);
   const [atRiskMetrics, setAtRiskMetrics] = useState([]);
   const [ragFilter, setRagFilter] = useState('all'); // 'all', 'red', 'amber'
-  const [portfolioFilter, setPortfolioFilter] = useState('all'); // 'all' or portfolio_id
+  const [portfolioFilter, setPortfolioFilter] = useState('all'); // 'all' or portfolio_id for metrics
+  const [commentaryPortfolioFilter, setCommentaryPortfolioFilter] = useState('all'); // 'all' or portfolio_id for commentary
   const [randomTips, setRandomTips] = useState([]);
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -876,6 +877,25 @@ const HomePage = ({
     filteredMetrics = filteredMetrics.filter(m => m.portfolioId === parseInt(portfolioFilter));
   }
 
+  // Get unique portfolios from commentary for filter dropdown
+  const portfoliosInCommentary = useMemo(() => {
+    const portfolioMap = new Map();
+    recentCommentary.forEach(comment => {
+      if (comment.portfolioId && !portfolioMap.has(comment.portfolioId)) {
+        portfolioMap.set(comment.portfolioId, {
+          id: comment.portfolioId,
+          name: comment.portfolioName || 'No Portfolio'
+        });
+      }
+    });
+    return Array.from(portfolioMap.values());
+  }, [recentCommentary]);
+
+  // Filter commentary based on portfolio filter
+  const filteredCommentary = commentaryPortfolioFilter === 'all'
+    ? recentCommentary
+    : recentCommentary.filter(c => c.portfolioId === parseInt(commentaryPortfolioFilter));
+
   // Calculate space-filtered at-risk metrics for stats
   const spaceFilteredAtRisk = selectedSpace !== 'all' && hasSpaceIds
     ? atRiskMetrics.filter(m => {
@@ -1014,7 +1034,7 @@ const HomePage = ({
               {portfoliosInMetrics.length > 1 && (
                 <Select
                   className="portfolio-filter-dropdown"
-                  styles={selectStyles}
+                  styles={smallSelectStyles}
                   value={
                     portfolioFilter === 'all'
                       ? { value: 'all', label: 'All Portfolios' }
@@ -1124,27 +1144,52 @@ const HomePage = ({
           <div className="quadrant-header">
             <MdComment className="quadrant-icon" />
             <h2>Recent Commentary</h2>
+            {portfoliosInCommentary.length > 1 && (
+              <Select
+                className="portfolio-filter-dropdown"
+                styles={smallSelectStyles}
+                value={
+                  commentaryPortfolioFilter === 'all'
+                    ? { value: 'all', label: 'All Portfolios' }
+                    : portfoliosInCommentary.find(p => p.id === parseInt(commentaryPortfolioFilter))
+                      ? { value: portfoliosInCommentary.find(p => p.id === parseInt(commentaryPortfolioFilter)).id, label: portfoliosInCommentary.find(p => p.id === parseInt(commentaryPortfolioFilter)).name }
+                      : { value: 'all', label: 'All Portfolios' }
+                }
+                onChange={(option) => setCommentaryPortfolioFilter(option.value.toString())}
+                options={[
+                  { value: 'all', label: 'All Portfolios' },
+                  ...portfoliosInCommentary.map(portfolio => ({
+                    value: portfolio.id,
+                    label: portfolio.name
+                  }))
+                ]}
+                menuPortalTarget={document.body}
+                isSearchable={false}
+              />
+            )}
           </div>
           <div className="quadrant-content">
             {loading ? (
               <div className="loading-state">Loading...</div>
-            ) : recentCommentary.length === 0 ? (
+            ) : filteredCommentary.length === 0 ? (
               <div className="empty-state">
                 <MdComment className="empty-icon" />
                 <p>No recent commentary</p>
                 <span>
                   No commentary for{' '}
-                  {selectedSpace === 'all'
-                    ? 'All Spaces'
-                    : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space'}
+                  {commentaryPortfolioFilter === 'all'
+                    ? (selectedSpace === 'all'
+                        ? 'All Spaces'
+                        : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space')
+                    : portfoliosInCommentary.find(p => p.id === parseInt(commentaryPortfolioFilter))?.name || 'selected portfolio'}
                 </span>
               </div>
             ) : (
               <div className="commentary-list">
-                {recentCommentary.map((item, index) => {
+                {filteredCommentary.map((item, index) => {
                   // Show portfolio header if this is the first comment in the portfolio
                   const showPortfolioHeader = index === 0 ||
-                    item.portfolioName !== recentCommentary[index - 1].portfolioName;
+                    item.portfolioName !== filteredCommentary[index - 1].portfolioName;
 
                   return (
                     <React.Fragment key={index}>
