@@ -93,10 +93,12 @@ function App() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
+    let parsedUser = null;
     if (token && userStr) {
       try {
+        parsedUser = JSON.parse(userStr);
         setIsAuthenticated(true);
-        setCurrentUser(JSON.parse(userStr));
+        setCurrentUser(parsedUser);
       } catch (err) {
         console.error('Failed to parse user from localStorage:', err);
         // Clean up corrupted data and log out
@@ -106,7 +108,7 @@ function App() {
         setCurrentUser(null);
       }
     }
-    loadSpaces();
+    loadSpaces(parsedUser);
     loadPortfolios();
     // Note: Don't call loadProjects() here - let the selectedPortfolio useEffect handle it
 
@@ -209,7 +211,7 @@ function App() {
     }
   }, [projectMetrics]);
 
-  const loadSpaces = async () => {
+  const loadSpaces = async (user = null) => {
     try {
       const response = await api.getSpaces();
       const loadedSpaces = response.data || [];
@@ -221,11 +223,14 @@ function App() {
         return; // Exit early, no need to check for default space
       }
 
+      // Use passed user or fall back to currentUser state
+      const userToCheck = user || currentUser;
+
       // Only set default space if it exists in loaded spaces
-      if (currentUser && currentUser.default_space_id) {
-        const spaceExists = loadedSpaces.some(s => s.id === currentUser.default_space_id);
+      if (userToCheck && userToCheck.default_space_id) {
+        const spaceExists = loadedSpaces.some(s => s.id === userToCheck.default_space_id);
         if (spaceExists) {
-          setSelectedSpace(currentUser.default_space_id.toString());
+          setSelectedSpace(userToCheck.default_space_id.toString());
         }
       }
     } catch (err) {
@@ -937,6 +942,10 @@ function App() {
                 if (currentUser && spaceId !== 'all') {
                   try {
                     await api.updateDefaultSpace(parseInt(spaceId));
+                    // Update currentUser state and localStorage
+                    const updatedUser = { ...currentUser, default_space_id: parseInt(spaceId) };
+                    setCurrentUser(updatedUser);
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
                   } catch (err) {
                     console.error('Could not save default space:', err);
                   }

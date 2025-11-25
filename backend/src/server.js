@@ -225,7 +225,7 @@ function createApp(dbPath) {
       logger.auth.loginSuccess(user, req.ip);
   
       const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
-      res.json({ token, user: { id: user.id, userId: user.id, email: user.email, name: user.name, role: user.role } });
+      res.json({ token, user: { id: user.id, userId: user.id, email: user.email, name: user.name, role: user.role, default_space_id: user.default_space_id } });
     } catch (err) {
       logger.error('AUTH', 'Login error', { error: err.message, stack: err.stack });
       res.status(500).json({ error: err.message });
@@ -340,12 +340,12 @@ function createApp(dbPath) {
   app.get('/api/auth/profile', authenticateToken, async (req, res) => {
     try {
       const userId = req.user.userId;
-      const user = await dbGet('SELECT id, email, name, role, created_at FROM users WHERE id = ?', [userId]);
-  
+      const user = await dbGet('SELECT id, email, name, role, created_at, default_space_id FROM users WHERE id = ?', [userId]);
+
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
-  
+
       res.json(user);
     } catch (err) {
       res.status(500).json({ error: err.message });
