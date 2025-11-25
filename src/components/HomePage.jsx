@@ -487,9 +487,22 @@ const HomePage = ({
       }, {});
 
       // Convert to array and sort portfolios alphabetically
-      const sortedAtRiskMetrics = Object.entries(groupedByPortfolio)
+      let sortedAtRiskMetrics = Object.entries(groupedByPortfolio)
         .sort(([a], [b]) => a.localeCompare(b))
         .flatMap(([portfolio, metrics]) => metrics);
+
+      // Filter by selected space (defensive: only if portfolios have space_id)
+      if (selectedSpace && selectedSpace !== 'all' && portfolios && portfolios.length > 0) {
+        const hasSpaceIds = portfolios.some(p => p.space_id !== undefined);
+        if (hasSpaceIds) {
+          const spacePortfolioIds = portfolios
+            .filter(p => p.space_id === parseInt(selectedSpace))
+            .map(p => p.id);
+          sortedAtRiskMetrics = sortedAtRiskMetrics.filter(metric =>
+            !metric.portfolioId || spacePortfolioIds.includes(metric.portfolioId)
+          );
+        }
+      }
 
       console.log('At-risk metrics found:', sortedAtRiskMetrics.length, '(red:', sortedAtRiskMetrics.filter(m => m.ragStatus === 'red').length, ', amber:', sortedAtRiskMetrics.filter(m => m.ragStatus === 'amber').length, ')');
       setAtRiskMetrics(sortedAtRiskMetrics);
@@ -650,8 +663,19 @@ const HomePage = ({
     return date.toLocaleDateString();
   };
 
-  const projectCount = Object.keys(projects).length;
-  const metricCount = Object.values(projectsData).reduce((sum, data) => {
+  // Filter projects by space
+  const hasSpaceIds = portfolios && portfolios.length > 0 && portfolios.some(p => p.space_id !== undefined);
+  const filteredProjects = Object.entries(projects).filter(([id, project]) => {
+    if (selectedSpace === 'all' || !hasSpaceIds) return true;
+    const portfolio = portfolios.find(p => p.id === project.portfolio_id);
+    return portfolio && portfolio.space_id === parseInt(selectedSpace);
+  });
+
+  const projectCount = filteredProjects.length;
+
+  // Calculate metric count from filtered projects only
+  const metricCount = filteredProjects.reduce((sum, [id, project]) => {
+    const data = projectsData[id];
     if (!Array.isArray(data)) return sum;
     const metrics = new Set(data.map(d => d.metric));
     return sum + metrics.size;
@@ -660,7 +684,6 @@ const HomePage = ({
 
   // Get unique portfolios from at-risk metrics, filtered by space
   const portfolioMap = new Map();
-  const hasSpaceIds = portfolios && portfolios.length > 0 && portfolios.some(p => p.space_id !== undefined);
 
   atRiskMetrics.forEach(m => {
     if (m.portfolioId && !portfolioMap.has(m.portfolioId)) {
@@ -703,8 +726,16 @@ const HomePage = ({
     filteredMetrics = filteredMetrics.filter(m => m.portfolioId === parseInt(portfolioFilter));
   }
 
-  const redCount = atRiskMetrics.filter(m => m.ragStatus === 'red').length;
-  const amberCount = atRiskMetrics.filter(m => m.ragStatus === 'amber').length;
+  // Calculate space-filtered at-risk metrics for stats
+  const spaceFilteredAtRisk = selectedSpace !== 'all' && hasSpaceIds
+    ? atRiskMetrics.filter(m => {
+        const portfolio = portfolios.find(p => p.id === m.portfolioId);
+        return portfolio && portfolio.space_id === parseInt(selectedSpace);
+      })
+    : atRiskMetrics;
+
+  const redCount = spaceFilteredAtRisk.filter(m => m.ragStatus === 'red').length;
+  const amberCount = spaceFilteredAtRisk.filter(m => m.ragStatus === 'amber').length;
 
   return (
     <div className="home-page">
@@ -727,11 +758,11 @@ const HomePage = ({
             <span className="stat-label">Metrics</span>
           </div>
           <div className="stat-item">
-            <span className="stat-value green">{metricCount - atRiskMetrics.length}</span>
+            <span className="stat-value green">{metricCount - spaceFilteredAtRisk.length}</span>
             <span className="stat-label">On Track</span>
           </div>
           <div className="stat-item">
-            <span className="stat-value red">{atRiskMetrics.length}</span>
+            <span className="stat-value red">{spaceFilteredAtRisk.length}</span>
             <span className="stat-label">At Risk</span>
           </div>
         </div>

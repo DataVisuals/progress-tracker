@@ -3,7 +3,7 @@ import { api } from '../api/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import './PageHeatmapReport.css';
 
-const PageHeatmapReport = ({ onClose }) => {
+const PageHeatmapReport = ({ onClose, selectedSpace = 'all', spaces = [] }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,13 +11,14 @@ const PageHeatmapReport = ({ onClose }) => {
 
   useEffect(() => {
     loadData();
-  }, [days]);
+  }, [days, selectedSpace]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get(`/admin/page-heatmap?days=${days}`);
+      const spaceParam = selectedSpace !== 'all' ? `&space_id=${selectedSpace}` : '';
+      const response = await api.get(`/admin/page-heatmap?days=${days}${spaceParam}`);
       setData(response.data);
     } catch (err) {
       console.error('Failed to load page heatmap:', err);

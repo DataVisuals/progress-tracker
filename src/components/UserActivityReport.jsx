@@ -3,7 +3,7 @@ import { api } from '../api/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './UserActivityReport.css';
 
-const UserActivityReport = ({ onClose }) => {
+const UserActivityReport = ({ onClose, selectedSpace = 'all', spaces = [] }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -12,13 +12,14 @@ const UserActivityReport = ({ onClose }) => {
 
   useEffect(() => {
     loadData();
-  }, [days]);
+  }, [days, selectedSpace]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get(`/admin/user-activity?days=${days}`);
+      const spaceParam = selectedSpace !== 'all' ? `&space_id=${selectedSpace}` : '';
+      const response = await api.get(`/admin/user-activity?days=${days}${spaceParam}`);
       setData(response.data);
     } catch (err) {
       console.error('Failed to load user activity:', err);

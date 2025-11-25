@@ -1486,11 +1486,19 @@ function App() {
       )}
 
       {showUserActivity && (
-        <UserActivityReport onClose={() => setShowUserActivity(false)} />
+        <UserActivityReport
+          onClose={() => setShowUserActivity(false)}
+          selectedSpace={selectedSpace}
+          spaces={spaces}
+        />
       )}
 
       {showPageHeatmap && (
-        <PageHeatmapReport onClose={() => setShowPageHeatmap(false)} />
+        <PageHeatmapReport
+          onClose={() => setShowPageHeatmap(false)}
+          selectedSpace={selectedSpace}
+          spaces={spaces}
+        />
       )}
 
       {showNewProject && (
