@@ -904,14 +904,14 @@ function App() {
   const isPMOrHigher = () => currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm');
   const canEdit = () => currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm' || currentUser.role === 'editor');
 
-  // Get emails for a space (admin only)
-  const handleGetSpaceEmails = async (spaceId) => {
+  // Get all PM emails (admin only)
+  const handleGetAllEmails = async () => {
     try {
-      const response = await api.get(`/admin/space-emails/${spaceId}`);
+      const response = await api.get('/admin/space-emails/all');
       setSpaceEmailsData(response.data);
       setShowSpaceEmails(true);
     } catch (err) {
-      console.error('Failed to get space emails:', err);
+      console.error('Failed to get emails:', err);
       alert('Failed to get emails: ' + (err.response?.data?.error || err.message));
     }
   };
@@ -967,7 +967,6 @@ function App() {
                 }
               }}
               onManageSpaces={isAdmin() ? () => setShowSpaceManager(true) : null}
-              onGetEmails={isAdmin() ? handleGetSpaceEmails : null}
             />
             <PortfolioSelector
               key={`portfolio-${portfolios.length}-${selectedSpace}`} // Force re-render when portfolios or space changes
@@ -1060,6 +1059,9 @@ function App() {
                     </button>
                     <button onMouseDown={() => { setShowPageHeatmap(true); setShowAdminDropdown(false); }}>
                       Page Heatmap
+                    </button>
+                    <button onMouseDown={() => { handleGetAllEmails(); setShowAdminDropdown(false); }}>
+                      Get All Emails
                     </button>
                   </div>
                 )}
@@ -1649,14 +1651,12 @@ function App() {
         <div className="modal-overlay" onClick={() => setShowSpaceEmails(false)}>
           <div className="modal-content emails-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Email Addresses ({spaceEmailsData.count})</h2>
+              <h2>All Project Manager Emails ({spaceEmailsData.count})</h2>
               <button className="close-btn" onClick={() => setShowSpaceEmails(false)}>×</button>
             </div>
             <div className="modal-body">
               <p className="emails-description">
-                {selectedSpace === 'all'
-                  ? 'Project managers across all spaces:'
-                  : `Project managers in ${spaces.find(s => s.id === Number(selectedSpace))?.name || 'selected space'}:`}
+                All project managers with assigned projects:
               </p>
               <textarea
                 className="emails-textarea"
