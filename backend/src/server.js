@@ -2282,7 +2282,159 @@ function createApp(dbPath) {
       res.status(500).json({ error: err.message });
     }
   });
-  
+
+  // ===== PROJECT DEPENDENCIES =====
+  // Get all dependencies for a project (with RAG status of dependent projects)
+  app.get('/api/projects/:projectId/dependencies', async (req, res) => {
+    try {
+      const dependencies = await dbAll(`
+        SELECT
+          pd.id,
+          pd.depends_on_project_id,
+          p.name as project_name,
+          p.description as project_description,
+          p.portfolio_id,
+          pf.name as portfolio_name,
+          pf.color as portfolio_color
+        FROM project_dependencies pd
+        JOIN projects p ON pd.depends_on_project_id = p.id
+        LEFT JOIN portfolios pf ON p.portfolio_id = pf.id
+        WHERE pd.project_id = ?
+        ORDER BY p.name
+      `, [req.params.projectId]);
+
+      // Calculate RAG status for each dependent project
+      const dependenciesWithStatus = await Promise.all(dependencies.map(async (dep) => {
+        // Get the latest period for each metric in the dependent project
+        const metrics = await dbAll(`
+          SELECT
+            m.id,
+            m.name,
+            m.amber_tolerance,
+            m.red_tolerance,
+            mp.expected,
+            mp.complete,
+            mp.reporting_date
+          FROM metrics m
+          LEFT JOIN metric_periods mp ON m.id = mp.metric_id
+          WHERE m.project_id = ?
+          AND mp.reporting_date <= date('now')
+          ORDER BY mp.reporting_date DESC
+        `, [dep.depends_on_project_id]);
+
+        // Get unique metrics with their latest period
+        const latestByMetric = {};
+        for (const m of metrics) {
+          if (!latestByMetric[m.id]) {
+            latestByMetric[m.id] = m;
+          }
+        }
+
+        // Calculate overall RAG - worst status wins
+        let overallStatus = 'green';
+        for (const metric of Object.values(latestByMetric)) {
+          if (metric.expected > 0) {
+            const variance = ((metric.expected - metric.complete) / metric.expected) * 100;
+            if (variance >= metric.red_tolerance) {
+              overallStatus = 'red';
+              break;
+            } else if (variance >= metric.amber_tolerance && overallStatus !== 'red') {
+              overallStatus = 'amber';
+            }
+          }
+        }
+
+        return {
+          ...dep,
+          rag_status: overallStatus,
+          metric_count: Object.keys(latestByMetric).length
+        };
+      }));
+
+      res.json(dependenciesWithStatus);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Add a dependency to a project
+  app.post('/api/projects/:projectId/dependencies', authenticateToken, async (req, res) => {
+    try {
+      // Check if user can edit this project (PM or higher)
+      if (!(await canEditProject(req.user.userId, req.params.projectId))) {
+        return res.status(403).json({ error: 'You do not have permission to add dependencies to this project' });
+      }
+
+      const { depends_on_project_id } = req.body;
+
+      if (!depends_on_project_id) {
+        return res.status(400).json({ error: 'depends_on_project_id is required' });
+      }
+
+      // Prevent self-dependency
+      if (parseInt(depends_on_project_id) === parseInt(req.params.projectId)) {
+        return res.status(400).json({ error: 'A project cannot depend on itself' });
+      }
+
+      // Check if the target project exists
+      const targetProject = await dbGet('SELECT id, name FROM projects WHERE id = ?', [depends_on_project_id]);
+      if (!targetProject) {
+        return res.status(404).json({ error: 'Target project not found' });
+      }
+
+      const result = await dbRun(
+        'INSERT INTO project_dependencies (project_id, depends_on_project_id, created_by) VALUES (?, ?, ?)',
+        [req.params.projectId, depends_on_project_id, req.user.userId]
+      );
+
+      await logAudit(req.user, 'CREATE', 'project_dependencies', result.lastID,
+        null,
+        { project_id: req.params.projectId, depends_on_project_id },
+        `Added dependency on project "${targetProject.name}"`,
+        req.ip
+      );
+
+      res.json({ success: true, id: result.lastID });
+    } catch (err) {
+      if (err.message.includes('UNIQUE constraint failed')) {
+        return res.status(400).json({ error: 'This dependency already exists' });
+      }
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Remove a dependency from a project
+  app.delete('/api/projects/:projectId/dependencies/:dependencyId', authenticateToken, async (req, res) => {
+    try {
+      const dependency = await dbGet(
+        'SELECT pd.*, p.name as target_project_name FROM project_dependencies pd JOIN projects p ON pd.depends_on_project_id = p.id WHERE pd.id = ? AND pd.project_id = ?',
+        [req.params.dependencyId, req.params.projectId]
+      );
+
+      if (!dependency) {
+        return res.status(404).json({ error: 'Dependency not found' });
+      }
+
+      // Check if user can edit this project
+      if (!(await canEditProject(req.user.userId, req.params.projectId))) {
+        return res.status(403).json({ error: 'You do not have permission to remove dependencies from this project' });
+      }
+
+      await dbRun('DELETE FROM project_dependencies WHERE id = ?', [req.params.dependencyId]);
+
+      await logAudit(req.user, 'DELETE', 'project_dependencies', req.params.dependencyId,
+        { project_id: req.params.projectId, depends_on_project_id: dependency.depends_on_project_id },
+        null,
+        `Removed dependency on project "${dependency.target_project_name}"`,
+        req.ip
+      );
+
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== METRICS =====
   app.get('/api/projects/:projectId/metrics', async (req, res) => {
     try {
@@ -4452,12 +4604,18 @@ function createApp(dbPath) {
       const periodStates = {};
   
       // First pass: Find CREATE entries to establish initial state
-      allAuditLogs.forEach(log => {
+      (allAuditLogs || []).forEach(log => {
         if (log.action === 'CREATE') {
           const recordId = log.record_id;
-          const newValues = JSON.parse(log.new_values || '{}');
+          let newValues = {};
+          try {
+            newValues = JSON.parse(log.new_values || '{}');
+          } catch (e) {
+            console.error('Invalid JSON in new_values for audit log:', log.id);
+            return;
+          }
           const createdAt = new Date(log.created_at);
-  
+
           if (metricIds.includes(newValues.metric_id)) {
             periodStates[recordId] = {
               id: recordId,
@@ -4476,7 +4634,7 @@ function createApp(dbPath) {
   
       // For periods without CREATE audit entries, we need to work backwards from current state
       // Start with current values and reverse-apply changes that happened after target date
-      periods.forEach(period => {
+      (periods || []).forEach(period => {
         if (!periodStates[period.id]) {
           periodStates[period.id] = {
             id: period.id,
@@ -4496,7 +4654,7 @@ function createApp(dbPath) {
       // For periods WITHOUT CREATE entries: reverse changes AFTER target date (backward replay)
 
       // Forward replay for periods with CREATE entries
-      const auditLogsBeforeTarget = allAuditLogs.filter(log =>
+      const auditLogsBeforeTarget = (allAuditLogs || []).filter(log =>
         new Date(log.created_at) <= targetDate
       );
 
@@ -4507,7 +4665,13 @@ function createApp(dbPath) {
           return; // Already handled
         } else if (log.action === 'UPDATE') {
           if (periodStates[recordId] && periodStates[recordId].hasCreateEntry) {
-            const newValues = JSON.parse(log.new_values || '{}');
+            let newValues = {};
+            try {
+              newValues = JSON.parse(log.new_values || '{}');
+            } catch (e) {
+              console.error('Invalid JSON in new_values for audit log:', log.id);
+              return;
+            }
             const periodReportingDate = new Date(periodStates[recordId].reporting_date);
 
             if (newValues.complete !== undefined && periodReportingDate <= targetDate) {
@@ -4532,7 +4696,7 @@ function createApp(dbPath) {
 
       // Backward replay for periods WITHOUT CREATE entries
       // Get updates AFTER target date in reverse order and apply old_values
-      const auditLogsAfterTarget = allAuditLogs
+      const auditLogsAfterTarget = (allAuditLogs || [])
         .filter(log => new Date(log.created_at) > targetDate)
         .reverse(); // Process in reverse chronological order
 
@@ -4541,7 +4705,13 @@ function createApp(dbPath) {
 
         if (log.action === 'UPDATE') {
           if (periodStates[recordId] && !periodStates[recordId].hasCreateEntry) {
-            const oldValues = JSON.parse(log.old_values || '{}');
+            let oldValues = {};
+            try {
+              oldValues = JSON.parse(log.old_values || '{}');
+            } catch (e) {
+              console.error('Invalid JSON in old_values for audit log:', log.id);
+              return;
+            }
 
             // Restore old values (reversing the change)
             if (oldValues.complete !== undefined) {
@@ -4668,12 +4838,18 @@ function createApp(dbPath) {
       const periodStates = {};
   
       // First pass: Find CREATE entries
-      allAuditLogs.forEach(log => {
+      (allAuditLogs || []).forEach(log => {
         if (log.action === 'CREATE') {
           const recordId = log.record_id;
-          const newValues = JSON.parse(log.new_values || '{}');
+          let newValues = {};
+          try {
+            newValues = JSON.parse(log.new_values || '{}');
+          } catch (e) {
+            console.error('Invalid JSON in new_values for audit log:', log.id);
+            return;
+          }
           const createdAt = new Date(log.created_at);
-  
+
           if (metricIds.includes(newValues.metric_id)) {
             periodStates[recordId] = {
               id: recordId,
@@ -4687,9 +4863,9 @@ function createApp(dbPath) {
           }
         }
       });
-  
+
       // Add current periods that don't have CREATE audit entries
-      currentPeriods.forEach(period => {
+      (currentPeriods || []).forEach(period => {
         if (!periodStates[period.id]) {
           periodStates[period.id] = {
             id: period.id,
@@ -4704,18 +4880,24 @@ function createApp(dbPath) {
       });
   
       // Second pass: Apply UPDATE/DELETE entries up to target timestamp
-      const relevantLogs = allAuditLogs.filter(log =>
+      const relevantLogs = (allAuditLogs || []).filter(log =>
         new Date(log.created_at) <= targetDate
       );
-  
+
       relevantLogs.forEach(log => {
         const recordId = log.record_id;
-  
+
         if (log.action === 'CREATE') {
           return; // Already handled
         } else if (log.action === 'UPDATE') {
           if (periodStates[recordId]) {
-            const newValues = JSON.parse(log.new_values || '{}');
+            let newValues = {};
+            try {
+              newValues = JSON.parse(log.new_values || '{}');
+            } catch (e) {
+              console.error('Invalid JSON in new_values for audit log:', log.id);
+              return;
+            }
             const periodReportingDate = new Date(periodStates[recordId].reporting_date);
   
             if (newValues.complete !== undefined && periodReportingDate <= targetDate) {
@@ -5417,6 +5599,35 @@ function createApp(dbPath) {
       }
     } catch (err) {
       // Space already exists, that's fine
+    }
+
+    // Migration: Create project_dependencies table
+    try {
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS project_dependencies (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          project_id INTEGER NOT NULL,
+          depends_on_project_id INTEGER NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          created_by INTEGER,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+          FOREIGN KEY (depends_on_project_id) REFERENCES projects(id) ON DELETE CASCADE,
+          FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+          UNIQUE(project_id, depends_on_project_id)
+        )
+      `);
+      console.log('✅ Created project_dependencies table');
+    } catch (err) {
+      // Table already exists or other error
+    }
+
+    // Migration: Create index for project_dependencies
+    try {
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_project_dependencies_project ON project_dependencies(project_id)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_project_dependencies_depends_on ON project_dependencies(depends_on_project_id)`);
+      console.log('✅ Created indexes for project_dependencies');
+    } catch (err) {
+      // Indexes already exist, that's fine
     }
 
     // Create default admin user if none exists
