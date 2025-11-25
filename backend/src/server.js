@@ -4467,13 +4467,15 @@ function createApp(dbPath) {
               target: newValues.target || 0,
               // Only use complete from CREATE if period was created before time travel date
               complete: createdAt <= targetDate ? (newValues.complete || 0) : 0,
-              commentary: createdAt <= targetDate ? (newValues.commentary || null) : null
+              commentary: createdAt <= targetDate ? (newValues.commentary || null) : null,
+              hasCreateEntry: true
             };
           }
         }
       });
   
-      // Add any current periods that don't have CREATE audit entries (shouldn't happen but handle it)
+      // For periods without CREATE audit entries, we need to work backwards from current state
+      // Start with current values and reverse-apply changes that happened after target date
       periods.forEach(period => {
         if (!periodStates[period.id]) {
           periodStates[period.id] = {
@@ -4482,55 +4484,93 @@ function createApp(dbPath) {
             reporting_date: period.reporting_date,
             expected: period.expected,
             target: period.target,
-            complete: 0,
-            commentary: null
+            complete: period.complete || 0,
+            commentary: period.commentary || null,
+            hasCreateEntry: false
           };
         }
       });
   
-      // Second pass: Apply UPDATE/DELETE entries up to target timestamp
-      const auditLogs = allAuditLogs.filter(log =>
+      // Second pass: Apply UPDATE/DELETE entries
+      // For periods WITH CREATE entries: apply changes UP TO target date (forward replay)
+      // For periods WITHOUT CREATE entries: reverse changes AFTER target date (backward replay)
+
+      // Forward replay for periods with CREATE entries
+      const auditLogsBeforeTarget = allAuditLogs.filter(log =>
         new Date(log.created_at) <= targetDate
       );
-  
-      // Replay audit log to reconstruct historical state
-      auditLogs.forEach(log => {
+
+      auditLogsBeforeTarget.forEach(log => {
         const recordId = log.record_id;
-  
+
         if (log.action === 'CREATE') {
-          // CREATE already handled in first pass, skip
-          return;
+          return; // Already handled
         } else if (log.action === 'UPDATE') {
-          // Update the period state if it exists
-          if (periodStates[recordId]) {
+          if (periodStates[recordId] && periodStates[recordId].hasCreateEntry) {
             const newValues = JSON.parse(log.new_values || '{}');
             const periodReportingDate = new Date(periodStates[recordId].reporting_date);
-  
-            // Apply updates for complete, expected (plan changes), target (scope changes), and commentary
-            // For complete: only apply if the period's reporting date has occurred
+
             if (newValues.complete !== undefined && periodReportingDate <= targetDate) {
               periodStates[recordId].complete = newValues.complete;
             }
-            // For expected and target: always apply (plan/scope changes can happen before period date)
             if (newValues.expected !== undefined) {
               periodStates[recordId].expected = newValues.expected;
             }
             if (newValues.target !== undefined) {
               periodStates[recordId].target = newValues.target;
             }
-            // For commentary: always apply (commentary is added as events occur)
             if (newValues.commentary !== undefined) {
               periodStates[recordId].commentary = newValues.commentary;
             }
           }
         } else if (log.action === 'DELETE') {
-          // Remove period from state if deleted
           if (periodStates[recordId]) {
             delete periodStates[recordId];
           }
         }
       });
-  
+
+      // Backward replay for periods WITHOUT CREATE entries
+      // Get updates AFTER target date in reverse order and apply old_values
+      const auditLogsAfterTarget = allAuditLogs
+        .filter(log => new Date(log.created_at) > targetDate)
+        .reverse(); // Process in reverse chronological order
+
+      auditLogsAfterTarget.forEach(log => {
+        const recordId = log.record_id;
+
+        if (log.action === 'UPDATE') {
+          if (periodStates[recordId] && !periodStates[recordId].hasCreateEntry) {
+            const oldValues = JSON.parse(log.old_values || '{}');
+
+            // Restore old values (reversing the change)
+            if (oldValues.complete !== undefined) {
+              periodStates[recordId].complete = oldValues.complete;
+            }
+            if (oldValues.expected !== undefined) {
+              periodStates[recordId].expected = oldValues.expected;
+            }
+            if (oldValues.target !== undefined) {
+              periodStates[recordId].target = oldValues.target;
+            }
+            if (oldValues.commentary !== undefined) {
+              periodStates[recordId].commentary = oldValues.commentary;
+            }
+          }
+        }
+      });
+
+      // For periods without CREATE entries, reset complete/commentary if reporting_date is after target
+      Object.values(periodStates).forEach(period => {
+        if (!period.hasCreateEntry) {
+          const periodReportingDate = new Date(period.reporting_date);
+          if (periodReportingDate > targetDate) {
+            period.complete = 0;
+            period.commentary = null;
+          }
+        }
+      });
+
       // Format the response - include all periods (existing and future)
       const historicalData = await Promise.all(
         Object.values(periodStates)
