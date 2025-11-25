@@ -4078,6 +4078,9 @@ function createApp(dbPath) {
         });
       }
 
+      // Severity order for sorting (high = 0, medium = 1, low = 2)
+      const severityOrder = { high: 0, medium: 1, low: 2 };
+
       // Group by PM and count
       const byPM = inconsistencies.reduce((acc, item) => {
         if (!acc[item.pm_name]) {
@@ -4095,6 +4098,20 @@ function createApp(dbPath) {
         acc[item.pm_name].issues.push(item);
         return acc;
       }, {});
+
+      // Sort issues within each PM by severity (high first), then by type
+      Object.values(byPM).forEach(pmData => {
+        pmData.issues.sort((a, b) => {
+          // First by severity
+          const severityDiff = severityOrder[a.severity] - severityOrder[b.severity];
+          if (severityDiff !== 0) return severityDiff;
+          // Then by type (missing_recovery_plan first)
+          if (a.type === 'missing_recovery_plan' && b.type !== 'missing_recovery_plan') return -1;
+          if (b.type === 'missing_recovery_plan' && a.type !== 'missing_recovery_plan') return 1;
+          // Then alphabetically by project name
+          return (a.project_name || '').localeCompare(b.project_name || '');
+        });
+      });
 
       // Convert to array and sort by total descending
       const summary = Object.values(byPM).sort((a, b) => b.total - a.total);

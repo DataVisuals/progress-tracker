@@ -68,6 +68,8 @@ const HomePage = ({
   const [inconsistencies, setInconsistencies] = useState(null); // Inconsistency report data
   const [showTipsModal, setShowTipsModal] = useState(false); // Modal for tips
   const [showWhatsNewModal, setShowWhatsNewModal] = useState(false); // Modal for what's new
+  const [showUserInconsistenciesModal, setShowUserInconsistenciesModal] = useState(false); // Modal for user's own inconsistencies
+  const [userInconsistenciesDismissed, setUserInconsistenciesDismissed] = useState(false); // Track if user dismissed the modal
   const [expandedPMs, setExpandedPMs] = useState({}); // Track which PMs are expanded in inconsistency report
 
   // Tips from the TipsSplash component
@@ -635,6 +637,20 @@ const HomePage = ({
       loadingRef.current = false; // Reset loading flag
     }
   };
+
+  // Get current user's inconsistencies
+  const userInconsistencies = React.useMemo(() => {
+    if (!inconsistencies || !currentUser?.name) return [];
+    const userPmData = inconsistencies.summary?.find(pm => pm.pm_name === currentUser.name);
+    return userPmData?.issues || [];
+  }, [inconsistencies, currentUser?.name]);
+
+  // Show modal when user has inconsistencies (only once per session)
+  useEffect(() => {
+    if (userInconsistencies.length > 0 && !userInconsistenciesDismissed && !loading) {
+      setShowUserInconsistenciesModal(true);
+    }
+  }, [userInconsistencies.length, userInconsistenciesDismissed, loading]);
 
   const handleMetricClick = (projectId, metricName) => {
     if (onNavigateToProject) {
@@ -1214,6 +1230,86 @@ const HomePage = ({
                   <p>Export metric charts as PNG images or PDF documents. Perfect for sharing with stakeholders or including in presentations.</p>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Inconsistencies Modal */}
+      {showUserInconsistenciesModal && userInconsistencies.length > 0 && (
+        <div className="modal-overlay" onClick={() => {
+          setShowUserInconsistenciesModal(false);
+          setUserInconsistenciesDismissed(true);
+        }}>
+          <div className="modal-content user-inconsistencies-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <MdWarning className="modal-icon warning" />
+              <h2>Your Projects Need Attention</h2>
+              <button className="modal-close" onClick={() => {
+                setShowUserInconsistenciesModal(false);
+                setUserInconsistenciesDismissed(true);
+              }}>×</button>
+            </div>
+            <div className="modal-body">
+              <p className="inconsistency-intro">
+                You have {userInconsistencies.length} issue{userInconsistencies.length !== 1 ? 's' : ''} that need attention.
+                Click on any item to open it in a new tab.
+              </p>
+              <div className="user-inconsistency-list">
+                {userInconsistencies.map((issue, idx) => {
+                  let issueTitle = '';
+                  let issueIcon = null;
+
+                  if (issue.type === 'missing_recovery_plan' && issue.metric_name) {
+                    issueTitle = `${issue.metric_name} is ${issue.rag_status?.toUpperCase()} but has no recovery plan`;
+                    issueIcon = <span className={`metric-rag-marker ${issue.rag_status}`} />;
+                  } else if (issue.type === 'missing_metric_description' && issue.metric_name) {
+                    issueTitle = `${issue.metric_name} is missing a description`;
+                    issueIcon = <MdEdit className="issue-icon" />;
+                  } else if (issue.type === 'missing_project_description') {
+                    issueTitle = `${issue.project_name} is missing a description`;
+                    issueIcon = <MdEdit className="issue-icon" />;
+                  } else if (issue.type === 'missing_documentation') {
+                    issueTitle = `${issue.project_name} has no documentation links`;
+                    issueIcon = <MdLink className="issue-icon" />;
+                  } else {
+                    issueTitle = issue.details;
+                    issueIcon = <MdWarning className="issue-icon" />;
+                  }
+
+                  const projectUrl = `${window.location.origin}${window.location.pathname}?project=${issue.project_id}`;
+
+                  return (
+                    <a
+                      key={idx}
+                      href={projectUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="user-inconsistency-item"
+                    >
+                      <div className="issue-icon-wrapper">
+                        {issueIcon}
+                      </div>
+                      <div className="issue-details">
+                        <div className="issue-title">{issueTitle}</div>
+                        <div className="issue-project">{issue.project_name}</div>
+                      </div>
+                      <MdArrowForward className="issue-arrow" />
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="dismiss-btn"
+                onClick={() => {
+                  setShowUserInconsistenciesModal(false);
+                  setUserInconsistenciesDismissed(true);
+                }}
+              >
+                Dismiss for now
+              </button>
             </div>
           </div>
         </div>
