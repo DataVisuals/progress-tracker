@@ -938,12 +938,13 @@ function App() {
               selectedSpace={selectedSpace}
               onSpaceChange={async (spaceId) => {
                 setSelectedSpace(spaceId);
-                // Save user's default space preference
-                if (currentUser && spaceId !== 'all') {
+                // Save user's default space preference (including "all")
+                if (currentUser) {
                   try {
-                    await api.updateDefaultSpace(parseInt(spaceId));
+                    const spaceIdToSave = spaceId === 'all' ? null : parseInt(spaceId);
+                    await api.updateDefaultSpace(spaceIdToSave);
                     // Update currentUser state and localStorage
-                    const updatedUser = { ...currentUser, default_space_id: parseInt(spaceId) };
+                    const updatedUser = { ...currentUser, default_space_id: spaceIdToSave };
                     setCurrentUser(updatedUser);
                     localStorage.setItem('user', JSON.stringify(updatedUser));
                   } catch (err) {
