@@ -54,9 +54,13 @@
 
 .form-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 6px;
-  margin-bottom: 6px;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.form-row.three-col {
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
 .form-row:last-child {

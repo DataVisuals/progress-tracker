@@ -200,6 +200,19 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
             />
           </div>
           <div className="form-group">
+            <label htmlFor="project-desc">Description</label>
+            <input
+              id="project-desc"
+              type="text"
+              value={projectDesc}
+              onChange={(e) => setProjectDesc(e.target.value)}
+              placeholder="Add a description of what the project will achieve..."
+              maxLength={250}
+            />
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
             <label htmlFor="project-manager">Primary Initiative Manager</label>
             <UserSelector
               users={users}
@@ -208,8 +221,6 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
               placeholder="Select primary initiative manager..."
             />
           </div>
-        </div>
-        <div className="form-row">
           <div className="form-group">
             <label htmlFor="secondary-pm">Secondary Initiative Manager</label>
             <UserSelector
@@ -219,17 +230,8 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
               placeholder="Select secondary IM (optional)..."
             />
           </div>
-          <div className="form-group">
-            <label htmlFor="project-desc">Description</label>
-            <input
-              id="project-desc"
-              type="text"
-              value={projectDesc}
-              onChange={(e) => setProjectDesc(e.target.value)}
-              placeholder="Add a description of what the project will achieve here..."
-              maxLength={250}
-            />
-          </div>
+        </div>
+        <div className="form-row three-col">
           <div className="form-group">
             <label htmlFor="portfolio">Portfolio</label>
             <Select
@@ -244,8 +246,6 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
               placeholder="Select portfolio (optional)..."
             />
           </div>
-        </div>
-        <div className="form-row">
           <div className="form-group">
             <label htmlFor="project-start-date">Project Start Date *</label>
             <input

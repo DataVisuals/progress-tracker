@@ -390,9 +390,24 @@
   color: #9ca3af;
 }
 
-:root.dark-mode .tip-badge {
+:root.dark-mode .tip-badge-metric-design {
+  background: #4c1d95;
+  color: #ddd6fe;
+}
+
+:root.dark-mode .tip-badge-tracking {
+  background: #1e3a8a;
+  color: #bfdbfe;
+}
+
+:root.dark-mode .tip-badge-configuration {
   background: #78350f;
   color: #fef3c7;
+}
+
+:root.dark-mode .tip-badge-organization {
+  background: #064e3b;
+  color: #a7f3d0;
 }
 
 :root.dark-mode .dismiss-btn {
@@ -530,13 +545,17 @@
 
 /* Tips Splash specific styles */
 .tip-icon {
-  color: #f59e0b;
+  color: #3b82f6;
 }
+
+/* Category-specific icon colors */
+.tip-icon-metric-design { color: #8b5cf6; }  /* Purple */
+.tip-icon-tracking { color: #3b82f6; }       /* Blue */
+.tip-icon-configuration { color: #f59e0b; }  /* Amber */
+.tip-icon-organization { color: #10b981; }   /* Green */
 
 .tip-badge {
   display: inline-block;
-  background: #fef3c7;
-  color: #92400e;
   font-size: 11px;
   font-weight: 600;
   padding: 4px 12px;
@@ -544,6 +563,27 @@
   margin-bottom: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* Category-specific badge colors */
+.tip-badge-metric-design {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.tip-badge-tracking {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.tip-badge-configuration {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.tip-badge-organization {
+  background: #d1fae5;
+  color: #047857;
 }
 
 .tips-dismiss-section {
