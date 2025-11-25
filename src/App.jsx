@@ -126,7 +126,22 @@ function App() {
       }
     }
 
+    // Handle browser back/forward buttons
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const projectId = params.get('project');
+      const metricName = params.get('metric');
+
+      setSelectedProject(projectId || '');
+      setSelectedMetric(metricName || '');
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
     // What's New is now only opened via footer link, not on first load
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
   }, []);
 
   // Apply dark mode class to document
