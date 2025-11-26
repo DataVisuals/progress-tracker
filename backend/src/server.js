@@ -2603,35 +2603,63 @@ function createApp(dbPath) {
       values.push(req.params.id);
       await dbRun(`UPDATE metrics SET ${updates.join(', ')} WHERE id = ?`, values);
 
-      // If final_target or progression_type changed, recalculate expected values
-      // recalculate_expected can be: 'all', 'future', or 'none'
-      if ((final_target !== undefined || progression_type !== undefined) && recalculate_expected !== 'none') {
+      // If final_target changed, update targets and optionally recalculate expected values
+      // recalculate_expected can be: 'all' or 'future'
+      // from_period_index: which period index to start updating from (0 = all)
+      const from_period_index = req.body.from_period_index || 0;
+
+      if (final_target !== undefined && recalculate_expected) {
         const updatedMetric = await dbGet('SELECT * FROM metrics WHERE id = ?', [req.params.id]);
         const periods = await dbAll(
-          'SELECT id, reporting_date FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date ASC',
+          'SELECT id, reporting_date, expected FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date ASC',
           [req.params.id]
         );
 
         const totalPeriods = periods.length;
-        const today = new Date().toISOString().split('T')[0];
+
+        // Get the base expected value (from period before the edited one, or 0 if editing first period)
+        const baseExpected = from_period_index > 0 ? periods[from_period_index - 1].expected : 0;
+        const remainingPeriods = totalPeriods - from_period_index;
+        // The amount we need to add from base to reach the new target
+        const deltaToTarget = updatedMetric.final_target - baseExpected;
 
         for (let i = 0; i < periods.length; i++) {
-          // If recalculate_expected is 'future', skip past/current periods entirely
-          // Historical targets should be preserved to reflect scope at that point in time
-          if (recalculate_expected === 'future' && periods[i].reporting_date <= today) {
+          // Only update periods from the edited period onwards
+          if (i < from_period_index) {
             continue;
           }
 
-          const expected = calculateExpectedValue(
-            updatedMetric.progression_type,
-            updatedMetric.final_target,
-            i + 1,
-            totalPeriods
-          );
+          // Update the target for this period and all subsequent periods
           await dbRun(
-            'UPDATE metric_periods SET expected = ?, target = ? WHERE id = ?',
-            [expected, updatedMetric.final_target, periods[i].id]
+            'UPDATE metric_periods SET target = ? WHERE id = ?',
+            [updatedMetric.final_target, periods[i].id]
           );
+
+          // For 'all' mode: recalculate expected from start based on full progression
+          // For 'future' mode: recalculate expected from current base to new target
+          if (recalculate_expected === 'all') {
+            // Recalculate expected based on position in full progression curve
+            const expected = calculateExpectedValue(
+              updatedMetric.progression_type,
+              updatedMetric.final_target,
+              i + 1,
+              totalPeriods
+            );
+            await dbRun(
+              'UPDATE metric_periods SET expected = ? WHERE id = ?',
+              [expected, periods[i].id]
+            );
+          } else if (recalculate_expected === 'future') {
+            // Recalculate expected from the base expected value to the new target
+            // Uses linear interpolation from base to target over remaining periods
+            const periodInRemaining = i - from_period_index + 1;
+            const ratio = periodInRemaining / remainingPeriods;
+            const expected = Math.round(baseExpected + (deltaToTarget * ratio));
+            await dbRun(
+              'UPDATE metric_periods SET expected = ? WHERE id = ?',
+              [expected, periods[i].id]
+            );
+          }
         }
       }
 

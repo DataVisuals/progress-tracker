@@ -226,7 +226,6 @@ const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance })
 };
 
 const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange, onTargetChange, onProgressionChange, onDescriptionChange, onDatesChange, currentUser }) => {
-  console.log('MetricChart rendered with canEdit:', canEdit, 'canEditData:', canEditData);
   // canEditData is for commentary/data changes (blocked during time travel)
   // If not provided, default to canEdit for backwards compatibility
   const allowDataEdits = canEditData !== undefined ? canEditData : canEdit;
@@ -235,8 +234,6 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   const [redTolerance, setRedTolerance] = useState(initialRedTolerance);
   const [editingTolerance, setEditingTolerance] = useState(null); // 'amber' or 'red'
   const [tempToleranceValue, setTempToleranceValue] = useState('');
-  const [editingTarget, setEditingTarget] = useState(false);
-  const [tempTargetValue, setTempTargetValue] = useState('');
   const [editingProgression, setEditingProgression] = useState(false);
   const [tempProgressionValue, setTempProgressionValue] = useState('');
   const [editingDescription, setEditingDescription] = useState(false);
@@ -288,40 +285,6 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       handleToleranceSave();
     } else if (e.key === 'Escape') {
       setEditingTolerance(null);
-    }
-  };
-
-  const handleTargetClick = () => {
-    if (!canEdit || !onTargetChange) return;
-    const currentTarget = metricMetadata?.final_target || sortedData[0]?.final_target || 0;
-    setEditingTarget(true);
-    setTempTargetValue(currentTarget.toString());
-  };
-
-  const handleTargetSave = async () => {
-    if (!onTargetChange) return;
-
-    const newValue = parseFloat(tempTargetValue);
-    if (isNaN(newValue) || newValue <= 0) {
-      alert('Please enter a valid target value (greater than 0)');
-      return;
-    }
-
-    try {
-      // Pass the new value and whether the curve is custom
-      await onTargetChange(newValue, metricMetadata?.is_custom || false);
-      setEditingTarget(false);
-    } catch (err) {
-      console.error('Failed to update target:', err);
-      alert('Failed to update target');
-    }
-  };
-
-  const handleTargetKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      handleTargetSave();
-    } else if (e.key === 'Escape') {
-      setEditingTarget(false);
     }
   };
 
@@ -900,6 +863,20 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       return;
     }
 
+    // For target changes, use the onTargetChange handler to update periods
+    if (field === 'final_target' && onTargetChange) {
+      setEditingCell(null);
+      try {
+        // Pass the period info so we know which period was edited
+        const periodIndex = sortedData.findIndex(p => p.id === periodId);
+        await onTargetChange(numericValue, metricMetadata?.is_custom || false, { periodId, periodIndex });
+      } catch (err) {
+        console.error('Failed to update target:', err);
+        alert('Failed to update target');
+      }
+      return;
+    }
+
     try {
       // Save the change
       await api.updatePeriod(periodId, {
@@ -1291,34 +1268,6 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       {/* Metric Properties Row */}
       {metricMetadata && (
         <div className="metric-properties-row" style={{ display: 'flex', gap: '12px', padding: '4px 0', borderBottom: '1px solid #e5e7eb' }}>
-          <div className="metric-property">
-            <span className="property-label">Target:</span>
-            {editingTarget && onTargetChange ? (
-              <div style={{ display: 'inline-flex', gap: '4px', alignItems: 'center' }}>
-                <input
-                  type="number"
-                  className="tolerance-input"
-                  value={tempTargetValue}
-                  onChange={(e) => setTempTargetValue(e.target.value)}
-                  onKeyDown={handleTargetKeyDown}
-                  onBlur={handleTargetSave}
-                  autoFocus
-                  style={{ width: '80px' }}
-                />
-                <button onClick={handleTargetSave} style={{ fontSize: '11px', padding: '2px 6px' }}>✓</button>
-                <button onClick={() => setEditingTarget(false)} style={{ fontSize: '11px', padding: '2px 6px' }}>✕</button>
-              </div>
-            ) : (
-              <span
-                className="property-value"
-                onClick={handleTargetClick}
-                style={canEdit && onTargetChange ? { cursor: 'pointer', textDecoration: 'underline dotted' } : {}}
-                title={canEdit && onTargetChange ? 'Click to edit target' : ''}
-              >
-                {formatNumber(metricMetadata.final_target || 0)}
-              </span>
-            )}
-          </div>
           <div className="metric-property">
             <span className="property-label">Progression:</span>
             {editingProgression && onProgressionChange ? (

@@ -1271,6 +1271,25 @@
   border-color: #d1d5db;
 }
 
+.target-option-btn.tertiary {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.target-option-btn.tertiary:hover {
+  background: #f3f4f6;
+}
+
+.custom-curve-warning {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #92400e;
+  margin-bottom: 8px;
+}
+
 .target-option-btn.cancel {
   align-items: center;
   border: none;
@@ -1500,6 +1519,16 @@
 :root.dark-mode .target-option-btn.primary {
   background-color: rgba(0, 174, 239, 0.1);
   border-color: #00aeef;
+}
+
+:root.dark-mode .target-option-btn.tertiary {
+  background-color: var(--bg-tertiary);
+}
+
+:root.dark-mode .custom-curve-warning {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #f59e0b;
+  color: #fbbf24;
 }
 
 :root.dark-mode .close-btn {
