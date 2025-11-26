@@ -157,6 +157,13 @@ const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance })
       year: 'numeric'
     });
 
+    // Check if this period is in the future
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const periodDate = new Date(label);
+    periodDate.setHours(0, 0, 0, 0);
+    const isFuturePeriod = periodDate > today;
+
     const complete = payload.find(p => p.dataKey === 'complete')?.value || 0;
     const remaining = payload.find(p => p.dataKey === 'remaining')?.value || 0;
     const expected = payload.find(p => p.dataKey === 'expected')?.value || 0;
@@ -166,10 +173,10 @@ const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance })
     const variance = complete - expected;
     const variancePercent = expected > 0 ? Math.abs((variance / expected) * 100).toFixed(1) : 0;
 
-    // Determine variance status
+    // Determine variance status - don't show for future periods
     let varianceStatus = null;
     let varianceIcon = null;
-    if (variance < 0) { // Behind schedule
+    if (!isFuturePeriod && variance < 0) { // Behind schedule (only for past/current periods)
       if (variancePercent > redTolerance) {
         varianceStatus = 'Red';
         varianceIcon = '🔴';
@@ -630,6 +637,9 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
 
   // Check if the metric needs a recovery plan (red/amber status without active plan)
   const needsRecoveryPlan = () => {
+    // Don't show recovery plan requirement for historical metrics
+    if (!isTodayInMetricRange) return false;
+
     // Get current period RAG status
     if (currentPeriodIndex < 0 || currentPeriodIndex >= sortedData.length) return false;
     const currentPeriod = sortedData[currentPeriodIndex];

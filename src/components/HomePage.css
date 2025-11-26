@@ -1541,7 +1541,7 @@ html.dark-mode .quadrant-content {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 20px 24px;
+  padding: 10px 24px;
   border-bottom: 1px solid #e5e7eb;
   background: #f9fafb;
 }

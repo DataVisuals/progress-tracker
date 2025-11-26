@@ -23,6 +23,32 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Get metric date range
+    const metricStartDate = new Date(sortedPeriods[0].reporting_date);
+    const metricEndDate = new Date(sortedPeriods[sortedPeriods.length - 1].reporting_date);
+    metricStartDate.setHours(0, 0, 0, 0);
+    metricEndDate.setHours(0, 0, 0, 0);
+
+    // Check if metric is historical (today is past the metric's end date)
+    const isHistoricalMetric = today > metricEndDate;
+
+    // For historical metrics, show the final period's RAG status
+    if (isHistoricalMetric) {
+      const finalPeriod = sortedPeriods[sortedPeriods.length - 1];
+      const complete = parseFloat(finalPeriod.complete) || 0;
+      const expected = parseFloat(finalPeriod.expected) || 0;
+      const variance = complete - expected;
+      const variancePercent = expected > 0 ? Math.abs((variance / expected) * 100) : 0;
+      const amberTolerance = parseFloat(finalPeriod.amber_tolerance) || 5.0;
+      const redTolerance = parseFloat(finalPeriod.red_tolerance) || 10.0;
+
+      if (expected === 0) return 'grey';
+      if (variance >= 0) return 'green';
+      if (variancePercent > redTolerance) return 'red';
+      if (variancePercent > amberTolerance) return 'amber';
+      return 'green';
+    }
+
     let currentPeriodIndex = -1;
     for (let i = 0; i < sortedPeriods.length; i++) {
       const periodStart = new Date(sortedPeriods[i].reporting_date);
