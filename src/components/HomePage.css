@@ -1904,9 +1904,10 @@ html.dark-mode .quadrant-content {
 }
 
 .modal-icon-lottie {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   flex-shrink: 0;
+  filter: hue-rotate(180deg) saturate(1.5) brightness(0.9);
 }
 
 .user-inconsistencies-modal .modal-body {
