@@ -122,6 +122,14 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.app-logo-lottie {
+  width: 36px;
+  height: 36px;
+  background: white;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .header-right {
   display: flex;
   align-items: center;

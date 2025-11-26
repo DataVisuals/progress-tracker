@@ -26,7 +26,9 @@ import PageHeatmapReport from './components/PageHeatmapReport';
 import HomePage from './components/HomePage';
 import { api } from './api/client';
 import { selectStyles } from './components/SelectStyles';
-import { MdShowChart, MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
+import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
+import Lottie from 'lottie-react';
+import progressChartAnimation from '../public/progress-chart.json';
 import { trackPage } from './hooks/usePageTracking';
 import './App.css';
 
@@ -982,7 +984,11 @@ function App() {
               style={{ cursor: 'pointer' }}
               title="Go to Dashboard"
             >
-              <MdShowChart className="app-logo" />
+              <Lottie
+                animationData={progressChartAnimation}
+                loop={true}
+                className="app-logo-lottie"
+              />
               Progress Tracker
             </h1>
           </div>
