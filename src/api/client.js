@@ -6,12 +6,6 @@ const client = axios.create({
   baseURL: API_BASE,
 });
 
-// Event emitter for server status changes
-let serverStatusCallback = null;
-export const onServerStatus = (callback) => {
-  serverStatusCallback = callback;
-};
-
 // Add token to all requests
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -21,24 +15,10 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle auth errors and server availability
+// Handle auth errors
 client.interceptors.response.use(
-  (response) => {
-    // Server is back - clear any maintenance state
-    if (serverStatusCallback) {
-      serverStatusCallback({ available: true });
-    }
-    return response;
-  },
+  (response) => response,
   (error) => {
-    // Check for server unavailable (502, 503, 504) or network error
-    const status = error.response?.status;
-    const isServerUnavailable = status === 502 || status === 503 || status === 504 || !error.response;
-
-    if (isServerUnavailable && serverStatusCallback) {
-      serverStatusCallback({ available: false });
-    }
-
     // Don't redirect on login failures - let the login component handle it
     const isLoginRequest = error.config?.url?.includes('/auth/login');
 

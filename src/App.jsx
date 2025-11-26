@@ -24,7 +24,7 @@ import WhatsNew from './components/WhatsNew';
 import UserActivityReport from './components/UserActivityReport';
 import PageHeatmapReport from './components/PageHeatmapReport';
 import HomePage from './components/HomePage';
-import { api, onServerStatus } from './api/client';
+import { api } from './api/client';
 import { selectStyles } from './components/SelectStyles';
 import { MdShowChart, MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
 import { trackPage } from './hooks/usePageTracking';
@@ -81,7 +81,6 @@ function App() {
   const [showUserActivity, setShowUserActivity] = useState(false);
   const [showPageHeatmap, setShowPageHeatmap] = useState(false);
   const [allProjectsData, setAllProjectsData] = useState({}); // For HomePage red metrics
-  const [serverUnavailable, setServerUnavailable] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     try {
       const saved = localStorage.getItem('darkMode');
@@ -93,37 +92,6 @@ function App() {
       return false;
     }
   });
-
-  const [retryCountdown, setRetryCountdown] = useState(10);
-
-  // Register server status callback
-  useEffect(() => {
-    onServerStatus((status) => {
-      setServerUnavailable(!status.available);
-      if (status.available) {
-        setRetryCountdown(10); // Reset countdown when server is back
-      }
-    });
-  }, []);
-
-  // Auto-retry when server is unavailable
-  useEffect(() => {
-    if (!serverUnavailable) return;
-
-    const countdownInterval = setInterval(() => {
-      setRetryCountdown(prev => {
-        if (prev <= 1) {
-          // Trigger a health check by fetching spaces
-          api.get('/spaces').catch(() => {}); // Will trigger onServerStatus callback
-          return 10; // Reset countdown
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(countdownInterval);
-  }, [serverUnavailable]);
-
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -1002,11 +970,6 @@ function App() {
 
   return (
     <div className="app">
-      {serverUnavailable && (
-        <div className="maintenance-banner">
-          Please wait while we perform a release. Retrying in {retryCountdown}s...
-        </div>
-      )}
       <header className="app-header-main">
         <div className="header-content">
           <div className="header-left">
