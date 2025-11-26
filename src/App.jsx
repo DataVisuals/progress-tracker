@@ -72,8 +72,8 @@ function App() {
   const [showImportData, setShowImportData] = useState(false);
   const [showPortfolioManager, setShowPortfolioManager] = useState(false);
   const [showSpaceManager, setShowSpaceManager] = useState(false);
-  const [showSpaceEmails, setShowSpaceEmails] = useState(false);
-  const [spaceEmailsData, setSpaceEmailsData] = useState({ count: 0, emails: '' });
+  const [showChaserModal, setShowChaserModal] = useState(false);
+  const [chaserData, setChaserData] = useState({ emails: '', sections: '', pmCount: 0, issueCount: 0 });
   const [showAdminReport, setShowAdminReport] = useState(false);
   const [adminReportConfig, setAdminReportConfig] = useState({ type: null, id: null, name: null });
   const [showReportSelector, setShowReportSelector] = useState(false);
@@ -940,15 +940,19 @@ function App() {
   const isPMOrHigher = () => currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm');
   const canEdit = () => currentUser && (currentUser.role === 'admin' || currentUser.role === 'pm' || currentUser.role === 'editor');
 
-  // Get all PM emails (admin only)
-  const handleGetAllEmails = async () => {
+  // Get chaser report for current space (admin only)
+  const handleComposeChaser = async () => {
     try {
-      const response = await api.get('/admin/space-emails/all');
-      setSpaceEmailsData(response.data);
-      setShowSpaceEmails(true);
+      if (selectedSpace === 'all') {
+        alert('Please select a specific space first');
+        return;
+      }
+      const response = await api.get(`/chaser-report/${selectedSpace}`);
+      setChaserData(response.data);
+      setShowChaserModal(true);
     } catch (err) {
-      console.error('Failed to get emails:', err);
-      alert('Failed to get emails: ' + (err.response?.data?.error || err.message));
+      console.error('Failed to get chaser report:', err);
+      alert('Failed to get chaser report: ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -1093,8 +1097,8 @@ function App() {
                     <button onMouseDown={() => { setShowUserActivity(true); setShowAdminDropdown(false); }}>
                       User Activity Report
                     </button>
-                    <button onMouseDown={() => { handleGetAllEmails(); setShowAdminDropdown(false); }}>
-                      Get All Emails
+                    <button onMouseDown={() => { handleComposeChaser(); setShowAdminDropdown(false); }}>
+                      Compose Chaser
                     </button>
                   </div>
                 )}
@@ -1681,27 +1685,42 @@ function App() {
         />
       )}
 
-      {showSpaceEmails && (
+      {showChaserModal && (
         <div
           className="modal-overlay"
           onMouseDown={handleModalMouseDown}
-          onClick={(e) => handleModalClick(e, () => setShowSpaceEmails(false))}
+          onClick={(e) => handleModalClick(e, () => setShowChaserModal(false))}
         >
-          <div className="modal-content emails-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content chaser-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>All Project Manager Emails ({spaceEmailsData.count})</h2>
-              <button className="modal-close" onClick={() => setShowSpaceEmails(false)}>×</button>
+              <h2>Compose Chaser - {spaces.find(s => s.id === parseInt(selectedSpace))?.name || 'Space'}</h2>
+              <button className="modal-close" onClick={() => setShowChaserModal(false)}>×</button>
             </div>
             <div className="modal-body">
-              <p className="emails-description">
-                All project managers with assigned projects:
-              </p>
-              <textarea
-                className="emails-textarea"
-                value={spaceEmailsData.emails}
-                readOnly
-                rows={Math.min(10, Math.max(3, spaceEmailsData.count))}
-              />
+              {chaserData.issueCount === 0 ? (
+                <p className="chaser-empty">No outstanding issues found for this space.</p>
+              ) : (
+                <>
+                  <div className="chaser-section">
+                    <label className="chaser-label">To: ({chaserData.pmCount} initiative owners)</label>
+                    <textarea
+                      className="chaser-textarea chaser-emails"
+                      value={chaserData.emails}
+                      readOnly
+                      rows={2}
+                    />
+                  </div>
+                  <div className="chaser-section">
+                    <label className="chaser-label">Body ({chaserData.issueCount} issues):</label>
+                    <textarea
+                      className="chaser-textarea chaser-sections"
+                      value={`Please take a look at your metric inconsistencies and correct as soon as possible in http://ptracker/\n\nThank You!\n\n${chaserData.sections}`}
+                      readOnly
+                      rows={Math.min(20, Math.max(8, chaserData.sections.split('\n').length + 3))}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

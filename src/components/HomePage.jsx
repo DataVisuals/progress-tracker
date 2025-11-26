@@ -415,8 +415,8 @@ const HomePage = ({
       },
       {
         icon: <MdPeople />,
-        title: "Get All Emails",
-        description: "Admins can export a list of all project manager email addresses from the Admin menu."
+        title: "Compose Chaser",
+        description: "Generate a chaser email with all outstanding issues grouped by initiative owner."
       },
       {
         icon: <MdVisibility />,

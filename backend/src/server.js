@@ -4307,6 +4307,250 @@ function createApp(dbPath) {
     }
   });
 
+  // Endpoint to get chaser email content for a space (formatted for easy copy/paste)
+  app.get('/api/chaser-report/:spaceId', authenticateToken, async (req, res) => {
+    try {
+      const { spaceId } = req.params;
+
+      // Get all users for email lookup (by name, case-insensitive)
+      const allUsers = await dbAll('SELECT name, email FROM users WHERE email IS NOT NULL');
+      const userEmailMap = {};
+      for (const u of allUsers) {
+        if (u.name) {
+          userEmailMap[u.name.toLowerCase().trim()] = u.email;
+        }
+      }
+
+      // Helper to look up email by PM name
+      const getEmail = (pmName) => {
+        if (!pmName) return null;
+        return userEmailMap[pmName.toLowerCase().trim()] || null;
+      };
+
+      // Build inconsistencies for projects in this space
+      const inconsistencies = [];
+
+      // 1. Projects without descriptions
+      const projectsWithoutDesc = await dbAll(`
+        SELECT p.id as project_id, p.name as project_name, p.initiative_manager as pm_name, p.created_at
+        FROM projects p
+        JOIN portfolios pf ON p.portfolio_id = pf.id
+        WHERE pf.space_id = ? AND (p.description IS NULL OR p.description = '')
+      `, [spaceId]);
+
+      for (const project of projectsWithoutDesc) {
+        const ageDays = Math.floor((Date.now() - new Date(project.created_at)) / (1000 * 60 * 60 * 24));
+        inconsistencies.push({
+          pm_name: project.pm_name,
+          project_name: project.project_name,
+          issue: `Project missing description (${ageDays}d)`
+        });
+      }
+
+      // 2. Metrics without descriptions
+      const metricsWithoutDesc = await dbAll(`
+        SELECT m.id, m.name as metric_name, p.name as project_name, p.initiative_manager as pm_name, m.created_at
+        FROM metrics m
+        JOIN projects p ON m.project_id = p.id
+        JOIN portfolios pf ON p.portfolio_id = pf.id
+        WHERE pf.space_id = ? AND (m.description IS NULL OR TRIM(m.description) = '')
+      `, [spaceId]);
+
+      for (const metric of metricsWithoutDesc) {
+        const ageDays = Math.floor((Date.now() - new Date(metric.created_at)) / (1000 * 60 * 60 * 24));
+        inconsistencies.push({
+          pm_name: metric.pm_name,
+          project_name: metric.project_name,
+          issue: `Metric "${metric.metric_name}" missing description (${ageDays}d)`
+        });
+      }
+
+      // 3. Projects without documentation links
+      const projectsWithoutDocs = await dbAll(`
+        SELECT p.id as project_id, p.name as project_name, p.initiative_manager as pm_name, p.created_at
+        FROM projects p
+        JOIN portfolios pf ON p.portfolio_id = pf.id
+        LEFT JOIN project_links pl ON p.id = pl.project_id
+        WHERE pf.space_id = ? AND pl.id IS NULL
+      `, [spaceId]);
+
+      for (const proj of projectsWithoutDocs) {
+        const ageDays = Math.floor((Date.now() - new Date(proj.created_at)) / (1000 * 60 * 60 * 24));
+        inconsistencies.push({
+          pm_name: proj.pm_name,
+          project_name: proj.project_name,
+          issue: `Project has no documentation links (${ageDays}d)`
+        });
+      }
+
+      // 4. Red metrics without recovery plans
+      const redMetricsNoRecovery = await dbAll(`
+        SELECT
+          m.id,
+          m.name as metric_name,
+          p.name as project_name,
+          p.initiative_manager as pm_name,
+          m.created_at
+        FROM metrics m
+        JOIN projects p ON m.project_id = p.id
+        JOIN portfolios pf ON p.portfolio_id = pf.id
+        LEFT JOIN recovery_plans rp ON m.id = rp.metric_id AND rp.status = 'active'
+        WHERE pf.space_id = ?
+          AND rp.id IS NULL
+          AND EXISTS (
+            SELECT 1 FROM metric_periods mp
+            WHERE mp.metric_id = m.id
+            AND mp.complete IS NOT NULL
+            AND mp.expected IS NOT NULL
+            AND mp.expected > 0
+            AND ((mp.expected - mp.complete) / mp.expected * 100) > COALESCE(m.red_tolerance, 10)
+          )
+      `, [spaceId]);
+
+      for (const metric of redMetricsNoRecovery) {
+        const ageDays = Math.floor((Date.now() - new Date(metric.created_at)) / (1000 * 60 * 60 * 24));
+        inconsistencies.push({
+          pm_name: metric.pm_name,
+          project_name: metric.project_name,
+          issue: `Metric "${metric.metric_name}" is red - needs recovery plan (${ageDays}d)`
+        });
+      }
+
+      // 5. Projects with no initiative manager (use audit log to find creator)
+      const projectsNoManager = await dbAll(`
+        SELECT
+          p.id as project_id,
+          p.name as project_name,
+          p.created_at,
+          u.name as creator_name,
+          u.email as creator_email
+        FROM projects p
+        JOIN portfolios pf ON p.portfolio_id = pf.id
+        LEFT JOIN audit_log al ON al.table_name = 'projects'
+          AND al.record_id = p.id
+          AND al.action = 'CREATE'
+        LEFT JOIN users u ON al.user_id = u.id
+        WHERE pf.space_id = ?
+          AND (p.initiative_manager IS NULL OR TRIM(p.initiative_manager) = '')
+      `, [spaceId]);
+
+      for (const project of projectsNoManager) {
+        const ageDays = Math.floor((Date.now() - new Date(project.created_at)) / (1000 * 60 * 60 * 24));
+        const responsibleName = project.creator_name || 'Unknown';
+        inconsistencies.push({
+          pm_name: responsibleName,
+          pm_email: project.creator_email,
+          project_name: project.project_name,
+          issue: `Project has no initiative manager (${ageDays}d)`
+        });
+      }
+
+      // 6. Projects with only one metric
+      const singleMetricProjects = await dbAll(`
+        WITH project_metric_counts AS (
+          SELECT
+            p.id as project_id,
+            p.name as project_name,
+            p.initiative_manager as pm_name,
+            p.created_at,
+            COUNT(m.id) as metric_count
+          FROM projects p
+          JOIN portfolios pf ON p.portfolio_id = pf.id
+          LEFT JOIN metrics m ON p.id = m.project_id
+          WHERE pf.space_id = ?
+          GROUP BY p.id
+        )
+        SELECT * FROM project_metric_counts
+        WHERE metric_count = 1
+      `, [spaceId]);
+
+      for (const project of singleMetricProjects) {
+        const ageDays = Math.floor((Date.now() - new Date(project.created_at)) / (1000 * 60 * 60 * 24));
+        inconsistencies.push({
+          pm_name: project.pm_name,
+          project_name: project.project_name,
+          issue: `Project has only one metric (${ageDays}d)`
+        });
+      }
+
+      // Deduplicate inconsistencies using a Set
+      const seenIssues = new Set();
+      const uniqueInconsistencies = inconsistencies.filter(item => {
+        const key = `${item.pm_name}|${item.project_name}|${item.issue}`;
+        if (seenIssues.has(key)) {
+          return false;
+        }
+        seenIssues.add(key);
+        return true;
+      });
+
+      if (uniqueInconsistencies.length === 0) {
+        return res.json({ emails: '', sections: 'No inconsistencies found for this space.', pmCount: 0, issueCount: 0 });
+      }
+
+      // Group by PM
+      const byPM = {};
+      for (const item of uniqueInconsistencies) {
+        const key = item.pm_name || 'Unknown';
+        if (!byPM[key]) {
+          byPM[key] = {
+            pm_name: item.pm_name,
+            pm_email: item.pm_email || getEmail(item.pm_name), // Use direct email if provided, else lookup
+            issues: []
+          };
+        }
+        // If we have a direct email and didn't have one before, use it
+        if (item.pm_email && !byPM[key].pm_email) {
+          byPM[key].pm_email = item.pm_email;
+        }
+        byPM[key].issues.push({
+          project: item.project_name,
+          issue: item.issue
+        });
+      }
+
+      // Get unique emails for delinquent PMs
+      const delinquentEmails = [...new Set(
+        Object.values(byPM)
+          .map(pm => pm.pm_email)
+          .filter(email => email)
+      )];
+
+      // Format sections by person
+      const sections = Object.values(byPM)
+        .sort((a, b) => (a.pm_name || '').localeCompare(b.pm_name || ''))
+        .map(pm => {
+          const issuesByProject = {};
+          for (const issue of pm.issues) {
+            if (!issuesByProject[issue.project]) {
+              issuesByProject[issue.project] = [];
+            }
+            issuesByProject[issue.project].push(issue.issue);
+          }
+
+          const projectLines = Object.entries(issuesByProject)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([project, issues]) => {
+              return `  ${project}:\n${issues.map(i => `    - ${i}`).join('\n')}`;
+            })
+            .join('\n');
+
+          return `${pm.pm_name || 'Unknown'}:\n${projectLines}`;
+        })
+        .join('\n\n');
+
+      res.json({
+        emails: delinquentEmails.join('; '),
+        sections,
+        pmCount: Object.keys(byPM).length,
+        issueCount: uniqueInconsistencies.length
+      });
+    } catch (err) {
+      console.error('Error generating chaser report:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Auto-generate consistency feedback on server start (after a delay to ensure DB is ready)
   // Skip in test mode to avoid interfering with tests
   if (process.env.NODE_ENV !== 'test') {
