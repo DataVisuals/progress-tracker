@@ -22,6 +22,8 @@ import TimeTravel from './TimeTravel';
 import Feedback from './Feedback';
 import RecoveryPlans from './RecoveryPlans';
 // import CRAIDs from './CRAIDs'; // DISABLED: CRAIDs feature hidden
+import Lottie from 'lottie-react';
+import fixingAnimation from '../../public/fixing-animation.json';
 import './MetricChart.css';
 
 // Barclays blue color for expected line
@@ -1605,7 +1607,14 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             >
               Recovery Plan
               {hasRecentRecoveryPlans() && <span className="recent-indicator" title="New in last 24 hours" />}
-              {needsRecoveryPlan() && <span className="warning-indicator" title="Recovery plan needed for delinquent metric">⚠️</span>}
+              {needsRecoveryPlan() && (
+                <Lottie
+                  animationData={fixingAnimation}
+                  loop={true}
+                  className="tab-warning-lottie"
+                  title="Recovery plan needed for delinquent metric"
+                />
+              )}
             </button>
           )}
           {projectId && onTimeTravelChange && currentUser && (

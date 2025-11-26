@@ -367,6 +367,18 @@
   }
 }
 
+/* Lottie animation for tab warning indicator */
+.tab-warning-lottie {
+  display: inline-block;
+  width: 64px;
+  height: 64px;
+  margin-left: 6px;
+  margin-top: -20px;
+  margin-bottom: -20px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
 /* Tab button that needs action */
 .tab-button.needs-action {
   position: relative;
