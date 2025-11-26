@@ -17,6 +17,7 @@ const ProjectDependencies = ({
   const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
   const linkRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
+  const hideTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (projectId) {
@@ -63,6 +64,9 @@ const ProjectDependencies = ({
   };
 
   const handleMouseEnter = () => {
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+    }
     if (linkRef.current) {
       const rect = linkRef.current.getBoundingClientRect();
       setHoverPosition({
@@ -79,7 +83,15 @@ const ProjectDependencies = ({
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
-    setShowHover(false);
+    hideTimeoutRef.current = setTimeout(() => {
+      setShowHover(false);
+    }, 150);
+  };
+
+  const handlePopupMouseEnter = () => {
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+    }
   };
 
   const handleProjectClick = (dep) => {
@@ -226,7 +238,7 @@ const ProjectDependencies = ({
             top: hoverPosition.y,
             zIndex: 10000
           }}
-          onMouseEnter={() => setShowHover(true)}
+          onMouseEnter={handlePopupMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
           {dependencies.map((dep) => (
@@ -247,7 +259,6 @@ const ProjectDependencies = ({
               </div>
             </div>
           ))}
-          <div className="hover-hint">Click to view project</div>
         </div>
       )}
     </div>

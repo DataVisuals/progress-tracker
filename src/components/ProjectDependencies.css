@@ -89,11 +89,15 @@
 
 .hover-dep-name {
   font-weight: 500;
-  color: #111827;
+  color: #00aeef;
   font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.hover-dep-row:hover .hover-dep-name {
+  text-decoration: underline;
 }
 
 .hover-dep-portfolio {
@@ -261,7 +265,7 @@
 }
 
 :root.dark-mode .hover-dep-name {
-  color: #f3f4f6;
+  color: #00aeef;
 }
 
 :root.dark-mode .hover-hint {
