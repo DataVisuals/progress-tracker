@@ -1702,6 +1702,19 @@ function App() {
               ) : (
                 <>
                   <div className="chaser-section">
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        const subject = `Metric Inconsistencies - ${spaces.find(s => s.id === parseInt(selectedSpace))?.name || 'Space'}`;
+                        const body = `Please take a look at your metric inconsistencies and correct as soon as possible in http://ptracker/\n\nThank You!\n\n${chaserData.sections}`;
+                        const mailtoUrl = `mailto:${encodeURIComponent(chaserData.emails)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                        window.location.href = mailtoUrl;
+                      }}
+                    >
+                      Open in Email Client
+                    </button>
+                  </div>
+                  <div className="chaser-section">
                     <label className="chaser-label">To: ({chaserData.pmCount} initiative owners)</label>
                     <textarea
                       className="chaser-textarea chaser-emails"
