@@ -1895,8 +1895,8 @@ html.dark-mode .quadrant-content {
 
 /* User Inconsistencies Modal */
 .user-inconsistencies-modal {
-  max-width: 600px !important;
-  width: 90% !important;
+  max-width: 500px !important;
+  width: auto !important;
 }
 
 .user-inconsistencies-modal .modal-icon.warning {
@@ -1917,8 +1917,6 @@ html.dark-mode .quadrant-content {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  max-height: 400px;
-  overflow-y: auto;
 }
 
 .user-inconsistency-item {
