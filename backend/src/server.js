@@ -5939,6 +5939,16 @@ function createApp(dbPath) {
       // Indexes already exist, that's fine
     }
 
+    // Migration: Add performance indexes for common queries
+    try {
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_projects_portfolio ON projects(portfolio_id)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_projects_created ON projects(created_at)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_audit_log_record ON audit_log(record_id)`);
+      console.log('✅ Created performance indexes');
+    } catch (err) {
+      // Indexes already exist, that's fine
+    }
+
     // Create default admin user if none exists
     const existingAdmin = await dbGet('SELECT id FROM users WHERE email = ? OR name = ?', ['admin@example.com', 'Admin User']);
     if (!existingAdmin) {
