@@ -2,12 +2,14 @@
   max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
+  padding: 0;
 }
 
 .import-content {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  padding: 24px;
 }
 
 .import-section {

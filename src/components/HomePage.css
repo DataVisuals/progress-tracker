@@ -821,13 +821,18 @@ html.dark-mode .quadrant-content {
   margin-top: 4px;
 }
 
+.summary-quadrant .quadrant-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .getting-started {
   padding: 0;
   background: transparent;
   border: none;
   border-radius: 0;
   text-align: left;
-  height: 100%;
 }
 
 .getting-started h3 {

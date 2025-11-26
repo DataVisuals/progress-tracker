@@ -93,33 +93,6 @@ function App() {
       return false;
     }
   });
-  const [clipboardAvailable, setClipboardAvailable] = useState(true);
-
-  // Check clipboard availability on mount
-  useEffect(() => {
-    const checkClipboard = async () => {
-      // Check if clipboard API exists and is allowed
-      if (!navigator.clipboard || !navigator.clipboard.writeText) {
-        setClipboardAvailable(false);
-        return;
-      }
-      // Try a test write to check if policy allows it
-      try {
-        // Some browsers require user interaction, so we just check permissions
-        if (navigator.permissions) {
-          const result = await navigator.permissions.query({ name: 'clipboard-write' });
-          if (result.state === 'denied') {
-            setClipboardAvailable(false);
-          }
-        }
-      } catch (err) {
-        // Permission query not supported, assume clipboard might work
-        console.log('Clipboard permission check not supported');
-      }
-    };
-    checkClipboard();
-  }, []);
-
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -1003,8 +976,6 @@ function App() {
       alert('Link copied to clipboard!');
     } catch (err) {
       console.error('Failed to copy link:', err);
-      // Clipboard blocked by policy - hide the button for future
-      setClipboardAvailable(false);
       // Fallback: show the URL in a prompt
       prompt('Copy this link:', window.location.href);
     }
@@ -1448,15 +1419,13 @@ function App() {
                           canEdit={canEdit()}
                           onNavigateToProject={handleNavigateToProject}
                         />
-                        {clipboardAvailable && (
-                          <button
-                            onClick={handleShareLink}
-                            className="share-link-btn"
-                            title="Copy link to this page"
-                          >
-                            <MdShare />
-                          </button>
-                        )}
+                        <button
+                          onClick={handleShareLink}
+                          className="share-link-btn"
+                          title="Copy link to this page"
+                        >
+                          <MdShare />
+                        </button>
                       </div>
                     </div>
 
@@ -1622,9 +1591,9 @@ function App() {
           onClick={(e) => handleModalClick(e, () => setShowAuditLog(false))}
         >
           <div className="modal-content audit-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setShowAuditLog(false)}>×</button>
             <div className="modal-header">
               <h2>Audit Log</h2>
+              <button className="modal-close" onClick={() => setShowAuditLog(false)}>×</button>
             </div>
             <AuditLog />
           </div>
@@ -1783,7 +1752,7 @@ function App() {
           <div className="modal-content emails-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>All Project Manager Emails ({spaceEmailsData.count})</h2>
-              <button className="close-btn" onClick={() => setShowSpaceEmails(false)}>×</button>
+              <button className="modal-close" onClick={() => setShowSpaceEmails(false)}>×</button>
             </div>
             <div className="modal-body">
               <p className="emails-description">
@@ -1795,15 +1764,6 @@ function App() {
                 readOnly
                 rows={Math.min(10, Math.max(3, spaceEmailsData.count))}
               />
-              <button
-                className="copy-btn"
-                onClick={() => {
-                  navigator.clipboard.writeText(spaceEmailsData.emails);
-                  alert('Emails copied to clipboard!');
-                }}
-              >
-                Copy to Clipboard
-              </button>
             </div>
           </div>
         </div>

@@ -104,10 +104,12 @@ const PageHeatmapReport = ({ onClose, selectedSpace = 'all', spaces = [] }) => {
   return (
     <div className="modal-overlay">
       <div className="modal-content page-heatmap-modal">
-        <button className="close-btn" onClick={onClose}>×</button>
         <div className="modal-header">
-          <h2>Project Heatmap Report</h2>
-          <p className="modal-subtitle">Project view analytics - Which projects are getting the most attention</p>
+          <div className="modal-title-group">
+            <h2>Project Heatmap Report</h2>
+            <p className="modal-subtitle">Project view analytics - Which projects are getting the most attention</p>
+          </div>
+          <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
         <div className="heatmap-controls">

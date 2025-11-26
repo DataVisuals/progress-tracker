@@ -200,9 +200,9 @@ const UserActivityReport = ({ onClose, selectedSpace = 'all', spaces = [] }) => 
   return (
     <div className="modal-overlay">
       <div className="modal-content user-activity-modal">
-        <button className="close-btn" onClick={onClose}>×</button>
         <div className="modal-header">
           <h2>User Activity Report</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
         <div className="activity-controls">

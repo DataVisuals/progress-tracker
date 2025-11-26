@@ -4,6 +4,15 @@
   max-height: 95vh;
   min-height: 600px;
   overflow-y: auto;
+  padding: 0;
+}
+
+.page-heatmap-modal .modal-title-group {
+  flex: 1;
+}
+
+.page-heatmap-modal .modal-title-group h2 {
+  margin: 0;
 }
 
 .modal-subtitle {

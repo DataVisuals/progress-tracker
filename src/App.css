@@ -994,6 +994,11 @@
 .emails-modal {
   max-width: 500px;
   width: 90%;
+  padding: 0;
+}
+
+.emails-modal .modal-body {
+  padding: 24px;
 }
 
 .emails-description {
@@ -1044,6 +1049,7 @@
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  padding: 0;
 }
 
 .modal-header {
