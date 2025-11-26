@@ -50,12 +50,6 @@ const HomePage = ({
   portfolios = [],
   darkMode = false
 }) => {
-  console.log('=== HomePage Rendering ===');
-  console.log('Projects:', Object.keys(projects || {}).length);
-  console.log('ProjectsData keys:', Object.keys(projectsData || {}).length);
-  console.log('SelectedSpace:', selectedSpace);
-  console.log('Spaces:', spaces?.length);
-  console.log('Portfolios:', portfolios?.length);
 
   const [recentCommentary, setRecentCommentary] = useState([]);
   const [atRiskMetrics, setAtRiskMetrics] = useState([]);
@@ -68,8 +62,9 @@ const HomePage = ({
   const loadingRef = useRef(false); // Track if data is currently being loaded
   const [recoveryPlans, setRecoveryPlans] = useState([]); // Track active recovery plans
   const [inconsistencies, setInconsistencies] = useState(null); // Inconsistency report data
+  const [pageHeatmap, setPageHeatmap] = useState(null); // Page heatmap data for quadrant
   const [showTipsModal, setShowTipsModal] = useState(false); // Modal for tips
-  const [selectedTipsCategory, setSelectedTipsCategory] = useState('Purpose'); // Selected category in tips modal
+  const [selectedTipsCategory, setSelectedTipsCategory] = useState('Getting Started'); // Selected category in tips modal
   const [showWhatsNewModal, setShowWhatsNewModal] = useState(false); // Modal for what's new
   const [selectedWhatsNewCategory, setSelectedWhatsNewCategory] = useState('Recent Updates'); // Selected category in what's new modal
   const [showUserInconsistenciesModal, setShowUserInconsistenciesModal] = useState(false); // Modal for user's own inconsistencies
@@ -78,6 +73,43 @@ const HomePage = ({
 
   // Tips organized by theme
   const tipsByCategory = {
+    "Getting Started": [
+      {
+        icon: <MdFolderSpecial />,
+        title: "1. Create a Project",
+        description: "Add a project to a portfolio giving it a description that clearly defines the business outcome you're tracking towards."
+      },
+      {
+        icon: <MdShowChart />,
+        title: "2. Define Your Metrics",
+        description: "Define measures that move each reporting period (lead measures) and measures that demonstrate success (lag measures). Give them sensible names and describe precisely what they measure."
+      },
+      {
+        icon: <MdTimeline />,
+        title: "3. Set Expected Trajectories",
+        description: "Describe the trajectory of these measures over time as an expected curve. This gives you a baseline to compare actual progress against."
+      },
+      {
+        icon: <MdTune />,
+        title: "4. Define Tolerances",
+        description: "Set amber and red thresholds for deviation from the expected curve. This determines when metrics trigger warnings."
+      },
+      {
+        icon: <MdEdit />,
+        title: "5. Update Each Period",
+        description: "Each reporting period, update the completed values for each metric. If these are out of tolerance, provide commentary explaining why and what you're doing about it."
+      },
+      {
+        icon: <MdAssignment />,
+        title: "6. Create Recovery Plans",
+        description: "When metrics go red, create recovery plans with specific actions and dates. Track these through to completion."
+      },
+      {
+        icon: <MdDashboard />,
+        title: "7. Monitor the Dashboard",
+        description: "Keep an eye on the consistency panel of the home page for data quality issues. Use filters to focus on what needs attention."
+      }
+    ],
     "Purpose": [
       {
         icon: <MdTrackChanges />,
@@ -766,6 +798,15 @@ const HomePage = ({
       } catch (inconsistencyErr) {
         console.log('Could not load inconsistency report:', inconsistencyErr.message);
       }
+
+      // Load project view data for quadrant (top 10 projects by views)
+      try {
+        const spaceParam = selectedSpace !== 'all' ? `&space_id=${selectedSpace}` : '';
+        const viewsResponse = await api.get(`/project-views?days=30${spaceParam}`);
+        setPageHeatmap(viewsResponse.data);
+      } catch (viewsErr) {
+        setPageHeatmap({ by_path: [], error: true }); // Set empty data on error
+      }
     } catch (err) {
       console.error('Failed to load home page data:', err);
     } finally {
@@ -941,67 +982,60 @@ const HomePage = ({
       </div>
 
       <div className={`home-grid ${feedback.length === 0 ? 'no-feedback' : ''}`}>
-        {/* Top Left - Getting Started */}
-        <div className="home-quadrant summary-quadrant">
+        {/* Top Left - Most Viewed Projects */}
+        <div className="home-quadrant heatmap-quadrant">
           <div className="quadrant-header">
-            <MdTrendingUp className="quadrant-icon" />
-            <h2>Getting Started</h2>
+            <MdVisibility className="quadrant-icon" />
+            <h2>Most Viewed Projects</h2>
+            <span className="quadrant-subtitle">Last 30 days</span>
           </div>
           <div className="quadrant-content">
-            <div className="getting-started">
-              <ul>
-                <li>
-                  <button className="tips-link-btn" onClick={() => setShowTipsModal(true)}>
-                    <MdLightbulb className="step-icon" />
-                    <span>Purpose of Progress Tracker and Best Practices</span>
-                  </button>
-                </li>
-                <li>
-                  <svg className="step-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 7V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M3 7L10 5H14L21 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span>Add a project to a portfolio giving it a description that clearly defines the business outcome</span>
-                </li>
-                <li>
-                  <svg className="step-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 3V6M15 3V6M3 10H21M5 5H19C20.1046 5 21 5.89543 21 7V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V7C3 5.89543 3.89543 5 5 5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    <circle cx="12" cy="15" r="1.5" fill="currentColor"/>
-                  </svg>
-                  <span>Define measures that move each reporting period (lead measures) and measures that demonstrate success (lag measures). Give them sensible names and describe precisely what they measure.</span>
-                </li>
-                <li>
-                  <svg className="step-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 17L6 14L10 18L18 7L21 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M3 20H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  <span>Describe the trajectory of these measures over time as an expected curve.</span>
-                </li>
-                <li>
-                  <svg className="step-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M4 8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.4"/>
-                    <path d="M4 16H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.4"/>
-                    <circle cx="12" cy="12" r="2" fill="currentColor"/>
-                    <path d="M8 8V16M16 8V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.6"/>
-                  </svg>
-                  <span>Define tolerances for deviation from the curve.</span>
-                </li>
-                <li>
-                  <svg className="step-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 12L9 17L20 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <circle cx="19" cy="19" r="3" fill="currentColor"/>
-                  </svg>
-                  <span>Each period update the completed values for each metric. If these are out of tolerance, provide commentary and a recovery plan.</span>
-                </li>
-                <li>
-                  <svg className="step-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  <span>Keep an eye on the consistency panel of the home page for data quality issues.</span>
-                </li>
-              </ul>
+            {pageHeatmap && pageHeatmap.by_path ? (
+              <div className="heatmap-list">
+                {(() => {
+                  const projectItems = pageHeatmap.by_path.filter(item => item.path.startsWith('Project: '));
+                  const maxViews = projectItems[0]?.views || 1;
+
+                  // Heat color function (hot to cold) - 4 levels
+                  const getHeatColor = (ratio) => {
+                    if (ratio > 0.75) return '#dc2626'; // Hot - red
+                    if (ratio > 0.5) return '#f59e0b'; // Warm - orange
+                    if (ratio > 0.25) return '#10b981'; // Cool - green
+                    return '#60a5fa'; // Cold - blue
+                  };
+
+                  return projectItems.slice(0, 10).map((item) => {
+                    const projectName = item.path.replace('Project: ', '');
+                    const ratio = item.views / maxViews;
+                    const heatColor = getHeatColor(ratio);
+                    return (
+                      <div key={item.path} className="heatmap-row" onClick={() => {
+                        const projectEntry = Object.entries(projects).find(([id, p]) => p.name === projectName);
+                        if (projectEntry && onNavigateToProject) {
+                          onNavigateToProject(parseInt(projectEntry[0]));
+                        }
+                      }}>
+                        <span className="heatmap-name" title={projectName}>{projectName}</span>
+                        <div className="heatmap-bar-container">
+                          <div className="heatmap-bar" style={{ width: `${Math.round(ratio * 100)}%`, backgroundColor: heatColor }} />
+                        </div>
+                        <span className="heatmap-views">{item.views}</span>
+                      </div>
+                    );
+                  });
+                })()}
+                {pageHeatmap.by_path.filter(item => item.path.startsWith('Project: ')).length === 0 && (
+                  <div className="empty-state">No project views recorded yet</div>
+                )}
+              </div>
+            ) : (
+              <div className="empty-state">Loading view data...</div>
+            )}
+            <div className="heatmap-legend">
+              <div className="legend-item"><span className="legend-color" style={{ background: '#dc2626' }} /><span>Hot</span></div>
+              <div className="legend-item"><span className="legend-color" style={{ background: '#f59e0b' }} /><span>Warm</span></div>
+              <div className="legend-item"><span className="legend-color" style={{ background: '#10b981' }} /><span>Cool</span></div>
+              <div className="legend-item"><span className="legend-color" style={{ background: '#60a5fa' }} /><span>Cold</span></div>
             </div>
           </div>
         </div>
@@ -1556,6 +1590,9 @@ const HomePage = ({
 
       {/* Footer Links */}
       <div className="homepage-footer">
+        <button className="footer-link" onClick={() => setShowTipsModal(true)}>
+          <MdLightbulb /> Getting Started
+        </button>
         <button className="footer-link" onClick={() => setShowWhatsNewModal(true)}>
           <MdNotifications /> What's New
         </button>

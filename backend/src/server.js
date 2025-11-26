@@ -4317,6 +4317,43 @@ function createApp(dbPath) {
     }
   });
 
+  // Get project view counts (public - just project names and view counts)
+  app.get('/api/project-views', optionalAuthenticateToken, async (req, res) => {
+    try {
+      const { days = 30, space_id } = req.query;
+      const daysAgo = new Date();
+      const parsedDays = parseInt(days) || 30;
+      daysAgo.setDate(daysAgo.getDate() - parsedDays);
+
+      console.log('Project views request - days:', parsedDays, 'space_id:', space_id);
+
+      // Build space filter
+      const spaceFilter = space_id ? `AND po.space_id = ${parseInt(space_id)}` : '';
+
+      // Get project view counts only
+      const projectViews = await dbAll(`
+        SELECT pv.path, COUNT(*) as views
+        FROM page_views pv
+        LEFT JOIN projects p ON pv.path = 'Project: ' || p.name
+        LEFT JOIN portfolios po ON p.portfolio_id = po.id
+        WHERE pv.created_at >= ? AND pv.path LIKE 'Project:%' ${spaceFilter}
+        GROUP BY pv.path
+        ORDER BY views DESC
+        LIMIT 20
+      `, [daysAgo.toISOString()]);
+
+      console.log('Project views result:', projectViews.length, 'items');
+
+      res.json({
+        by_path: projectViews,
+        period: parsedDays
+      });
+    } catch (err) {
+      console.error('Project views error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Get page heatmap data (admin only) - filtered for projects only
   app.get('/api/admin/page-heatmap', authenticateToken, async (req, res) => {
     try {

@@ -1110,9 +1110,6 @@ function App() {
                     <button onMouseDown={() => { setShowUserActivity(true); setShowAdminDropdown(false); }}>
                       User Activity Report
                     </button>
-                    <button onMouseDown={() => { setShowPageHeatmap(true); setShowAdminDropdown(false); }}>
-                      Page Heatmap
-                    </button>
                     <button onMouseDown={() => { handleGetAllEmails(); setShowAdminDropdown(false); }}>
                       Get All Emails
                     </button>

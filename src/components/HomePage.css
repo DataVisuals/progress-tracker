@@ -821,55 +821,126 @@ html.dark-mode .quadrant-content {
   margin-top: 4px;
 }
 
-.summary-quadrant .quadrant-content {
+/* Heatmap Quadrant Styles */
+.heatmap-quadrant .quadrant-content {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+}
+
+.quadrant-subtitle {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 400;
+  margin-left: auto;
+}
+
+.heatmap-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.heatmap-row {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
-.getting-started {
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  text-align: left;
+.heatmap-row:hover {
+  background: #f3f4f6;
 }
 
-.getting-started h3 {
-  margin: 0 0 16px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.getting-started ul {
-  margin: 0;
-  padding-left: 0;
-  list-style-type: none;
-}
-
-.getting-started li {
-  font-size: 16px;
-  color: #4b5563;
-  line-height: 1.7;
-  margin-bottom: 14px;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.getting-started .step-icon {
-  width: 20px;
-  height: 20px;
+.heatmap-name {
+  width: 240px;
   flex-shrink: 0;
-  color: #00aeef;
-  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
 }
 
-.getting-started li:last-child {
-  margin-bottom: 0;
+.heatmap-bar-container {
+  flex: 1;
+  height: 24px;
+  background: #e2e8f0;
+  border-radius: 0 6px 6px 0;
+  overflow: hidden;
+}
+
+.heatmap-bar {
+  height: 100%;
+  border-radius: 0 6px 6px 0;
+  min-width: 4px;
+  transition: width 0.3s ease;
+}
+
+.heatmap-views {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  min-width: 36px;
+  text-align: right;
+}
+
+.heatmap-legend {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+
+.heatmap-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  color: #9ca3af;
+}
+
+.heatmap-legend .legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+/* Dark mode for heatmap quadrant */
+:root.dark-mode .heatmap-row:hover {
+  background: #374151;
+}
+
+:root.dark-mode .heatmap-bar-container {
+  background: #374151;
+}
+
+:root.dark-mode .heatmap-name {
+  color: #e5e7eb;
+}
+
+:root.dark-mode .heatmap-views {
+  color: #e5e7eb;
+}
+
+:root.dark-mode .heatmap-legend {
+  border-top-color: #374151;
+}
+
+:root.dark-mode .heatmap-legend .legend-item {
+  color: #9ca3af;
+}
+
+:root.dark-mode .quadrant-subtitle {
+  color: #6b7280;
 }
 
 .tips-link-btn {
@@ -1120,18 +1191,6 @@ html.dark-mode .quadrant-content {
   color: #9ca3af;
 }
 
-:root.dark-mode .getting-started h3 {
-  color: #9ca3af;
-}
-
-:root.dark-mode .getting-started li {
-  color: #d1d5db;
-}
-
-:root.dark-mode .getting-started .step-icon {
-  color: #00aeef;
-}
-
 :root.dark-mode .tips-link-btn {
   color: #00aeef;
 }
@@ -1229,11 +1288,6 @@ html.dark-mode .quadrant-content {
     padding: 10px 14px;
   }
 
-  .getting-started {
-    padding: 12px;
-    margin-top: 8px;
-  }
-
   .metric-item,
   .commentary-item,
   .tip-item {
@@ -1274,11 +1328,6 @@ html.dark-mode .quadrant-content {
 
   .summary-card {
     padding: 8px 12px;
-  }
-
-  .getting-started {
-    padding: 10px;
-    margin-top: 6px;
   }
 
   .metric-item,
@@ -1624,7 +1673,7 @@ html.dark-mode .quadrant-content {
 
 /* Tabbed Tips Modal */
 .modal-content.tips-modal-tabbed {
-  max-width: 1100px;
+  max-width: 1400px;
   width: 95%;
   max-height: 80vh;
 }
