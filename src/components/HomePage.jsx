@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Select from 'react-select';
+import Lottie from 'lottie-react';
+import fixingAnimation from '../../public/fixing-animation.json';
 import {
   MdComment,
   MdWarning,
@@ -1479,7 +1481,11 @@ const HomePage = ({
         }}>
           <div className="modal-content user-inconsistencies-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <MdWarning className="modal-icon warning" />
+              <Lottie
+                animationData={fixingAnimation}
+                loop={true}
+                className="modal-icon-lottie"
+              />
               <h2>Your Projects Need Attention</h2>
               <button className="modal-close" onClick={() => {
                 setShowUserInconsistenciesModal(false);

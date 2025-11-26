@@ -1903,6 +1903,12 @@ html.dark-mode .quadrant-content {
   color: #f59e0b;
 }
 
+.modal-icon-lottie {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
 .user-inconsistencies-modal .modal-body {
   padding: 12px 16px;
 }
