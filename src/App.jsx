@@ -94,12 +94,35 @@ function App() {
     }
   });
 
+  const [retryCountdown, setRetryCountdown] = useState(10);
+
   // Register server status callback
   useEffect(() => {
     onServerStatus((status) => {
       setServerUnavailable(!status.available);
+      if (status.available) {
+        setRetryCountdown(10); // Reset countdown when server is back
+      }
     });
   }, []);
+
+  // Auto-retry when server is unavailable
+  useEffect(() => {
+    if (!serverUnavailable) return;
+
+    const countdownInterval = setInterval(() => {
+      setRetryCountdown(prev => {
+        if (prev <= 1) {
+          // Trigger a health check by fetching spaces
+          api.get('/spaces').catch(() => {}); // Will trigger onServerStatus callback
+          return 10; // Reset countdown
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(countdownInterval);
+  }, [serverUnavailable]);
 
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
@@ -981,7 +1004,7 @@ function App() {
     <div className="app">
       {serverUnavailable && (
         <div className="maintenance-banner">
-          Please wait a few minutes while we perform a release. It will take around 90 seconds.
+          Please wait while we perform a release. Retrying in {retryCountdown}s...
         </div>
       )}
       <header className="app-header-main">
