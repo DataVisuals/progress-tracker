@@ -25,7 +25,8 @@ import PageHeatmapReport from './components/PageHeatmapReport';
 import HomePage from './components/HomePage';
 import { api } from './api/client';
 import { selectStyles } from './components/SelectStyles';
-import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
+import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode, MdMonitorHeart } from 'react-icons/md';
+import ProjectHealthModal from './components/ProjectHealthModal';
 import Lottie from 'lottie-react';
 import progressChartAnimation from '../public/progress-chart.json';
 import { trackPage } from './hooks/usePageTracking';
@@ -82,6 +83,7 @@ function App() {
   const [showPageHeatmap, setShowPageHeatmap] = useState(false);
   const [showGridView, setShowGridView] = useState(false);
   const [showTenReasons, setShowTenReasons] = useState(false);
+  const [showProjectHealth, setShowProjectHealth] = useState(false);
   const [allProjectsData, setAllProjectsData] = useState({}); // For HomePage red metrics
   const [darkMode, setDarkMode] = useState(() => {
     try {
@@ -1192,6 +1194,13 @@ function App() {
                         {projectName}
                       </h2>
                     )}
+                    <button
+                      className="project-health-btn"
+                      onClick={() => setShowProjectHealth(true)}
+                      title="View project health"
+                    >
+                      <MdMonitorHeart />
+                    </button>
                     {/* Portfolio badge inline with title */}
                     {!editingPortfolio && currentProject?.portfolio_name && (
                       <div
@@ -1883,6 +1892,17 @@ function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Project Health Modal */}
+      {showProjectHealth && currentProject && (
+        <ProjectHealthModal
+          project={currentProject}
+          projectData={projectData}
+          metrics={projectMetrics}
+          recoveryPlans={[]}
+          onClose={() => setShowProjectHealth(false)}
+        />
       )}
     </div>
   );
