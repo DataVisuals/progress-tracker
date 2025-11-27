@@ -73,7 +73,15 @@ const HomePage = ({
   const [userInconsistenciesDismissed, setUserInconsistenciesDismissed] = useState(false); // Track if user dismissed the modal
   const [expandedPMs, setExpandedPMs] = useState({}); // Track which PMs are expanded in inconsistency report
   const [userProjectFeedback, setUserProjectFeedback] = useState([]); // Recent feedback on user's projects
-  const [dismissedFeedbackIds, setDismissedFeedbackIds] = useState([]); // Track dismissed feedback
+  const [dismissedFeedbackIds, setDismissedFeedbackIds] = useState(() => {
+    // Load dismissed feedback IDs from localStorage
+    try {
+      const stored = localStorage.getItem('dismissedFeedbackIds');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }); // Track dismissed feedback
 
   // Tips organized by theme
   const tipsByCategory = {
@@ -1588,7 +1596,9 @@ const HomePage = ({
                               className="feedback-dismiss-btn"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setDismissedFeedbackIds(prev => [...prev, fb.id]);
+                                const newDismissed = [...dismissedFeedbackIds, fb.id];
+                                setDismissedFeedbackIds(newDismissed);
+                                localStorage.setItem('dismissedFeedbackIds', JSON.stringify(newDismissed));
                               }}
                               title="Dismiss this feedback"
                             >
