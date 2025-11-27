@@ -71,6 +71,12 @@ const HomePage = ({
   const [userInconsistenciesDismissed, setUserInconsistenciesDismissed] = useState(false); // Track if user dismissed the modal
   const [expandedPMs, setExpandedPMs] = useState({}); // Track which PMs are expanded in inconsistency report
   const [userProjectFeedback, setUserProjectFeedback] = useState([]); // Unresolved feedback on user's projects
+  const [viewsDays, setViewsDays] = useState(() => {
+    // Initialize from localStorage with fallback to 7 days
+    const stored = localStorage.getItem('mostViewedProjectsDays');
+    const parsed = stored ? parseInt(stored, 10) : null;
+    return [1, 7, 30, 90].includes(parsed) ? parsed : 7;
+  });
 
   // Tips organized by theme
   const tipsByCategory = {
@@ -364,6 +370,23 @@ const HomePage = ({
       }
     }
   }, [Object.keys(projects).length, Object.keys(projectsData).length, selectedSpace, portfolios]); // Re-run when counts change or space/portfolios change
+
+  // Refetch project views when viewsDays changes
+  useEffect(() => {
+    const fetchProjectViews = async () => {
+      try {
+        const spaceParam = selectedSpace !== 'all' ? `&space_id=${selectedSpace}` : '';
+        const viewsResponse = await api.get(`/project-views?days=${viewsDays}${spaceParam}`);
+        setPageHeatmap(viewsResponse.data);
+      } catch (viewsErr) {
+        setPageHeatmap({ by_path: [], error: true });
+      }
+    };
+    // Only fetch if we have projects loaded
+    if (Object.keys(projects).length > 0) {
+      fetchProjectViews();
+    }
+  }, [viewsDays, selectedSpace]);
 
   const selectRandomTips = () => {
     const shuffled = [...allTips].sort(() => 0.5 - Math.random());
@@ -716,7 +739,7 @@ const HomePage = ({
       // Load project view data for quadrant (top 10 projects by views)
       try {
         const spaceParam = selectedSpace !== 'all' ? `&space_id=${selectedSpace}` : '';
-        const viewsResponse = await api.get(`/project-views?days=30${spaceParam}`);
+        const viewsResponse = await api.get(`/project-views?days=${viewsDays}${spaceParam}`);
         setPageHeatmap(viewsResponse.data);
       } catch (viewsErr) {
         setPageHeatmap({ by_path: [], error: true }); // Set empty data on error
@@ -910,7 +933,23 @@ const HomePage = ({
           <div className="quadrant-header">
             <MdVisibility className="quadrant-icon" />
             <h2>Most Viewed Projects</h2>
-            <span className="quadrant-subtitle">Last 30 days</span>
+            <Select
+              key={`views-days-${darkMode}`}
+              className="portfolio-filter-dropdown"
+              styles={smallSelectStyles}
+              value={{ value: viewsDays, label: viewsDays === 1 ? 'Last 24 hours' : `Last ${viewsDays} days` }}
+              onChange={(option) => {
+                setViewsDays(option.value);
+                localStorage.setItem('mostViewedProjectsDays', option.value.toString());
+              }}
+              options={[
+                { value: 1, label: 'Last 24 hours' },
+                { value: 7, label: 'Last 7 days' },
+                { value: 30, label: 'Last 30 days' },
+                { value: 90, label: 'Last 90 days' }
+              ]}
+              isSearchable={false}
+            />
           </div>
           <div className="quadrant-content">
             {pageHeatmap && pageHeatmap.by_path ? (
@@ -1507,15 +1546,16 @@ const HomePage = ({
       {/* Footer Links */}
       <div className="homepage-footer">
         <button className="footer-link" onClick={() => setShowTipsModal(true)}>
-          <MdLightbulb /> Getting Started
+          Getting Started
         </button>
+        <span className="footer-divider">|</span>
         <a
           className="footer-link"
           href="https://github.com/DataVisuals/progress-tracker/commits/master/"
           target="_blank"
           rel="noopener noreferrer"
         >
-          <MdNotifications /> What's New
+          What's New
         </a>
       </div>
     </div>

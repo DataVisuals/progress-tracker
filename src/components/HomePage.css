@@ -2084,35 +2084,37 @@ html.dark-mode .quadrant-content {
 .homepage-footer {
   display: flex;
   justify-content: center;
-  gap: 24px;
-  padding: 8px;
+  align-items: center;
+  gap: 12px;
+  padding: 6px;
   border-top: 1px solid #e5e7eb;
   background: #f9fafb;
   margin-top: auto;
 }
 
 .footer-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   background: none;
   border: none;
-  color: #00aeef;
-  font-size: 14px;
-  font-weight: 500;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 400;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: 0.2px;
   cursor: pointer;
-  padding: 6px 8px;
-  border-radius: 6px;
-  transition: all 0.2s;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: color 0.2s;
+  text-decoration: none;
 }
 
 .footer-link:hover {
-  background: #e0f2fe;
-  color: #0095d1;
+  color: #00aeef;
 }
 
-.footer-link svg {
-  font-size: 18px;
+.footer-divider {
+  color: #d1d5db;
+  font-size: 12px;
+  font-weight: 300;
 }
 
 /* Dark Mode Support */
@@ -2297,6 +2299,14 @@ html.dark-mode .quadrant-content {
   border-top-color: #374151;
 }
 
+:root.dark-mode .footer-link {
+  color: #9ca3af;
+}
+
 :root.dark-mode .footer-link:hover {
-  background: #1f2937;
+  color: #00aeef;
+}
+
+:root.dark-mode .footer-divider {
+  color: #4b5563;
 }
