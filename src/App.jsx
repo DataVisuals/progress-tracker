@@ -1211,6 +1211,16 @@ function App() {
                         </span>
                       </div>
                     )}
+                    {/* No portfolio placeholder - shown inline with title */}
+                    {!editingPortfolio && !currentProject?.portfolio_name && canEdit() && (
+                      <div
+                        className="portfolio-display-inline editable"
+                        onClick={handlePortfolioClick}
+                        title="Click to assign portfolio"
+                      >
+                        <span className="portfolio-none-inline">+ Add Portfolio</span>
+                      </div>
+                    )}
                     {editingProjectDates ? (
                       <div className="date-editor">
                         <input
@@ -1323,17 +1333,6 @@ function App() {
                             Cancel
                           </button>
                         </div>
-                      </div>
-                    )}
-
-                    {/* No portfolio placeholder (when not editing and no portfolio assigned) */}
-                    {!editingPortfolio && !currentProject?.portfolio_name && canEdit() && (
-                      <div
-                        className="portfolio-display-inline editable"
-                        onClick={handlePortfolioClick}
-                        title="Click to assign portfolio"
-                      >
-                        <span className="portfolio-none-inline">+ Add Portfolio</span>
                       </div>
                     )}
 

@@ -43,7 +43,7 @@ const ProjectDependencies = ({
     try {
       await api.addProjectDependency(projectId, option.value);
       await loadDependencies();
-      setShowSelector(false);
+      // Don't close selector - allow adding more
     } catch (err) {
       console.error('Failed to add dependency:', err);
       alert(err.response?.data?.error || 'Failed to add dependency');

@@ -1373,7 +1373,7 @@
 }
 
 .metric-description-text.placeholder {
-  color: #9ca3af;
+  color: #ec4899;
   font-style: italic;
 }
 
@@ -1800,7 +1800,7 @@
 }
 
 :root.dark-mode .metric-description-text.placeholder {
-  color: #6b7280;
+  color: #f472b6;
 }
 
 @media (max-height: 768px) {
