@@ -1588,17 +1588,6 @@ const HomePage = ({
                 </>
               )}
             </div>
-            <div className="modal-footer">
-              <button
-                className="dismiss-btn"
-                onClick={() => {
-                  setShowUserInconsistenciesModal(false);
-                  setUserInconsistenciesDismissed(true);
-                }}
-              >
-                Dismiss for now
-              </button>
-            </div>
           </div>
         </div>
       )}

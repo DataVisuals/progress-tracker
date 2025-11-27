@@ -1540,8 +1540,8 @@ html.dark-mode .quadrant-content {
 .modal-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 24px;
+  gap: 8px;
+  padding: 8px 16px;
   border-bottom: 1px solid #e5e7eb;
   background: #f9fafb;
 }
@@ -1554,7 +1554,7 @@ html.dark-mode .quadrant-content {
 }
 
 .modal-icon {
-  font-size: 28px;
+  font-size: 20px;
   color: #00aeef;
 }
 
@@ -1904,8 +1904,8 @@ html.dark-mode .quadrant-content {
 }
 
 .modal-icon-lottie {
-  width: 64px;
-  height: 64px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
 }
 
