@@ -72,16 +72,7 @@ const HomePage = ({
   const [showUserInconsistenciesModal, setShowUserInconsistenciesModal] = useState(false); // Modal for user's own inconsistencies
   const [userInconsistenciesDismissed, setUserInconsistenciesDismissed] = useState(false); // Track if user dismissed the modal
   const [expandedPMs, setExpandedPMs] = useState({}); // Track which PMs are expanded in inconsistency report
-  const [userProjectFeedback, setUserProjectFeedback] = useState([]); // Recent feedback on user's projects
-  const [dismissedFeedbackIds, setDismissedFeedbackIds] = useState(() => {
-    // Load dismissed feedback IDs from localStorage
-    try {
-      const stored = localStorage.getItem('dismissedFeedbackIds');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  }); // Track dismissed feedback
+  const [userProjectFeedback, setUserProjectFeedback] = useState([]); // Unresolved feedback on user's projects
 
   // Tips organized by theme
   const tipsByCategory = {
@@ -1561,19 +1552,17 @@ const HomePage = ({
                 })}
               </div>
 
-              {/* Recent Feedback Section */}
-              {userProjectFeedback.filter(f => !dismissedFeedbackIds.includes(f.id)).length > 0 && (
+              {/* Unresolved Feedback Section */}
+              {userProjectFeedback.length > 0 && (
                 <>
                   <div className="feedback-divider" />
                   <p className="inconsistency-intro" style={{ marginTop: '16px' }}>
                     <MdFeedback style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-                    Recent feedback on your projects:
+                    Unresolved feedback on your projects (mark as resolved to clear):
                   </p>
                   <div className="user-feedback-list">
-                    {userProjectFeedback
-                      .filter(f => !dismissedFeedbackIds.includes(f.id))
-                      .map((fb) => {
-                        const projectUrl = `${window.location.origin}${window.location.pathname}?project=${fb.project_id}`;
+                    {userProjectFeedback.map((fb) => {
+                        const projectUrl = `${window.location.origin}${window.location.pathname}?project=${fb.project_id}&tab=feedback`;
                         return (
                           <div key={fb.id} className="user-feedback-item">
                             <a
@@ -1592,18 +1581,6 @@ const HomePage = ({
                                 </div>
                               </div>
                             </a>
-                            <button
-                              className="feedback-dismiss-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const newDismissed = [...dismissedFeedbackIds, fb.id];
-                                setDismissedFeedbackIds(newDismissed);
-                                localStorage.setItem('dismissedFeedbackIds', JSON.stringify(newDismissed));
-                              }}
-                              title="Dismiss this feedback"
-                            >
-                              ×
-                            </button>
                           </div>
                         );
                       })}

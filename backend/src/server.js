@@ -1543,7 +1543,7 @@ function createApp(dbPath) {
         return res.status(400).json({ error: 'User not found' });
       }
 
-      // Get feedback for projects where user is initiative_manager or secondary_pm
+      // Get unresolved feedback for projects where user is initiative_manager or secondary_pm
       const feedback = await dbAll(`
         SELECT f.*,
                u.name as user_name,
@@ -1558,10 +1558,10 @@ function createApp(dbPath) {
         LEFT JOIN users r ON f.responded_by = r.id
         LEFT JOIN users s ON f.resolved_by = s.id
         WHERE (p.initiative_manager = ? OR p.secondary_pm = ?)
-          AND f.created_at >= datetime('now', '-' || ? || ' days')
+          AND f.status != 'resolved'
         ORDER BY f.created_at DESC
         LIMIT ?
-      `, [userName, userName, days, parseInt(limit)]);
+      `, [userName, userName, parseInt(limit)]);
 
       res.json(feedback);
     } catch (err) {
