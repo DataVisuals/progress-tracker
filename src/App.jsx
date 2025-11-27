@@ -20,7 +20,6 @@ import ProjectDependencies from './components/ProjectDependencies';
 import AddMetricModal from './components/AddMetricModal';
 import UserProfile from './components/UserProfile';
 import ImportData from './components/ImportData';
-import WhatsNew from './components/WhatsNew';
 import UserActivityReport from './components/UserActivityReport';
 import PageHeatmapReport from './components/PageHeatmapReport';
 import HomePage from './components/HomePage';
@@ -79,7 +78,6 @@ function App() {
   const [showAdminReport, setShowAdminReport] = useState(false);
   const [adminReportConfig, setAdminReportConfig] = useState({ type: null, id: null, name: null });
   const [showReportSelector, setShowReportSelector] = useState(false);
-  const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [showUserActivity, setShowUserActivity] = useState(false);
   const [showPageHeatmap, setShowPageHeatmap] = useState(false);
   const [showGridView, setShowGridView] = useState(false);
@@ -1686,12 +1684,6 @@ function App() {
         />
       )}
 
-
-      {showWhatsNew && (
-        <WhatsNew
-          onClose={() => setShowWhatsNew(false)}
-        />
-      )}
 
       {showSpaceManager && (
         <SpaceManager

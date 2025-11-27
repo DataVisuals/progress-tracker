@@ -67,8 +67,6 @@ const HomePage = ({
   const [pageHeatmap, setPageHeatmap] = useState(null); // Page heatmap data for quadrant
   const [showTipsModal, setShowTipsModal] = useState(false); // Modal for tips
   const [selectedTipsCategory, setSelectedTipsCategory] = useState('Getting Started'); // Selected category in tips modal
-  const [showWhatsNewModal, setShowWhatsNewModal] = useState(false); // Modal for what's new
-  const [selectedWhatsNewCategory, setSelectedWhatsNewCategory] = useState('Recent Updates'); // Selected category in what's new modal
   const [showUserInconsistenciesModal, setShowUserInconsistenciesModal] = useState(false); // Modal for user's own inconsistencies
   const [userInconsistenciesDismissed, setUserInconsistenciesDismissed] = useState(false); // Track if user dismissed the modal
   const [expandedPMs, setExpandedPMs] = useState({}); // Track which PMs are expanded in inconsistency report
@@ -343,93 +341,6 @@ const HomePage = ({
         icon: <MdNotifications />,
         title: "Set Up Alerts",
         description: "Use consistency reports to catch data issues before they become problems."
-      }
-    ]
-  };
-
-  // What's New organized by category
-  const whatsNewByCategory = {
-    "Recent Updates": [
-      {
-        icon: <MdFolderSpecial />,
-        title: "Spaces Feature",
-        description: "Organize portfolios into spaces for team or department-level grouping. Filter the entire app by space."
-      },
-      {
-        icon: <MdWarning />,
-        title: "Personal Alerts",
-        description: "When you log in, you'll see issues with your own projects that need attention - missing descriptions, recovery plans, or documentation."
-      },
-      {
-        icon: <MdLightbulb />,
-        title: "Purpose & Best Practices",
-        description: "New categorized modal explaining the purpose of Progress Tracker and best practices. Access from Getting Started."
-      },
-      {
-        icon: <MdArrowForward />,
-        title: "Browser Navigation",
-        description: "Use your browser's back button to return to the home page after viewing a project."
-      }
-    ],
-    "Data Entry": [
-      {
-        icon: <MdEdit />,
-        title: "Historic Data Editing",
-        description: "Project managers can now edit historic metric values, not just the current period."
-      },
-      {
-        icon: <MdEventNote />,
-        title: "Interim Periods",
-        description: "Add data points between regular reporting periods for more granular tracking."
-      },
-      {
-        icon: <MdTune />,
-        title: "Enhanced Metric Setup",
-        description: "New progression types (linear, S-curve, exponential) and frequency options when creating metrics."
-      },
-      {
-        icon: <MdTimeline />,
-        title: "Dynamic Target Updates",
-        description: "Gray bars now correctly reflect metric target changes over time."
-      }
-    ],
-    "Data Quality": [
-      {
-        icon: <MdBugReport />,
-        title: "Inconsistency Report",
-        description: "Automatically identifies missing recovery plans, descriptions, and documentation links."
-      },
-      {
-        icon: <MdCheckCircle />,
-        title: "Severity Ordering",
-        description: "Issues sorted by severity - missing recovery plans for red metrics appear first."
-      },
-      {
-        icon: <MdBuild />,
-        title: "Recovery Plans",
-        description: "Create and track recovery plans for red and amber metrics with target dates and status."
-      }
-    ],
-    "Admin & Reporting": [
-      {
-        icon: <MdPeople />,
-        title: "Simplified Roles",
-        description: "Removed viewer role - all authenticated users can view everything. Only admin and PM roles remain."
-      },
-      {
-        icon: <MdPeople />,
-        title: "Compose Chaser",
-        description: "Generate a chaser email with all outstanding issues grouped by initiative owner."
-      },
-      {
-        icon: <MdVisibility />,
-        title: "Page Heatmap",
-        description: "Track page views and user navigation patterns with visual heatmaps."
-      },
-      {
-        icon: <MdAssignment />,
-        title: "User Activity Report",
-        description: "See who has been active in the system and what actions they've taken."
       }
     ]
   };
@@ -1447,42 +1358,6 @@ const HomePage = ({
         </div>
       )}
 
-      {showWhatsNewModal && (
-        <div className="modal-overlay" onClick={() => { setShowWhatsNewModal(false); setSelectedWhatsNewCategory('Recent Updates'); }}>
-          <div className="modal-content tips-modal-tabbed" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <MdNotifications className="modal-icon" />
-              <h2>What's New</h2>
-              <button className="modal-close" onClick={() => { setShowWhatsNewModal(false); setSelectedWhatsNewCategory('Recent Updates'); }}>×</button>
-            </div>
-            <div className="tips-tabs">
-              {Object.keys(whatsNewByCategory).map((category) => (
-                <button
-                  key={category}
-                  className={`tips-tab ${selectedWhatsNewCategory === category ? 'active' : ''}`}
-                  onClick={() => setSelectedWhatsNewCategory(category)}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-            <div className="modal-body tips-tabbed-content">
-              <div className="tips-grid">
-                {whatsNewByCategory[selectedWhatsNewCategory].map((item, index) => (
-                  <div key={index} className="modal-tip-card">
-                    <div className="tip-icon-wrapper">{item.icon}</div>
-                    <div className="tip-content">
-                      <h4 className="tip-title">{item.title}</h4>
-                      <p className="tip-description">{item.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* User Inconsistencies Modal */}
       {showUserInconsistenciesModal && userInconsistencies.length > 0 && (
         <div className="modal-overlay" onClick={() => {
@@ -1634,9 +1509,14 @@ const HomePage = ({
         <button className="footer-link" onClick={() => setShowTipsModal(true)}>
           <MdLightbulb /> Getting Started
         </button>
-        <button className="footer-link" onClick={() => setShowWhatsNewModal(true)}>
+        <a
+          className="footer-link"
+          href="https://github.com/DataVisuals/progress-tracker/commits/master/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <MdNotifications /> What's New
-        </button>
+        </a>
       </div>
     </div>
   );
