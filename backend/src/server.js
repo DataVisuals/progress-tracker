@@ -1531,10 +1531,16 @@ function createApp(dbPath) {
   app.get('/api/feedback/my-projects', authenticateToken, async (req, res) => {
     try {
       const { limit = 10, days = 30 } = req.query;
-      const userName = req.user.name;
+
+      // Get user name from token, or look it up from database if not present (backwards compatibility)
+      let userName = req.user.name;
+      if (!userName) {
+        const user = await dbGet('SELECT name FROM users WHERE id = ?', [req.user.userId]);
+        userName = user?.name;
+      }
 
       if (!userName) {
-        return res.status(400).json({ error: 'User name not found in token' });
+        return res.status(400).json({ error: 'User not found' });
       }
 
       // Get feedback for projects where user is initiative_manager or secondary_pm
