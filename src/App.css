@@ -1000,9 +1000,10 @@
 
 /* Grid View Modal */
 .grid-view-modal {
-  max-width: 95vw;
-  width: 95vw;
-  max-height: 95vh;
+  max-width: 98vw;
+  width: 98vw;
+  max-height: 98vh;
+  height: 98vh;
   padding: 0;
 }
 
@@ -1018,7 +1019,8 @@
 .grid-view-body {
   padding: 8px;
   overflow-y: auto;
-  max-height: calc(95vh - 50px);
+  height: calc(98vh - 45px);
+  max-height: calc(98vh - 45px);
 }
 
 .grid-view-container {

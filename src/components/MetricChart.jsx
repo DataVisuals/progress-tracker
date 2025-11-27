@@ -1463,7 +1463,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             animationDuration={1000}
             animationBegin={400}
             strokeOpacity={highlightedSeries === null || highlightedSeries === 'expected' ? 1 : 0.3}
-            dot={canEdit ? { r: 5, fill: BARCLAYS_BLUE, stroke: "#fff", strokeWidth: 2, cursor: 'pointer' } : { r: 4 }}
+            dot={canEdit ? { r: 5, fill: BARCLAYS_BLUE, stroke: "#fff", strokeWidth: 2, cursor: 'pointer' } : compactMode ? { r: 2, fill: BARCLAYS_BLUE } : { r: 4 }}
             activeDot={canEdit ? {
               r: 12,
               fill: BARCLAYS_BLUE,
@@ -1591,7 +1591,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       {/* Compact Mode: Show just the latest commentary */}
       {compactMode && allComments.length > 0 && (
         <div className="compact-commentary">
-          <div className="compact-commentary-text">
+          <div className="compact-commentary-text" title={allComments[0].comment_text}>
             {allComments[0].comment_text}
           </div>
           <div className="compact-commentary-date">
