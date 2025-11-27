@@ -1211,7 +1211,14 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }} className={compactMode ? 'compact-mode' : ''}>
     <div className={`metric-chart-container ${compactMode ? 'compact' : ''}`}>
       {compactMode && (
-        <div className="compact-metric-title">{metricName}</div>
+        <div className="compact-metric-header">
+          <div className="compact-metric-title">{metricName}</div>
+          {sortedData[0]?.metric_description && (
+            <div className="compact-metric-description" title={sortedData[0].metric_description}>
+              {sortedData[0].metric_description}
+            </div>
+          )}
+        </div>
       )}
       {!compactMode && metricMetadata && (
         <div className="metric-header-row">

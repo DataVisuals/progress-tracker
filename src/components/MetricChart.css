@@ -14,12 +14,28 @@
   padding: 6px 8px 8px 8px;
 }
 
+.compact-metric-header {
+  text-align: center;
+  margin-bottom: 4px;
+}
+
 .compact-metric-title {
   font-size: 12px;
   font-weight: 600;
   color: #003c71;
-  margin-bottom: 4px;
-  text-align: center;
+  margin-bottom: 2px;
+}
+
+.compact-metric-description {
+  font-size: 9px;
+  color: #6b7280;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
 }
 
 .compact-mode .chart-wrapper {
@@ -36,6 +52,10 @@
 
 :root.dark-mode .compact-metric-title {
   color: #e0f2fe;
+}
+
+:root.dark-mode .compact-metric-description {
+  color: #9ca3af;
 }
 
 /* Compact Commentary Styles for Grid View */
