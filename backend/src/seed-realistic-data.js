@@ -214,6 +214,68 @@ async function seedRealisticData() {
     await updatePeriodPerformance(periods[6].id, 45000, 'On track for early goal achievement');
     await updatePeriodPerformance(periods[7].id, 52000, 'Exceeded annual target ahead of schedule!');
 
+    // Additional Healthcare Metrics - Making this a 5-metric project
+
+    // Metric 2: Telehealth Sessions (S-Curve, Overperforming)
+    const telehealthMetric = await dbRun(
+      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [healthcareId, 'Telehealth Sessions', admin.id, '2024-01-31', '2024-12-31', 'monthly', 's-curve', 100000, 10, 20, 'lead']
+    );
+    let telehealthPeriods = await generatePeriods(telehealthMetric.lastID, '2024-01-31', '2024-12-31', 'monthly', 's-curve', 100000);
+    await updatePeriodPerformance(telehealthPeriods[0].id, 1200, 'Soft launch of telehealth feature');
+    await updatePeriodPerformance(telehealthPeriods[1].id, 4500, 'Growing adoption among existing patients');
+    await updatePeriodPerformance(telehealthPeriods[2].id, 12000, 'Marketing campaign for telehealth');
+    await updatePeriodPerformance(telehealthPeriods[3].id, 25000, 'Strong uptake from rural areas');
+    await updatePeriodPerformance(telehealthPeriods[4].id, 45000, 'Partnership with employers boosting usage');
+    await updatePeriodPerformance(telehealthPeriods[5].id, 68000, 'Insurance coverage expanding');
+    await updatePeriodPerformance(telehealthPeriods[6].id, 88000, 'Near target - excellent adoption');
+    await updatePeriodPerformance(telehealthPeriods[7].id, 105000, 'Exceeded target!');
+
+    // Metric 3: Provider Satisfaction Score (Linear, On Track)
+    const providerSatMetric = await dbRun(
+      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [healthcareId, 'Provider Satisfaction Score', admin.id, '2024-03-31', '2024-12-31', 'quarterly', 'linear', 90, 5, 10, 'lag']
+    );
+    let providerPeriods = await generatePeriods(providerSatMetric.lastID, '2024-03-31', '2024-12-31', 'quarterly', 'linear', 90);
+    await updatePeriodPerformance(providerPeriods[0].id, 72, 'Baseline measurement - room for improvement');
+    await updatePeriodPerformance(providerPeriods[1].id, 78, 'UI improvements well received');
+    await updatePeriodPerformance(providerPeriods[2].id, 85, 'EHR integration reducing admin burden');
+    if (providerPeriods.length > 3) await updatePeriodPerformance(providerPeriods[3].id, 88, 'Strong upward trend');
+
+    // Metric 4: App Store Rating (Logarithmic, Quick Win Early)
+    const appRatingMetric = await dbRun(
+      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [healthcareId, 'App Store Rating', admin.id, '2024-04-30', '2024-12-31', 'monthly', 'logarithmic', 4.8, 3, 5, 'lag']
+    );
+    let appRatingPeriods = await generatePeriods(appRatingMetric.lastID, '2024-04-30', '2024-12-31', 'monthly', 'logarithmic', 4.8);
+    await updatePeriodPerformance(appRatingPeriods[0].id, 4.2, 'Initial launch ratings');
+    await updatePeriodPerformance(appRatingPeriods[1].id, 4.4, 'Bug fixes improving ratings');
+    await updatePeriodPerformance(appRatingPeriods[2].id, 4.5, 'Performance improvements');
+    await updatePeriodPerformance(appRatingPeriods[3].id, 4.6, 'New features well received');
+    await updatePeriodPerformance(appRatingPeriods[4].id, 4.65, 'Steady improvement');
+    await updatePeriodPerformance(appRatingPeriods[5].id, 4.7, 'User feedback implemented');
+    await updatePeriodPerformance(appRatingPeriods[6].id, 4.72, 'Minor bug fixes');
+    if (appRatingPeriods.length > 7) await updatePeriodPerformance(appRatingPeriods[7].id, 4.75, 'Approaching target');
+
+    // Metric 5: Data Migration Completion (Linear, Behind Schedule)
+    const dataMigrationMetric = await dbRun(
+      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [healthcareId, 'Patient Records Migrated (%)', admin.id, '2024-01-31', '2024-08-31', 'monthly', 'linear', 100, 8, 15, 'lead']
+    );
+    let migrationPeriods = await generatePeriods(dataMigrationMetric.lastID, '2024-01-31', '2024-08-31', 'monthly', 'linear', 100);
+    await updatePeriodPerformance(migrationPeriods[0].id, 10, 'Initial batch migration started');
+    await updatePeriodPerformance(migrationPeriods[1].id, 22, 'Slower than expected due to data quality issues');
+    await updatePeriodPerformance(migrationPeriods[2].id, 35, 'Data cleansing taking extra time');
+    await updatePeriodPerformance(migrationPeriods[3].id, 52, 'Process optimization helping');
+    await updatePeriodPerformance(migrationPeriods[4].id, 70, 'Back on track');
+    await updatePeriodPerformance(migrationPeriods[5].id, 88, 'Final batch in progress');
+    await updatePeriodPerformance(migrationPeriods[6].id, 98, 'Edge cases remaining');
+    if (migrationPeriods.length > 7) await updatePeriodPerformance(migrationPeriods[7].id, 100, 'Migration complete!');
+
     // Add CRAIDs
     await dbRun(`INSERT INTO craids (project_id, type, title, description, status, priority) VALUES (?, ?, ?, ?, ?, ?)`,
       [healthcareId, 'challenge', 'HIPAA Compliance Verification', 'Ensuring all data handling meets strict healthcare privacy requirements', 'in_progress', 'high']);
@@ -261,6 +323,56 @@ async function seedRealisticData() {
     await updatePeriodPerformance(periods[6].id, 13, 'Strong momentum maintained');
     await updatePeriodPerformance(periods[7].id, 15, 'All 15 markets launched - recovery complete!');
     await addComment(periods[7].id, admin.id, 'Excellent recovery from Q2 setback. Team demonstrated great resilience.', '2024-10-02T14:00:00Z');
+
+    // Additional E-commerce Metrics - Making this a 4-metric project
+
+    // Metric 2: GMV (Gross Merchandise Value) - Exponential growth
+    const gmvMetric = await dbRun(
+      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [ecommerceId, 'GMV ($M)', admin.id, '2024-02-29', '2024-11-30', 'monthly', 'exponential', 50, 10, 20, 'lag']
+    );
+    let gmvPeriods = await generatePeriods(gmvMetric.lastID, '2024-02-29', '2024-11-30', 'monthly', 'exponential', 50);
+    await updatePeriodPerformance(gmvPeriods[0].id, 0.5, 'UK market initial sales');
+    await updatePeriodPerformance(gmvPeriods[1].id, 1.2, 'Growing customer base');
+    await updatePeriodPerformance(gmvPeriods[2].id, 2.0, 'Germany launch delayed impact on GMV');
+    await updatePeriodPerformance(gmvPeriods[3].id, 5.5, 'Multi-market sales ramping');
+    await updatePeriodPerformance(gmvPeriods[4].id, 12, 'Strong Q3 performance');
+    await updatePeriodPerformance(gmvPeriods[5].id, 22, 'Holiday season preparation');
+    await updatePeriodPerformance(gmvPeriods[6].id, 38, 'Black Friday success');
+    await updatePeriodPerformance(gmvPeriods[7].id, 52, 'Exceeded target!');
+
+    // Metric 3: Customer Acquisition Cost (Linear decrease)
+    const cacMetric = await dbRun(
+      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [ecommerceId, 'Customer Acquisition Cost ($)', admin.id, '2024-02-29', '2024-11-30', 'monthly', 'linear', 25, 15, 25, 'lag']
+    );
+    let cacPeriods = await generatePeriods(cacMetric.lastID, '2024-02-29', '2024-11-30', 'monthly', 'linear', 25);
+    await updatePeriodPerformance(cacPeriods[0].id, 85, 'High initial CAC in new market');
+    await updatePeriodPerformance(cacPeriods[1].id, 72, 'Optimizing ad spend');
+    await updatePeriodPerformance(cacPeriods[2].id, 65, 'Brand awareness growing');
+    await updatePeriodPerformance(cacPeriods[3].id, 52, 'Organic traffic increasing');
+    await updatePeriodPerformance(cacPeriods[4].id, 42, 'Referral program success');
+    await updatePeriodPerformance(cacPeriods[5].id, 35, 'Word of mouth effect');
+    await updatePeriodPerformance(cacPeriods[6].id, 28, 'Near target');
+    await updatePeriodPerformance(cacPeriods[7].id, 24, 'CAC target achieved');
+
+    // Metric 4: Warehouse Integration Completion
+    const warehouseMetric = await dbRun(
+      `INSERT INTO metrics (project_id, name, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [ecommerceId, 'Warehouse Integrations', admin.id, '2024-02-29', '2024-11-30', 'monthly', 's-curve', 12, 10, 20, 'lead']
+    );
+    let warehousePeriods = await generatePeriods(warehouseMetric.lastID, '2024-02-29', '2024-11-30', 'monthly', 's-curve', 12);
+    await updatePeriodPerformance(warehousePeriods[0].id, 1, 'UK warehouse integrated');
+    await updatePeriodPerformance(warehousePeriods[1].id, 2, 'Germany warehouse setup');
+    await updatePeriodPerformance(warehousePeriods[2].id, 3, 'France integration delayed');
+    await updatePeriodPerformance(warehousePeriods[3].id, 5, 'Catching up on integrations');
+    await updatePeriodPerformance(warehousePeriods[4].id, 7, 'Southern Europe warehouses');
+    await updatePeriodPerformance(warehousePeriods[5].id, 9, 'Nordic warehouses live');
+    await updatePeriodPerformance(warehousePeriods[6].id, 11, 'Eastern Europe complete');
+    await updatePeriodPerformance(warehousePeriods[7].id, 12, 'All warehouses integrated');
 
     await dbRun(`INSERT INTO craids (project_id, type, title, description, status, priority) VALUES (?, ?, ?, ?, ?, ?)`,
       [ecommerceId, 'issue', 'Payment Provider Delays', 'Certification process slower than anticipated', 'resolved', 'high']);
@@ -774,6 +886,8 @@ async function seedRealisticData() {
     console.log('🎉 Realistic data migration complete!\n');
     console.log('📊 Summary:');
     console.log('   • 7 diverse projects created');
+    console.log('   • Healthcare project: 5 metrics (for grid view testing)');
+    console.log('   • E-commerce project: 4 metrics (for grid view testing)');
     console.log('   • Multiple progression curves: linear, s-curve, exponential, logarithmic');
     console.log('   • Various frequencies: weekly, monthly, quarterly');
     console.log('   • Delinquency and recovery patterns demonstrated');

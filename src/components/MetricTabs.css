@@ -317,3 +317,25 @@
 :root.dark-mode .metric-dropdown button + button {
   border-top-color: #374151;
 }
+
+/* Grid View Button */
+.metric-tab.grid-view-tab {
+  color: #6b7280;
+  background: transparent;
+  padding: 6px 10px;
+  font-size: 16px;
+}
+
+.metric-tab.grid-view-tab:hover {
+  color: #00aeef;
+  background: rgba(0, 174, 239, 0.05);
+}
+
+:root.dark-mode .metric-tab.grid-view-tab {
+  color: #9ca3af;
+}
+
+:root.dark-mode .metric-tab.grid-view-tab:hover {
+  color: #00aeef;
+  background: rgba(0, 174, 239, 0.1);
+}

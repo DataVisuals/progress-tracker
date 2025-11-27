@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { MdGridView } from 'react-icons/md';
 import './MetricTabs.css';
 
-const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMetricRename, onMetricDelete, canEdit, onAddMetric }) => {
+const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMetricRename, onMetricDelete, canEdit, onAddMetric, onGridView }) => {
   const [editingMetric, setEditingMetric] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [showDropdown, setShowDropdown] = useState(null);
@@ -280,6 +281,15 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
             title="Add new metric"
           >
             <span className="add-metric-plus">+</span>
+          </button>
+        )}
+        {onGridView && metrics.length > 1 && (
+          <button
+            className="metric-tab grid-view-tab"
+            onClick={onGridView}
+            title="View all metrics in grid"
+          >
+            <MdGridView />
           </button>
         )}
       </div>

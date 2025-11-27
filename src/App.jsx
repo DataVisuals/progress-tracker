@@ -82,6 +82,7 @@ function App() {
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [showUserActivity, setShowUserActivity] = useState(false);
   const [showPageHeatmap, setShowPageHeatmap] = useState(false);
+  const [showGridView, setShowGridView] = useState(false);
   const [allProjectsData, setAllProjectsData] = useState({}); // For HomePage red metrics
   const [darkMode, setDarkMode] = useState(() => {
     try {
@@ -1504,6 +1505,7 @@ function App() {
                 onMetricDelete={handleMetricDelete}
                 canEdit={canEdit()}
                 onAddMetric={() => setShowAddMetric(true)}
+                onGridView={() => setShowGridView(true)}
               />
             )}
 
@@ -1757,6 +1759,67 @@ function App() {
             setShowAdminReport(false);
           }}
         />
+      )}
+
+      {showGridView && metrics.length > 1 && (
+        <div
+          className="modal-overlay"
+          onMouseDown={handleModalMouseDown}
+          onClick={(e) => handleModalClick(e, () => setShowGridView(false))}
+        >
+          <div className="modal-content grid-view-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>All Metrics - {projectName}</h2>
+              <button className="modal-close" onClick={() => setShowGridView(false)}>×</button>
+            </div>
+            <div className="modal-body grid-view-body">
+              <div className="grid-view-container">
+                {metrics.map((metric) => {
+                  const metricData = projectData.filter(item => item.metric === metric);
+                  if (metricData.length === 0) return null;
+
+                  const metricInfo = projectMetrics.find(m => m.name === metric);
+                  const metricAmberTolerance = metricData[0]?.amber_tolerance || 5.0;
+                  const metricRedTolerance = metricData[0]?.red_tolerance || 10.0;
+
+                  return (
+                    <div
+                      key={metric}
+                      className="grid-view-item"
+                      onClick={() => {
+                        setSelectedMetric(metric);
+                        setShowGridView(false);
+                      }}
+                    >
+                      <MetricChart
+                        metricName={metric}
+                        data={metricData}
+                        onCommentaryChange={() => {}}
+                        onDataChange={() => {}}
+                        canEdit={false}
+                        canEditData={false}
+                        amberTolerance={metricAmberTolerance}
+                        redTolerance={metricRedTolerance}
+                        onToleranceChange={() => {}}
+                        onTargetChange={() => {}}
+                        onProgressionChange={() => {}}
+                        onDescriptionChange={() => {}}
+                        onDatesChange={() => {}}
+                        timeTravelTimestamp={null}
+                        projectId={selectedProject}
+                        onTimeTravelChange={() => {}}
+                        onRevert={() => {}}
+                        isAdmin={false}
+                        currentUser={currentUser}
+                        compactMode={true}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

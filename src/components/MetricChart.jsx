@@ -234,7 +234,7 @@ const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance })
   return null;
 };
 
-const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange, onTargetChange, onProgressionChange, onDescriptionChange, onDatesChange, currentUser }) => {
+const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange, onTargetChange, onProgressionChange, onDescriptionChange, onDatesChange, currentUser, compactMode = false }) => {
   // canEditData is for commentary/data changes (blocked during time travel)
   // If not provided, default to canEdit for backwards compatibility
   const allowDataEdits = canEditData !== undefined ? canEditData : canEdit;
@@ -1208,9 +1208,12 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-    <div className="metric-chart-container">
-      {metricMetadata && (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }} className={compactMode ? 'compact-mode' : ''}>
+    <div className={`metric-chart-container ${compactMode ? 'compact' : ''}`}>
+      {compactMode && (
+        <div className="compact-metric-title">{metricName}</div>
+      )}
+      {!compactMode && metricMetadata && (
         <div className="metric-header-row">
           {editingDates ? (
             <div className="date-editor">
@@ -1277,8 +1280,8 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
         </div>
       )}
 
-      {/* Metric Properties Row */}
-      {metricMetadata && (
+      {/* Metric Properties Row - hidden in compact mode */}
+      {metricMetadata && !compactMode && (
         <div className="metric-properties-row" style={{ display: 'flex', gap: '12px', padding: '4px 0', borderBottom: '1px solid #e5e7eb' }}>
           <div className="metric-property">
             <span className="property-label">Progression:</span>
@@ -1353,9 +1356,9 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       )}
 
       {/* Chart and Legend Container */}
-      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+      <div className="chart-and-legend-container">
         <div ref={chartContainerRef} style={{ position: 'relative', flex: 1 }}>
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" height={compactMode ? 180 : 260}>
               <ComposedChart
                 data={chartData}
                 margin={{ top: 10, right: 20, left: 20, bottom: 5 }}
@@ -1585,8 +1588,20 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
         </div>
       </div>
 
+      {/* Compact Mode: Show just the latest commentary */}
+      {compactMode && allComments.length > 0 && (
+        <div className="compact-commentary">
+          <div className="compact-commentary-text">
+            {allComments[0].comment_text}
+          </div>
+          <div className="compact-commentary-date">
+            {formatDate(allComments[0].reporting_date)}
+          </div>
+        </div>
+      )}
+
       {/* Tabbed Section - Latest Progress, Commentary, Time Travel, and Dependencies */}
-      <div className="tabbed-section">
+      {!compactMode && <div className="tabbed-section">
         <div className="tab-navigation">
           <button
             className={`tab-button ${activeTab === 'table' ? 'active' : ''}`}
@@ -2008,7 +2023,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           </div>
         )}
         */}
-      </div>
+      </div>}
     </div>
     </div>
   );
