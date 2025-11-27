@@ -1080,6 +1080,81 @@
   transform: translateY(-2px);
 }
 
+/* Header Title Group */
+.header-title-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+.header-title-text {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.ten-reasons-link {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  font-weight: 400;
+  padding: 0;
+  margin-top: 1px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.ten-reasons-link:hover {
+  color: white;
+  text-decoration: underline;
+}
+
+/* Ten Reasons Modal */
+.ten-reasons-modal {
+  max-width: 800px;
+  width: 90vw;
+}
+
+.ten-reasons-body {
+  padding: 16px 24px 24px;
+}
+
+.ten-reasons-list {
+  margin: 0;
+  padding-left: 24px;
+  counter-reset: item;
+  list-style: none;
+}
+
+.ten-reasons-list li {
+  margin-bottom: 16px;
+  counter-increment: item;
+  position: relative;
+}
+
+.ten-reasons-list li::before {
+  content: counter(item) ".";
+  position: absolute;
+  left: -24px;
+  font-weight: 600;
+  color: #00aeef;
+}
+
+.ten-reasons-list li strong {
+  display: block;
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.ten-reasons-list li p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 /* Chaser Modal */
 .chaser-modal {
   max-width: 700px;
