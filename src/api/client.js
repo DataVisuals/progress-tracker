@@ -48,6 +48,11 @@ export const api = {
   // Auth
   login: (email, password) => client.post('/auth/login', { email, password }),
   register: (email, name, password) => client.post('/auth/register', { email, name, password }),
+  checkNameAvailability: (name, excludeUserId) => {
+    const params = new URLSearchParams({ name });
+    if (excludeUserId) params.append('excludeUserId', excludeUserId);
+    return client.get(`/auth/check-name?${params.toString()}`);
+  },
   changePassword: (currentPassword, newPassword) => client.post('/auth/change-password', { currentPassword, newPassword }),
   updateProfile: (name, email) => client.put('/auth/profile', { name, email }),
 
@@ -122,6 +127,10 @@ export const api = {
   respondToFeedback: (id, response) => client.put(`/feedback/${id}/respond`, { response }),
   resolveFeedback: (id) => client.put(`/feedback/${id}/resolve`),
   editFeedbackResponse: (id, response) => client.put(`/feedback/${id}/edit-response`, { response }),
+  getMyProjectsFeedback: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return client.get(`/feedback/my-projects${queryString ? `?${queryString}` : ''}`);
+  },
 
   // Import/Export
   downloadImportTemplate: () => client.get('/import/template', { responseType: 'blob' }),

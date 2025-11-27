@@ -18,6 +18,8 @@ const UserManagement = ({ currentUser, onClose }) => {
     password: '',
     role: 'pm'
   });
+  const [nameError, setNameError] = useState('');
+  const [checkingName, setCheckingName] = useState(false);
 
   useEffect(() => {
     loadUsers();
@@ -148,9 +150,35 @@ const UserManagement = ({ currentUser, onClose }) => {
     }
   };
 
+  const checkNameAvailability = async (name) => {
+    if (!name || name.trim().length < 2) {
+      setNameError('');
+      return;
+    }
+
+    setCheckingName(true);
+    try {
+      const response = await api.checkNameAvailability(name.trim());
+      if (!response.data.available) {
+        setNameError(response.data.message);
+      } else {
+        setNameError('');
+      }
+    } catch (err) {
+      console.error('Error checking name:', err);
+    } finally {
+      setCheckingName(false);
+    }
+  };
+
   const handleAddUser = async () => {
     if (!newUser.email || !newUser.name || !newUser.password) {
       alert('Please fill in all fields');
+      return;
+    }
+
+    if (nameError) {
+      alert('Please choose a different name - this one is already taken.');
       return;
     }
 
@@ -331,9 +359,16 @@ const UserManagement = ({ currentUser, onClose }) => {
                 <input
                   type="text"
                   value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  onChange={(e) => {
+                    setNewUser({ ...newUser, name: e.target.value });
+                    setNameError(''); // Clear error while typing
+                  }}
+                  onBlur={(e) => checkNameAvailability(e.target.value)}
                   placeholder="Full Name"
+                  className={nameError ? 'input-error' : ''}
                 />
+                {checkingName && <span className="checking-name">Checking...</span>}
+                {nameError && <span className="name-error">{nameError}</span>}
               </div>
               <div className="form-group">
                 <label>Password:</label>

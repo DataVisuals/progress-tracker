@@ -1895,8 +1895,8 @@ html.dark-mode .quadrant-content {
 
 /* User Inconsistencies Modal */
 .user-inconsistencies-modal {
-  max-width: 500px !important;
-  width: auto !important;
+  max-width: 1000px !important;
+  width: 90vw !important;
 }
 
 .user-inconsistencies-modal .modal-icon.warning {
@@ -1990,6 +1990,70 @@ html.dark-mode .quadrant-content {
 .user-inconsistency-item:hover .issue-arrow {
   transform: translateX(4px);
   color: #6b7280;
+}
+
+/* Feedback divider in modal */
+.feedback-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 16px 0;
+}
+
+/* User feedback list in modal */
+.user-feedback-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.user-feedback-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.user-feedback-item:hover {
+  background: #fde68a;
+  border-color: #f59e0b;
+}
+
+.user-feedback-item .feedback-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+}
+
+.user-feedback-item .issue-icon-wrapper .issue-icon {
+  color: #d97706;
+}
+
+.feedback-dismiss-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid #d97706;
+  border-radius: 4px;
+  color: #d97706;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.feedback-dismiss-btn:hover {
+  background: #d97706;
+  color: white;
 }
 
 .modal-footer {
@@ -2197,6 +2261,35 @@ html.dark-mode .quadrant-content {
 
 :root.dark-mode .dismiss-btn:hover {
   background: #6b7280;
+}
+
+/* Feedback in modal - Dark Mode */
+:root.dark-mode .feedback-divider {
+  background: #374151;
+}
+
+:root.dark-mode .user-feedback-item {
+  background: #422006;
+  border-color: #92400e;
+}
+
+:root.dark-mode .user-feedback-item:hover {
+  background: #713f12;
+  border-color: #b45309;
+}
+
+:root.dark-mode .user-feedback-item .issue-icon-wrapper .issue-icon {
+  color: #fbbf24;
+}
+
+:root.dark-mode .feedback-dismiss-btn {
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
+:root.dark-mode .feedback-dismiss-btn:hover {
+  background: #fbbf24;
+  color: #422006;
 }
 
 :root.dark-mode .homepage-footer {

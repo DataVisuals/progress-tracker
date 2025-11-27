@@ -224,7 +224,7 @@ function createApp(dbPath) {
       // Login successful
       logger.auth.loginSuccess(user, req.ip);
   
-      const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ userId: user.id, email: user.email, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
       res.json({ token, user: { id: user.id, userId: user.id, email: user.email, name: user.name, role: user.role, default_space_id: user.default_space_id } });
     } catch (err) {
       logger.error('AUTH', 'Login error', { error: err.message, stack: err.stack });
@@ -265,8 +265,6 @@ function createApp(dbPath) {
       if (err.message && err.message.includes('UNIQUE constraint failed')) {
         if (err.message.includes('users.email')) {
           return res.status(400).json({ error: 'A user with this email already exists' });
-        } else if (err.message.includes('users.name') || err.message.includes('idx_users_name')) {
-          return res.status(400).json({ error: 'A user with this name already exists. Please choose a different name.' });
         }
         return res.status(400).json({ error: 'User already exists' });
       }
@@ -275,6 +273,36 @@ function createApp(dbPath) {
     }
   });
   
+  // Check if a name is available (for registration and profile updates)
+  app.get('/api/auth/check-name', async (req, res) => {
+    try {
+      const { name, excludeUserId } = req.query;
+
+      if (!name) {
+        return res.status(400).json({ error: 'Name is required' });
+      }
+
+      let query = 'SELECT id FROM users WHERE name = ?';
+      let params = [name.trim()];
+
+      // If excludeUserId is provided, exclude that user (for profile updates)
+      if (excludeUserId) {
+        query += ' AND id != ?';
+        params.push(parseInt(excludeUserId));
+      }
+
+      const existingUser = await dbGet(query, params);
+
+      res.json({
+        available: !existingUser,
+        message: existingUser ? 'This name is already taken. Please choose a different name.' : 'Name is available'
+      });
+    } catch (err) {
+      console.error('Check name error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.post('/api/auth/logout', authenticateToken, async (req, res) => {
     try {
       // Log the logout event
@@ -1495,6 +1523,43 @@ function createApp(dbPath) {
       res.status(201).json(newFeedback);
     } catch (err) {
       console.error('Create feedback error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Get recent feedback for the logged-in user's projects
+  app.get('/api/feedback/my-projects', authenticateToken, async (req, res) => {
+    try {
+      const { limit = 10, days = 30 } = req.query;
+      const userName = req.user.name;
+
+      if (!userName) {
+        return res.status(400).json({ error: 'User name not found in token' });
+      }
+
+      // Get feedback for projects where user is initiative_manager or secondary_pm
+      const feedback = await dbAll(`
+        SELECT f.*,
+               u.name as user_name,
+               u.email as user_email,
+               p.name as project_name,
+               p.id as project_id,
+               r.name as responder_name,
+               s.name as resolver_name
+        FROM feedback f
+        JOIN projects p ON f.project_id = p.id
+        LEFT JOIN users u ON f.user_id = u.id
+        LEFT JOIN users r ON f.responded_by = r.id
+        LEFT JOIN users s ON f.resolved_by = s.id
+        WHERE (p.initiative_manager = ? OR p.secondary_pm = ?)
+          AND f.created_at >= datetime('now', '-' || ? || ' days')
+        ORDER BY f.created_at DESC
+        LIMIT ?
+      `, [userName, userName, days, parseInt(limit)]);
+
+      res.json(feedback);
+    } catch (err) {
+      console.error('Get my projects feedback error:', err);
       res.status(500).json({ error: err.message });
     }
   });
@@ -5571,17 +5636,6 @@ function createApp(dbPath) {
       console.error('Error updating user roles:', err);
     }
 
-    // Migration: Add unique constraint on user name
-    try {
-      await dbRun(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_name ON users(name)`);
-      console.log('✅ Added unique constraint on user name');
-    } catch (err) {
-      // Index already exists or duplicate names exist
-      if (err.message.includes('UNIQUE constraint failed')) {
-        console.log('⚠️ Cannot add unique name constraint - duplicate names exist');
-      }
-    }
-  
     // Migration: Add tolerance columns to metrics table
     try {
       await dbRun(`ALTER TABLE metrics ADD COLUMN amber_tolerance REAL DEFAULT 5.0`);

@@ -72,6 +72,8 @@ const HomePage = ({
   const [showUserInconsistenciesModal, setShowUserInconsistenciesModal] = useState(false); // Modal for user's own inconsistencies
   const [userInconsistenciesDismissed, setUserInconsistenciesDismissed] = useState(false); // Track if user dismissed the modal
   const [expandedPMs, setExpandedPMs] = useState({}); // Track which PMs are expanded in inconsistency report
+  const [userProjectFeedback, setUserProjectFeedback] = useState([]); // Recent feedback on user's projects
+  const [dismissedFeedbackIds, setDismissedFeedbackIds] = useState([]); // Track dismissed feedback
 
   // Tips organized by theme
   const tipsByCategory = {
@@ -809,6 +811,15 @@ const HomePage = ({
       } catch (viewsErr) {
         setPageHeatmap({ by_path: [], error: true }); // Set empty data on error
       }
+
+      // Load recent feedback on user's projects
+      try {
+        const feedbackResponse = await api.getMyProjectsFeedback({ limit: 5, days: 30 });
+        setUserProjectFeedback(feedbackResponse.data || []);
+      } catch (feedbackErr) {
+        console.log('Could not load project feedback:', feedbackErr.message);
+        setUserProjectFeedback([]);
+      }
     } catch (err) {
       console.error('Failed to load home page data:', err);
     } finally {
@@ -1541,6 +1552,54 @@ const HomePage = ({
                   );
                 })}
               </div>
+
+              {/* Recent Feedback Section */}
+              {userProjectFeedback.filter(f => !dismissedFeedbackIds.includes(f.id)).length > 0 && (
+                <>
+                  <div className="feedback-divider" />
+                  <p className="inconsistency-intro" style={{ marginTop: '16px' }}>
+                    <MdFeedback style={{ verticalAlign: 'middle', marginRight: '6px' }} />
+                    Recent feedback on your projects:
+                  </p>
+                  <div className="user-feedback-list">
+                    {userProjectFeedback
+                      .filter(f => !dismissedFeedbackIds.includes(f.id))
+                      .map((fb) => {
+                        const projectUrl = `${window.location.origin}${window.location.pathname}?project=${fb.project_id}`;
+                        return (
+                          <div key={fb.id} className="user-feedback-item">
+                            <a
+                              href={projectUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="feedback-link"
+                            >
+                              <div className="issue-icon-wrapper">
+                                <MdFeedback className="issue-icon" />
+                              </div>
+                              <div className="issue-details">
+                                <div className="issue-title">{fb.text}</div>
+                                <div className="issue-project">
+                                  {fb.project_name} - {fb.user_name || 'Anonymous'} - {formatTimestamp(fb.created_at)}
+                                </div>
+                              </div>
+                            </a>
+                            <button
+                              className="feedback-dismiss-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDismissedFeedbackIds(prev => [...prev, fb.id]);
+                              }}
+                              title="Dismiss this feedback"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </>
+              )}
             </div>
             <div className="modal-footer">
               <button

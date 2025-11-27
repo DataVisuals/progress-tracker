@@ -404,6 +404,34 @@
   background-color: #4b5563;
 }
 
+/* Name validation styles */
+.add-user-content .form-group .input-error {
+  border-color: #f44336 !important;
+}
+
+.add-user-content .form-group .name-error {
+  display: block;
+  color: #f44336;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.add-user-content .form-group .checking-name {
+  display: block;
+  color: #9ca3af;
+  font-size: 12px;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+:root.dark-mode .add-user-content .form-group .name-error {
+  color: #ef4444;
+}
+
+:root.dark-mode .add-user-content .form-group .input-error {
+  border-color: #ef4444 !important;
+}
+
 @media (max-width: 900px) {
   :root.dark-mode .user-permissions {
     border-top-color: #374151;

@@ -9,6 +9,8 @@ const UserProfile = ({ currentUser, onClose, onUpdate }) => {
   // Profile state
   const [name, setName] = useState(currentUser.name);
   const [email, setEmail] = useState(currentUser.email);
+  const [nameError, setNameError] = useState('');
+  const [checkingName, setCheckingName] = useState(false);
 
   // Password state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -18,6 +20,33 @@ const UserProfile = ({ currentUser, onClose, onUpdate }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const checkNameAvailability = async (newName) => {
+    // If name hasn't changed from original, no need to check
+    if (newName.trim() === currentUser.name) {
+      setNameError('');
+      return;
+    }
+
+    if (!newName || newName.trim().length < 2) {
+      setNameError('');
+      return;
+    }
+
+    setCheckingName(true);
+    try {
+      const response = await api.checkNameAvailability(newName.trim(), currentUser.userId || currentUser.id);
+      if (!response.data.available) {
+        setNameError(response.data.message);
+      } else {
+        setNameError('');
+      }
+    } catch (err) {
+      console.error('Error checking name:', err);
+    } finally {
+      setCheckingName(false);
+    }
+  };
 
   const handleProfileSubmit = async () => {
     setError('');
@@ -31,6 +60,11 @@ const UserProfile = ({ currentUser, onClose, onUpdate }) => {
 
     if (!email.includes('@')) {
       setError('Please enter a valid email address');
+      return;
+    }
+
+    if (nameError) {
+      setError('Please choose a different name - this one is already taken.');
       return;
     }
 
@@ -167,11 +201,18 @@ const UserProfile = ({ currentUser, onClose, onUpdate }) => {
                 id="name"
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setNameError(''); // Clear error while typing
+                }}
+                onBlur={(e) => checkNameAvailability(e.target.value)}
                 placeholder="Enter your name..."
                 autoFocus
                 disabled={loading}
+                style={nameError ? { borderColor: '#f44336' } : {}}
               />
+              {checkingName && <span style={{ color: '#9ca3af', fontSize: '12px', fontStyle: 'italic' }}>Checking...</span>}
+              {nameError && <span style={{ color: '#f44336', fontSize: '12px' }}>{nameError}</span>}
             </div>
 
             <div className="form-group">
