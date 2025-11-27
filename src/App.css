@@ -345,7 +345,7 @@
 
 .report-header-title-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
   flex-wrap: wrap;
 }
@@ -670,26 +670,29 @@
   color: #374151;
 }
 
-.project-health-btn {
+.project-health-btn.score-badge {
   background-color: transparent;
-  color: #6b7280;
-  border: none;
-  padding: 4px 6px;
-  border-radius: 4px;
-  font-size: 18px;
+  border: 2px solid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: 8px;
+  margin-left: 10px;
   align-self: center;
   vertical-align: middle;
+  flex-shrink: 0;
 }
 
-.project-health-btn:hover {
-  background-color: #f3f4f6;
-  color: #003c71;
+.project-health-btn.score-badge:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .project-portfolio-section {

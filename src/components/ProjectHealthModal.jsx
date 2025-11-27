@@ -11,6 +11,170 @@ import {
 import { MdClose, MdCheckCircle, MdWarning, MdError, MdInfo } from 'react-icons/md';
 import './ProjectHealthModal.css';
 
+// Exported helper to calculate overall health score
+export const calculateHealthScore = (project, projectData, metrics, recoveryPlans = []) => {
+  if (!project || !projectData || !metrics) {
+    return 0;
+  }
+
+  // Helper to get red metrics
+  const getRedMetrics = (data, metricsList) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return metricsList.filter(metric => {
+      const metricPeriods = data.filter(p => p.metric_id === metric.id);
+      const sortedPeriods = [...metricPeriods].sort((a, b) =>
+        new Date(a.reporting_date) - new Date(b.reporting_date)
+      );
+
+      let currentPeriod = null;
+      for (let i = sortedPeriods.length - 1; i >= 0; i--) {
+        const periodDate = new Date(sortedPeriods[i].reporting_date);
+        if (periodDate <= today) {
+          currentPeriod = sortedPeriods[i];
+          break;
+        }
+      }
+
+      if (!currentPeriod) return false;
+
+      const complete = parseFloat(currentPeriod.complete) || 0;
+      const expected = parseFloat(currentPeriod.expected) || 0;
+
+      if (expected === 0) return false;
+
+      const variance = complete - expected;
+      const variancePercent = Math.abs((variance / expected) * 100);
+      const redTolerance = parseFloat(currentPeriod.red_tolerance) || 10.0;
+
+      return variance < 0 && variancePercent > redTolerance;
+    });
+  };
+
+  // 1. Well Described Score
+  let wellDescribedScore = 0;
+  if (project.description && project.description.trim().length > 10) {
+    wellDescribedScore += 25;
+  }
+  if (project.links && project.links.length >= 3) {
+    wellDescribedScore += 25;
+  } else if (project.links && project.links.length > 0) {
+    wellDescribedScore += Math.round((project.links.length / 3) * 25);
+  }
+  if (metrics.length > 0) {
+    const metricsWithDesc = metrics.filter(m => m.description && m.description.trim().length > 5).length;
+    wellDescribedScore += Math.round((metricsWithDesc / metrics.length) * 25);
+  }
+  const redMetrics = getRedMetrics(projectData, metrics);
+  if (redMetrics.length > 0) {
+    const activeRecoveryPlans = recoveryPlans.filter(p => p.status === 'active');
+    const redMetricsWithPlans = redMetrics.filter(m =>
+      activeRecoveryPlans.some(p => p.metric_id === m.id)
+    ).length;
+    wellDescribedScore += Math.round((redMetricsWithPlans / redMetrics.length) * 25);
+  } else {
+    wellDescribedScore += 25;
+  }
+
+  // 2. Metric Coverage Score
+  let metricCoverageScore = 0;
+  const metricCount = metrics.length;
+  if (metricCount === 0) {
+    metricCoverageScore = 0;
+  } else if (metricCount >= 3 && metricCount <= 6) {
+    metricCoverageScore = 100;
+  } else if (metricCount < 3) {
+    metricCoverageScore = Math.round((metricCount / 3) * 100);
+  } else {
+    metricCoverageScore = Math.max(70, 100 - (metricCount - 6) * 5);
+  }
+
+  // 3. Metric Management Score
+  let metricManagementScore = 0;
+  if (metrics.length > 0 && projectData.length > 0) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let totalScore = 0;
+    let scoreCount = 0;
+
+    metrics.forEach(metric => {
+      const metricPeriods = projectData.filter(p => p.metric_id === metric.id);
+      if (metricPeriods.length === 0) return;
+
+      const sortedPeriods = [...metricPeriods].sort((a, b) =>
+        new Date(a.reporting_date) - new Date(b.reporting_date)
+      );
+
+      const pastPeriods = sortedPeriods.filter(p => new Date(p.reporting_date) <= today);
+
+      if (pastPeriods.length > 0) {
+        const filledPeriods = pastPeriods.filter(p =>
+          p.complete !== null && p.complete !== undefined && p.complete !== ''
+        ).length;
+
+        const fillRate = filledPeriods / pastPeriods.length;
+        totalScore += fillRate * 100;
+        scoreCount++;
+      }
+    });
+
+    metricManagementScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 50;
+  }
+
+  // 4. Project Control Score
+  let projectControlScore = 100;
+  if (metrics.length > 0 && projectData.length > 0) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let totalPeriods = 0;
+    let greenPeriods = 0;
+    let amberPeriods = 0;
+    let redPeriods = 0;
+
+    metrics.forEach(metric => {
+      const metricPeriods = projectData.filter(p => p.metric_id === metric.id);
+      const pastPeriods = metricPeriods.filter(p => {
+        const periodDate = new Date(p.reporting_date);
+        return periodDate <= today && p.complete !== null && p.complete !== undefined;
+      });
+
+      pastPeriods.forEach(period => {
+        const complete = parseFloat(period.complete) || 0;
+        const expected = parseFloat(period.expected) || 0;
+
+        if (expected === 0) return;
+
+        const variance = complete - expected;
+        const variancePercent = Math.abs((variance / expected) * 100);
+        const redTolerance = parseFloat(period.red_tolerance) || 10.0;
+        const amberTolerance = parseFloat(period.amber_tolerance) || 5.0;
+
+        totalPeriods++;
+
+        if (variance >= 0 || variancePercent <= amberTolerance) {
+          greenPeriods++;
+        } else if (variancePercent <= redTolerance) {
+          amberPeriods++;
+        } else {
+          redPeriods++;
+        }
+      });
+    });
+
+    if (totalPeriods > 0) {
+      projectControlScore = Math.round(
+        ((greenPeriods * 100) + (amberPeriods * 50) + (redPeriods * 0)) / totalPeriods
+      );
+    }
+  }
+
+  // Calculate overall score (average of all 4 dimensions)
+  return Math.round((wellDescribedScore + metricCoverageScore + metricManagementScore + projectControlScore) / 4);
+};
+
 const ProjectHealthModal = ({
   project,
   projectData,

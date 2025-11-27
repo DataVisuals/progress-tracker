@@ -25,8 +25,8 @@ import PageHeatmapReport from './components/PageHeatmapReport';
 import HomePage from './components/HomePage';
 import { api } from './api/client';
 import { selectStyles } from './components/SelectStyles';
-import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode, MdMonitorHeart } from 'react-icons/md';
-import ProjectHealthModal from './components/ProjectHealthModal';
+import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
+import ProjectHealthModal, { calculateHealthScore } from './components/ProjectHealthModal';
 import Lottie from 'lottie-react';
 import progressChartAnimation from '../public/progress-chart.json';
 import { trackPage } from './hooks/usePageTracking';
@@ -1194,13 +1194,27 @@ function App() {
                         {projectName}
                       </h2>
                     )}
-                    <button
-                      className="project-health-btn"
-                      onClick={() => setShowProjectHealth(true)}
-                      title="View project health"
-                    >
-                      <MdMonitorHeart />
-                    </button>
+                    {(() => {
+                      const healthScore = calculateHealthScore(currentProject, projectData, projectMetrics, []);
+                      const getScoreColor = (score) => {
+                        if (score >= 80) return '#10b981';
+                        if (score >= 60) return '#f59e0b';
+                        return '#dc2626';
+                      };
+                      return (
+                        <button
+                          className="project-health-btn score-badge"
+                          onClick={() => setShowProjectHealth(true)}
+                          title="View project health"
+                          style={{
+                            borderColor: getScoreColor(healthScore),
+                            color: getScoreColor(healthScore)
+                          }}
+                        >
+                          {healthScore}
+                        </button>
+                      );
+                    })()}
                     {/* Portfolio badge inline with title */}
                     {!editingPortfolio && currentProject?.portfolio_name && (
                       <div
