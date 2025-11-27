@@ -375,6 +375,13 @@
   font-size: 11px;
 }
 
+.date-value.last-updated {
+  color: #9ca3af;
+  font-weight: 400;
+  font-size: 10px;
+  font-style: italic;
+}
+
 .date-range-separator {
   color: #9ca3af;
   font-size: 12px;

@@ -2820,6 +2820,7 @@ function createApp(dbPath) {
           m.final_target as metric_final_target,
           mp.complete,
           mp.commentary,
+          mp.updated_at,
           m.id as metric_id,
           m.amber_tolerance,
           m.red_tolerance,

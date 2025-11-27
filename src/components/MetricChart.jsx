@@ -494,6 +494,29 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
 
   const duration = metricMetadata ? calculateDuration(metricMetadata.start_date, metricMetadata.end_date) : null;
 
+  // Calculate the last updated timestamp (max updated_at across all periods)
+  const lastUpdated = sortedData.reduce((maxDate, item) => {
+    if (!item.updated_at) return maxDate;
+    const itemDate = new Date(item.updated_at);
+    return !maxDate || itemDate > maxDate ? itemDate : maxDate;
+  }, null);
+
+  // Format relative time for last updated
+  const formatRelativeTime = (date) => {
+    if (!date) return null;
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins} min${diffMins === 1 ? '' : 's'} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
   // Load comments for all periods when component mounts or data changes
   useEffect(() => {
     const loadComments = async () => {
@@ -1256,6 +1279,14 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                 <>
                   <span className="date-range-separator">•</span>
                   <span className="date-value duration">{getDurationDisplay()}</span>
+                </>
+              )}
+              {lastUpdated && (
+                <>
+                  <span className="date-range-separator">•</span>
+                  <span className="date-value last-updated" title={`Last updated: ${lastUpdated.toLocaleString('en-GB')}`}>
+                    Updated {formatRelativeTime(lastUpdated)}
+                  </span>
                 </>
               )}
             </div>
