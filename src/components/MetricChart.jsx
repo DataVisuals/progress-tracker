@@ -1281,14 +1281,6 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                   <span className="date-value duration">{getDurationDisplay()}</span>
                 </>
               )}
-              {lastUpdated && (
-                <>
-                  <span className="date-range-separator">•</span>
-                  <span className="date-value last-updated" title={`Last updated: ${lastUpdated.toLocaleString('en-GB')}`}>
-                    Updated {formatRelativeTime(lastUpdated)}
-                  </span>
-                </>
-              )}
             </div>
           )}
           <div style={{ display: 'flex', gap: '4px' }}>
@@ -1523,6 +1515,14 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           />
         </ComposedChart>
       </ResponsiveContainer>
+          {/* Last updated timestamp */}
+          {lastUpdated && (
+            <div className="last-updated-container">
+              <span className="last-updated" title={`Metrics last updated: ${lastUpdated.toLocaleString('en-GB')}`}>
+                Metrics updated {formatRelativeTime(lastUpdated)}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Custom Legend */}

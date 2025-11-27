@@ -375,7 +375,13 @@
   font-size: 11px;
 }
 
-.date-value.last-updated {
+.last-updated-container {
+  text-align: left;
+  margin-top: 4px;
+  padding-left: 20px;
+}
+
+.last-updated {
   color: #9ca3af;
   font-weight: 400;
   font-size: 10px;
