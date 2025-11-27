@@ -1001,9 +1001,9 @@
 /* Grid View Modal */
 .grid-view-modal {
   max-width: 98vw;
-  width: 98vw;
+  width: fit-content;
+  min-width: 450px;
   max-height: 98vh;
-  height: 98vh;
   padding: 0;
 }
 
@@ -1019,7 +1019,6 @@
 .grid-view-body {
   padding: 8px;
   overflow-y: auto;
-  height: calc(98vh - 45px);
   max-height: calc(98vh - 45px);
 }
 
