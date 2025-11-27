@@ -1773,7 +1773,7 @@ function App() {
               <button className="modal-close" onClick={() => setShowGridView(false)}>×</button>
             </div>
             <div className="modal-body grid-view-body">
-              <div className="grid-view-container">
+              <div className={`grid-view-container metrics-count-${metrics.length}`}>
                 {metrics.map((metric) => {
                   const metricData = projectData.filter(item => item.metric === metric);
                   if (metricData.length === 0) return null;

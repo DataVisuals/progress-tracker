@@ -1028,6 +1028,44 @@
   gap: 8px;
 }
 
+/* Layout optimizations based on metric count */
+/* 2 metrics: side by side */
+.grid-view-container.metrics-count-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* 3 metrics: 2 + 1 or 3 across */
+.grid-view-container.metrics-count-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* 4 metrics: 2x2 grid */
+.grid-view-container.metrics-count-4 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* 5 metrics: 3 + 2 layout */
+.grid-view-container.metrics-count-5 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* 6 metrics: 3x2 grid */
+.grid-view-container.metrics-count-6 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* 7+ metrics: 3 or 4 columns */
+.grid-view-container.metrics-count-7,
+.grid-view-container.metrics-count-8 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* 9+ metrics: 3 columns */
+.grid-view-container.metrics-count-9,
+.grid-view-container.metrics-count-10 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .grid-view-item {
   background: var(--bg-secondary);
   border-radius: 6px;
