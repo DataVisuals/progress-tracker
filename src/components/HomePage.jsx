@@ -1238,13 +1238,14 @@ const HomePage = ({
                       <React.Fragment key={idx}>
                         {showPortfolioHeader && (
                           <div className="portfolio-group-header">
-                            {item.portfolioColor && <span className="portfolio-header-dot" style={{ backgroundColor: item.portfolioColor }} />}
+                            {item.portfolioColor && <span className="portfolio-header-dot" style={{ backgroundColor: item.portfolioColor }} title={item.portfolioName || 'No Portfolio'} />}
                             <span className="portfolio-header-name">{item.portfolioName || 'No Portfolio'}</span>
                           </div>
                         )}
                         <div className={`metric-item ${item.ragStatus}`} onClick={() => handleMetricClick(item.projectId, item.metricName)}>
                           <div className="metric-left">
                             <div className="metric-header">
+                              {item.portfolioColor && <span className="metric-portfolio-dot" style={{ backgroundColor: item.portfolioColor }} title={item.portfolioName || 'No Portfolio'} />}
                               <div className="metric-text">
                                 <span className="metric-project">{item.projectName}</span>
                                 <span className="metric-name">{item.metricName}</span>
@@ -1309,14 +1310,14 @@ const HomePage = ({
                       <React.Fragment key={idx}>
                         {showPortfolioHeader && (
                           <div className="portfolio-group-header">
-                            {item.portfolioColor && <span className="portfolio-header-dot" style={{ backgroundColor: item.portfolioColor }} />}
+                            {item.portfolioColor && <span className="portfolio-header-dot" style={{ backgroundColor: item.portfolioColor }} title={item.portfolioName || 'No Portfolio'} />}
                             <span className="portfolio-header-name">{item.portfolioName || 'No Portfolio'}</span>
                           </div>
                         )}
                         <div className="commentary-item" onClick={() => handleMetricClick(item.projectId, item.metricName)}>
                           <div className="commentary-header">
                             <div className="commentary-context">
-                              {item.portfolioColor && <span className="commentary-portfolio-dot" style={{ backgroundColor: item.portfolioColor }} />}
+                              {item.portfolioColor && <span className="commentary-portfolio-dot" style={{ backgroundColor: item.portfolioColor }} title={item.portfolioName || 'No Portfolio'} />}
                               <span className="commentary-label">Project:</span>
                               <span className="commentary-project">{item.projectName}</span>
                             </div>
@@ -1556,6 +1557,7 @@ const HomePage = ({
                         <span
                           className="health-portfolio-dot"
                           style={{ backgroundColor: project.portfolioColor }}
+                          title={project.portfolioName || 'No Portfolio'}
                         />
                         <span className="health-project-name">{project.name}</span>
                         {project.initiative_manager && (

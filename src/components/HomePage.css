@@ -96,12 +96,6 @@
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
   gap: 8px;
-  height: calc(100vh - 280px);
-  min-height: 400px;
-}
-
-/* Expand grid when no feedback section */
-.home-grid.no-feedback {
   height: calc(100vh - 160px);
   min-height: 500px;
 }
@@ -431,9 +425,9 @@
 }
 
 .health-portfolio-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
   flex-shrink: 0;
 }
 
@@ -1241,9 +1235,9 @@ html.dark-mode .quadrant-content {
 }
 
 .commentary-portfolio-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
   flex-shrink: 0;
   margin-right: 3px;
 }
@@ -1393,6 +1387,13 @@ html.dark-mode .quadrant-content {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.metric-portfolio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
 }
 
 .metric-text {
