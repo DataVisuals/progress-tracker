@@ -28,8 +28,8 @@ import { selectStyles } from './components/SelectStyles';
 import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
 import ProjectHealthModal, { calculateHealthScore } from './components/ProjectHealthModal';
 import Lottie from 'lottie-react';
-import progressChartAnimation from '../public/progress-chart.json';
-import bellNotificationAnimation from '../public/bell-notification.json';
+import progressChartAnimation from './assets/progress-chart.json';
+import bellNotificationAnimation from './assets/bell-notification.json';
 import { trackPage } from './hooks/usePageTracking';
 import './App.css';
 

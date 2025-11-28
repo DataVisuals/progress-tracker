@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Select from 'react-select';
 import Lottie from 'lottie-react';
-import fixingAnimation from '../../public/fixing-animation.json';
+import fixingAnimation from '../assets/fixing-animation.json';
 import {
   MdComment,
   MdWarning,
@@ -35,12 +35,43 @@ import {
   MdCalendarToday,
   MdFeedback,
   MdErrorOutline,
-  MdBugReport
+  MdBugReport,
+  MdSettings,
+  MdStorage,
+  MdPieChart,
+  MdAccessTime
 } from 'react-icons/md';
 import { api } from '../api/client';
 import { smallSelectStyles } from './SelectStyles';
+import DashboardConfigModal from './DashboardConfigModal';
 import './HomePage.css';
 import './MetricTabs.css';
+
+// Panel configuration - defines all available panels
+const PANEL_CONFIG = {
+  heatmap: { id: 'heatmap', name: 'Most Viewed Projects', icon: MdVisibility, adminOnly: false },
+  metrics: { id: 'metrics', name: 'Metrics at Risk', icon: MdSpeed, adminOnly: false },
+  commentary: { id: 'commentary', name: 'Recent Commentary', icon: MdComment, adminOnly: false },
+  inconsistencies: { id: 'inconsistencies', name: 'Inconsistencies', icon: MdBugReport, adminOnly: false },
+  attention: { id: 'attention', name: 'Projects Needing Attention', icon: MdBuild, adminOnly: false },
+  audit: { id: 'audit', name: 'Audit Log', icon: MdHistory, adminOnly: true },
+  database: { id: 'database', name: 'Database Stats', icon: MdStorage, adminOnly: true },
+  activeUsers: { id: 'activeUsers', name: 'Active Users', icon: MdPeople, adminOnly: true }
+};
+
+// Layout configurations
+const LAYOUT_CONFIG = {
+  '2x2': { name: '2x2 Grid', panelCount: 4, cssClass: 'layout-2x2' },
+  '2x1': { name: '2 Columns', panelCount: 2, cssClass: 'layout-2x1' },
+  '1x2': { name: '2 Rows', panelCount: 2, cssClass: 'layout-1x2' },
+  '2x2-1x1': { name: '2x2 + Full Width', panelCount: 5, cssClass: 'layout-2x2-1x1' }
+};
+
+// Default dashboard configuration
+const DEFAULT_DASHBOARD_CONFIG = {
+  layout: '2x2',
+  panels: ['heatmap', 'metrics', 'commentary', 'inconsistencies']
+};
 
 const HomePage = ({
   projects,
@@ -81,6 +112,25 @@ const HomePage = ({
     return [1, 7, 30, 90].includes(parsed) ? parsed : 7;
   });
   const [changesSinceLastVisit, setChangesSinceLastVisit] = useState(null); // Changes since last visit
+  const [showConfigModal, setShowConfigModal] = useState(false); // Dashboard config modal
+  const [dashboardConfig, setDashboardConfig] = useState(() => {
+    // Load from localStorage or use default
+    const stored = localStorage.getItem('homePageDashboardConfig');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        return DEFAULT_DASHBOARD_CONFIG;
+      }
+    }
+    return DEFAULT_DASHBOARD_CONFIG;
+  });
+  const [auditLog, setAuditLog] = useState([]); // Audit log data for admin panel
+  const [databaseStats, setDatabaseStats] = useState(null); // Database stats for admin panel
+  const [activeUsers, setActiveUsers] = useState(null); // Active users for admin panel
+
+  // Check if current user is admin
+  const isAdmin = currentUser?.role === 'admin';
 
   // Tips organized by theme
   const tipsByCategory = {
@@ -766,6 +816,44 @@ const HomePage = ({
       } catch (changesErr) {
         setChangesSinceLastVisit(null);
       }
+
+      // Load admin panel data if user is admin and panels are configured
+      if (isAdmin) {
+        const configuredPanels = dashboardConfig.panels || [];
+
+        // Load audit log if needed
+        if (configuredPanels.includes('audit')) {
+          try {
+            const auditResponse = await api.get('/audit?limit=20');
+            setAuditLog(auditResponse.data || []);
+          } catch (auditErr) {
+            console.log('Could not load audit log:', auditErr.message);
+            setAuditLog([]);
+          }
+        }
+
+        // Load database stats if needed
+        if (configuredPanels.includes('database')) {
+          try {
+            const dbStatsResponse = await api.get('/admin/database-stats');
+            setDatabaseStats(dbStatsResponse.data);
+          } catch (dbErr) {
+            console.log('Could not load database stats:', dbErr.message);
+            setDatabaseStats({ error: dbErr.message });
+          }
+        }
+
+        // Load active users if needed
+        if (configuredPanels.includes('activeUsers')) {
+          try {
+            const activeUsersResponse = await api.get('/admin/active-users');
+            setActiveUsers(activeUsersResponse.data);
+          } catch (auErr) {
+            console.log('Could not load active users:', auErr.message);
+            setActiveUsers({ error: auErr.message });
+          }
+        }
+      }
     } catch (err) {
       console.error('Failed to load home page data:', err);
     } finally {
@@ -809,6 +897,15 @@ const HomePage = ({
     if (onNavigateToProject) {
       onNavigateToProject(projectId, metricName);
     }
+  };
+
+  // Handle dashboard config save
+  const handleConfigSave = (newConfig) => {
+    setDashboardConfig(newConfig);
+    localStorage.setItem('homePageDashboardConfig', JSON.stringify(newConfig));
+    setShowConfigModal(false);
+    // Reload data to fetch any newly required admin panel data
+    loadHomePageData();
   };
 
   // Check if a red metric needs a recovery plan
@@ -925,6 +1022,535 @@ const HomePage = ({
   const redCount = spaceFilteredAtRisk.filter(m => m.ragStatus === 'red').length;
   const amberCount = spaceFilteredAtRisk.filter(m => m.ragStatus === 'amber').length;
 
+  // Get current layout configuration
+  const currentLayout = LAYOUT_CONFIG[dashboardConfig?.layout] || LAYOUT_CONFIG['2x2'];
+
+  // Render a panel by its ID
+  const renderPanel = (panelId, index) => {
+    switch (panelId) {
+      case 'heatmap':
+        return (
+          <div key={panelId} className={`home-quadrant heatmap-quadrant panel-${index + 1}`}>
+            <div className="quadrant-header">
+              <MdVisibility className="quadrant-icon" />
+              <h2>Most Viewed Projects</h2>
+              <Select
+                key={`views-days-${darkMode}`}
+                className="portfolio-filter-dropdown"
+                styles={smallSelectStyles}
+                value={{ value: viewsDays, label: viewsDays === 1 ? 'Last 24 hours' : `Last ${viewsDays} days` }}
+                onChange={(option) => {
+                  setViewsDays(option.value);
+                  localStorage.setItem('mostViewedProjectsDays', option.value.toString());
+                }}
+                options={[
+                  { value: 1, label: 'Last 24 hours' },
+                  { value: 7, label: 'Last 7 days' },
+                  { value: 30, label: 'Last 30 days' },
+                  { value: 90, label: 'Last 90 days' }
+                ]}
+                isSearchable={false}
+              />
+            </div>
+            <div className="quadrant-content">
+              {pageHeatmap && pageHeatmap.by_path ? (
+                <div className="heatmap-list">
+                  {(() => {
+                    const projectItems = pageHeatmap.by_path.filter(item => item.path.startsWith('Project: '));
+                    const maxViews = projectItems[0]?.views || 1;
+                    const getHeatColor = (ratio) => {
+                      if (ratio > 0.75) return '#dc2626';
+                      if (ratio > 0.5) return '#f59e0b';
+                      if (ratio > 0.25) return '#10b981';
+                      return '#60a5fa';
+                    };
+                    return projectItems.slice(0, 10).map((item) => {
+                      const projectName = item.path.replace('Project: ', '');
+                      const ratio = item.views / maxViews;
+                      const heatColor = getHeatColor(ratio);
+                      return (
+                        <div key={item.path} className="heatmap-row" onClick={() => {
+                          const projectEntry = Object.entries(projects).find(([id, p]) => p.name === projectName);
+                          if (projectEntry && onNavigateToProject) {
+                            onNavigateToProject(parseInt(projectEntry[0]));
+                          }
+                        }}>
+                          <span className="heatmap-name" title={projectName}>{projectName}</span>
+                          <div className="heatmap-bar-container">
+                            <div className="heatmap-bar" style={{ width: `${Math.round(ratio * 100)}%`, backgroundColor: heatColor }} />
+                          </div>
+                          <span className="heatmap-views">{item.views}</span>
+                        </div>
+                      );
+                    });
+                  })()}
+                  {pageHeatmap.by_path.filter(item => item.path.startsWith('Project: ')).length === 0 && (
+                    <div className="empty-state">No project views recorded yet</div>
+                  )}
+                </div>
+              ) : (
+                <div className="empty-state">Loading view data...</div>
+              )}
+              <div className="heatmap-legend">
+                <div className="legend-item"><span className="legend-color" style={{ background: '#dc2626' }} /><span>Hot</span></div>
+                <div className="legend-item"><span className="legend-color" style={{ background: '#f59e0b' }} /><span>Warm</span></div>
+                <div className="legend-item"><span className="legend-color" style={{ background: '#10b981' }} /><span>Cool</span></div>
+                <div className="legend-item"><span className="legend-color" style={{ background: '#60a5fa' }} /><span>Cold</span></div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'metrics':
+        return (
+          <div key={panelId} className={`home-quadrant metrics-quadrant panel-${index + 1}`}>
+            <div className="quadrant-header">
+              <MdSpeed className="quadrant-icon warning" />
+              <h2>Metrics at Risk</h2>
+              <div className="filter-controls">
+                <div className="rag-filter-buttons">
+                  <button className={`rag-filter-btn ${ragFilter === 'all' ? 'active' : ''}`} onClick={() => setRagFilter('all')}>All ({atRiskMetrics.length})</button>
+                  <button className={`rag-filter-btn red ${ragFilter === 'red' ? 'active' : ''}`} onClick={() => setRagFilter('red')}>Red ({redCount})</button>
+                  <button className={`rag-filter-btn amber ${ragFilter === 'amber' ? 'active' : ''}`} onClick={() => setRagFilter('amber')}>Amber ({amberCount})</button>
+                </div>
+                {portfoliosInMetrics.length > 1 && (
+                  <Select
+                    key={`metrics-portfolio-${darkMode}`}
+                    className="portfolio-filter-dropdown"
+                    styles={smallSelectStyles}
+                    value={portfolioFilter === 'all' ? { value: 'all', label: 'All Portfolios' } : portfoliosInMetrics.find(p => p.id === parseInt(portfolioFilter)) ? { value: portfoliosInMetrics.find(p => p.id === parseInt(portfolioFilter)).id, label: portfoliosInMetrics.find(p => p.id === parseInt(portfolioFilter)).name } : { value: 'all', label: 'All Portfolios' }}
+                    onChange={(option) => setPortfolioFilter(option.value.toString())}
+                    options={[{ value: 'all', label: 'All Portfolios' }, ...portfoliosInMetrics.map(portfolio => ({ value: portfolio.id, label: portfolio.name }))]}
+                    isSearchable={false}
+                  />
+                )}
+              </div>
+            </div>
+            <div className="quadrant-content">
+              {loading ? (
+                <div className="loading-state">Loading...</div>
+              ) : atRiskMetrics.length === 0 ? (
+                <div className="empty-state success">
+                  <MdTrendingUp className="empty-icon" />
+                  <p>All metrics on track!</p>
+                  <span>No metrics at risk for {selectedSpace === 'all' ? 'All Spaces' : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space'}</span>
+                </div>
+              ) : filteredMetrics.length === 0 ? (
+                <div className="empty-state success">
+                  <MdTrendingUp className="empty-icon" />
+                  <p>No {ragFilter === 'all' ? 'at-risk' : ragFilter} metrics!</p>
+                  <span>No {ragFilter === 'all' ? 'at-risk' : ragFilter} metrics for {portfolioFilter === 'all' ? (selectedSpace === 'all' ? 'All Spaces' : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space') : portfoliosInMetrics.find(p => p.id === parseInt(portfolioFilter))?.name || 'selected portfolio'}</span>
+                </div>
+              ) : (
+                <div className="metrics-list">
+                  {filteredMetrics.map((item, idx) => {
+                    const showPortfolioHeader = idx === 0 || item.portfolioName !== filteredMetrics[idx - 1].portfolioName;
+                    return (
+                      <React.Fragment key={idx}>
+                        {showPortfolioHeader && (
+                          <div className="portfolio-group-header">
+                            {item.portfolioColor && <span className="portfolio-header-dot" style={{ backgroundColor: item.portfolioColor }} />}
+                            <span className="portfolio-header-name">{item.portfolioName || 'No Portfolio'}</span>
+                          </div>
+                        )}
+                        <div className={`metric-item ${item.ragStatus}`} onClick={() => handleMetricClick(item.projectId, item.metricName)}>
+                          <div className="metric-left">
+                            <div className="metric-header">
+                              <div className="metric-text">
+                                <span className="metric-project">{item.projectName}</span>
+                                <span className="metric-name">{item.metricName}</span>
+                              </div>
+                              {item.ragStatus === 'red' && needsRecoveryPlan(item.metricId) && (
+                                <div className="recovery-plan-indicator" title="Recovery Plan Required"><MdErrorOutline /></div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="metric-right">
+                            <span className={`metric-variance ${item.ragStatus}`}>-{item.variancePercent}%</span>
+                            <div className="metric-progress">
+                              <span className="progress-value">{item.complete}</span>
+                              <span className="progress-separator">/</span>
+                              <span className="progress-expected">{item.expected}</span>
+                            </div>
+                            <MdArrowForward className="metric-arrow" />
+                          </div>
+                        </div>
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'commentary':
+        return (
+          <div key={panelId} className={`home-quadrant commentary-quadrant panel-${index + 1}`}>
+            <div className="quadrant-header">
+              <MdComment className="quadrant-icon" />
+              <h2>Recent Commentary</h2>
+              {portfoliosInCommentary.length > 1 && (
+                <Select
+                  key={`commentary-portfolio-${darkMode}`}
+                  className="portfolio-filter-dropdown"
+                  styles={smallSelectStyles}
+                  value={commentaryPortfolioFilter === 'all' ? { value: 'all', label: 'All Portfolios' } : portfoliosInCommentary.find(p => p.id === parseInt(commentaryPortfolioFilter)) ? { value: portfoliosInCommentary.find(p => p.id === parseInt(commentaryPortfolioFilter)).id, label: portfoliosInCommentary.find(p => p.id === parseInt(commentaryPortfolioFilter)).name } : { value: 'all', label: 'All Portfolios' }}
+                  onChange={(option) => setCommentaryPortfolioFilter(option.value.toString())}
+                  options={[{ value: 'all', label: 'All Portfolios' }, ...portfoliosInCommentary.map(portfolio => ({ value: portfolio.id, label: portfolio.name }))]}
+                  menuPortalTarget={document.body}
+                  isSearchable={false}
+                />
+              )}
+            </div>
+            <div className="quadrant-content">
+              {loading ? (
+                <div className="loading-state">Loading...</div>
+              ) : filteredCommentary.length === 0 ? (
+                <div className="empty-state">
+                  <MdComment className="empty-icon" />
+                  <p>No recent commentary</p>
+                  <span>No commentary for {commentaryPortfolioFilter === 'all' ? (selectedSpace === 'all' ? 'All Spaces' : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space') : portfoliosInCommentary.find(p => p.id === parseInt(commentaryPortfolioFilter))?.name || 'selected portfolio'}</span>
+                </div>
+              ) : (
+                <div className="commentary-list">
+                  {filteredCommentary.map((item, idx) => {
+                    const showPortfolioHeader = idx === 0 || item.portfolioName !== filteredCommentary[idx - 1].portfolioName;
+                    return (
+                      <React.Fragment key={idx}>
+                        {showPortfolioHeader && (
+                          <div className="portfolio-group-header">
+                            {item.portfolioColor && <span className="portfolio-header-dot" style={{ backgroundColor: item.portfolioColor }} />}
+                            <span className="portfolio-header-name">{item.portfolioName || 'No Portfolio'}</span>
+                          </div>
+                        )}
+                        <div className="commentary-item" onClick={() => handleMetricClick(item.projectId, item.metricName)}>
+                          <div className="commentary-header">
+                            <div className="commentary-context">
+                              {item.portfolioColor && <span className="commentary-portfolio-dot" style={{ backgroundColor: item.portfolioColor }} />}
+                              <span className="commentary-label">Project:</span>
+                              <span className="commentary-project">{item.projectName}</span>
+                            </div>
+                            <div className="commentary-context">
+                              <span className="commentary-label">Metric:</span>
+                              <span className="commentary-metric">{item.metricName}</span>
+                            </div>
+                            <div className="commentary-context">
+                              <span className="commentary-label">Period:</span>
+                              <span className="commentary-period">{item.periodName}</span>
+                            </div>
+                          </div>
+                          <p className="commentary-text">{item.commentary}</p>
+                          <div className="commentary-footer">
+                            {item.createdBy && <span className="commentary-author">{item.createdBy}</span>}
+                            <span className="commentary-time">{formatTimestamp(item.timestamp)}</span>
+                          </div>
+                        </div>
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'inconsistencies':
+        return (
+          <div key={panelId} className={`home-quadrant inconsistency-quadrant panel-${index + 1}`}>
+            <div className="quadrant-header">
+              <MdBugReport className="quadrant-icon warning" />
+              <h2>Inconsistencies</h2>
+            </div>
+            <div className="quadrant-content">
+              {!inconsistencies ? (
+                <div className="loading-text">Loading...</div>
+              ) : inconsistencies.total_inconsistencies === 0 ? (
+                <div className="no-inconsistencies">
+                  <MdCheckCircle style={{ fontSize: '48px', color: '#10b981', marginBottom: '8px' }} />
+                  <p>No inconsistencies found</p>
+                  <span style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                    {selectedSpace === 'all' ? 'All projects across all spaces' : `All projects in ${spaces.find(s => s.id === Number(selectedSpace))?.name || 'this space'}`}
+                  </span>
+                </div>
+              ) : (
+                <div className="inconsistency-list">
+                  {inconsistencies.summary.map((pmData, pmIdx) => {
+                    const isExpanded = expandedPMs[pmData.pm_name];
+                    const displayedIssues = isExpanded ? pmData.issues : pmData.issues.slice(0, 3);
+                    return (
+                      <div key={pmIdx} className="inconsistency-pm-item">
+                        <div className="inconsistency-pm-header">
+                          <div className="pm-name-wrapper"><MdPeople className="pm-icon" /><span className="pm-name">{pmData.pm_name}</span></div>
+                          <div className="inconsistency-counts"><span className="total-count">{pmData.total}</span></div>
+                        </div>
+                        {displayedIssues.map((issue, issueIdx) => {
+                          let issueTitle = '';
+                          let targetProjectId = issue.project_id;
+                          if (issue.type === 'missing_recovery_plan' && issue.metric_name) {
+                            issueTitle = `${issue.metric_name} is ${issue.rag_status?.toUpperCase()} but has No Recovery Plan`;
+                          } else if (issue.type === 'missing_metric_description' && issue.metric_name) {
+                            issueTitle = `${issue.metric_name} is Missing a Description`;
+                          } else if (issue.type === 'missing_project_description' || issue.details === 'Project missing description') {
+                            issueTitle = `${issue.project_name} is Missing a Description`;
+                          } else if (issue.type === 'missing_documentation') {
+                            issueTitle = `${issue.project_name} has No Documentation Links`;
+                          } else {
+                            issueTitle = issue.details;
+                          }
+                          return (
+                            <div key={issueIdx} className="inconsistency-detail" onClick={() => onNavigateToProject(targetProjectId)} style={{ cursor: 'pointer' }}>
+                              {issue.type === 'missing_recovery_plan' && issue.rag_status && <span className={`metric-rag-marker ${issue.rag_status}`} title={issue.rag_status === 'red' ? 'Behind schedule' : 'At risk'} style={{ marginRight: '8px', flexShrink: 0 }} />}
+                              <div className="issue-content">
+                                <div className="issue-title">{issueTitle}</div>
+                                <div className="issue-subtitle">{issue.project_name}{issue.age_days > 0 && <span className="issue-age"> • {issue.age_days}d old</span>}</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {pmData.issues.length > 3 && (
+                          <div className="more-issues" onClick={(e) => { e.stopPropagation(); setExpandedPMs(prev => ({ ...prev, [pmData.pm_name]: !prev[pmData.pm_name] })); }}>
+                            {isExpanded ? 'Show less' : `+${pmData.issues.length - 3} more`}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'attention':
+        return (
+          <div key={panelId} className={`home-quadrant attention-quadrant panel-${index + 1}`}>
+            <div className="quadrant-header">
+              <MdBuild className="quadrant-icon warning" />
+              <h2>Projects Needing Attention</h2>
+            </div>
+            <div className="quadrant-content">
+              {loading ? (
+                <div className="loading-state">Loading...</div>
+              ) : userInconsistencies.length === 0 && userProjectFeedback.length === 0 ? (
+                <div className="empty-state success">
+                  <MdCheckCircle className="empty-icon" />
+                  <p>All caught up!</p>
+                  <span>No issues or feedback requiring your attention</span>
+                </div>
+              ) : (
+                <div className="attention-list">
+                  {userInconsistencies.map((issue, idx) => {
+                    let issueTitle = '';
+                    if (issue.type === 'missing_recovery_plan' && issue.metric_name) {
+                      issueTitle = `${issue.metric_name} is ${issue.rag_status?.toUpperCase()} but has no recovery plan`;
+                    } else if (issue.type === 'missing_metric_description' && issue.metric_name) {
+                      issueTitle = `${issue.metric_name} is missing a description`;
+                    } else if (issue.type === 'missing_project_description') {
+                      issueTitle = `${issue.project_name} is missing a description`;
+                    } else if (issue.type === 'missing_documentation') {
+                      issueTitle = `${issue.project_name} has no documentation links`;
+                    } else {
+                      issueTitle = issue.details;
+                    }
+                    return (
+                      <div key={`issue-${idx}`} className="attention-item" onClick={() => onNavigateToProject(issue.project_id)}>
+                        <div className="attention-icon-wrapper">
+                          {issue.type === 'missing_recovery_plan' ? <span className={`metric-rag-marker ${issue.rag_status}`} /> : <MdWarning className="attention-icon" />}
+                        </div>
+                        <div className="attention-details">
+                          <div className="attention-title">{issueTitle}</div>
+                          <div className="attention-project">{issue.project_name}{issue.first_detected && <span className="attention-age"> · {formatTimestamp(issue.first_detected)}</span>}</div>
+                        </div>
+                        <MdArrowForward className="attention-arrow" />
+                      </div>
+                    );
+                  })}
+                  {userProjectFeedback.map((fb) => (
+                    <div key={`fb-${fb.id}`} className="attention-item feedback-item" onClick={() => onNavigateToProject(fb.project_id)}>
+                      <div className="attention-icon-wrapper"><MdFeedback className="attention-icon feedback" /></div>
+                      <div className="attention-details">
+                        <div className="attention-title">{fb.text}</div>
+                        <div className="attention-project">{fb.project_name} - {fb.user_name || 'Anonymous'} - {formatTimestamp(fb.created_at)}</div>
+                      </div>
+                      <MdArrowForward className="attention-arrow" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'audit':
+        if (!isAdmin) return null;
+        const formatAuditDescription = (entry) => {
+          try {
+            const newVals = entry.new_values ? JSON.parse(entry.new_values) : null;
+            const oldVals = entry.old_values ? JSON.parse(entry.old_values) : null;
+            if (entry.action === 'UPDATE' && newVals) {
+              const changes = Object.keys(newVals).slice(0, 2).map(k => {
+                const val = typeof newVals[k] === 'number' ? newVals[k].toLocaleString() : newVals[k];
+                return `${k} to ${val}`;
+              });
+              return changes.length > 0 ? changes.join(', ') : '';
+            } else if (entry.action === 'CREATE' && newVals) {
+              if (newVals.name) return `"${newVals.name}"`;
+              if (newVals.email) return newVals.email;
+              return '';
+            } else if (entry.action === 'DELETE' && oldVals) {
+              if (oldVals.name) return `"${oldVals.name}"`;
+              return '';
+            }
+            return '';
+          } catch {
+            return '';
+          }
+        };
+        const getActionVerb = (action) => {
+          switch(action) {
+            case 'CREATE': return 'created';
+            case 'UPDATE': return 'updated';
+            case 'DELETE': return 'deleted';
+            default: return action.toLowerCase();
+          }
+        };
+        return (
+          <div key={panelId} className={`home-quadrant audit-quadrant panel-${index + 1}`}>
+            <div className="quadrant-header">
+              <MdHistory className="quadrant-icon" />
+              <h2>Audit Log</h2>
+            </div>
+            <div className="quadrant-content">
+              {auditLog.length === 0 ? (
+                <div className="empty-state">
+                  <MdHistory className="empty-icon" />
+                  <p>No recent activity</p>
+                </div>
+              ) : (
+                <div className="audit-console">
+                  {auditLog.map((entry, idx) => {
+                    const description = formatAuditDescription(entry);
+                    const userName = entry.user_email?.split('@')[0] || 'System';
+                    return (
+                      <div key={idx} className="audit-line">
+                        <span className="audit-prompt">$</span>
+                        <span className="audit-user">[{userName}]</span>
+                        <span className="audit-verb">{getActionVerb(entry.action)}</span>
+                        <span className="audit-table">[{entry.table_name}]</span>
+                        {entry.record_id && <span className="audit-record">#{entry.record_id}</span>}
+                        {description && <span className="audit-values">{description}</span>}
+                        <span className="audit-time">@ {formatTimestamp(entry.created_at)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'database':
+        if (!isAdmin) return null;
+        return (
+          <div key={panelId} className={`home-quadrant database-quadrant panel-${index + 1}`}>
+            <div className="quadrant-header">
+              <MdStorage className="quadrant-icon" />
+              <h2>Database Stats</h2>
+            </div>
+            <div className="quadrant-content">
+              {!databaseStats ? (
+                <div className="loading-state">Loading...</div>
+              ) : databaseStats.error ? (
+                <div className="empty-state">
+                  <MdWarning className="empty-icon" />
+                  <p>Unable to load database stats</p>
+                  <span>{databaseStats.error}</span>
+                </div>
+              ) : (
+                <div className="database-stats-content">
+                  <div className="db-summary">
+                    <div className="db-stat">
+                      <span className="db-stat-value">{(databaseStats.totalSizeBytes / 1024 / 1024).toFixed(2)} MB</span>
+                      <span className="db-stat-label">Total Size</span>
+                    </div>
+                    <div className="db-stat">
+                      <span className="db-stat-value">{databaseStats.tables?.length || 0}</span>
+                      <span className="db-stat-label">Tables</span>
+                    </div>
+                  </div>
+                  <div className="db-tables">
+                    {databaseStats.tables?.slice().sort((a, b) => b.rowCount - a.rowCount).slice(0, 10).map((table, idx) => (
+                      <div key={idx} className="db-table-row">
+                        <span className="db-table-name">{table.name}</span>
+                        <span className="db-table-count">{table.rowCount.toLocaleString()} rows</span>
+                      </div>
+                    ))}
+                  </div>
+                  {databaseStats.spaceUsage && databaseStats.spaceUsage.length > 0 && (
+                    <div className="db-space-usage">
+                      <h4>Usage by Space</h4>
+                      {databaseStats.spaceUsage.map((space, idx) => (
+                        <div key={idx} className="db-space-row">
+                          <span className="db-space-name">{space.spaceName}</span>
+                          <span className="db-space-counts">{space.projectCount} proj, {space.metricCount} met, {space.periodCount} per</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'activeUsers':
+        if (!isAdmin) return null;
+        return (
+          <div key={panelId} className={`home-quadrant active-users-quadrant panel-${index + 1}`}>
+            <div className="quadrant-header">
+              <MdPeople className="quadrant-icon" />
+              <h2>Active Users</h2>
+              <span className="quadrant-subtitle">Last 30 minutes</span>
+            </div>
+            <div className="quadrant-content">
+              {!activeUsers ? (
+                <div className="loading-state">Loading...</div>
+              ) : activeUsers.error ? (
+                <div className="empty-state">
+                  <MdWarning className="empty-icon" />
+                  <p>Unable to load active users</p>
+                  <span>{activeUsers.error}</span>
+                </div>
+              ) : activeUsers.count === 0 ? (
+                <div className="empty-state">
+                  <MdPeople className="empty-icon" />
+                  <p>No active users</p>
+                  <span>No users active in the last 30 minutes</span>
+                </div>
+              ) : (
+                <div className="active-users-list">
+                  <div className="active-users-count">{activeUsers.count} active user{activeUsers.count !== 1 ? 's' : ''}</div>
+                  {activeUsers.users?.map((user, idx) => (
+                    <div key={idx} className="active-user-item">
+                      <div className="active-user-info">
+                        <span className="active-user-name">{user.name}</span>
+                        <span className="active-user-email">{user.email}</span>
+                      </div>
+                      <span className="active-user-time">{formatTimestamp(user.lastActivity)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="home-page">
       <div className="home-header">
@@ -961,434 +1587,34 @@ const HomePage = ({
             <span className="stat-value red">{spaceFilteredAtRisk.length}</span>
             <span className="stat-label">At Risk</span>
           </div>
+          {isAdmin && (
+            <button
+              className="dashboard-config-btn"
+              onClick={() => setShowConfigModal(true)}
+              title="Configure Dashboard"
+            >
+              <MdSettings />
+            </button>
+          )}
         </div>
       </div>
 
-      <div className={`home-grid ${feedback.length === 0 ? 'no-feedback' : ''}`}>
-        {/* Top Left - Most Viewed Projects */}
-        <div className="home-quadrant heatmap-quadrant">
-          <div className="quadrant-header">
-            <MdVisibility className="quadrant-icon" />
-            <h2>Most Viewed Projects</h2>
-            <Select
-              key={`views-days-${darkMode}`}
-              className="portfolio-filter-dropdown"
-              styles={smallSelectStyles}
-              value={{ value: viewsDays, label: viewsDays === 1 ? 'Last 24 hours' : `Last ${viewsDays} days` }}
-              onChange={(option) => {
-                setViewsDays(option.value);
-                localStorage.setItem('mostViewedProjectsDays', option.value.toString());
-              }}
-              options={[
-                { value: 1, label: 'Last 24 hours' },
-                { value: 7, label: 'Last 7 days' },
-                { value: 30, label: 'Last 30 days' },
-                { value: 90, label: 'Last 90 days' }
-              ]}
-              isSearchable={false}
-            />
-          </div>
-          <div className="quadrant-content">
-            {pageHeatmap && pageHeatmap.by_path ? (
-              <div className="heatmap-list">
-                {(() => {
-                  const projectItems = pageHeatmap.by_path.filter(item => item.path.startsWith('Project: '));
-                  const maxViews = projectItems[0]?.views || 1;
-
-                  // Heat color function (hot to cold) - 4 levels
-                  const getHeatColor = (ratio) => {
-                    if (ratio > 0.75) return '#dc2626'; // Hot - red
-                    if (ratio > 0.5) return '#f59e0b'; // Warm - orange
-                    if (ratio > 0.25) return '#10b981'; // Cool - green
-                    return '#60a5fa'; // Cold - blue
-                  };
-
-                  return projectItems.slice(0, 10).map((item) => {
-                    const projectName = item.path.replace('Project: ', '');
-                    const ratio = item.views / maxViews;
-                    const heatColor = getHeatColor(ratio);
-                    return (
-                      <div key={item.path} className="heatmap-row" onClick={() => {
-                        const projectEntry = Object.entries(projects).find(([id, p]) => p.name === projectName);
-                        if (projectEntry && onNavigateToProject) {
-                          onNavigateToProject(parseInt(projectEntry[0]));
-                        }
-                      }}>
-                        <span className="heatmap-name" title={projectName}>{projectName}</span>
-                        <div className="heatmap-bar-container">
-                          <div className="heatmap-bar" style={{ width: `${Math.round(ratio * 100)}%`, backgroundColor: heatColor }} />
-                        </div>
-                        <span className="heatmap-views">{item.views}</span>
-                      </div>
-                    );
-                  });
-                })()}
-                {pageHeatmap.by_path.filter(item => item.path.startsWith('Project: ')).length === 0 && (
-                  <div className="empty-state">No project views recorded yet</div>
-                )}
-              </div>
-            ) : (
-              <div className="empty-state">Loading view data...</div>
-            )}
-            <div className="heatmap-legend">
-              <div className="legend-item"><span className="legend-color" style={{ background: '#dc2626' }} /><span>Hot</span></div>
-              <div className="legend-item"><span className="legend-color" style={{ background: '#f59e0b' }} /><span>Warm</span></div>
-              <div className="legend-item"><span className="legend-color" style={{ background: '#10b981' }} /><span>Cool</span></div>
-              <div className="legend-item"><span className="legend-color" style={{ background: '#60a5fa' }} /><span>Cold</span></div>
-            </div>
-          </div>
-        </div>
-
-        {/* Top Right - Metrics at Risk */}
-        <div className="home-quadrant metrics-quadrant">
-          <div className="quadrant-header">
-            <MdSpeed className="quadrant-icon warning" />
-            <h2>Metrics at Risk</h2>
-            <div className="filter-controls">
-              <div className="rag-filter-buttons">
-                <button
-                  className={`rag-filter-btn ${ragFilter === 'all' ? 'active' : ''}`}
-                  onClick={() => setRagFilter('all')}
-                >
-                  All ({atRiskMetrics.length})
-                </button>
-                <button
-                  className={`rag-filter-btn red ${ragFilter === 'red' ? 'active' : ''}`}
-                  onClick={() => setRagFilter('red')}
-                >
-                  Red ({redCount})
-                </button>
-                <button
-                  className={`rag-filter-btn amber ${ragFilter === 'amber' ? 'active' : ''}`}
-                  onClick={() => setRagFilter('amber')}
-                >
-                  Amber ({amberCount})
-                </button>
-              </div>
-              {portfoliosInMetrics.length > 1 && (
-                <Select
-                  key={`metrics-portfolio-${darkMode}`}
-                  className="portfolio-filter-dropdown"
-                  styles={smallSelectStyles}
-                  value={
-                    portfolioFilter === 'all'
-                      ? { value: 'all', label: 'All Portfolios' }
-                      : portfoliosInMetrics.find(p => p.id === parseInt(portfolioFilter))
-                        ? { value: portfoliosInMetrics.find(p => p.id === parseInt(portfolioFilter)).id, label: portfoliosInMetrics.find(p => p.id === parseInt(portfolioFilter)).name }
-                        : { value: 'all', label: 'All Portfolios' }
-                  }
-                  onChange={(option) => setPortfolioFilter(option.value.toString())}
-                  options={[
-                    { value: 'all', label: 'All Portfolios' },
-                    ...portfoliosInMetrics.map(portfolio => ({
-                      value: portfolio.id,
-                      label: portfolio.name
-                    }))
-                  ]}
-                  isSearchable={false}
-                />
-              )}
-            </div>
-          </div>
-          <div className="quadrant-content">
-            {loading ? (
-              <div className="loading-state">Loading...</div>
-            ) : atRiskMetrics.length === 0 ? (
-              <div className="empty-state success">
-                <MdTrendingUp className="empty-icon" />
-                <p>All metrics on track!</p>
-                <span>
-                  No metrics at risk for{' '}
-                  {selectedSpace === 'all'
-                    ? 'All Spaces'
-                    : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space'}
-                </span>
-              </div>
-            ) : filteredMetrics.length === 0 ? (
-              <div className="empty-state success">
-                <MdTrendingUp className="empty-icon" />
-                <p>No {ragFilter === 'all' ? 'at-risk' : ragFilter} metrics!</p>
-                <span>
-                  No {ragFilter === 'all' ? 'at-risk' : ragFilter} metrics for{' '}
-                  {portfolioFilter === 'all'
-                    ? (selectedSpace === 'all'
-                        ? 'All Spaces'
-                        : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space')
-                    : portfoliosInMetrics.find(p => p.id === parseInt(portfolioFilter))?.name || 'selected portfolio'}
-                </span>
-              </div>
-            ) : (
-              <div className="metrics-list">
-                {filteredMetrics.map((item, index) => {
-                  // Show portfolio header if this is the first metric in the portfolio
-                  const showPortfolioHeader = index === 0 ||
-                    item.portfolioName !== filteredMetrics[index - 1].portfolioName;
-
-                  return (
-                    <React.Fragment key={index}>
-                      {showPortfolioHeader && (
-                        <div className="portfolio-group-header">
-                          {item.portfolioColor && (
-                            <span
-                              className="portfolio-header-dot"
-                              style={{ backgroundColor: item.portfolioColor }}
-                            />
-                          )}
-                          <span className="portfolio-header-name">
-                            {item.portfolioName || 'No Portfolio'}
-                          </span>
-                        </div>
-                      )}
-                      <div
-                        className={`metric-item ${item.ragStatus}`}
-                        onClick={() => handleMetricClick(item.projectId, item.metricName)}
-                      >
-                        <div className="metric-left">
-                          <div className="metric-header">
-                            <div className="metric-text">
-                              <span className="metric-project">{item.projectName}</span>
-                              <span className="metric-name">{item.metricName}</span>
-                            </div>
-                            {item.ragStatus === 'red' && needsRecoveryPlan(item.metricId) && (
-                              <div className="recovery-plan-indicator" title="Recovery Plan Required">
-                                <MdErrorOutline />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="metric-right">
-                          <span className={`metric-variance ${item.ragStatus}`}>-{item.variancePercent}%</span>
-                          <div className="metric-progress">
-                            <span className="progress-value">{item.complete}</span>
-                            <span className="progress-separator">/</span>
-                            <span className="progress-expected">{item.expected}</span>
-                          </div>
-                          <MdArrowForward className="metric-arrow" />
-                        </div>
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Bottom Left - Recent Commentary */}
-        <div className="home-quadrant commentary-quadrant">
-          <div className="quadrant-header">
-            <MdComment className="quadrant-icon" />
-            <h2>Recent Commentary</h2>
-            {portfoliosInCommentary.length > 1 && (
-              <Select
-                key={`commentary-portfolio-${darkMode}`}
-                className="portfolio-filter-dropdown"
-                styles={smallSelectStyles}
-                value={
-                  commentaryPortfolioFilter === 'all'
-                    ? { value: 'all', label: 'All Portfolios' }
-                    : portfoliosInCommentary.find(p => p.id === parseInt(commentaryPortfolioFilter))
-                      ? { value: portfoliosInCommentary.find(p => p.id === parseInt(commentaryPortfolioFilter)).id, label: portfoliosInCommentary.find(p => p.id === parseInt(commentaryPortfolioFilter)).name }
-                      : { value: 'all', label: 'All Portfolios' }
-                }
-                onChange={(option) => setCommentaryPortfolioFilter(option.value.toString())}
-                options={[
-                  { value: 'all', label: 'All Portfolios' },
-                  ...portfoliosInCommentary.map(portfolio => ({
-                    value: portfolio.id,
-                    label: portfolio.name
-                  }))
-                ]}
-                menuPortalTarget={document.body}
-                isSearchable={false}
-              />
-            )}
-          </div>
-          <div className="quadrant-content">
-            {loading ? (
-              <div className="loading-state">Loading...</div>
-            ) : filteredCommentary.length === 0 ? (
-              <div className="empty-state">
-                <MdComment className="empty-icon" />
-                <p>No recent commentary</p>
-                <span>
-                  No commentary for{' '}
-                  {commentaryPortfolioFilter === 'all'
-                    ? (selectedSpace === 'all'
-                        ? 'All Spaces'
-                        : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space')
-                    : portfoliosInCommentary.find(p => p.id === parseInt(commentaryPortfolioFilter))?.name || 'selected portfolio'}
-                </span>
-              </div>
-            ) : (
-              <div className="commentary-list">
-                {filteredCommentary.map((item, index) => {
-                  // Show portfolio header if this is the first comment in the portfolio
-                  const showPortfolioHeader = index === 0 ||
-                    item.portfolioName !== filteredCommentary[index - 1].portfolioName;
-
-                  return (
-                    <React.Fragment key={index}>
-                      {showPortfolioHeader && (
-                        <div className="portfolio-group-header">
-                          {item.portfolioColor && (
-                            <span
-                              className="portfolio-header-dot"
-                              style={{ backgroundColor: item.portfolioColor }}
-                            />
-                          )}
-                          <span className="portfolio-header-name">
-                            {item.portfolioName || 'No Portfolio'}
-                          </span>
-                        </div>
-                      )}
-                      <div
-                        className="commentary-item"
-                        onClick={() => handleMetricClick(item.projectId, item.metricName)}
-                      >
-                        <div className="commentary-header">
-                          <div className="commentary-context">
-                            {item.portfolioColor && (
-                              <span
-                                className="commentary-portfolio-dot"
-                                style={{ backgroundColor: item.portfolioColor }}
-                              />
-                            )}
-                            <span className="commentary-label">Project:</span>
-                            <span className="commentary-project">{item.projectName}</span>
-                          </div>
-                          <div className="commentary-context">
-                            <span className="commentary-label">Metric:</span>
-                            <span className="commentary-metric">{item.metricName}</span>
-                          </div>
-                          <div className="commentary-context">
-                            <span className="commentary-label">Period:</span>
-                            <span className="commentary-period">{item.periodName}</span>
-                          </div>
-                        </div>
-                        <p className="commentary-text">{item.commentary}</p>
-                        <div className="commentary-footer">
-                          {item.createdBy && (
-                            <span className="commentary-author">{item.createdBy}</span>
-                          )}
-                          <span className="commentary-time">{formatTimestamp(item.timestamp)}</span>
-                        </div>
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Bottom Right - Inconsistency Report */}
-        <div className="home-quadrant inconsistency-quadrant">
-          <div className="quadrant-header">
-            <MdBugReport className="quadrant-icon warning" />
-            <h2>Inconsistencies</h2>
-          </div>
-          <div className="quadrant-content">
-            {!inconsistencies ? (
-              <div className="loading-text">Loading...</div>
-            ) : inconsistencies.total_inconsistencies === 0 ? (
-              <div className="no-inconsistencies">
-                <MdCheckCircle style={{ fontSize: '48px', color: '#10b981', marginBottom: '8px' }} />
-                <p>No inconsistencies found</p>
-                <span style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
-                  {selectedSpace === 'all'
-                    ? 'All projects across all spaces'
-                    : `All projects in ${spaces.find(s => s.id === Number(selectedSpace))?.name || 'this space'}`}
-                </span>
-              </div>
-            ) : (
-              <div className="inconsistency-list">
-                {inconsistencies.summary.map((pmData, index) => {
-                  const isExpanded = expandedPMs[pmData.pm_name];
-                  const displayedIssues = isExpanded ? pmData.issues : pmData.issues.slice(0, 3);
-
-                  return (
-                    <div key={index} className="inconsistency-pm-item">
-                      <div className="inconsistency-pm-header">
-                        <div className="pm-name-wrapper">
-                          <MdPeople className="pm-icon" />
-                          <span className="pm-name">{pmData.pm_name}</span>
-                        </div>
-                        <div className="inconsistency-counts">
-                          <span className="total-count">{pmData.total}</span>
-                        </div>
-                      </div>
-                      {displayedIssues.map((issue, idx) => {
-                        // Create natural title based on issue type
-                        let issueTitle = '';
-                        let targetEntity = '';
-                        let targetProjectId = issue.project_id;
-
-                        if (issue.type === 'missing_recovery_plan' && issue.metric_name) {
-                          issueTitle = `${issue.metric_name} is ${issue.rag_status?.toUpperCase()} but has No Recovery Plan`;
-                          targetEntity = issue.metric_name;
-                        } else if (issue.type === 'missing_metric_description' && issue.metric_name) {
-                          issueTitle = `${issue.metric_name} is Missing a Description`;
-                          targetEntity = issue.metric_name;
-                        } else if (issue.type === 'missing_project_description' || issue.details === 'Project missing description') {
-                          issueTitle = `${issue.project_name} is Missing a Description`;
-                          targetEntity = issue.project_name;
-                        } else if (issue.type === 'missing_documentation') {
-                          issueTitle = `${issue.project_name} has No Documentation Links`;
-                          targetEntity = issue.project_name;
-                        } else {
-                          issueTitle = issue.details;
-                          targetEntity = issue.metric_name || issue.project_name;
-                        }
-
-                        return (
-                          <div
-                            key={idx}
-                            className="inconsistency-detail"
-                            onClick={() => onNavigateToProject(targetProjectId)}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            {issue.type === 'missing_recovery_plan' && issue.rag_status && (
-                              <span
-                                className={`metric-rag-marker ${issue.rag_status}`}
-                                title={issue.rag_status === 'red' ? 'Behind schedule' : 'At risk'}
-                                style={{ marginRight: '8px', flexShrink: 0 }}
-                              />
-                            )}
-                            <div className="issue-content">
-                              <div className="issue-title">{issueTitle}</div>
-                              <div className="issue-subtitle">
-                                {issue.project_name}
-                                {issue.age_days > 0 && (
-                                  <span className="issue-age"> • {issue.age_days}d old</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {pmData.issues.length > 3 && (
-                        <div
-                          className="more-issues"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpandedPMs(prev => ({
-                              ...prev,
-                              [pmData.pm_name]: !prev[pmData.pm_name]
-                            }));
-                          }}
-                        >
-                          {isExpanded ? 'Show less' : `+${pmData.issues.length - 3} more`}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+      <div className={`home-grid ${currentLayout.cssClass} ${feedback.length === 0 ? 'no-feedback' : ''}`}>
+        {(dashboardConfig.panels || DEFAULT_DASHBOARD_CONFIG.panels).map((panelId, index) => renderPanel(panelId, index))}
       </div>
+
+      {/* Dashboard Config Modal */}
+      {showConfigModal && (
+        <DashboardConfigModal
+          isOpen={showConfigModal}
+          onClose={() => setShowConfigModal(false)}
+          onSave={handleConfigSave}
+          currentConfig={dashboardConfig}
+          isAdmin={isAdmin}
+          panelConfig={PANEL_CONFIG}
+          layoutConfig={LAYOUT_CONFIG}
+        />
+      )}
 
       {/* Modals */}
       {showTipsModal && (

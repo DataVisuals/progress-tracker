@@ -4768,6 +4768,101 @@ function createApp(dbPath) {
     }
   });
 
+  // Get database stats (admin only)
+  app.get('/api/admin/database-stats', authenticateToken, async (req, res) => {
+    try {
+      if (!isAdmin(req.user)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      // Get all table names
+      const tables = await dbAll(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`);
+
+      // Get row count for each table
+      const tableStats = [];
+      for (const table of tables) {
+        try {
+          const countResult = await dbGet(`SELECT COUNT(*) as count FROM "${table.name}"`);
+          tableStats.push({ name: table.name, rowCount: countResult.count });
+        } catch (err) {
+          tableStats.push({ name: table.name, rowCount: -1, error: err.message });
+        }
+      }
+
+      // Get database file size
+      const fs = require('fs');
+      const dbPath = process.env.DATABASE_PATH || 'backend/data/progress-tracker.db';
+      let totalSizeBytes = 0;
+      try {
+        const stats = fs.statSync(dbPath);
+        totalSizeBytes = stats.size;
+      } catch (err) {
+        console.error('Could not get database file size:', err.message);
+      }
+
+      // Get space usage - estimate based on project/metric data per space
+      const spaceUsage = await dbAll(`
+        SELECT
+          s.id as spaceId,
+          s.name as spaceName,
+          COUNT(DISTINCT p.id) as projectCount,
+          COUNT(DISTINCT m.id) as metricCount,
+          COUNT(DISTINCT mp.id) as periodCount
+        FROM spaces s
+        LEFT JOIN portfolios po ON po.space_id = s.id
+        LEFT JOIN projects p ON p.portfolio_id = po.id
+        LEFT JOIN metrics m ON m.project_id = p.id
+        LEFT JOIN metric_periods mp ON mp.metric_id = m.id
+        GROUP BY s.id, s.name
+        ORDER BY periodCount DESC
+      `);
+
+      res.json({
+        tables: tableStats,
+        totalSizeBytes,
+        spaceUsage
+      });
+    } catch (err) {
+      console.error('Database stats error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Get active users (admin only) - users with page views in last 30 minutes
+  app.get('/api/admin/active-users', authenticateToken, async (req, res) => {
+    try {
+      if (!isAdmin(req.user)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const thirtyMinutesAgo = new Date();
+      thirtyMinutesAgo.setMinutes(thirtyMinutesAgo.getMinutes() - 30);
+
+      const activeUsers = await dbAll(`
+        SELECT
+          u.id,
+          u.name,
+          u.email,
+          MAX(pv.created_at) as lastActivity,
+          COUNT(pv.id) as pageViews
+        FROM page_views pv
+        JOIN users u ON pv.user_id = u.id
+        WHERE pv.created_at >= ?
+        GROUP BY u.id, u.name, u.email
+        ORDER BY lastActivity DESC
+      `, [thirtyMinutesAgo.toISOString()]);
+
+      res.json({
+        users: activeUsers,
+        count: activeUsers.length,
+        since: thirtyMinutesAgo.toISOString()
+      });
+    } catch (err) {
+      console.error('Active users error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Get page heatmap data (admin only) - filtered for projects only
   app.get('/api/admin/page-heatmap', authenticateToken, async (req, res) => {
     try {
