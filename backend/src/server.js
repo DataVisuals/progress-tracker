@@ -3679,7 +3679,52 @@ function createApp(dbPath) {
       params.push(parseInt(limit), parseInt(offset));
 
       const logs = await dbAll(query, params);
-      res.json(logs);
+
+      // Enrich metric_periods entries with metric/project context
+      const enrichedLogs = await Promise.all(logs.map(async (log) => {
+        if (log.table_name === 'metric_periods' && log.record_id) {
+          try {
+            const context = await dbGet(`
+              SELECT m.name as metric_name, p.name as project_name
+              FROM metric_periods mp
+              JOIN metrics m ON mp.metric_id = m.id
+              JOIN projects p ON m.project_id = p.id
+              WHERE mp.id = ?
+            `, [log.record_id]);
+            if (context) {
+              return { ...log, metric_name: context.metric_name, project_name: context.project_name };
+            }
+          } catch (e) {
+            // Period may have been deleted, ignore
+          }
+        } else if (log.table_name === 'metrics' && log.record_id) {
+          try {
+            const context = await dbGet(`
+              SELECT m.name as metric_name, p.name as project_name
+              FROM metrics m
+              JOIN projects p ON m.project_id = p.id
+              WHERE m.id = ?
+            `, [log.record_id]);
+            if (context) {
+              return { ...log, metric_name: context.metric_name, project_name: context.project_name };
+            }
+          } catch (e) {
+            // Metric may have been deleted, ignore
+          }
+        } else if (log.table_name === 'projects' && log.record_id) {
+          try {
+            const context = await dbGet(`SELECT name as project_name FROM projects WHERE id = ?`, [log.record_id]);
+            if (context) {
+              return { ...log, project_name: context.project_name };
+            }
+          } catch (e) {
+            // Project may have been deleted, ignore
+          }
+        }
+        return log;
+      }));
+
+      res.json(enrichedLogs);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }

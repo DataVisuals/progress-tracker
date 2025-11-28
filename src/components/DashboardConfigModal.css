@@ -110,6 +110,12 @@
   height: 12px;
 }
 
+.layout-3x2-preview {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  height: 65px;
+}
+
 .layout-option.selected .preview-cell {
   background: #00aeef;
 }

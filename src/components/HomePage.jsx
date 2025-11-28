@@ -64,7 +64,8 @@ const LAYOUT_CONFIG = {
   '2x2': { name: '2x2 Grid', panelCount: 4, cssClass: 'layout-2x2' },
   '2x1': { name: '2 Columns', panelCount: 2, cssClass: 'layout-2x1' },
   '1x2': { name: '2 Rows', panelCount: 2, cssClass: 'layout-1x2' },
-  '2x2-1x1': { name: '2x2 + Full Width', panelCount: 5, cssClass: 'layout-2x2-1x1' }
+  '2x2-1x1': { name: '2x2 + Full Width', panelCount: 5, cssClass: 'layout-2x2-1x1' },
+  '3x2': { name: '3x2 Grid', panelCount: 6, cssClass: 'layout-3x2' }
 };
 
 // Default dashboard configuration
@@ -929,6 +930,21 @@ const HomePage = ({
     return date.toLocaleDateString();
   };
 
+  const formatAuditTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const isToday = date.toDateString() === now.toDateString();
+    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (isToday) return time;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${time}`;
+  };
+
   // Filter projects by space
   const hasSpaceIds = portfolios && portfolios.length > 0 && portfolios.some(p => p.space_id !== undefined);
   const filteredProjects = Object.entries(projects).filter(([id, project]) => {
@@ -1415,6 +1431,11 @@ const HomePage = ({
             default: return action.toLowerCase();
           }
         };
+        const getContext = (entry) => {
+          if (entry.metric_name) return entry.metric_name;
+          if (entry.project_name && entry.table_name === 'projects') return entry.project_name;
+          return null;
+        };
         return (
           <div key={panelId} className={`home-quadrant audit-quadrant panel-${index + 1}`}>
             <div className="quadrant-header">
@@ -1432,15 +1453,16 @@ const HomePage = ({
                   {auditLog.map((entry, idx) => {
                     const description = formatAuditDescription(entry);
                     const userName = entry.user_email?.split('@')[0] || 'System';
+                    const context = getContext(entry);
                     return (
                       <div key={idx} className="audit-line">
                         <span className="audit-prompt">$</span>
                         <span className="audit-user">[{userName}]</span>
                         <span className="audit-verb">{getActionVerb(entry.action)}</span>
                         <span className="audit-table">[{entry.table_name}]</span>
-                        {entry.record_id && <span className="audit-record">#{entry.record_id}</span>}
+                        {context && <span className="audit-context">{context}</span>}
                         {description && <span className="audit-values">{description}</span>}
-                        <span className="audit-time">@ {formatTimestamp(entry.created_at)}</span>
+                        <span className="audit-time">@ {formatAuditTimestamp(entry.created_at)}</span>
                       </div>
                     );
                   })}
@@ -1487,17 +1509,6 @@ const HomePage = ({
                       </div>
                     ))}
                   </div>
-                  {databaseStats.spaceUsage && databaseStats.spaceUsage.length > 0 && (
-                    <div className="db-space-usage">
-                      <h4>Usage by Space</h4>
-                      {databaseStats.spaceUsage.map((space, idx) => (
-                        <div key={idx} className="db-space-row">
-                          <span className="db-space-name">{space.spaceName}</span>
-                          <span className="db-space-counts">{space.projectCount} proj, {space.metricCount} met, {space.periodCount} per</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               )}
             </div>

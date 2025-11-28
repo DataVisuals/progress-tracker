@@ -112,6 +112,17 @@ const DashboardConfigModal = ({
             <div className="preview-cell preview-full-width" />
           </div>
         );
+      case '3x2':
+        return (
+          <div className="layout-preview layout-3x2-preview">
+            <div className="preview-cell" />
+            <div className="preview-cell" />
+            <div className="preview-cell" />
+            <div className="preview-cell" />
+            <div className="preview-cell" />
+            <div className="preview-cell" />
+          </div>
+        );
       default:
         return null;
     }

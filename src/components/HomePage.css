@@ -1,11 +1,12 @@
 .home-page {
-  padding: 0 20px 0 20px;
+  padding: 0 20px 20px 20px;
   max-width: none;
   width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   min-height: calc(100vh - 60px);
+  overflow-y: auto;
 }
 
 .home-header {
@@ -129,6 +130,20 @@
 .home-grid.layout-2x2-1x1 .panel-5 {
   grid-column: 1 / -1;
   max-height: 300px;
+}
+
+.home-grid.layout-3x2 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(3, minmax(250px, 300px));
+  min-height: auto;
+  height: auto !important;
+  max-height: none;
+  overflow: visible;
+}
+
+.home-grid.layout-3x2 .home-quadrant {
+  min-height: 250px;
+  height: auto;
 }
 
 /* Dashboard Config Button */
@@ -272,12 +287,20 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 0;
-  height: 20px;
-  line-height: 20px;
+  padding: 0;
+  height: 22px;
+  line-height: 22px;
+  font-size: 11px;
   border-bottom: 1px solid #e5e7eb;
   white-space: nowrap;
   overflow: hidden;
+}
+
+.audit-line > span {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  line-height: 22px;
 }
 
 .audit-line:last-child {
@@ -305,6 +328,11 @@
   color: #c2410c;
 }
 
+.audit-context {
+  color: #ea580c;
+  font-weight: 500;
+}
+
 .audit-values {
   color: #4b5563;
   font-size: 10px;
@@ -320,12 +348,13 @@
 /* Database Stats Panel Styles */
 .database-quadrant .quadrant-content {
   padding: 12px;
+  overflow-y: auto;
 }
 
 .database-stats-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .db-summary {
@@ -512,6 +541,10 @@
 
 :root.dark-mode .audit-record {
   color: #ce9178;
+}
+
+:root.dark-mode .audit-context {
+  color: #dcdcaa;
 }
 
 :root.dark-mode .audit-values {
