@@ -776,6 +776,16 @@ function App() {
     }
   };
 
+  const handleMetricReorder = async (metricIds) => {
+    try {
+      await api.reorderMetrics(selectedProject, metricIds);
+      // Reload metrics to reflect new order
+      await loadProjectMetrics();
+    } catch (err) {
+      console.error('Failed to reorder metrics:', err);
+    }
+  };
+
   const handleToleranceChange = async (newAmberTolerance, newRedTolerance) => {
     try {
       // Find the metric ID from the currently selected metric
@@ -1454,12 +1464,12 @@ function App() {
                             {projectLinks.length === 0 ? '+ Links' : 'Edit'}
                           </button>
                         )}
-                        <span className="links-separator">|</span>
                         <ProjectDependencies
                           projectId={selectedProject}
                           allProjects={projectsObject}
                           canEdit={canEdit()}
                           onNavigateToProject={handleNavigateToProject}
+                          showSeparator={true}
                         />
                         <button
                           onClick={handleShareLink}
@@ -1550,10 +1560,12 @@ function App() {
               <MetricTabs
                 metrics={metrics}
                 projectData={projectData}
+                projectMetrics={projectMetrics}
                 selectedMetric={selectedMetric}
                 onMetricChange={handleMetricChange}
                 onMetricRename={handleMetricRename}
                 onMetricDelete={handleMetricDelete}
+                onMetricReorder={handleMetricReorder}
                 canEdit={canEdit()}
                 onAddMetric={() => setShowAddMetric(true)}
                 onGridView={() => setShowGridView(true)}

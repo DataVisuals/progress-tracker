@@ -8,7 +8,8 @@ const ProjectDependencies = ({
   projectId,
   allProjects,
   canEdit = false,
-  onNavigateToProject
+  onNavigateToProject,
+  showSeparator = false
 }) => {
   const [dependencies, setDependencies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -134,6 +135,7 @@ const ProjectDependencies = ({
 
   return (
     <div className="project-dependencies">
+      {showSeparator && <span className="links-separator">|</span>}
       {dependencies.length > 0 ? (
         <>
           <span

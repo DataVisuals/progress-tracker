@@ -42,6 +42,7 @@ import {
   MdAccessTime
 } from 'react-icons/md';
 import { api } from '../api/client';
+import { trackPage } from '../hooks/usePageTracking';
 import { smallSelectStyles } from './SelectStyles';
 import DashboardConfigModal from './DashboardConfigModal';
 import './HomePage.css';
@@ -809,8 +810,10 @@ const HomePage = ({
         setUserProjectFeedback([]);
       }
 
-      // Load changes since last visit
+      // Track Home page view first, then load changes since last visit
+      // This ensures the page view is recorded before calculating changes
       try {
+        await trackPage('Home');
         const spaceParam = selectedSpace !== 'all' ? `?space_id=${selectedSpace}` : '';
         const changesResponse = await api.get(`/changes-since-last-visit${spaceParam}`);
         setChangesSinceLastVisit(changesResponse.data);

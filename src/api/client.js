@@ -67,6 +67,7 @@ export const api = {
   createMetric: (projectId, data) => client.post(`/projects/${projectId}/metrics`, data),
   updateMetric: (id, data) => client.put(`/metrics/${id}`, data),
   deleteMetric: (id) => client.delete(`/metrics/${id}`),
+  reorderMetrics: (projectId, metricOrder) => client.put(`/projects/${projectId}/metrics/reorder`, { metricOrder }),
 
   // Data
   getProjectData: (projectId) => client.get(`/projects/${projectId}/data`),

@@ -23,11 +23,11 @@
 .filter-btn {
   background: white;
   border: 1px solid #d1d5db;
-  padding: 6px 14px;
+  padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   color: #374151;
 }
@@ -47,12 +47,12 @@
   background: #00aeef;
   color: white;
   border: none;
-  padding: 8px 16px;
+  padding: 6px 12px;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .btn-add-feedback:hover {
@@ -106,12 +106,12 @@
   background: #00aeef;
   color: white;
   border: none;
-  padding: 8px 20px;
+  padding: 6px 12px;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .btn-submit:hover {
@@ -319,12 +319,12 @@
   background: #00aeef;
   color: white;
   border: none;
-  padding: 6px 16px;
+  padding: 6px 12px;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
-  font-size: 13px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -353,12 +353,12 @@
   background: #00aeef;
   color: white;
   border: none;
-  padding: 6px 16px;
+  padding: 6px 12px;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .btn-respond:hover {
@@ -370,12 +370,12 @@
   background: #10b981;
   color: white;
   border: none;
-  padding: 6px 16px;
+  padding: 6px 12px;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .btn-resolve:hover {
@@ -386,12 +386,12 @@
   background: #f59e0b;
   color: white;
   border: none;
-  padding: 6px 16px;
+  padding: 6px 12px;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .btn-reopen:hover {
@@ -437,12 +437,12 @@
   background: #9ca3af;
   color: white;
   border: none;
-  padding: 6px 16px;
+  padding: 6px 12px;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .btn-cancel:hover {

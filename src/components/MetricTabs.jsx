@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MdGridView } from 'react-icons/md';
+import { MdGridView, MdDragIndicator } from 'react-icons/md';
 import './MetricTabs.css';
 
-const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMetricRename, onMetricDelete, canEdit, onAddMetric, onGridView }) => {
+const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMetricRename, onMetricDelete, canEdit, onAddMetric, onGridView, onMetricReorder, projectMetrics }) => {
   const [editingMetric, setEditingMetric] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [showDropdown, setShowDropdown] = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const [draggedMetric, setDraggedMetric] = useState(null);
+  const [dragOverMetric, setDragOverMetric] = useState(null);
   const dropdownRef = useRef(null);
   const menuButtonRefs = useRef({});
 
@@ -201,6 +203,60 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
     }
   }, [showDropdown]);
 
+  // Drag and drop handlers
+  const handleDragStart = (e, metric) => {
+    if (!canEdit || !onMetricReorder || !projectMetrics || projectMetrics.length === 0) {
+      e.preventDefault();
+      return;
+    }
+    setDraggedMetric(metric);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', metric);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedMetric(null);
+    setDragOverMetric(null);
+  };
+
+  const handleDragOver = (e, metric) => {
+    e.preventDefault();
+    if (!draggedMetric || draggedMetric === metric) return;
+    setDragOverMetric(metric);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverMetric(null);
+  };
+
+  const handleDrop = async (e, targetMetric) => {
+    e.preventDefault();
+    if (!draggedMetric || draggedMetric === targetMetric || !onMetricReorder || !projectMetrics || projectMetrics.length === 0) return;
+
+    // Calculate new order
+    const draggedIndex = metrics.indexOf(draggedMetric);
+    const targetIndex = metrics.indexOf(targetMetric);
+
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    // Create new order array
+    const newOrder = [...metrics];
+    newOrder.splice(draggedIndex, 1);
+    newOrder.splice(targetIndex, 0, draggedMetric);
+
+    // Get metric IDs in new order
+    const metricIds = newOrder.map(metricName => {
+      const metricObj = projectMetrics.find(m => m.name === metricName);
+      return metricObj?.id;
+    }).filter(Boolean);
+
+    // Call reorder callback
+    await onMetricReorder(metricIds);
+
+    setDraggedMetric(null);
+    setDragOverMetric(null);
+  };
+
   return (
     <div className="metric-tabs-container">
       <div className="metric-tabs">
@@ -211,8 +267,24 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
           // Override RAG status to grey if trajectory is flat
           const displayStatus = isFlat ? 'grey' : ragStatus;
 
+          const isDraggable = canEdit && onMetricReorder && projectMetrics && projectMetrics.length > 0;
+
           return (
-            <div key={metric} className="metric-tab-wrapper">
+            <div
+              key={metric}
+              className={`metric-tab-wrapper ${dragOverMetric === metric ? 'drag-over' : ''} ${draggedMetric === metric ? 'dragging' : ''}`}
+              draggable={isDraggable && editingMetric !== metric}
+              onDragStart={(e) => handleDragStart(e, metric)}
+              onDragEnd={handleDragEnd}
+              onDragOver={(e) => handleDragOver(e, metric)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, metric)}
+            >
+              {isDraggable && editingMetric !== metric && metrics.length > 1 && (
+                <span className="drag-handle" title="Drag to reorder">
+                  <MdDragIndicator />
+                </span>
+              )}
               {editingMetric === metric ? (
                 <input
                   type="text"

@@ -412,7 +412,6 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   const [feedbackData, setFeedbackData] = useState([]); // For checking recent feedback
   const [recoveryPlansData, setRecoveryPlansData] = useState([]); // For checking recent recovery plans
   const chartContainerRef = useRef(null);
-  const [tableWidth, setTableWidth] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [periodsPerPage] = useState(12); // Show 12 periods at a time
 
@@ -723,27 +722,6 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       setCurrentPage(pageContainingCurrentPeriod);
     }
   };
-
-  // Calculate table width to match chart
-  useEffect(() => {
-    const calculateTableWidth = () => {
-      if (!chartContainerRef.current) return;
-
-      // Get the chart container's width (this is the ResponsiveContainer)
-      const chartContainer = chartContainerRef.current;
-      const chartWidth = chartContainer.offsetWidth;
-
-      // Set table width to match the chart container
-      setTableWidth(chartWidth);
-    };
-
-    // Initial calculation
-    setTimeout(calculateTableWidth, 100);
-
-    // Recalculate on window resize
-    window.addEventListener('resize', calculateTableWidth);
-    return () => window.removeEventListener('resize', calculateTableWidth);
-  }, [chartData]);
 
   const handleStartAdd = () => {
     setIsAdding(true);
@@ -1493,7 +1471,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             animationDuration={1000}
             animationBegin={400}
             strokeOpacity={highlightedSeries === null || highlightedSeries === 'expected' ? 1 : 0.3}
-            dot={canEdit ? { r: 5, fill: BARCLAYS_BLUE, stroke: "#fff", strokeWidth: 2, cursor: 'pointer' } : compactMode ? { r: 2, fill: BARCLAYS_BLUE } : { r: 4 }}
+            dot={canEdit ? { r: 4, fill: BARCLAYS_BLUE, stroke: "#fff", strokeWidth: 1, cursor: 'pointer' } : compactMode ? { r: 2, fill: BARCLAYS_BLUE } : { r: 3 }}
             activeDot={canEdit ? {
               r: 12,
               fill: BARCLAYS_BLUE,
@@ -1624,6 +1602,100 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             </div>
           </div>
         </div>
+
+        {/* Commentary Sidebar - shows next to chart in non-compact mode */}
+        {!compactMode && (
+          <div className="commentary-sidebar">
+            <div className="commentary-sidebar-header">
+              <span className="commentary-sidebar-title">Commentary</span>
+              {!isAdding && allowDataEdits && (
+                <button className="add-btn-small" onClick={handleStartAdd}>
+                  + Add
+                </button>
+              )}
+            </div>
+            <div className="commentary-sidebar-content">
+              {isAdding ? (
+                <div className="commentary-add-mode-sidebar">
+                  <div className="comment-date-selector">
+                    <select
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="comment-date-select"
+                    >
+                      <option value="">Select date...</option>
+                      {sortedData.map((item) => (
+                        <option key={item.id} value={item.reporting_date}>
+                          {item.reporting_date}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <textarea
+                    className="commentary-textarea-sidebar"
+                    value={newCommentText}
+                    onChange={(e) => setNewCommentText(e.target.value)}
+                    rows={3}
+                    placeholder="Add comment..."
+                    autoFocus
+                  />
+                  <div className="commentary-actions-sidebar">
+                    <button className="save-btn-small" onClick={handleAddComment}>Add</button>
+                    <button className="cancel-btn-small" onClick={handleCancelAdd}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="commentary-list-sidebar">
+                  {allComments.length > 0 ? (
+                    allComments.map((comment, index) => (
+                      <div
+                        key={comment.id}
+                        className={`commentary-item-sidebar ${index === 0 ? 'latest' : ''} ${comment.is_system ? 'system' : ''}`}
+                      >
+                        {editingCommentId === comment.id ? (
+                          <div className="editing-comment-sidebar">
+                            <textarea
+                              value={editingCommentText}
+                              onChange={(e) => setEditingCommentText(e.target.value)}
+                              className="commentary-textarea-sidebar"
+                              rows={2}
+                              autoFocus
+                            />
+                            <div className="commentary-actions-sidebar">
+                              <button className="save-btn-small" onClick={() => handleSaveComment(comment.id, comment.period_id)}>Save</button>
+                              <button className="cancel-btn-small" onClick={handleCancelEdit}>Cancel</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="comment-header-sidebar">
+                              <span className="comment-date-sidebar">{comment.reporting_date}</span>
+                              <span className="comment-meta-sidebar">
+                                {comment.created_by_name && !comment.is_system && comment.created_by_name}
+                                {comment.is_system && 'System'}
+                                {!comment.is_system && allowDataEdits && (
+                                  <>
+                                    <button onClick={() => handleEditComment(comment)} title="Edit">✎</button>
+                                    <button onClick={() => handleDeleteComment(comment.id, comment.period_id)} title="Delete">×</button>
+                                  </>
+                                )}
+                              </span>
+                            </div>
+                            {/* Rich text support commented out for now */}
+                            {/* <div className="comment-text-sidebar" dangerouslySetInnerHTML={{ __html: comment.comment_text }} /> */}
+                            <div className="comment-text-sidebar">{comment.comment_text}</div>
+                          </>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="no-comments-sidebar">No comments yet</div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Compact Mode: Show just the latest commentary */}
@@ -1638,7 +1710,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
         </div>
       )}
 
-      {/* Tabbed Section - Latest Progress, Commentary, Time Travel, and Dependencies */}
+      {/* Tabbed Section - Latest Progress, Time Travel, and Dependencies */}
       {!compactMode && <div className="tabbed-section">
         <div className="tab-navigation">
           <button
@@ -1646,13 +1718,6 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             onClick={() => setActiveTab('table')}
           >
             Latest Progress
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'commentary' ? 'active' : ''}`}
-            onClick={() => setActiveTab('commentary')}
-          >
-            PM Commentary
-            {hasRecentComments() && <span className="recent-indicator" title="New in last 24 hours" />}
           </button>
           {currentUser && (
             <button
@@ -1741,7 +1806,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               )}
             </div>
             <div className="data-table-section">
-        <table className="data-table" style={{ width: tableWidth ? `${tableWidth}px` : 'auto' }}>
+        <table className="data-table">
           <thead>
             <tr>
               <th className="row-header"></th>
@@ -1893,135 +1958,6 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           </tbody>
         </table>
             </div>
-          </div>
-        )}
-
-        {/* Commentary Tab Content */}
-        {activeTab === 'commentary' && (
-          <div className="tab-content">
-            <div className="commentary-header">
-              {!isAdding && allowDataEdits && (
-                <button className="add-btn" onClick={handleStartAdd}>
-                  Add
-                </button>
-              )}
-            </div>
-
-            {isAdding ? (
-          <div className="commentary-add-mode">
-            <div className="commentary-item-add">
-              <div className="commentary-label">Add Comment</div>
-              <div className="comment-date-selector">
-                <label htmlFor="comment-date">Date:</label>
-                <select
-                  id="comment-date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="comment-date-select"
-                >
-                  <option value="">Select a date...</option>
-                  {sortedData.map((item) => (
-                    <option key={item.id} value={item.reporting_date}>
-                      {item.reporting_date}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <textarea
-                className="commentary-textarea"
-                value={newCommentText}
-                onChange={(e) => setNewCommentText(e.target.value)}
-                rows={4}
-                placeholder="Add comment..."
-                autoFocus
-              />
-            </div>
-            <div className="commentary-actions">
-              <button className="save-btn" onClick={handleAddComment}>
-                Add
-              </button>
-              <button className="cancel-btn" onClick={handleCancelAdd}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="commentary-view-mode">
-            {allComments.length > 0 ? (
-              allComments.map((comment, index) => (
-                <div
-                  key={comment.id}
-                  className={`commentary-item ${index === 0 ? 'latest-comment' : ''} ${comment.is_system ? 'system-commentary' : ''}`}
-                >
-                  {editingCommentId === comment.id ? (
-                    <>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <strong>{comment.reporting_date}:</strong>
-                        <textarea
-                          value={editingCommentText}
-                          onChange={(e) => setEditingCommentText(e.target.value)}
-                          style={{ width: '100%', marginTop: '8px', padding: '8px', fontSize: '14px', minHeight: '60px' }}
-                          autoFocus
-                        />
-                      </div>
-                      <button
-                        className="edit-comment-btn"
-                        onClick={() => handleSaveComment(comment.id, comment.period_id)}
-                        title="Save comment"
-                        style={{ marginRight: '4px' }}
-                      >
-                        ✓
-                      </button>
-                      <button
-                        className="delete-comment-btn"
-                        onClick={handleCancelEdit}
-                        title="Cancel editing"
-                      >
-                        ×
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ flex: 1, minWidth: 0, wordWrap: 'break-word', overflowWrap: 'break-word' }}>
-                        <strong>{comment.reporting_date}:</strong>{' '}
-                        {comment.comment_text}
-                        {comment.created_by_name && !comment.is_system && (
-                          <span className="comment-author"> — {comment.created_by_name}</span>
-                        )}
-                        {comment.is_system && (
-                          <span className="comment-author"> — System</span>
-                        )}
-                      </div>
-                      {!comment.is_system && allowDataEdits && (
-                        <>
-                          <button
-                            className="edit-comment-btn"
-                            onClick={() => handleEditComment(comment)}
-                            title="Edit comment"
-                            style={{ marginRight: '4px' }}
-                          >
-                            ✎
-                          </button>
-                          <button
-                            className="delete-comment-btn"
-                            onClick={() => handleDeleteComment(comment.id, comment.period_id)}
-                            title="Delete comment"
-                          >
-                            ×
-                          </button>
-                        </>
-                      )}
-                    </>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="commentary-item">
-                <em>No comments added yet</em>
-              </div>
-            )}
-          </div>
-        )}
           </div>
         )}
 

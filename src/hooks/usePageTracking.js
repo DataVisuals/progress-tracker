@@ -12,16 +12,15 @@ const getSessionId = () => {
 };
 
 // Track a page view with a specific path/name
-export const trackPage = (pageName) => {
+// Returns a Promise that resolves when tracking is complete
+export const trackPage = async (pageName) => {
   const path = pageName || document.title || window.location.pathname;
 
   try {
     // Use the api client which handles CORS and credentials properly
-    api.post('/analytics/pageview', {
+    await api.post('/analytics/pageview', {
       path: path,
       session_id: getSessionId()
-    }).catch(() => {
-      // Silently fail - never interrupt user experience
     });
   } catch (err) {
     // Silently fail - never interrupt user experience

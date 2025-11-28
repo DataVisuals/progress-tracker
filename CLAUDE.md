@@ -1,1 +1,2 @@
 - launch in the sim each time we test iphone features
+- Let me know when you add dependencies

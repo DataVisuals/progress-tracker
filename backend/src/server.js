@@ -718,7 +718,7 @@ function createApp(dbPath) {
           SELECT m.id, m.name, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date
           FROM metrics m
           WHERE m.project_id = ?
-          ORDER BY m.name
+          ORDER BY COALESCE(m.display_order, 999), m.name
         `, [project.id]);
 
         const metricsWithStatus = [];
@@ -956,7 +956,7 @@ function createApp(dbPath) {
           SELECT m.id, m.name, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date
           FROM metrics m
           WHERE m.project_id = ?
-          ORDER BY m.name
+          ORDER BY COALESCE(m.display_order, 999), m.name
         `, [project.id]);
 
         const metricsWithStatus = [];
@@ -1223,7 +1223,7 @@ function createApp(dbPath) {
           SELECT m.id, m.name, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date
           FROM metrics m
           WHERE m.project_id = ?
-          ORDER BY m.name
+          ORDER BY COALESCE(m.display_order, 999), m.name
         `, [project.id]);
 
         const metricsWithStatus = [];
@@ -2507,15 +2507,8 @@ function createApp(dbPath) {
   });
 
   // ===== METRICS =====
-  app.get('/api/projects/:projectId/metrics', async (req, res) => {
-    try {
-      const metrics = await dbAll('SELECT * FROM metrics WHERE project_id = ?', [req.params.projectId]);
-      res.json(metrics);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-  
+  // (Route moved below to include ORDER BY display_order and owner_name join)
+
   app.post('/api/projects/:projectId/metrics', authenticateToken, async (req, res) => {
     try {
       // Check if user can edit this project
@@ -2774,7 +2767,37 @@ function createApp(dbPath) {
       res.status(500).json({ error: err.message });
     }
   });
-  
+
+  // ===== REORDER METRICS FOR A PROJECT =====
+  app.put('/api/projects/:projectId/metrics/reorder', authenticateToken, async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const { metricOrder } = req.body; // Array of metric IDs in desired order
+
+      // Check if user can edit this project
+      if (!(await canEditProject(req.user.userId, projectId))) {
+        return res.status(403).json({ error: 'You do not have permission to reorder metrics' });
+      }
+
+      // Validate metricOrder is an array
+      if (!Array.isArray(metricOrder)) {
+        return res.status(400).json({ error: 'metricOrder must be an array of metric IDs' });
+      }
+
+      // Update display_order for each metric
+      for (let i = 0; i < metricOrder.length; i++) {
+        await dbRun(
+          'UPDATE metrics SET display_order = ? WHERE id = ? AND project_id = ?',
+          [i, metricOrder[i], projectId]
+        );
+      }
+
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== GET ALL METRICS FOR A PROJECT =====
   app.get('/api/projects/:projectId/metrics', async (req, res) => {
     try {
@@ -2797,7 +2820,7 @@ function createApp(dbPath) {
         FROM metrics m
         LEFT JOIN users u ON m.owner_id = u.id
         WHERE m.project_id = ?
-        ORDER BY m.name
+        ORDER BY COALESCE(m.display_order, 999), m.name
       `, [req.params.projectId]);
   
       res.json(metrics);
@@ -5874,6 +5897,14 @@ function createApp(dbPath) {
     try {
       await dbRun(`ALTER TABLE metrics ADD COLUMN description TEXT`);
       console.log('✅ Added description column to metrics table');
+    } catch (err) {
+      // Column already exists, that's fine
+    }
+
+    // Migration: Add display_order column to metrics table for tab reordering
+    try {
+      await dbRun(`ALTER TABLE metrics ADD COLUMN display_order INTEGER DEFAULT 0`);
+      console.log('✅ Added display_order column to metrics table');
     } catch (err) {
       // Column already exists, that's fine
     }
