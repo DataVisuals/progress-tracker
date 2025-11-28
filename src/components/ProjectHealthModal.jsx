@@ -180,6 +180,7 @@ const ProjectHealthModal = ({
   projectData,
   metrics,
   recoveryPlans = [],
+  projectLinks = [],
   onClose
 }) => {
   // Calculate health scores for each dimension (0-100)
@@ -207,10 +208,10 @@ const ProjectHealthModal = ({
     wellDescribedFactors++;
 
     // Project has documentation links (25 points) - need 3+ for full points
-    if (project.links && project.links.length >= 3) {
+    if (projectLinks && projectLinks.length >= 3) {
       wellDescribedScore += 25;
-    } else if (project.links && project.links.length > 0) {
-      wellDescribedScore += Math.round((project.links.length / 3) * 25);
+    } else if (projectLinks && projectLinks.length > 0) {
+      wellDescribedScore += Math.round((projectLinks.length / 3) * 25);
     }
     wellDescribedFactors++;
 
@@ -346,7 +347,7 @@ const ProjectHealthModal = ({
       metricManagement: metricManagementScore,
       projectControl: projectControlScore
     };
-  }, [project, projectData, metrics, recoveryPlans]);
+  }, [project, projectData, metrics, recoveryPlans, projectLinks]);
 
   // Helper function to get red metrics
   function getRedMetrics(data, metricsList) {
@@ -437,29 +438,80 @@ const ProjectHealthModal = ({
 
   // Detailed breakdown for each dimension
   const getDimensionDetails = (dimension) => {
+    const linkCount = projectLinks?.length || 0;
+    const metricsWithDesc = metrics?.filter(m => m.description?.trim().length > 5).length || 0;
+    const redMetricsList = getRedMetrics(projectData, metrics);
+    const activeRecoveryCount = recoveryPlans.filter(p => p.status === 'active').length;
+
     switch (dimension) {
       case 'Well Described':
         return [
-          { label: 'Project description', met: project?.description?.trim().length > 10 },
-          { label: 'Documentation links', met: project?.links?.length >= 2 },
-          { label: 'Metric descriptions', met: metrics?.filter(m => m.description?.trim().length > 5).length === metrics?.length },
-          { label: 'Recovery plans for red metrics', met: getRedMetrics(projectData, metrics).length === 0 || recoveryPlans.filter(p => p.status === 'active').length > 0 }
+          {
+            label: 'Project description',
+            met: project?.description?.trim().length > 10,
+            tooltip: 'Requires description > 10 characters. Worth 25 points.'
+          },
+          {
+            label: `Documentation links (${linkCount}/3)`,
+            met: linkCount >= 3,
+            tooltip: `Need 3+ links for full 25 points. Current: ${linkCount} link${linkCount !== 1 ? 's' : ''} = ${linkCount >= 3 ? 25 : Math.round((linkCount / 3) * 25)} points.`
+          },
+          {
+            label: `Metric descriptions (${metricsWithDesc}/${metrics?.length || 0})`,
+            met: metricsWithDesc === (metrics?.length || 0),
+            tooltip: `Each metric with description (>5 chars) contributes. ${metricsWithDesc}/${metrics?.length || 0} = ${metrics?.length ? Math.round((metricsWithDesc / metrics.length) * 25) : 0} points of 25.`
+          },
+          {
+            label: 'Recovery plans for red metrics',
+            met: redMetricsList.length === 0 || activeRecoveryCount > 0,
+            tooltip: redMetricsList.length === 0
+              ? 'No red metrics - full 25 points awarded.'
+              : `${redMetricsList.length} red metric${redMetricsList.length !== 1 ? 's' : ''}, ${activeRecoveryCount} active plan${activeRecoveryCount !== 1 ? 's' : ''}. Points based on coverage.`
+          }
         ];
       case 'Metric Coverage':
         const count = metrics?.length || 0;
         return [
-          { label: `${count} metric${count !== 1 ? 's' : ''} defined`, met: count >= 3 },
-          { label: 'Ideal range: 3-6 metrics', met: count >= 3 && count <= 6 }
+          {
+            label: `${count} metric${count !== 1 ? 's' : ''} defined`,
+            met: count >= 3,
+            tooltip: count >= 3 && count <= 6
+              ? '3-6 metrics is ideal = 100 points'
+              : count < 3
+              ? `Less than 3 metrics: ${Math.round((count / 3) * 100)} points`
+              : `More than 6 metrics: ${Math.max(70, 100 - (count - 6) * 5)} points (slight penalty for complexity)`
+          },
+          {
+            label: 'Ideal range: 3-6 metrics',
+            met: count >= 3 && count <= 6,
+            tooltip: 'Projects work best with 3-6 tracked metrics. Too few means incomplete tracking, too many adds complexity.'
+          }
         ];
       case 'Metric Management':
         return [
-          { label: 'Regular updates', met: healthScores.metricManagement >= 80 },
-          { label: 'Keeping up with reporting periods', met: healthScores.metricManagement >= 60 }
+          {
+            label: 'Regular updates',
+            met: healthScores.metricManagement >= 80,
+            tooltip: 'Based on how consistently metrics are updated. Scores 80+ when data is entered on time.'
+          },
+          {
+            label: 'Keeping up with reporting periods',
+            met: healthScores.metricManagement >= 60,
+            tooltip: 'Checks if current periods have data entered. Missing recent data lowers score.'
+          }
         ];
       case 'Project Control':
         return [
-          { label: 'Metrics staying on track', met: healthScores.projectControl >= 80 },
-          { label: 'Minimal red/amber periods', met: healthScores.projectControl >= 60 }
+          {
+            label: 'Metrics staying on track',
+            met: healthScores.projectControl >= 80,
+            tooltip: 'Based on variance from expected values. Green metrics = high score, red metrics = low score.'
+          },
+          {
+            label: 'Minimal red/amber periods',
+            met: healthScores.projectControl >= 60,
+            tooltip: 'Fewer negative variances in recent periods improves this score.'
+          }
         ];
       default:
         return [];
@@ -563,7 +615,7 @@ const ProjectHealthModal = ({
                 </div>
                 <div className="dimension-details">
                   {getDimensionDetails(item.dimension).map((detail, idx) => (
-                    <div key={idx} className="detail-item">
+                    <div key={idx} className="detail-item" title={detail.tooltip}>
                       {detail.met ? (
                         <MdCheckCircle className="detail-icon met" />
                       ) : (

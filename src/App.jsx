@@ -25,7 +25,7 @@ import PageHeatmapReport from './components/PageHeatmapReport';
 import HomePage from './components/HomePage';
 import { api } from './api/client';
 import { selectStyles } from './components/SelectStyles';
-import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
+import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode, MdPerson } from 'react-icons/md';
 import ProjectHealthModal, { calculateHealthScore } from './components/ProjectHealthModal';
 import Lottie from 'lottie-react';
 import progressChartAnimation from './assets/progress-chart.json';
@@ -1191,6 +1191,14 @@ function App() {
             >
               {darkMode ? <MdLightMode /> : <MdDarkMode />}
             </button>
+            {isAuthenticated && currentUser && (
+              <span
+                className="user-indicator"
+                title={`${currentUser.name} (${currentUser.email})`}
+              >
+                <MdPerson />
+              </span>
+            )}
           </div>
         </div>
       </header>
@@ -1949,6 +1957,7 @@ function App() {
           projectData={projectData}
           metrics={projectMetrics}
           recoveryPlans={[]}
+          projectLinks={projectLinks}
           onClose={() => setShowProjectHealth(false)}
         />
       )}

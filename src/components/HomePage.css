@@ -610,20 +610,20 @@
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 6px 12px;
   border-bottom: 1px solid #e5e7eb;
   background-color: #f9fafb;
 }
 
 .feedback-header h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: #374151;
 }
 
 .feedback-icon {
-  font-size: 20px;
+  font-size: 16px;
   color: #00aeef;
 }
 
@@ -781,14 +781,14 @@
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 6px 12px;
   border-bottom: 1px solid #e5e7eb;
   background-color: #f9fafb;
 }
 
 .quadrant-header h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: #374151;
   flex: 1;
@@ -880,7 +880,7 @@
 }
 
 .quadrant-icon {
-  font-size: 20px;
+  font-size: 16px;
   color: #00aeef;
 }
 
