@@ -50,7 +50,10 @@ const HomePage = ({
   selectedSpace = 'all',
   spaces = [],
   portfolios = [],
-  darkMode = false
+  darkMode = false,
+  onAttentionCountChange,
+  showAttentionModal,
+  onAttentionModalShown
 }) => {
 
   const [recentCommentary, setRecentCommentary] = useState([]);
@@ -775,6 +778,23 @@ const HomePage = ({
     }
   }, [userInconsistencies.length, userInconsistenciesDismissed, loading]);
 
+  // Notify parent of attention count changes
+  useEffect(() => {
+    if (onAttentionCountChange) {
+      onAttentionCountChange(userInconsistencies.length + userProjectFeedback.length);
+    }
+  }, [userInconsistencies.length, userProjectFeedback.length, onAttentionCountChange]);
+
+  // Handle external request to show attention modal
+  useEffect(() => {
+    if (showAttentionModal) {
+      setShowUserInconsistenciesModal(true);
+      if (onAttentionModalShown) {
+        onAttentionModalShown();
+      }
+    }
+  }, [showAttentionModal, onAttentionModalShown]);
+
   const handleMetricClick = (projectId, metricName) => {
     if (onNavigateToProject) {
       onNavigateToProject(projectId, metricName);
@@ -1458,7 +1478,12 @@ const HomePage = ({
                       </div>
                       <div className="issue-details">
                         <div className="issue-title">{issueTitle}</div>
-                        <div className="issue-project">{issue.project_name}</div>
+                        <div className="issue-project">
+                          {issue.project_name}
+                          {issue.first_detected && (
+                            <span className="issue-age"> · {formatTimestamp(issue.first_detected)}</span>
+                          )}
+                        </div>
                       </div>
                       <MdArrowForward className="issue-arrow" />
                     </a>

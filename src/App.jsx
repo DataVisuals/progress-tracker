@@ -29,6 +29,7 @@ import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from
 import ProjectHealthModal, { calculateHealthScore } from './components/ProjectHealthModal';
 import Lottie from 'lottie-react';
 import progressChartAnimation from '../public/progress-chart.json';
+import bellNotificationAnimation from '../public/bell-notification.json';
 import { trackPage } from './hooks/usePageTracking';
 import './App.css';
 
@@ -85,6 +86,8 @@ function App() {
   const [showTenReasons, setShowTenReasons] = useState(false);
   const [showProjectHealth, setShowProjectHealth] = useState(false);
   const [allProjectsData, setAllProjectsData] = useState({}); // For HomePage red metrics
+  const [attentionCount, setAttentionCount] = useState(0); // Count of items needing attention
+  const [showAttentionModal, setShowAttentionModal] = useState(false); // Trigger to show attention modal
   const [darkMode, setDarkMode] = useState(() => {
     try {
       const saved = localStorage.getItem('darkMode');
@@ -1155,6 +1158,22 @@ function App() {
                 setIsAuthenticated(true);
               }} />
             )}
+            {attentionCount > 0 && !selectedProject && (
+              <button
+                className="attention-bell-button"
+                onClick={() => setShowAttentionModal(true)}
+                title={`${attentionCount} items need attention`}
+              >
+                <Lottie
+                  animationData={bellNotificationAnimation}
+                  loop={true}
+                  className="attention-bell-animation"
+                />
+                <span className="attention-badge">
+                  {attentionCount}
+                </span>
+              </button>
+            )}
             <button
               className="theme-toggle-btn"
               onClick={() => setDarkMode(!darkMode)}
@@ -1583,6 +1602,9 @@ function App() {
             spaces={spaces}
             portfolios={portfolios}
             darkMode={darkMode}
+            onAttentionCountChange={setAttentionCount}
+            showAttentionModal={showAttentionModal}
+            onAttentionModalShown={() => setShowAttentionModal(false)}
           />
         )}
       </div>

@@ -1980,6 +1980,11 @@ html.dark-mode .quadrant-content {
   color: #6b7280;
 }
 
+.issue-details .issue-age {
+  color: #9ca3af;
+  font-style: italic;
+}
+
 .issue-arrow {
   flex-shrink: 0;
   font-size: 14px;
@@ -2250,6 +2255,10 @@ html.dark-mode .quadrant-content {
 
 :root.dark-mode .issue-details .issue-project {
   color: #9ca3af;
+}
+
+:root.dark-mode .issue-details .issue-age {
+  color: #6b7280;
 }
 
 :root.dark-mode .modal-footer {

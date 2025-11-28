@@ -113,6 +113,48 @@
   transform: scale(1.1);
 }
 
+/* Attention Bell Button */
+.attention-bell-button {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  margin-right: 4px;
+}
+
+.attention-bell-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.attention-bell-animation {
+  width: 28px;
+  height: 28px;
+}
+
+.attention-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #dc2626;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
 .app-logo {
   font-size: 26px;
   color: #00aeef;
