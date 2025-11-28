@@ -1158,7 +1158,7 @@ function App() {
                 setIsAuthenticated(true);
               }} />
             )}
-            {attentionCount > 0 && !selectedProject && (
+            {attentionCount > 0 && (
               <button
                 className="attention-bell-button"
                 onClick={() => setShowAttentionModal(true)}

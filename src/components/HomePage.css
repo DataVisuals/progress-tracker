@@ -1899,13 +1899,29 @@ html.dark-mode .quadrant-content {
   width: 90vw !important;
 }
 
+.user-inconsistencies-modal .modal-header {
+  padding: 4px 16px;
+}
+
+.user-inconsistencies-modal .modal-header h2 {
+  font-size: 14px;
+}
+
+.user-inconsistencies-modal .modal-icon-lottie {
+  width: 52px;
+  height: 52px;
+  margin-top: -6px;
+  margin-bottom: -6px;
+  overflow: visible;
+}
+
 .user-inconsistencies-modal .modal-icon.warning {
   color: #f59e0b;
 }
 
 .modal-icon-lottie {
-  width: 32px;
-  height: 32px;
+  width: 64px;
+  height: 64px;
   flex-shrink: 0;
 }
 
