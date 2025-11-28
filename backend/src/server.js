@@ -4698,6 +4698,76 @@ function createApp(dbPath) {
     }
   });
 
+  // Get changes since user's last visit (space-aware)
+  app.get('/api/changes-since-last-visit', authenticateToken, async (req, res) => {
+    try {
+      const userId = req.user.userId;
+      const { space_id } = req.query;
+
+      // Get user's previous visit timestamp (second most recent home page visit)
+      // We want the PREVIOUS visit, not the current one
+      const lastVisits = await dbAll(`
+        SELECT created_at FROM page_views
+        WHERE user_id = ? AND (path = '/' OR path = 'Home')
+        ORDER BY created_at DESC
+        LIMIT 2
+      `, [userId]);
+
+      // If no previous visit, use 24 hours ago as default
+      let lastVisitTime;
+      if (lastVisits.length < 2) {
+        // First visit or only one visit - show changes from last 24 hours
+        lastVisitTime = new Date();
+        lastVisitTime.setHours(lastVisitTime.getHours() - 24);
+      } else {
+        lastVisitTime = new Date(lastVisits[1].created_at);
+      }
+
+      // Build space filter for projects
+      const spaceFilter = space_id ? `AND po.space_id = ${parseInt(space_id)}` : '';
+
+      // Count audit log changes for projects in the space since last visit
+      const changes = await dbAll(`
+        SELECT
+          a.action,
+          a.table_name,
+          COUNT(*) as count
+        FROM audit_log a
+        LEFT JOIN projects p ON (
+          (a.table_name = 'projects' AND a.record_id = p.id) OR
+          (a.table_name = 'metrics' AND a.record_id IN (SELECT id FROM metrics WHERE project_id = p.id)) OR
+          (a.table_name = 'metric_periods' AND a.record_id IN (SELECT mp.id FROM metric_periods mp JOIN metrics m ON mp.metric_id = m.id WHERE m.project_id = p.id))
+        )
+        LEFT JOIN portfolios po ON p.portfolio_id = po.id
+        WHERE a.created_at > ?
+          AND a.table_name IN ('projects', 'metrics', 'metric_periods', 'recovery_plans')
+          AND (p.id IS NOT NULL ${spaceFilter} OR a.table_name = 'recovery_plans')
+        GROUP BY a.action, a.table_name
+      `, [lastVisitTime.toISOString()]);
+
+      // Calculate total changes
+      const totalChanges = changes.reduce((sum, c) => sum + c.count, 0);
+
+      // Get some detail about what changed
+      const breakdown = {
+        metric_updates: changes.filter(c => c.table_name === 'metric_periods').reduce((sum, c) => sum + c.count, 0),
+        new_metrics: changes.filter(c => c.table_name === 'metrics' && c.action === 'CREATE').reduce((sum, c) => sum + c.count, 0),
+        project_updates: changes.filter(c => c.table_name === 'projects').reduce((sum, c) => sum + c.count, 0),
+        recovery_plans: changes.filter(c => c.table_name === 'recovery_plans').reduce((sum, c) => sum + c.count, 0)
+      };
+
+      res.json({
+        total: totalChanges,
+        breakdown,
+        since: lastVisitTime.toISOString(),
+        is_first_visit: lastVisits.length < 2
+      });
+    } catch (err) {
+      console.error('Changes since last visit error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Get page heatmap data (admin only) - filtered for projects only
   app.get('/api/admin/page-heatmap', authenticateToken, async (req, res) => {
     try {

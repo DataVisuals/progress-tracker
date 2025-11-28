@@ -80,6 +80,7 @@ const HomePage = ({
     const parsed = stored ? parseInt(stored, 10) : null;
     return [1, 7, 30, 90].includes(parsed) ? parsed : 7;
   });
+  const [changesSinceLastVisit, setChangesSinceLastVisit] = useState(null); // Changes since last visit
 
   // Tips organized by theme
   const tipsByCategory = {
@@ -756,6 +757,15 @@ const HomePage = ({
         console.log('Could not load project feedback:', feedbackErr.message);
         setUserProjectFeedback([]);
       }
+
+      // Load changes since last visit
+      try {
+        const spaceParam = selectedSpace !== 'all' ? `?space_id=${selectedSpace}` : '';
+        const changesResponse = await api.get(`/changes-since-last-visit${spaceParam}`);
+        setChangesSinceLastVisit(changesResponse.data);
+      } catch (changesErr) {
+        setChangesSinceLastVisit(null);
+      }
     } catch (err) {
       console.error('Failed to load home page data:', err);
     } finally {
@@ -920,11 +930,18 @@ const HomePage = ({
       <div className="home-header">
         <div className="home-title">
           <MdHome className="home-icon" />
-          <h1>
-            {selectedSpace === 'all'
-              ? 'All Spaces'
-              : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space'}
-          </h1>
+          <div className="home-title-text">
+            <h1>
+              {selectedSpace === 'all'
+                ? 'All Spaces'
+                : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space'}
+            </h1>
+            {changesSinceLastVisit && changesSinceLastVisit.total > 0 && (
+              <span className="changes-since-visit">
+                {changesSinceLastVisit.total} change{changesSinceLastVisit.total !== 1 ? 's' : ''} since your last visit
+              </span>
+            )}
+          </div>
         </div>
         <div className="home-stats">
           <div className="stat-item">
