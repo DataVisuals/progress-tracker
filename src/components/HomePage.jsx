@@ -39,12 +39,14 @@ import {
   MdSettings,
   MdStorage,
   MdPieChart,
-  MdAccessTime
+  MdAccessTime,
+  MdFavorite
 } from 'react-icons/md';
 import { api } from '../api/client';
 import { trackPage } from '../hooks/usePageTracking';
 import { smallSelectStyles } from './SelectStyles';
 import DashboardConfigModal from './DashboardConfigModal';
+import { calculateHealthScore } from './ProjectHealthModal';
 import './HomePage.css';
 import './MetricTabs.css';
 
@@ -55,6 +57,7 @@ const PANEL_CONFIG = {
   commentary: { id: 'commentary', name: 'Recent Commentary', icon: MdComment, adminOnly: false },
   inconsistencies: { id: 'inconsistencies', name: 'Inconsistencies', icon: MdBugReport, adminOnly: false },
   attention: { id: 'attention', name: 'Projects Needing Attention', icon: MdBuild, adminOnly: false },
+  projectHealth: { id: 'projectHealth', name: 'Project Health Rankings', icon: MdFavorite, adminOnly: false },
   audit: { id: 'audit', name: 'Audit Log', icon: MdHistory, adminOnly: true },
   database: { id: 'database', name: 'Database Stats', icon: MdStorage, adminOnly: true },
   activeUsers: { id: 'activeUsers', name: 'Active Users', icon: MdPeople, adminOnly: true }
@@ -130,6 +133,8 @@ const HomePage = ({
   const [auditLog, setAuditLog] = useState([]); // Audit log data for admin panel
   const [databaseStats, setDatabaseStats] = useState(null); // Database stats for admin panel
   const [activeUsers, setActiveUsers] = useState(null); // Active users for admin panel
+  const [healthRankingView, setHealthRankingView] = useState('top'); // 'top' or 'bottom' for health rankings panel
+  const [hideInactiveProjects, setHideInactiveProjects] = useState(true); // Filter inactive (grey) projects by default
 
   // Check if current user is admin
   const isAdmin = currentUser?.role === 'admin';
@@ -1025,6 +1030,107 @@ const HomePage = ({
     return Array.from(portfolioMap.values());
   }, [recentCommentary]);
 
+  // Helper function to check if a color is grey/gray (inactive)
+  const isGreyColor = (color) => {
+    if (!color) return false;
+    const greyColors = ['#808080', '#888888', '#888', '#6b7280', '#9ca3af', '#gray', '#grey'];
+    const lowerColor = color.toLowerCase();
+    // Check exact matches
+    if (greyColors.includes(lowerColor)) return true;
+    // Check if it's a grey hex (R, G, B values are similar)
+    if (lowerColor.startsWith('#') && (lowerColor.length === 4 || lowerColor.length === 7)) {
+      let r, g, b;
+      if (lowerColor.length === 4) {
+        r = parseInt(lowerColor[1] + lowerColor[1], 16);
+        g = parseInt(lowerColor[2] + lowerColor[2], 16);
+        b = parseInt(lowerColor[3] + lowerColor[3], 16);
+      } else {
+        r = parseInt(lowerColor.slice(1, 3), 16);
+        g = parseInt(lowerColor.slice(3, 5), 16);
+        b = parseInt(lowerColor.slice(5, 7), 16);
+      }
+      // Check if values are close to each other (grey) and in the middle range
+      const maxDiff = Math.max(r, g, b) - Math.min(r, g, b);
+      const avg = (r + g + b) / 3;
+      return maxDiff < 30 && avg > 80 && avg < 180; // Grey-ish range
+    }
+    return false;
+  };
+
+  // Calculate project health rankings
+  const projectHealthRankings = useMemo(() => {
+    if (!projects || !projectsData || Object.keys(projectsData).length === 0) {
+      return { top: [], bottom: [] };
+    }
+
+    // Convert projects object to array with IDs
+    const projectsArray = Object.entries(projects).map(([id, project]) => ({
+      ...project,
+      id: parseInt(id)
+    }));
+
+    // Filter projects by selected space
+    let spaceFilteredProjects = [...projectsArray];
+    if (selectedSpace !== 'all' && hasSpaceIds) {
+      spaceFilteredProjects = projectsArray.filter(p => {
+        const portfolio = portfolios.find(pf => pf.id === p.portfolio_id);
+        return portfolio && portfolio.space_id === parseInt(selectedSpace);
+      });
+    }
+
+    // Calculate health score for each project
+    const projectsWithHealth = spaceFilteredProjects.map(project => {
+      const projectData = projectsData[project.id] || [];
+
+      // Extract unique metrics from the period data
+      const metricsMap = {};
+      projectData.forEach(period => {
+        if (period.metric_id && !metricsMap[period.metric_id]) {
+          metricsMap[period.metric_id] = {
+            id: period.metric_id,
+            name: period.metric,
+            description: period.metric_description || ''
+          };
+        }
+      });
+      const metrics = Object.values(metricsMap);
+
+      const healthScore = calculateHealthScore(
+        project,
+        projectData,
+        metrics,
+        recoveryPlans.filter(rp => rp.project_id === project.id)
+      );
+
+      const portfolioColor = portfolios.find(p => p.id === project.portfolio_id)?.color || '#6b7280';
+
+      return {
+        ...project,
+        healthScore,
+        portfolioName: portfolios.find(p => p.id === project.portfolio_id)?.name || 'No Portfolio',
+        portfolioColor,
+        isInactive: isGreyColor(portfolioColor)
+      };
+    });
+
+    // Filter out inactive projects if the filter is enabled
+    const filteredProjects = hideInactiveProjects
+      ? projectsWithHealth.filter(p => !p.isInactive)
+      : projectsWithHealth;
+
+    // Sort by health score
+    const sorted = [...filteredProjects].sort((a, b) => b.healthScore - a.healthScore);
+
+    // Get top 10 (highest scores) and bottom 10 (lowest scores)
+    const top = sorted.slice(0, 10);
+    // Bottom shows lowest scoring projects, reversed so worst is first
+    const bottom = sorted.length > 0
+      ? [...sorted].reverse().slice(0, 10)
+      : [];
+
+    return { top, bottom };
+  }, [projects, projectsData, portfolios, selectedSpace, hasSpaceIds, recoveryPlans, hideInactiveProjects]);
+
   // Filter commentary based on portfolio filter
   const filteredCommentary = commentaryPortfolioFilter === 'all'
     ? recentCommentary
@@ -1393,6 +1499,106 @@ const HomePage = ({
                         <div className="attention-project">{fb.project_name} - {fb.user_name || 'Anonymous'} - {formatTimestamp(fb.created_at)}</div>
                       </div>
                       <MdArrowForward className="attention-arrow" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'projectHealth':
+        const getHealthColor = (score) => {
+          if (score >= 80) return '#10b981'; // green
+          if (score >= 60) return '#f59e0b'; // amber
+          return '#ef4444'; // red
+        };
+        const displayProjects = healthRankingView === 'top'
+          ? projectHealthRankings.top
+          : projectHealthRankings.bottom;
+        return (
+          <div key={panelId} className={`home-quadrant health-rankings-quadrant panel-${index + 1}`}>
+            <div className="quadrant-header">
+              <MdFavorite className="quadrant-icon" />
+              <h2>Project Health</h2>
+              <label className="active-filter-switch">
+                <span className="switch-label">Active only</span>
+                <div className="switch-track">
+                  <input
+                    type="checkbox"
+                    checked={hideInactiveProjects}
+                    onChange={(e) => setHideInactiveProjects(e.target.checked)}
+                  />
+                  <span className="switch-slider"></span>
+                </div>
+              </label>
+              <div className="health-toggle-buttons">
+                <button
+                  className={`health-toggle-btn ${healthRankingView === 'top' ? 'active' : ''}`}
+                  onClick={() => setHealthRankingView('top')}
+                >
+                  Top 10
+                </button>
+                <button
+                  className={`health-toggle-btn ${healthRankingView === 'bottom' ? 'active' : ''}`}
+                  onClick={() => setHealthRankingView('bottom')}
+                >
+                  Bottom 10
+                </button>
+              </div>
+            </div>
+            <div className="quadrant-content">
+              {displayProjects.length === 0 ? (
+                <div className="empty-quadrant">
+                  <p>No projects to display</p>
+                </div>
+              ) : (
+                <div className="health-rankings-list">
+                  {displayProjects.map((project, idx) => (
+                    <div
+                      key={project.id}
+                      className="health-ranking-item"
+                      onClick={() => onNavigateToProject(project.id)}
+                    >
+                      <span className="health-rank">
+                        {healthRankingView === 'top' ? idx + 1 : displayProjects.length - idx}
+                      </span>
+                      <div className="health-score-gauge">
+                        <svg viewBox="0 0 36 36" className="health-gauge-svg">
+                          <circle
+                            className="health-gauge-bg"
+                            cx="18"
+                            cy="18"
+                            r="15.5"
+                            fill="none"
+                            strokeWidth="3"
+                          />
+                          <circle
+                            className="health-gauge-progress"
+                            cx="18"
+                            cy="18"
+                            r="15.5"
+                            fill="none"
+                            strokeWidth="3"
+                            stroke={getHealthColor(project.healthScore)}
+                            strokeDasharray={`${(project.healthScore / 100) * 97.4} 97.4`}
+                            strokeLinecap="round"
+                            transform="rotate(-90 18 18)"
+                          />
+                        </svg>
+                        <span className="health-gauge-value">{Math.round(project.healthScore)}</span>
+                      </div>
+                      <div className="health-project-info">
+                        <span
+                          className="health-portfolio-dot"
+                          style={{ backgroundColor: project.portfolioColor }}
+                        />
+                        <span className="health-project-name">{project.name}</span>
+                        {project.initiative_manager && (
+                          <span className="health-pm-name">{project.initiative_manager}</span>
+                        )}
+                      </div>
+                      <MdArrowForward className="health-arrow" />
                     </div>
                   ))}
                 </div>

@@ -903,7 +903,8 @@ function App() {
         name: project.name,
         portfolio_id: project.portfolio_id,
         portfolio_name: project.portfolio_name,
-        portfolio_color: project.portfolio_color
+        portfolio_color: project.portfolio_color,
+        initiative_manager: project.initiative_manager
       };
       return acc;
     }, {});

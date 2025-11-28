@@ -267,6 +267,202 @@
   flex-shrink: 0;
 }
 
+/* Health Rankings Panel Styles */
+.health-rankings-quadrant .quadrant-content {
+  padding: 8px 12px;
+}
+
+.health-toggle-buttons {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.health-toggle-btn {
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #6b7280;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.health-toggle-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.health-toggle-btn.active {
+  background: #00aeef;
+  border-color: #00aeef;
+  color: white;
+}
+
+.active-filter-switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.active-filter-switch .switch-label {
+  font-size: 10px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.active-filter-switch .switch-track {
+  position: relative;
+  width: 28px;
+  height: 16px;
+}
+
+.active-filter-switch .switch-track input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.active-filter-switch .switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #d1d5db;
+  transition: 0.2s;
+  border-radius: 16px;
+}
+
+.active-filter-switch .switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.active-filter-switch .switch-track input:checked + .switch-slider {
+  background-color: #00aeef;
+}
+
+.active-filter-switch .switch-track input:checked + .switch-slider:before {
+  transform: translateX(12px);
+}
+
+.health-rankings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.health-ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.health-ranking-item:hover {
+  background: #f0f9ff;
+  border-color: #00aeef;
+}
+
+.health-rank {
+  font-size: 10px;
+  font-weight: 600;
+  color: #9ca3af;
+  min-width: 18px;
+  text-align: center;
+}
+
+.health-score-gauge {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.health-gauge-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.health-gauge-bg {
+  stroke: #e5e7eb;
+}
+
+.health-gauge-progress {
+  transition: stroke-dasharray 0.3s ease;
+}
+
+.health-gauge-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.health-project-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.health-portfolio-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.health-project-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.health-pm-name {
+  font-size: 10px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: auto;
+  flex-shrink: 0;
+  max-width: 100px;
+}
+
+.health-arrow {
+  font-size: 14px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
 /* Audit Panel Styles */
 .audit-quadrant .quadrant-content {
   padding: 0;
@@ -512,6 +708,62 @@
 
 :root.dark-mode .attention-icon.feedback {
   color: #fbbf24;
+}
+
+/* Health Rankings Dark Mode */
+:root.dark-mode .health-toggle-btn {
+  background: #374151;
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+:root.dark-mode .health-toggle-btn:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+:root.dark-mode .health-toggle-btn.active {
+  background: #00aeef;
+  border-color: #00aeef;
+  color: white;
+}
+
+:root.dark-mode .health-ranking-item {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+:root.dark-mode .health-ranking-item:hover {
+  background: #1e3a5f;
+  border-color: #00aeef;
+}
+
+:root.dark-mode .health-project-name {
+  color: #f9fafb;
+}
+
+:root.dark-mode .health-gauge-bg {
+  stroke: #4b5563;
+}
+
+:root.dark-mode .health-gauge-value {
+  color: #f9fafb;
+}
+
+:root.dark-mode .health-pm-name {
+  color: #9ca3af;
+}
+
+:root.dark-mode .active-filter-switch .switch-label {
+  color: #9ca3af;
+}
+
+:root.dark-mode .active-filter-switch .switch-slider {
+  background-color: #4b5563;
+}
+
+:root.dark-mode .active-filter-switch .switch-slider:before {
+  background-color: #d1d5db;
 }
 
 :root.dark-mode .audit-console {
@@ -951,20 +1203,20 @@ html.dark-mode .quadrant-content {
 .commentary-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   text-align: left;
 }
 
 .commentary-item {
   display: flex;
   flex-direction: column;
-  padding: 8px 10px;
+  padding: 5px 8px;
   background-color: #f9fafb;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid #e5e7eb;
-  gap: 6px;
+  gap: 3px;
 }
 
 .commentary-item:hover {
@@ -976,8 +1228,8 @@ html.dark-mode .quadrant-content {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px 8px;
-  font-size: 11px;
+  gap: 2px 6px;
+  font-size: 10px;
   justify-content: flex-start;
 }
 
@@ -989,11 +1241,11 @@ html.dark-mode .quadrant-content {
 }
 
 .commentary-portfolio-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-right: 4px;
+  margin-right: 3px;
 }
 
 .commentary-label {
@@ -1011,26 +1263,26 @@ html.dark-mode .quadrant-content {
 .commentary-project {
   font-weight: 600;
   color: #003c71;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .commentary-metric {
   font-weight: 500;
   color: #374151;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .commentary-period {
   font-weight: 500;
   color: #6b7280;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .commentary-text {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   color: #374151;
-  line-height: 1.5;
+  line-height: 1.35;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
@@ -1039,7 +1291,7 @@ html.dark-mode .quadrant-content {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 10px;
 }
 
