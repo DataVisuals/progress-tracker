@@ -98,7 +98,6 @@ const HomePage = ({
   const [portfolioFilter, setPortfolioFilter] = useState('all'); // 'all' or portfolio_id for metrics
   const [commentaryPortfolioFilter, setCommentaryPortfolioFilter] = useState('all'); // 'all' or portfolio_id for commentary
   const [randomTips, setRandomTips] = useState([]);
-  const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(true);
   const loadingRef = useRef(false); // Track if data is currently being loaded
   const [recoveryPlans, setRecoveryPlans] = useState([]); // Track active recovery plans
@@ -694,41 +693,6 @@ const HomePage = ({
         console.log('Could not load recovery plans:', err.message);
       }
       setRecoveryPlans(recoveryPlansList);
-
-      // Load feedback for current user's projects
-      let feedbackList = [];
-      try {
-        if (currentUser) {
-          // Fetch all feedback and filter on client side for user's projects
-          // The backend doesn't filter by user, so we get all feedback first
-          const feedbackResponse = await api.getFeedback({});
-
-          if (feedbackResponse.data && Array.isArray(feedbackResponse.data)) {
-            // Get all project IDs that belong to the current user
-            const userProjectIds = Object.entries(projects)
-              .filter(([id, project]) => {
-                // Check if user is the initiative manager (by name comparison)
-                return project.initiative_manager === currentUser.name ||
-                       project.secondary_pm === currentUser.name;
-              })
-              .map(([id]) => parseInt(id));
-
-            // Filter feedback for user's projects
-            feedbackList = feedbackResponse.data
-              .filter(fb => userProjectIds.includes(fb.project_id))
-              .slice(0, 10) // Limit to 10 items
-              .map(fb => ({
-                ...fb,
-                projectName: projects[fb.project_id]?.name || 'Unknown Project',
-                feedback_text: fb.text, // Map backend 'text' field to frontend 'feedback_text'
-                created_by_name: fb.user_name // Map backend 'user_name' to frontend 'created_by_name'
-              }));
-          }
-        }
-      } catch (feedbackErr) {
-        console.log('Could not load feedback:', feedbackErr.message);
-      }
-      setFeedback(feedbackList);
 
       // Fetch inconsistency report
       try {
@@ -1819,7 +1783,7 @@ const HomePage = ({
         </div>
       </div>
 
-      <div className={`home-grid ${currentLayout.cssClass} ${feedback.length === 0 ? 'no-feedback' : ''}`}>
+      <div className={`home-grid ${currentLayout.cssClass}`}>
         {(dashboardConfig.panels || DEFAULT_DASHBOARD_CONFIG.panels).map((panelId, index) => renderPanel(panelId, index))}
       </div>
 
@@ -1994,42 +1958,6 @@ const HomePage = ({
         </div>
       )}
 
-      {/* Feedback Section - Full Width - Only show if there's feedback */}
-      {!loading && feedback.length > 0 && (
-        <div className="feedback-section">
-          <div className="feedback-header">
-            <MdFeedback className="feedback-icon" />
-            <h2>Feedback on Your Projects</h2>
-          </div>
-          <div className="feedback-content">
-            <div className="feedback-list">
-              {feedback.map((item, index) => (
-                <div
-                  key={index}
-                  className="feedback-item"
-                  onClick={() => handleMetricClick(item.project_id, item.metric_name)}
-                >
-                  <div className="feedback-item-header">
-                    <div className="feedback-project-info">
-                      <span className="feedback-project">{item.projectName}</span>
-                      {item.metric_name && (
-                        <span className="feedback-metric">{item.metric_name}</span>
-                      )}
-                    </div>
-                    <div className="feedback-meta">
-                      {item.created_by_name && (
-                        <span className="feedback-author">{item.created_by_name}</span>
-                      )}
-                      <span className="feedback-time">{formatTimestamp(item.created_at)}</span>
-                    </div>
-                  </div>
-                  <p className="feedback-text">{item.feedback_text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Footer Links */}
       <div className="homepage-footer">
