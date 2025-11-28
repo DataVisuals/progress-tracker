@@ -27,7 +27,7 @@
 }
 
 .compact-metric-description {
-  font-size: 9px;
+  font-size: 10px;
   color: #6b7280;
   line-height: 1.2;
   display: -webkit-box;
@@ -203,7 +203,7 @@
 }
 
 .comment-meta-sidebar {
-  font-size: 9px;
+  font-size: 10px;
   color: #9ca3af;
   display: flex;
   align-items: center;
@@ -470,7 +470,7 @@
 }
 
 .metric-chart-container.compact .legend-text {
-  font-size: 9px;
+  font-size: 10px;
 }
 
 /* Compact Mode Tooltip - Smaller */
@@ -925,7 +925,7 @@
 }
 
 .commentary-header h4 {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: #1f2937;
   text-transform: uppercase;
@@ -941,7 +941,7 @@
 }
 
 .data-table-header h4 {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: #1f2937;
   text-transform: uppercase;

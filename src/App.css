@@ -1,5 +1,6 @@
-/* Import centralized RAG colors */
+/* Import centralized styles */
 @import './styles/rag-colors.css';
+@import './styles/typography.css';
 
 /* CSS Variables for theming */
 :root {
@@ -114,16 +115,96 @@
 }
 
 /* User Indicator */
-.user-indicator {
-  color: white;
+.user-indicator-container {
+  position: relative;
+}
+
+.user-indicator-circle {
   width: 32px;
   height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  opacity: 0.9;
-  cursor: default;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-indicator-circle:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.user-modal {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  min-width: 220px;
+  z-index: 1000;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.user-modal-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00aeef 0%, #003c71 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.user-modal-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-modal-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.user-modal-email {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.user-modal-login-time {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+/* Dark mode for user modal */
+:root.dark-mode .user-modal {
+  background: #1f2937;
+}
+
+:root.dark-mode .user-modal-name {
+  color: #f9fafb;
+}
+
+:root.dark-mode .user-modal-email {
+  color: #9ca3af;
+}
+
+:root.dark-mode .user-modal-login-time {
+  color: #6b7280;
 }
 
 /* Attention Bell Button */
@@ -169,7 +250,7 @@
 }
 
 .app-logo {
-  font-size: 26px;
+  font-size: 24px;
   color: #00aeef;
   background: white;
   border-radius: 5px;
@@ -419,7 +500,7 @@
 }
 
 .report-header h2.long-title {
-  font-size: 15px;
+  font-size: 14px;
 }
 
 /* Compact meta row for IMs and links */

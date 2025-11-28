@@ -25,7 +25,7 @@ import PageHeatmapReport from './components/PageHeatmapReport';
 import HomePage from './components/HomePage';
 import { api } from './api/client';
 import { selectStyles } from './components/SelectStyles';
-import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode, MdPerson } from 'react-icons/md';
+import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
 import ProjectHealthModal, { calculateHealthScore } from './components/ProjectHealthModal';
 import Lottie from 'lottie-react';
 import progressChartAnimation from './assets/progress-chart.json';
@@ -88,6 +88,8 @@ function App() {
   const [allProjectsData, setAllProjectsData] = useState({}); // For HomePage red metrics
   const [attentionCount, setAttentionCount] = useState(0); // Count of items needing attention
   const [showAttentionModal, setShowAttentionModal] = useState(false); // Trigger to show attention modal
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [loginTime, setLoginTime] = useState(null);
   const [darkMode, setDarkMode] = useState(() => {
     try {
       const saved = localStorage.getItem('darkMode');
@@ -109,6 +111,9 @@ function App() {
         parsedUser = JSON.parse(userStr);
         setIsAuthenticated(true);
         setCurrentUser(parsedUser);
+        // Set login time from storage or current time
+        const savedLoginTime = localStorage.getItem('loginTime');
+        setLoginTime(savedLoginTime ? new Date(savedLoginTime) : new Date());
       } catch (err) {
         console.error('Failed to parse user from localStorage:', err);
         // Clean up corrupted data and log out
@@ -948,8 +953,20 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('loginTime');
     setIsAuthenticated(false);
     setCurrentUser(null);
+    setLoginTime(null);
+  };
+
+  // Helper function to get user initials
+  const getUserInitials = (name) => {
+    if (!name) return '??';
+    const parts = name.trim().split(' ').filter(Boolean);
+    if (parts.length === 1) {
+      return parts[0].substring(0, 2).toUpperCase();
+    }
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
   // Helper functions for role checks
@@ -1166,6 +1183,9 @@ function App() {
               <Login onLogin={(user) => {
                 setCurrentUser(user);
                 setIsAuthenticated(true);
+                const now = new Date();
+                setLoginTime(now);
+                localStorage.setItem('loginTime', now.toISOString());
               }} />
             )}
             {attentionCount > 0 && (
@@ -1192,12 +1212,29 @@ function App() {
               {darkMode ? <MdLightMode /> : <MdDarkMode />}
             </button>
             {isAuthenticated && currentUser && (
-              <span
-                className="user-indicator"
-                title={`${currentUser.name} (${currentUser.email})`}
+              <div
+                className="user-indicator-container"
+                onMouseEnter={() => setShowUserModal(true)}
+                onMouseLeave={() => setShowUserModal(false)}
               >
-                <MdPerson />
-              </span>
+                <span className="user-indicator-circle">
+                  {getUserInitials(currentUser.name)}
+                </span>
+                {showUserModal && (
+                  <div className="user-modal">
+                    <div className="user-modal-avatar">
+                      {getUserInitials(currentUser.name)}
+                    </div>
+                    <div className="user-modal-info">
+                      <div className="user-modal-name">{currentUser.name}</div>
+                      <div className="user-modal-email">{currentUser.email}</div>
+                      <div className="user-modal-login-time">
+                        Logged in: {loginTime ? loginTime.toLocaleString() : 'Unknown'}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
