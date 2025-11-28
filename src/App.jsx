@@ -89,6 +89,7 @@ function App() {
   const [attentionCount, setAttentionCount] = useState(0); // Count of items needing attention
   const [showAttentionModal, setShowAttentionModal] = useState(false); // Trigger to show attention modal
   const [showUserModal, setShowUserModal] = useState(false);
+  const [showTipsModal, setShowTipsModal] = useState(false);
   const [loginTime, setLoginTime] = useState(null);
   const [darkMode, setDarkMode] = useState(() => {
     try {
@@ -1233,6 +1234,22 @@ function App() {
                         Logged in: {loginTime ? loginTime.toLocaleString() : 'Unknown'}
                       </div>
                     </div>
+                    <div className="user-modal-links">
+                      <button
+                        className="user-modal-link"
+                        onClick={() => setShowTipsModal(true)}
+                      >
+                        Getting Started
+                      </button>
+                      <a
+                        className="user-modal-link"
+                        href="https://github.com/DataVisuals/progress-tracker/commits/master"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        What's New
+                      </a>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1663,6 +1680,8 @@ function App() {
             onAttentionCountChange={setAttentionCount}
             showAttentionModal={showAttentionModal}
             onAttentionModalShown={() => setShowAttentionModal(false)}
+            showTipsModal={showTipsModal}
+            setShowTipsModal={setShowTipsModal}
           />
         )}
       </div>

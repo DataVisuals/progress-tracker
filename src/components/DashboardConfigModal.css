@@ -100,6 +100,11 @@
   grid-template-rows: 1fr 1fr;
 }
 
+.layout-1x1-preview {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
 .layout-2x2-1x1-preview {
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr auto;
@@ -232,8 +237,24 @@
   color: #003c71;
 }
 
+.panel-chip.minimized {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+
 .panel-chip.admin-only {
   border-style: dashed;
+}
+
+.minimized-badge {
+  font-size: 9px;
+  font-weight: 600;
+  background: #f59e0b;
+  color: white;
+  padding: 2px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+  text-transform: uppercase;
 }
 
 .panel-chip .chip-icon {
@@ -286,6 +307,26 @@
 
 .dashboard-config-modal .btn-primary:hover {
   background: #0095d1;
+}
+
+.dashboard-config-modal .btn-danger {
+  padding: 5px 14px;
+  background: #dc2626;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dashboard-config-modal .btn-danger:hover {
+  background: #b91c1c;
+}
+
+.dashboard-config-modal .footer-spacer {
+  flex: 1;
 }
 
 /* Dark Mode */
@@ -367,6 +408,11 @@
   background: #1f3a48;
   border-color: #00aeef;
   color: #e0f7ff;
+}
+
+:root.dark-mode .panel-chip.minimized {
+  background: #422006;
+  border-color: #f59e0b;
 }
 
 :root.dark-mode .dashboard-config-modal .modal-footer {

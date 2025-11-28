@@ -10,7 +10,13 @@ vi.mock('../api/client', () => ({
     get: vi.fn(),
     getCommentary: vi.fn(),
     getFeedback: vi.fn(),
+    getMyProjectsFeedback: vi.fn(() => Promise.resolve({ data: [] })),
   },
+}));
+
+// Mock lottie-react
+vi.mock('lottie-react', () => ({
+  default: () => <div>Lottie Animation</div>,
 }));
 
 // Mock react-icons
@@ -48,6 +54,29 @@ vi.mock('react-icons/md', () => ({
   MdCalendarToday: () => <div>CalendarTodayIcon</div>,
   MdFeedback: () => <div>FeedbackIcon</div>,
   MdBugReport: () => <div>BugReportIcon</div>,
+  MdSettings: () => <div>SettingsIcon</div>,
+  MdStorage: () => <div>StorageIcon</div>,
+  MdPieChart: () => <div>PieChartIcon</div>,
+  MdAccessTime: () => <div>AccessTimeIcon</div>,
+  MdFavorite: () => <div>FavoriteIcon</div>,
+  MdRemove: () => <div>RemoveIcon</div>,
+  MdAdd: () => <div>AddIcon</div>,
+  MdClose: () => <div>CloseIcon</div>,
+}));
+
+// Mock DashboardConfigModal
+vi.mock('./DashboardConfigModal', () => ({
+  default: () => <div>DashboardConfigModal</div>,
+}));
+
+// Mock trackPage
+vi.mock('../hooks/usePageTracking', () => ({
+  trackPage: vi.fn(),
+}));
+
+// Mock calculateHealthScore
+vi.mock('./ProjectHealthModal', () => ({
+  calculateHealthScore: vi.fn(() => 75),
 }));
 
 describe('HomePage - Recovery Plan Indicator Tests', () => {
@@ -125,11 +154,17 @@ describe('HomePage - Recovery Plan Indicator Tests', () => {
     vi.clearAllMocks();
   });
 
+  // Default mock response for inconsistency-report
+  const emptyInconsistencyReport = { summary: [], total_inconsistencies: 0, by_severity: { high: 0, medium: 0, low: 0 } };
+
   describe('Recovery Plan Fetching', () => {
     it('should fetch recovery plans for all projects', async () => {
       api.get.mockImplementation((url) => {
         if (url.includes('/recovery-plans')) {
           return Promise.resolve({ data: [] });
+        }
+        if (url.includes('/inconsistency-report')) {
+          return Promise.resolve({ data: emptyInconsistencyReport });
         }
         return Promise.resolve({ data: [] });
       });
@@ -159,6 +194,9 @@ describe('HomePage - Recovery Plan Indicator Tests', () => {
       api.get.mockImplementation((url) => {
         if (url.includes('/recovery-plans')) {
           return Promise.reject(new Error('Network error'));
+        }
+        if (url.includes('/inconsistency-report')) {
+          return Promise.resolve({ data: emptyInconsistencyReport });
         }
         return Promise.resolve({ data: [] });
       });
@@ -199,6 +237,9 @@ describe('HomePage - Recovery Plan Indicator Tests', () => {
         }
         if (url.includes('/recovery-plans')) {
           return Promise.resolve({ data: [] });
+        }
+        if (url.includes('/inconsistency-report')) {
+          return Promise.resolve({ data: emptyInconsistencyReport });
         }
         return Promise.resolve({ data: [] });
       });
@@ -251,6 +292,9 @@ describe('HomePage - Recovery Plan Indicator Tests', () => {
         if (url.includes('/recovery-plans')) {
           return Promise.resolve({ data: [] });
         }
+        if (url.includes('/inconsistency-report')) {
+          return Promise.resolve({ data: emptyInconsistencyReport });
+        }
         return Promise.resolve({ data: [] });
       });
 
@@ -277,6 +321,9 @@ describe('HomePage - Recovery Plan Indicator Tests', () => {
       api.get.mockImplementation((url) => {
         if (url.includes('/recovery-plans')) {
           return Promise.resolve({ data: [] });
+        }
+        if (url.includes('/inconsistency-report')) {
+          return Promise.resolve({ data: emptyInconsistencyReport });
         }
         return Promise.resolve({ data: [] });
       });
@@ -320,6 +367,9 @@ describe('HomePage - Recovery Plan Indicator Tests', () => {
         if (url.includes('/recovery-plans')) {
           return Promise.resolve({ data: [] });
         }
+        if (url.includes('/inconsistency-report')) {
+          return Promise.resolve({ data: emptyInconsistencyReport });
+        }
         return Promise.resolve({ data: [] });
       });
 
@@ -361,6 +411,9 @@ describe('HomePage - Recovery Plan Indicator Tests', () => {
         if (url.includes('/recovery-plans')) {
           return Promise.resolve({ data: [] });
         }
+        if (url.includes('/inconsistency-report')) {
+          return Promise.resolve({ data: emptyInconsistencyReport });
+        }
         return Promise.resolve({ data: [] });
       });
 
@@ -389,6 +442,9 @@ describe('HomePage - Recovery Plan Indicator Tests', () => {
       api.get.mockImplementation((url) => {
         if (url.includes('/recovery-plans')) {
           return Promise.resolve({ data: [] });
+        }
+        if (url.includes('/inconsistency-report')) {
+          return Promise.resolve({ data: emptyInconsistencyReport });
         }
         return Promise.resolve({ data: [] });
       });
@@ -420,6 +476,9 @@ describe('HomePage - Recovery Plan Indicator Tests', () => {
       api.get.mockImplementation((url) => {
         if (url.includes('/recovery-plans')) {
           return Promise.resolve({ data: [] });
+        }
+        if (url.includes('/inconsistency-report')) {
+          return Promise.resolve({ data: emptyInconsistencyReport });
         }
         return Promise.resolve({ data: [] });
       });
@@ -453,6 +512,9 @@ describe('HomePage - Recovery Plan Indicator Tests', () => {
       api.get.mockImplementation((url) => {
         if (url.includes('/recovery-plans')) {
           return Promise.resolve({ data: [] });
+        }
+        if (url.includes('/inconsistency-report')) {
+          return Promise.resolve({ data: emptyInconsistencyReport });
         }
         return Promise.resolve({ data: [] });
       });
@@ -488,6 +550,9 @@ describe('HomePage - Recovery Plan Indicator Tests', () => {
       api.get.mockImplementation((url) => {
         if (url.includes('/recovery-plans')) {
           return Promise.resolve({ data: [] });
+        }
+        if (url.includes('/inconsistency-report')) {
+          return Promise.resolve({ data: emptyInconsistencyReport });
         }
         return Promise.resolve({ data: [] });
       });
@@ -537,6 +602,9 @@ describe('HomePage - Recovery Plan Indicator Tests', () => {
       api.get.mockImplementation((url) => {
         if (url.includes('/recovery-plans')) {
           return Promise.resolve({ data: [] }); // No plans for any project
+        }
+        if (url.includes('/inconsistency-report')) {
+          return Promise.resolve({ data: emptyInconsistencyReport });
         }
         return Promise.resolve({ data: [] });
       });

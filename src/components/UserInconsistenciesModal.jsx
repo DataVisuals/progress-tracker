@@ -1,0 +1,146 @@
+import React from 'react';
+import Lottie from 'lottie-react';
+import fixingAnimation from '../assets/fixing-animation.json';
+import {
+  MdEdit,
+  MdLink,
+  MdWarning,
+  MdArrowForward,
+  MdFeedback
+} from 'react-icons/md';
+
+// Helper function to format timestamps
+const formatTimestamp = (timestamp) => {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+};
+
+const UserInconsistenciesModal = ({
+  isOpen,
+  onClose,
+  inconsistencies,
+  feedback
+}) => {
+  if (!isOpen || inconsistencies.length === 0) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content user-inconsistencies-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <Lottie
+            animationData={fixingAnimation}
+            loop={true}
+            className="modal-icon-lottie"
+          />
+          <h2>Your Projects Need Attention</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body">
+          <p className="inconsistency-intro">
+            You have {inconsistencies.length} issue{inconsistencies.length !== 1 ? 's' : ''} that need attention.
+            Click on any item to open it in a new tab.
+          </p>
+          <div className="user-inconsistency-list">
+            {inconsistencies.map((issue, idx) => {
+              let issueTitle = '';
+              let issueIcon = null;
+
+              if (issue.type === 'missing_recovery_plan' && issue.metric_name) {
+                issueTitle = `${issue.metric_name} is ${issue.rag_status?.toUpperCase()} but has no recovery plan`;
+                issueIcon = <span className={`metric-rag-marker ${issue.rag_status}`} />;
+              } else if (issue.type === 'missing_metric_description' && issue.metric_name) {
+                issueTitle = `${issue.metric_name} is missing a description`;
+                issueIcon = <MdEdit className="issue-icon" />;
+              } else if (issue.type === 'missing_project_description') {
+                issueTitle = `${issue.project_name} is missing a description`;
+                issueIcon = <MdEdit className="issue-icon" />;
+              } else if (issue.type === 'missing_documentation') {
+                issueTitle = `${issue.project_name} has no documentation links`;
+                issueIcon = <MdLink className="issue-icon" />;
+              } else {
+                issueTitle = issue.details;
+                issueIcon = <MdWarning className="issue-icon" />;
+              }
+
+              const projectUrl = `${window.location.origin}${window.location.pathname}?project=${issue.project_id}`;
+
+              return (
+                <a
+                  key={idx}
+                  href={projectUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="user-inconsistency-item"
+                >
+                  <div className="issue-icon-wrapper">
+                    {issueIcon}
+                  </div>
+                  <div className="issue-details">
+                    <div className="issue-title">{issueTitle}</div>
+                    <div className="issue-project">
+                      {issue.project_name}
+                      {issue.first_detected && (
+                        <span className="issue-age"> · {formatTimestamp(issue.first_detected)}</span>
+                      )}
+                    </div>
+                  </div>
+                  <MdArrowForward className="issue-arrow" />
+                </a>
+              );
+            })}
+          </div>
+
+          {/* Unresolved Feedback Section */}
+          {feedback.length > 0 && (
+            <>
+              <div className="feedback-divider" />
+              <p className="inconsistency-intro" style={{ marginTop: '16px' }}>
+                <MdFeedback style={{ verticalAlign: 'middle', marginRight: '6px' }} />
+                Unresolved feedback on your projects (mark as resolved to clear):
+              </p>
+              <div className="user-feedback-list">
+                {feedback.map((fb) => {
+                  const projectUrl = `${window.location.origin}${window.location.pathname}?project=${fb.project_id}&tab=feedback`;
+                  return (
+                    <div key={fb.id} className="user-feedback-item">
+                      <a
+                        href={projectUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="feedback-link"
+                      >
+                        <div className="issue-icon-wrapper">
+                          <MdFeedback className="issue-icon" />
+                        </div>
+                        <div className="issue-details">
+                          <div className="issue-title">{fb.text}</div>
+                          <div className="issue-project">
+                            {fb.project_name} - {fb.user_name || 'Anonymous'} - {formatTimestamp(fb.created_at)}
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default UserInconsistenciesModal;

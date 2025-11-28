@@ -75,6 +75,26 @@ const DashboardConfigModal = ({
     });
   };
 
+  // Handle reset to defaults - saves default config immediately
+  const handleReset = () => {
+    // Clear minimized panels (old legacy state)
+    localStorage.removeItem('homePageMinimizedPanels');
+
+    // Default configuration
+    const defaultConfig = {
+      layout: '2x2',
+      panels: ['heatmap', 'metrics', 'commentary', 'inconsistencies'],
+      lastModified: Date.now()
+    };
+
+    // Update local state to reflect reset
+    setSelectedLayout('2x2');
+    setSelectedPanels(['heatmap', 'metrics', 'commentary', 'inconsistencies']);
+
+    // Save the default config (this will save to localStorage via onSave handler)
+    onSave(defaultConfig);
+  };
+
   // Layout previews
   const renderLayoutPreview = (layoutId) => {
     const config = layoutConfig[layoutId];
@@ -99,6 +119,12 @@ const DashboardConfigModal = ({
         return (
           <div className="layout-preview layout-1x2-preview">
             <div className="preview-cell" />
+            <div className="preview-cell" />
+          </div>
+        );
+      case '1x1':
+        return (
+          <div className="layout-preview layout-1x1-preview">
             <div className="preview-cell" />
           </div>
         );
@@ -181,10 +207,10 @@ const DashboardConfigModal = ({
                     >
                       <option value="">Select a panel...</option>
                       {availablePanels.map((panel) => {
-                        const PanelIcon = panel.icon;
+                        const isUsedElsewhere = selectedPanels.includes(panel.id) && selectedPanels[index] !== panel.id;
                         return (
                           <option key={panel.id} value={panel.id}>
-                            {panel.name} {panel.adminOnly ? '(Admin)' : ''}
+                            {panel.name}{panel.adminOnly ? ' (Admin)' : ''}{isUsedElsewhere ? ' *' : ''}
                           </option>
                         );
                       })}
@@ -225,6 +251,8 @@ const DashboardConfigModal = ({
         </div>
 
         <div className="modal-footer">
+          <button className="btn-danger" onClick={handleReset}>Reset to Defaults</button>
+          <div className="footer-spacer" />
           <button className="btn-secondary" onClick={onClose}>Cancel</button>
           <button className="btn-primary" onClick={handleSave}>Save Configuration</button>
         </div>
