@@ -24,7 +24,6 @@ import RecoveryPlans from './RecoveryPlans';
 // import CRAIDs from './CRAIDs'; // DISABLED: CRAIDs feature hidden
 import Lottie from 'lottie-react';
 import fixingAnimation from '../../public/fixing-animation.json';
-import RichTextEditor, { RichTextDisplay } from './RichTextEditor';
 import './MetricChart.css';
 
 // Barclays blue color for expected line
@@ -1630,8 +1629,8 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       {/* Compact Mode: Show just the latest commentary */}
       {compactMode && allComments.length > 0 && (
         <div className="compact-commentary">
-          <div className="compact-commentary-text">
-            <RichTextDisplay content={allComments[0].comment_text} />
+          <div className="compact-commentary-text" title={allComments[0].comment_text}>
+            {allComments[0].comment_text}
           </div>
           <div className="compact-commentary-date">
             {formatDate(allComments[0].reporting_date)}
@@ -1928,11 +1927,13 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                   ))}
                 </select>
               </div>
-              <RichTextEditor
+              <textarea
+                className="commentary-textarea"
                 value={newCommentText}
-                onChange={setNewCommentText}
+                onChange={(e) => setNewCommentText(e.target.value)}
+                rows={4}
                 placeholder="Add comment..."
-                compact
+                autoFocus
               />
             </div>
             <div className="commentary-actions">
@@ -1956,13 +1957,12 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                     <>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <strong>{comment.reporting_date}:</strong>
-                        <div style={{ marginTop: '8px' }}>
-                          <RichTextEditor
-                            value={editingCommentText}
-                            onChange={setEditingCommentText}
-                            compact
-                          />
-                        </div>
+                        <textarea
+                          value={editingCommentText}
+                          onChange={(e) => setEditingCommentText(e.target.value)}
+                          style={{ width: '100%', marginTop: '8px', padding: '8px', fontSize: '14px', minHeight: '60px' }}
+                          autoFocus
+                        />
                       </div>
                       <button
                         className="edit-comment-btn"
@@ -1981,36 +1981,37 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                       </button>
                     </>
                   ) : (
-                    <div style={{ width: '100%' }}>
-                      <div style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+                    <>
+                      <div style={{ flex: 1, minWidth: 0, wordWrap: 'break-word', overflowWrap: 'break-word' }}>
                         <strong>{comment.reporting_date}:</strong>{' '}
-                        <RichTextDisplay content={comment.comment_text} />
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                        <span className="comment-author">
-                          {comment.created_by_name && !comment.is_system && `— ${comment.created_by_name}`}
-                          {comment.is_system && '— System'}
-                        </span>
-                        {!comment.is_system && allowDataEdits && (
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            <button
-                              className="edit-comment-btn"
-                              onClick={() => handleEditComment(comment)}
-                              title="Edit comment"
-                            >
-                              ✎
-                            </button>
-                            <button
-                              className="delete-comment-btn"
-                              onClick={() => handleDeleteComment(comment.id, comment.period_id)}
-                              title="Delete comment"
-                            >
-                              ×
-                            </button>
-                          </div>
+                        {comment.comment_text}
+                        {comment.created_by_name && !comment.is_system && (
+                          <span className="comment-author"> — {comment.created_by_name}</span>
+                        )}
+                        {comment.is_system && (
+                          <span className="comment-author"> — System</span>
                         )}
                       </div>
-                    </div>
+                      {!comment.is_system && allowDataEdits && (
+                        <>
+                          <button
+                            className="edit-comment-btn"
+                            onClick={() => handleEditComment(comment)}
+                            title="Edit comment"
+                            style={{ marginRight: '4px' }}
+                          >
+                            ✎
+                          </button>
+                          <button
+                            className="delete-comment-btn"
+                            onClick={() => handleDeleteComment(comment.id, comment.period_id)}
+                            title="Delete comment"
+                          >
+                            ×
+                          </button>
+                        </>
+                      )}
+                    </>
                   )}
                 </div>
               ))
