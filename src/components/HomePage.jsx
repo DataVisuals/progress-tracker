@@ -44,6 +44,7 @@ import {
 import { api } from '../api/client';
 import { smallSelectStyles } from './SelectStyles';
 import DashboardConfigModal from './DashboardConfigModal';
+import { RichTextDisplay } from './RichTextEditor';
 import './HomePage.css';
 import './MetricTabs.css';
 
@@ -1256,7 +1257,7 @@ const HomePage = ({
                               <span className="commentary-period">{item.periodName}</span>
                             </div>
                           </div>
-                          <p className="commentary-text">{item.commentary}</p>
+                          <div className="commentary-text"><RichTextDisplay content={item.commentary} /></div>
                           <div className="commentary-footer">
                             {item.createdBy && <span className="commentary-author">{item.createdBy}</span>}
                             <span className="commentary-time">{formatTimestamp(item.timestamp)}</span>
