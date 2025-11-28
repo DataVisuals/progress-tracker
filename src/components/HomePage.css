@@ -475,22 +475,16 @@
 
 .audit-line {
   display: flex;
-  align-items: center;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: baseline;
   gap: 6px;
-  padding: 0;
-  height: 22px;
-  line-height: 22px;
+  padding: 2px 0;
   font-size: 11px;
   border-bottom: 1px solid #e5e7eb;
   white-space: nowrap;
   overflow: hidden;
-}
-
-.audit-line > span {
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  line-height: 22px;
+  text-overflow: ellipsis;
 }
 
 .audit-line:last-child {
@@ -533,6 +527,7 @@
   color: #059669;
   margin-left: auto;
   font-size: 10px;
+  flex-shrink: 0;
 }
 
 /* Database Stats Panel Styles */
@@ -620,6 +615,85 @@
 .db-space-counts {
   color: #6b7280;
   font-size: 11px;
+}
+
+/* Database Size Progress Bar */
+.db-size-indicator {
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  cursor: help;
+}
+
+.db-size-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.db-size-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #003c71;
+}
+
+.db-size-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.db-size-status.healthy {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.db-size-status.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.db-size-status.critical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.db-size-bar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.db-size-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.db-size-fill.healthy {
+  background: #10b981;
+}
+
+.db-size-fill.warning {
+  background: #f59e0b;
+}
+
+.db-size-fill.critical {
+  background: #ef4444;
+}
+
+.db-size-limits {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #9ca3af;
 }
 
 /* Active Users Panel Styles */
@@ -823,6 +897,38 @@
 
 :root.dark-mode .db-space-name {
   color: #e5e7eb;
+}
+
+/* Database Size Progress Bar - Dark Mode */
+:root.dark-mode .db-size-indicator {
+  background: #111827;
+}
+
+:root.dark-mode .db-size-value {
+  color: #e0f2fe;
+}
+
+:root.dark-mode .db-size-status.healthy {
+  background: #064e3b;
+  color: #6ee7b7;
+}
+
+:root.dark-mode .db-size-status.warning {
+  background: #78350f;
+  color: #fcd34d;
+}
+
+:root.dark-mode .db-size-status.critical {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+:root.dark-mode .db-size-bar {
+  background: #374151;
+}
+
+:root.dark-mode .db-size-limits {
+  color: #6b7280;
 }
 
 :root.dark-mode .active-users-count {

@@ -453,7 +453,7 @@ const HomePage = ({
     setRandomTips(shuffled.slice(0, 5));
   };
 
-  const loadHomePageData = async () => {
+  const loadHomePageData = async (panelsOverride = null) => {
     if (loadingRef.current) return; // Prevent concurrent loads
 
     loadingRef.current = true;
@@ -792,7 +792,7 @@ const HomePage = ({
 
       // Load admin panel data if user is admin and panels are configured
       if (isAdmin) {
-        const configuredPanels = dashboardConfig.panels || [];
+        const configuredPanels = panelsOverride || dashboardConfig.panels || [];
 
         // Load audit log if needed
         if (configuredPanels.includes('audit')) {
@@ -878,7 +878,8 @@ const HomePage = ({
     localStorage.setItem('homePageDashboardConfig', JSON.stringify(newConfig));
     setShowConfigModal(false);
     // Reload data to fetch any newly required admin panel data
-    loadHomePageData();
+    // Pass new panels since state hasn't updated yet
+    loadHomePageData(newConfig.panels);
   };
 
   // Check if a red metric needs a recovery plan
@@ -1666,11 +1667,52 @@ const HomePage = ({
                 </div>
               ) : (
                 <div className="database-stats-content">
+                  {(() => {
+                    const sizeGB = databaseStats.totalSizeBytes / 1024 / 1024 / 1024;
+                    const sizeMB = databaseStats.totalSizeBytes / 1024 / 1024;
+                    const greenLimit = 100; // GB
+                    const amberLimit = 200 * 1024; // 200 TB in GB
+                    let status, statusColor, percentFill, tooltipText;
+
+                    if (sizeGB < greenLimit) {
+                      status = 'healthy';
+                      statusColor = '#10b981';
+                      percentFill = Math.max(1, (sizeGB / greenLimit) * 100);
+                      tooltipText = `SQLite performs well up to ~100GB. Current: ${sizeMB.toFixed(2)} MB`;
+                    } else if (sizeGB < amberLimit) {
+                      status = 'warning';
+                      statusColor = '#f59e0b';
+                      percentFill = Math.min(100, ((sizeGB - greenLimit) / (amberLimit - greenLimit)) * 100);
+                      tooltipText = `Database over 100GB may have performance issues. Consider optimization. Max: 281TB`;
+                    } else {
+                      status = 'critical';
+                      statusColor = '#ef4444';
+                      percentFill = 100;
+                      tooltipText = `Database approaching SQLite maximum (281TB). Consider migrating to PostgreSQL.`;
+                    }
+
+                    const displaySize = sizeMB >= 1024 ? `${(sizeMB / 1024).toFixed(2)} GB` : `${sizeMB.toFixed(2)} MB`;
+
+                    return (
+                      <div className="db-size-indicator" title={tooltipText}>
+                        <div className="db-size-header">
+                          <span className="db-size-value">{displaySize}</span>
+                          <span className={`db-size-status ${status}`}>{status === 'healthy' ? 'Healthy' : status === 'warning' ? 'Warning' : 'Critical'}</span>
+                        </div>
+                        <div className="db-size-bar">
+                          <div
+                            className={`db-size-fill ${status}`}
+                            style={{ width: `${percentFill}%`, backgroundColor: statusColor }}
+                          />
+                        </div>
+                        <div className="db-size-limits">
+                          <span>0</span>
+                          <span>100 GB</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <div className="db-summary">
-                    <div className="db-stat">
-                      <span className="db-stat-value">{(databaseStats.totalSizeBytes / 1024 / 1024).toFixed(2)} MB</span>
-                      <span className="db-stat-label">Total Size</span>
-                    </div>
                     <div className="db-stat">
                       <span className="db-stat-value">{databaseStats.tables?.length || 0}</span>
                       <span className="db-stat-label">Tables</span>

@@ -4859,13 +4859,27 @@ function createApp(dbPath) {
 
       // Get database file size
       const fs = require('fs');
-      const dbPath = process.env.DATABASE_PATH || 'backend/data/progress-tracker.db';
+      const path = require('path');
+      // Try multiple possible database paths
+      const possiblePaths = [
+        process.env.DATABASE_PATH,
+        path.join(__dirname, '..', 'data', 'progress-tracker.db'),
+        path.join(process.cwd(), 'backend', 'data', 'progress-tracker.db'),
+        'backend/data/progress-tracker.db'
+      ].filter(Boolean);
+
       let totalSizeBytes = 0;
-      try {
-        const stats = fs.statSync(dbPath);
-        totalSizeBytes = stats.size;
-      } catch (err) {
-        console.error('Could not get database file size:', err.message);
+      for (const dbPath of possiblePaths) {
+        try {
+          const stats = fs.statSync(dbPath);
+          totalSizeBytes = stats.size;
+          break; // Found it, stop looking
+        } catch (err) {
+          // Try next path
+        }
+      }
+      if (totalSizeBytes === 0) {
+        console.error('Could not find database file to get size');
       }
 
       // Get space usage - estimate based on project/metric data per space
