@@ -1670,25 +1670,32 @@ const HomePage = ({
                   {(() => {
                     const sizeGB = databaseStats.totalSizeBytes / 1024 / 1024 / 1024;
                     const sizeMB = databaseStats.totalSizeBytes / 1024 / 1024;
-                    const greenLimit = 100; // GB
+                    const greenLimit = 100; // GB - optimal performance limit
                     const amberLimit = 200 * 1024; // 200 TB in GB
-                    let status, statusColor, percentFill, tooltipText;
+                    const maxLimit = 281 * 1024; // 281 TB in GB - SQLite max
+                    let status, statusColor, percentFill, tooltipText, rightLabel;
 
                     if (sizeGB < greenLimit) {
                       status = 'healthy';
                       statusColor = '#10b981';
+                      // Scale: 0-100GB fills 0-100% of the bar
                       percentFill = Math.max(1, (sizeGB / greenLimit) * 100);
                       tooltipText = `SQLite performs well up to ~100GB. Current: ${sizeMB.toFixed(2)} MB`;
+                      rightLabel = '100 GB';
                     } else if (sizeGB < amberLimit) {
                       status = 'warning';
                       statusColor = '#f59e0b';
-                      percentFill = Math.min(100, ((sizeGB - greenLimit) / (amberLimit - greenLimit)) * 100);
+                      // Scale: 100GB-200TB, show as percentage of 200TB range
+                      percentFill = Math.max(1, Math.min(100, (sizeGB / amberLimit) * 100));
                       tooltipText = `Database over 100GB may have performance issues. Consider optimization. Max: 281TB`;
+                      rightLabel = '200 TB';
                     } else {
                       status = 'critical';
                       statusColor = '#ef4444';
-                      percentFill = 100;
+                      // Scale: show as percentage of 281TB max
+                      percentFill = Math.min(100, (sizeGB / maxLimit) * 100);
                       tooltipText = `Database approaching SQLite maximum (281TB). Consider migrating to PostgreSQL.`;
+                      rightLabel = '281 TB';
                     }
 
                     const displaySize = sizeMB >= 1024 ? `${(sizeMB / 1024).toFixed(2)} GB` : `${sizeMB.toFixed(2)} MB`;
@@ -1707,7 +1714,7 @@ const HomePage = ({
                         </div>
                         <div className="db-size-limits">
                           <span>0</span>
-                          <span>100 GB</span>
+                          <span>{rightLabel}</span>
                         </div>
                       </div>
                     );
