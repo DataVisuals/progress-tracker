@@ -11,56 +11,76 @@ import {
 import { MdClose, MdCheckCircle, MdWarning, MdError, MdInfo } from 'react-icons/md';
 import './ProjectHealthModal.css';
 
-// Exported helper to calculate overall health score
-export const calculateHealthScore = (project, projectData, metrics, recoveryPlans = []) => {
+// Helper function to get red metrics (used by both exported function and modal)
+const getRedMetrics = (data, metricsList) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return metricsList.filter(metric => {
+    const metricPeriods = data.filter(p => p.metric_id === metric.id);
+    const sortedPeriods = [...metricPeriods].sort((a, b) =>
+      new Date(a.reporting_date) - new Date(b.reporting_date)
+    );
+
+    let currentPeriod = null;
+    for (let i = sortedPeriods.length - 1; i >= 0; i--) {
+      const periodDate = new Date(sortedPeriods[i].reporting_date);
+      if (periodDate <= today) {
+        currentPeriod = sortedPeriods[i];
+        break;
+      }
+    }
+
+    if (!currentPeriod) return false;
+
+    const complete = parseFloat(currentPeriod.complete) || 0;
+    const expected = parseFloat(currentPeriod.expected) || 0;
+
+    if (expected === 0) return false;
+
+    const variance = complete - expected;
+    const variancePercent = Math.abs((variance / expected) * 100);
+    const redTolerance = parseFloat(currentPeriod.red_tolerance) || 10.0;
+
+    return variance < 0 && variancePercent > redTolerance;
+  });
+};
+
+// Exported helper to calculate health scores for all dimensions
+// Returns { overall, wellDescribed, metricCoverage, metricManagement, projectControl }
+// projectLinks can be an array of links OR a number (link_count from API)
+export const calculateHealthScores = (project, projectData, metrics, recoveryPlans = [], projectLinks = []) => {
   if (!project || !projectData || !metrics) {
-    return 0;
+    return {
+      overall: 0,
+      wellDescribed: 0,
+      metricCoverage: 0,
+      metricManagement: 0,
+      projectControl: 0
+    };
   }
 
-  // Helper to get red metrics
-  const getRedMetrics = (data, metricsList) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return metricsList.filter(metric => {
-      const metricPeriods = data.filter(p => p.metric_id === metric.id);
-      const sortedPeriods = [...metricPeriods].sort((a, b) =>
-        new Date(a.reporting_date) - new Date(b.reporting_date)
-      );
-
-      let currentPeriod = null;
-      for (let i = sortedPeriods.length - 1; i >= 0; i--) {
-        const periodDate = new Date(sortedPeriods[i].reporting_date);
-        if (periodDate <= today) {
-          currentPeriod = sortedPeriods[i];
-          break;
-        }
-      }
-
-      if (!currentPeriod) return false;
-
-      const complete = parseFloat(currentPeriod.complete) || 0;
-      const expected = parseFloat(currentPeriod.expected) || 0;
-
-      if (expected === 0) return false;
-
-      const variance = complete - expected;
-      const variancePercent = Math.abs((variance / expected) * 100);
-      const redTolerance = parseFloat(currentPeriod.red_tolerance) || 10.0;
-
-      return variance < 0 && variancePercent > redTolerance;
-    });
-  };
+  // Calculate link count - handle both array and number (link_count from API)
+  let linkCount = 0;
+  if (typeof projectLinks === 'number') {
+    linkCount = projectLinks;
+  } else if (Array.isArray(projectLinks) && projectLinks.length > 0) {
+    linkCount = projectLinks.length;
+  } else if (project.links && Array.isArray(project.links)) {
+    linkCount = project.links.length;
+  } else if (typeof project.link_count === 'number') {
+    linkCount = project.link_count;
+  }
 
   // 1. Well Described Score
   let wellDescribedScore = 0;
   if (project.description && project.description.trim().length > 10) {
     wellDescribedScore += 25;
   }
-  if (project.links && project.links.length >= 3) {
+  if (linkCount >= 3) {
     wellDescribedScore += 25;
-  } else if (project.links && project.links.length > 0) {
-    wellDescribedScore += Math.round((project.links.length / 3) * 25);
+  } else if (linkCount > 0) {
+    wellDescribedScore += Math.round((linkCount / 3) * 25);
   }
   if (metrics.length > 0) {
     const metricsWithDesc = metrics.filter(m => m.description && m.description.trim().length > 5).length;
@@ -172,7 +192,20 @@ export const calculateHealthScore = (project, projectData, metrics, recoveryPlan
   }
 
   // Calculate overall score (average of all 4 dimensions)
-  return Math.round((wellDescribedScore + metricCoverageScore + metricManagementScore + projectControlScore) / 4);
+  const overall = Math.round((wellDescribedScore + metricCoverageScore + metricManagementScore + projectControlScore) / 4);
+
+  return {
+    overall,
+    wellDescribed: wellDescribedScore,
+    metricCoverage: metricCoverageScore,
+    metricManagement: metricManagementScore,
+    projectControl: projectControlScore
+  };
+};
+
+// Backwards-compatible export that returns just the overall score
+export const calculateHealthScore = (project, projectData, metrics, recoveryPlans = [], projectLinks = []) => {
+  return calculateHealthScores(project, projectData, metrics, recoveryPlans, projectLinks).overall;
 };
 
 const ProjectHealthModal = ({
@@ -183,207 +216,16 @@ const ProjectHealthModal = ({
   projectLinks = [],
   onClose
 }) => {
-  // Calculate health scores for each dimension (0-100)
+  // Use the shared calculation function to ensure consistency
   const healthScores = useMemo(() => {
-    if (!project || !projectData || !metrics) {
-      return {
-        wellDescribed: 0,
-        metricCoverage: 0,
-        metricManagement: 0,
-        projectControl: 0
-      };
-    }
-
-    // 1. Well Described Score
-    // - Project has description
-    // - Metrics have descriptions
-    // - Red/amber metrics have recovery plans
-    let wellDescribedScore = 0;
-    let wellDescribedFactors = 0;
-
-    // Project description (25 points)
-    if (project.description && project.description.trim().length > 10) {
-      wellDescribedScore += 25;
-    }
-    wellDescribedFactors++;
-
-    // Project has documentation links (25 points) - need 3+ for full points
-    if (projectLinks && projectLinks.length >= 3) {
-      wellDescribedScore += 25;
-    } else if (projectLinks && projectLinks.length > 0) {
-      wellDescribedScore += Math.round((projectLinks.length / 3) * 25);
-    }
-    wellDescribedFactors++;
-
-    // Metric descriptions (25 points)
-    if (metrics.length > 0) {
-      const metricsWithDesc = metrics.filter(m => m.description && m.description.trim().length > 5).length;
-      wellDescribedScore += Math.round((metricsWithDesc / metrics.length) * 25);
-    }
-    wellDescribedFactors++;
-
-    // Recovery plans for red metrics (25 points)
-    const redMetrics = getRedMetrics(projectData, metrics);
-    if (redMetrics.length > 0) {
-      const activeRecoveryPlans = recoveryPlans.filter(p => p.status === 'active');
-      const redMetricsWithPlans = redMetrics.filter(m =>
-        activeRecoveryPlans.some(p => p.metric_id === m.id)
-      ).length;
-      wellDescribedScore += Math.round((redMetricsWithPlans / redMetrics.length) * 25);
-    } else {
-      wellDescribedScore += 25; // No red metrics = full points
-    }
-    wellDescribedFactors++;
-
-    // 2. Metric Coverage Score
-    // Based on number of metrics (ideal: 3-6 metrics)
-    let metricCoverageScore = 0;
-    const metricCount = metrics.length;
-    if (metricCount === 0) {
-      metricCoverageScore = 0;
-    } else if (metricCount >= 3 && metricCount <= 6) {
-      metricCoverageScore = 100;
-    } else if (metricCount < 3) {
-      metricCoverageScore = Math.round((metricCount / 3) * 100);
-    } else {
-      // More than 6 metrics - slightly penalize for complexity
-      metricCoverageScore = Math.max(70, 100 - (metricCount - 6) * 5);
-    }
-
-    // 3. Metric Management Score
-    // - Frequency of updates
-    // - Timeliness (are we keeping up with reporting periods?)
-    let metricManagementScore = 0;
-
-    if (metrics.length > 0 && projectData.length > 0) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      let totalScore = 0;
-      let metricCount = 0;
-
-      metrics.forEach(metric => {
-        const metricPeriods = projectData.filter(p => p.metric_id === metric.id);
-        if (metricPeriods.length === 0) return;
-
-        // Sort by date
-        const sortedPeriods = [...metricPeriods].sort((a, b) =>
-          new Date(a.reporting_date) - new Date(b.reporting_date)
-        );
-
-        // Find current/past periods
-        const pastPeriods = sortedPeriods.filter(p => new Date(p.reporting_date) <= today);
-
-        if (pastPeriods.length > 0) {
-          // Check how many past periods have been filled in
-          const filledPeriods = pastPeriods.filter(p =>
-            p.complete !== null && p.complete !== undefined && p.complete !== ''
-          ).length;
-
-          const fillRate = filledPeriods / pastPeriods.length;
-          totalScore += fillRate * 100;
-          metricCount++;
-        }
-      });
-
-      metricManagementScore = metricCount > 0 ? Math.round(totalScore / metricCount) : 50;
-    }
-
-    // 4. Project Control Score
-    // - How often do we drift into red/amber?
-    // - Based on recent history
-    let projectControlScore = 100;
-
-    if (metrics.length > 0 && projectData.length > 0) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      let totalPeriods = 0;
-      let greenPeriods = 0;
-      let amberPeriods = 0;
-      let redPeriods = 0;
-
-      metrics.forEach(metric => {
-        const metricPeriods = projectData.filter(p => p.metric_id === metric.id);
-        const pastPeriods = metricPeriods.filter(p => {
-          const periodDate = new Date(p.reporting_date);
-          return periodDate <= today && p.complete !== null && p.complete !== undefined;
-        });
-
-        pastPeriods.forEach(period => {
-          const complete = parseFloat(period.complete) || 0;
-          const expected = parseFloat(period.expected) || 0;
-
-          if (expected === 0) return;
-
-          const variance = complete - expected;
-          const variancePercent = Math.abs((variance / expected) * 100);
-          const redTolerance = parseFloat(period.red_tolerance) || 10.0;
-          const amberTolerance = parseFloat(period.amber_tolerance) || 5.0;
-
-          totalPeriods++;
-
-          if (variance >= 0 || variancePercent <= amberTolerance) {
-            greenPeriods++;
-          } else if (variancePercent <= redTolerance) {
-            amberPeriods++;
-          } else {
-            redPeriods++;
-          }
-        });
-      });
-
-      if (totalPeriods > 0) {
-        // Weight: green=100, amber=50, red=0
-        projectControlScore = Math.round(
-          ((greenPeriods * 100) + (amberPeriods * 50) + (redPeriods * 0)) / totalPeriods
-        );
-      }
-    }
-
+    const scores = calculateHealthScores(project, projectData, metrics, recoveryPlans, projectLinks);
     return {
-      wellDescribed: wellDescribedScore,
-      metricCoverage: metricCoverageScore,
-      metricManagement: metricManagementScore,
-      projectControl: projectControlScore
+      wellDescribed: scores.wellDescribed,
+      metricCoverage: scores.metricCoverage,
+      metricManagement: scores.metricManagement,
+      projectControl: scores.projectControl
     };
   }, [project, projectData, metrics, recoveryPlans, projectLinks]);
-
-  // Helper function to get red metrics
-  function getRedMetrics(data, metricsList) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return metricsList.filter(metric => {
-      const metricPeriods = data.filter(p => p.metric_id === metric.id);
-      const sortedPeriods = [...metricPeriods].sort((a, b) =>
-        new Date(a.reporting_date) - new Date(b.reporting_date)
-      );
-
-      // Find current period
-      let currentPeriod = null;
-      for (let i = sortedPeriods.length - 1; i >= 0; i--) {
-        const periodDate = new Date(sortedPeriods[i].reporting_date);
-        if (periodDate <= today) {
-          currentPeriod = sortedPeriods[i];
-          break;
-        }
-      }
-
-      if (!currentPeriod) return false;
-
-      const complete = parseFloat(currentPeriod.complete) || 0;
-      const expected = parseFloat(currentPeriod.expected) || 0;
-
-      if (expected === 0) return false;
-
-      const variance = complete - expected;
-      const variancePercent = Math.abs((variance / expected) * 100);
-      const redTolerance = parseFloat(currentPeriod.red_tolerance) || 10.0;
-
-      return variance < 0 && variancePercent > redTolerance;
-    });
-  }
 
   // Prepare data for radar chart
   const radarData = [

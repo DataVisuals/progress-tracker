@@ -1207,58 +1207,48 @@
 
 .grid-view-modal .modal-header {
   margin-bottom: 0;
-  padding: 8px 12px;
+  padding: 4px 12px;
 }
 
 .grid-view-modal .modal-header h2 {
-  font-size: 16px;
+  font-size: 14px;
+  margin: 0;
 }
 
 .grid-view-body {
   padding: 8px;
   overflow-y: auto;
-  max-height: calc(98vh - 45px);
+  max-height: calc(98vh - 32px);
 }
 
 .grid-view-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
+  max-width: 1800px;
+  width: 100%;
 }
 
 /* Layout optimizations based on metric count */
+/* 1 metric: single column */
+.grid-view-container.metrics-count-1 {
+  grid-template-columns: 1fr;
+  max-width: 500px;
+}
+
 /* 2 metrics: side by side */
 .grid-view-container.metrics-count-2 {
   grid-template-columns: repeat(2, 1fr);
+  max-width: 900px;
 }
 
-/* 3 metrics: 2 + 1 or 3 across */
-.grid-view-container.metrics-count-3 {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-/* 4 metrics: 2x2 grid */
-.grid-view-container.metrics-count-4 {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-/* 5 metrics: 3 + 2 layout */
-.grid-view-container.metrics-count-5 {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-/* 6 metrics: 3x2 grid */
-.grid-view-container.metrics-count-6 {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-/* 7+ metrics: 3 or 4 columns */
+/* 3+ metrics: always 3 columns max, scroll for more */
+.grid-view-container.metrics-count-3,
+.grid-view-container.metrics-count-4,
+.grid-view-container.metrics-count-5,
+.grid-view-container.metrics-count-6,
 .grid-view-container.metrics-count-7,
-.grid-view-container.metrics-count-8 {
-  grid-template-columns: repeat(4, 1fr);
-}
-
-/* 9+ metrics: 3 columns */
+.grid-view-container.metrics-count-8,
 .grid-view-container.metrics-count-9,
 .grid-view-container.metrics-count-10 {
   grid-template-columns: repeat(3, 1fr);
@@ -1310,47 +1300,91 @@
 
 /* Ten Reasons Modal */
 .ten-reasons-modal {
-  max-width: 800px;
-  width: 90vw;
+  max-width: 700px;
+  width: 95vw;
 }
 
 .ten-reasons-body {
-  padding: 16px 24px 24px;
+  padding: 16px 20px 20px;
 }
 
 .ten-reasons-list {
   margin: 0;
-  padding-left: 24px;
+  padding: 0;
   counter-reset: item;
   list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .ten-reasons-list li {
-  margin-bottom: 16px;
   counter-increment: item;
   position: relative;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px 10px 8px 40px;
+  transition: all 0.2s;
+}
+
+.ten-reasons-list li:hover {
+  border-color: #00aeef;
+  box-shadow: 0 2px 8px rgba(0, 174, 239, 0.1);
 }
 
 .ten-reasons-list li::before {
-  content: counter(item) ".";
+  content: counter(item);
   position: absolute;
-  left: -24px;
-  font-weight: 600;
-  color: #00aeef;
+  left: 10px;
+  top: 8px;
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, #00aeef, #0095d1);
+  color: white;
+  font-weight: 700;
+  font-size: 11px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ten-reasons-list li strong {
-  display: block;
-  font-size: 14px;
-  color: var(--text-primary);
-  margin-bottom: 4px;
+  display: inline;
+  font-size: 12px;
+  color: #1e293b;
+}
+
+.ten-reasons-list li strong::after {
+  content: " – ";
+  font-weight: 400;
+  color: #94a3b8;
 }
 
 .ten-reasons-list li p {
+  display: inline;
   margin: 0;
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.4;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Dark mode for ten reasons modal */
+:root.dark-mode .ten-reasons-list li {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+:root.dark-mode .ten-reasons-list li:hover {
+  border-color: #00aeef;
+}
+
+:root.dark-mode .ten-reasons-list li strong {
+  color: #f1f5f9;
+}
+
+:root.dark-mode .ten-reasons-list li p {
+  color: #94a3b8;
 }
 
 /* Chaser Modal */

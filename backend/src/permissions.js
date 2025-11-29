@@ -7,11 +7,27 @@ const ROLES = {
   EDITOR: 'editor' // Legacy role - treat as PM
 };
 
+// Check if user is a system admin (cross-space/global permissions)
+async function isSystemAdmin(userId) {
+  const user = await dbGet('SELECT is_system_admin FROM users WHERE id = ?', [userId]);
+  return user && user.is_system_admin === 1;
+}
+
+// Check if user is a system admin (sync version for use with user object)
+function isSystemAdminSync(user) {
+  return user && user.is_system_admin === 1;
+}
+
 // Check if user can edit a project
 async function canEditProject(userId, projectId) {
-  const user = await dbGet('SELECT role FROM users WHERE id = ?', [userId]);
+  const user = await dbGet('SELECT role, is_system_admin FROM users WHERE id = ?', [userId]);
 
-  // Admins can edit anything
+  // System admins can edit anything across all spaces
+  if (user.is_system_admin === 1) {
+    return true;
+  }
+
+  // Regular admins can edit anything (will be space-scoped later)
   if (user.role === ROLES.ADMIN) {
     return true;
   }
@@ -45,9 +61,14 @@ async function getViewableProjects(userId) {
 
 // Get all projects user can edit
 async function getEditableProjects(userId) {
-  const user = await dbGet('SELECT role FROM users WHERE id = ?', [userId]);
+  const user = await dbGet('SELECT role, is_system_admin FROM users WHERE id = ?', [userId]);
 
-  // Admins can edit all projects
+  // System admins can edit all projects across all spaces
+  if (user.is_system_admin === 1) {
+    return await dbAll('SELECT * FROM projects ORDER BY created_at DESC');
+  }
+
+  // Regular admins can edit all projects (will be space-scoped later)
   if (user.role === ROLES.ADMIN) {
     return await dbAll('SELECT * FROM projects ORDER BY created_at DESC');
   }
@@ -71,6 +92,8 @@ module.exports = {
   canEditProject,
   canCreateProject,
   isAdmin,
+  isSystemAdmin,
+  isSystemAdminSync,
   getViewableProjects,
   getEditableProjects
 };

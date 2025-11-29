@@ -35,14 +35,16 @@ import {
   MdErrorOutline,
   MdBugReport,
   MdSettings,
-  MdStorage,
   MdPieChart,
   MdAccessTime,
   MdFavorite,
   MdRemove,
   MdAdd,
-  MdClose
+  MdClose,
+  MdLock
 } from 'react-icons/md';
+import { FaDatabase } from 'react-icons/fa';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, RadialBarChart, RadialBar, Legend, PolarAngleAxis, LabelList, Treemap, CartesianGrid, PieChart, Pie } from 'recharts';
 import { api } from '../api/client';
 import { trackPage } from '../hooks/usePageTracking';
 import { smallSelectStyles } from './SelectStyles';
@@ -95,6 +97,8 @@ const HomePage = ({
   });
   const [changesSinceLastVisit, setChangesSinceLastVisit] = useState(null); // Changes since last visit
   const [showConfigModal, setShowConfigModal] = useState(false); // Dashboard config modal
+  const [auditHoveredDateIdx, setAuditHoveredDateIdx] = useState(null); // Audit log timeline hover state
+  const [auditSelectedDateIdx, setAuditSelectedDateIdx] = useState(null); // Audit log timeline selected/locked state
   const [dashboardConfig, setDashboardConfig] = useState(() => {
     // Load from localStorage or use default
     const stored = localStorage.getItem('homePageDashboardConfig');
@@ -110,6 +114,8 @@ const HomePage = ({
   const [auditLog, setAuditLog] = useState([]); // Audit log data for admin panel
   const [databaseStats, setDatabaseStats] = useState(null); // Database stats for admin panel
   const [activeUsers, setActiveUsers] = useState(null); // Active users for admin panel
+  const [userActivity, setUserActivity] = useState(null); // User activity data for fullscreen admin panel
+  const [userActivityDays, setUserActivityDays] = useState(30); // Days for user activity report
   const [healthRankingView, setHealthRankingView] = useState('top'); // 'top' or 'bottom' for health rankings panel
   const [hideInactiveProjects, setHideInactiveProjects] = useState(true); // Filter inactive (grey) projects by default
   const [minimizedPanels, setMinimizedPanels] = useState(() => {
@@ -518,7 +524,7 @@ const HomePage = ({
       if (isAdmin) {
         // Load audit log
         try {
-          const auditResponse = await api.get('/audit?limit=20');
+          const auditResponse = await api.get('/audit?limit=100');
           setAuditLog(auditResponse.data || []);
         } catch (auditErr) {
           console.log('Could not load audit log:', auditErr.message);
@@ -541,6 +547,15 @@ const HomePage = ({
         } catch (auErr) {
           console.log('Could not load active users:', auErr.message);
           setActiveUsers({ error: auErr.message });
+        }
+
+        // Load user activity data
+        try {
+          const activityResponse = await api.get(`/admin/user-activity?days=${userActivityDays}`);
+          setUserActivity(activityResponse.data);
+        } catch (actErr) {
+          console.log('Could not load user activity:', actErr.message);
+          setUserActivity({ error: actErr.message });
         }
       }
     } catch (err) {
@@ -873,7 +888,8 @@ const HomePage = ({
         project,
         projectData,
         metrics,
-        recoveryPlans.filter(rp => rp.project_id === project.id)
+        recoveryPlans.filter(rp => rp.project_id === project.id),
+        project.link_count || 0
       );
 
       const portfolioColor = portfolios.find(p => p.id === project.portfolio_id)?.color || '#6b7280';
@@ -895,7 +911,7 @@ const HomePage = ({
     // Sort by health score
     const sorted = [...filteredProjects].sort((a, b) => b.healthScore - a.healthScore);
 
-    // Dynamic limit based on layout
+    // Dynamic limit based on layout (used for non-fullscreen)
     const layout = dashboardConfig.layout || '2x2';
     const limit = layout === '1x1' ? 25 : (layout === '1x2' || layout === '2x1') ? 15 : layout === '3x2' ? 8 : 10;
 
@@ -906,7 +922,11 @@ const HomePage = ({
       ? [...sorted].reverse().slice(0, limit)
       : [];
 
-    return { top, bottom };
+    // Also return all sorted for fullscreen view
+    const allSorted = sorted;
+    const allReversed = [...sorted].reverse();
+
+    return { top, bottom, allSorted, allReversed };
   }, [projects, projectsData, portfolios, selectedSpace, hasSpaceIds, recoveryPlans, hideInactiveProjects, dashboardConfig.layout]);
 
   // Filter commentary based on portfolio filter
@@ -935,20 +955,6 @@ const HomePage = ({
       return null;
     }
 
-    // Helper to render minimize button
-    const MinimizeButton = () => (
-      <button
-        className="panel-minimize-btn"
-        onClick={(e) => {
-          e.stopPropagation();
-          minimizePanel(panelId);
-        }}
-        title="Minimize to dock"
-      >
-        <MdRemove />
-      </button>
-    );
-
     switch (panelId) {
       case 'heatmap':
         return (
@@ -973,8 +979,7 @@ const HomePage = ({
                 ]}
                 isSearchable={false}
               />
-              {!forDock && <MinimizeButton />}
-            </div>
+                          </div>
             <div className="quadrant-content">
               {pageHeatmap && pageHeatmap.by_path ? (
                 <div className="heatmap-list">
@@ -987,7 +992,7 @@ const HomePage = ({
                       if (ratio > 0.25) return '#10b981';
                       return '#60a5fa';
                     };
-                    return projectItems.slice(0, getDisplayLimit()).map((item) => {
+                    return projectItems.slice(0, forDock ? 50 : getDisplayLimit()).map((item) => {
                       const projectName = item.path.replace('Project: ', '');
                       const ratio = item.views / maxViews;
                       const heatColor = getHeatColor(ratio);
@@ -1048,8 +1053,7 @@ const HomePage = ({
                   />
                 )}
               </div>
-              {!forDock && <MinimizeButton />}
-            </div>
+                          </div>
             <div className="quadrant-content">
               {loading ? (
                 <div className="loading-state">Loading...</div>
@@ -1065,7 +1069,95 @@ const HomePage = ({
                   <p>No {ragFilter === 'all' ? 'at-risk' : ragFilter} metrics!</p>
                   <span>No {ragFilter === 'all' ? 'at-risk' : ragFilter} metrics for {portfolioFilter === 'all' ? (selectedSpace === 'all' ? 'All Spaces' : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space') : portfoliosInMetrics.find(p => p.id === parseInt(portfolioFilter))?.name || 'selected portfolio'}</span>
                 </div>
+              ) : forDock ? (
+                // Fullscreen view: 2 columns for red and amber
+                <div className="metrics-columns-container">
+                  <div className="metrics-column red-column">
+                    <div className="column-header red">
+                      <span className="column-status-dot red" />
+                      <h3>Red ({filteredMetrics.filter(m => m.ragStatus === 'red').length})</h3>
+                    </div>
+                    <div className="metrics-list">
+                      {filteredMetrics.filter(m => m.ragStatus === 'red').map((item, idx) => (
+                        <div key={idx} className={`metric-item ${item.ragStatus}`} onClick={() => handleMetricClick(item.projectId, item.metricName)}>
+                          <div className="metric-left">
+                            <div className="metric-header">
+                              {item.portfolioColor && <span className="metric-portfolio-dot" style={{ backgroundColor: item.portfolioColor }} title={item.portfolioName || 'No Portfolio'} />}
+                              <div className="metric-text">
+                                <span className="metric-project">{item.projectName}</span>
+                                <span className="metric-name">{item.metricName}</span>
+                              </div>
+                              {needsRecoveryPlan(item.metricId) && (
+                                <div className="recovery-plan-indicator" title="Recovery Plan Required"><MdErrorOutline /></div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="metric-right">
+                            <div className="metric-gauge" title={`${item.complete} of ${item.expected} expected`}>
+                              <div className="gauge-track">
+                                <div
+                                  className={`gauge-fill ${item.ragStatus}`}
+                                  style={{ width: `${Math.min((item.complete / item.expected) * 100, 100)}%` }}
+                                />
+                              </div>
+                              <span className="gauge-label">{item.complete}/{item.expected}</span>
+                            </div>
+                            <div className="metric-target" title={`Final target: ${item.target}`}>
+                              <MdTrackChanges className="target-icon" />
+                              <span className="target-value">{item.target}</span>
+                            </div>
+                            <MdArrowForward className="metric-arrow" />
+                          </div>
+                        </div>
+                      ))}
+                      {filteredMetrics.filter(m => m.ragStatus === 'red').length === 0 && (
+                        <div className="empty-column">No red metrics</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="metrics-column amber-column">
+                    <div className="column-header amber">
+                      <span className="column-status-dot amber" />
+                      <h3>Amber ({filteredMetrics.filter(m => m.ragStatus === 'amber').length})</h3>
+                    </div>
+                    <div className="metrics-list">
+                      {filteredMetrics.filter(m => m.ragStatus === 'amber').map((item, idx) => (
+                        <div key={idx} className={`metric-item ${item.ragStatus}`} onClick={() => handleMetricClick(item.projectId, item.metricName)}>
+                          <div className="metric-left">
+                            <div className="metric-header">
+                              {item.portfolioColor && <span className="metric-portfolio-dot" style={{ backgroundColor: item.portfolioColor }} title={item.portfolioName || 'No Portfolio'} />}
+                              <div className="metric-text">
+                                <span className="metric-project">{item.projectName}</span>
+                                <span className="metric-name">{item.metricName}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="metric-right">
+                            <div className="metric-gauge" title={`${item.complete} of ${item.expected} expected`}>
+                              <div className="gauge-track">
+                                <div
+                                  className={`gauge-fill ${item.ragStatus}`}
+                                  style={{ width: `${Math.min((item.complete / item.expected) * 100, 100)}%` }}
+                                />
+                              </div>
+                              <span className="gauge-label">{item.complete}/{item.expected}</span>
+                            </div>
+                            <div className="metric-target" title={`Final target: ${item.target}`}>
+                              <MdTrackChanges className="target-icon" />
+                              <span className="target-value">{item.target}</span>
+                            </div>
+                            <MdArrowForward className="metric-arrow" />
+                          </div>
+                        </div>
+                      ))}
+                      {filteredMetrics.filter(m => m.ragStatus === 'amber').length === 0 && (
+                        <div className="empty-column">No amber metrics</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               ) : (
+                // Normal view: single list
                 <div className="metrics-list">
                   {filteredMetrics.map((item, idx) => {
                     const showPortfolioHeader = idx === 0 || item.portfolioName !== filteredMetrics[idx - 1].portfolioName;
@@ -1134,8 +1226,7 @@ const HomePage = ({
                   isSearchable={false}
                 />
               )}
-              {!forDock && <MinimizeButton />}
-            </div>
+                          </div>
             <div className="quadrant-content">
               {loading ? (
                 <div className="loading-state">Loading...</div>
@@ -1194,8 +1285,7 @@ const HomePage = ({
             <div className="quadrant-header">
               <MdBugReport className="quadrant-icon warning" />
               <h2>Inconsistencies</h2>
-              {!forDock && <MinimizeButton />}
-            </div>
+                          </div>
             <div className="quadrant-content">
               {!inconsistencies ? (
                 <div className="loading-text">Loading...</div>
@@ -1262,8 +1352,7 @@ const HomePage = ({
             <div className="quadrant-header">
               <MdBuild className="quadrant-icon warning" />
               <h2>My Projects Needing Attention</h2>
-              {!forDock && <MinimizeButton />}
-            </div>
+                          </div>
             <div className="quadrant-content">
               {loading ? (
                 <div className="loading-state">Loading...</div>
@@ -1323,9 +1412,81 @@ const HomePage = ({
           if (score >= 60) return '#f59e0b'; // amber
           return '#ef4444'; // red
         };
-        const displayProjects = healthRankingView === 'top'
-          ? projectHealthRankings.top
-          : projectHealthRankings.bottom;
+
+        // Helper function to render a health ranking item
+        const renderHealthItem = (project, idx, isTop) => (
+          <div
+            key={project.id}
+            className="health-ranking-item"
+            onClick={() => onNavigateToProject(project.id)}
+          >
+            <span className="health-rank">{idx + 1}</span>
+            <div className="health-score-gauge">
+              <svg viewBox="0 0 36 36" className="health-gauge-svg">
+                <circle
+                  className="health-gauge-bg"
+                  cx="18"
+                  cy="18"
+                  r="15.5"
+                  fill="none"
+                  strokeWidth="3"
+                />
+                <circle
+                  className="health-gauge-progress"
+                  cx="18"
+                  cy="18"
+                  r="15.5"
+                  fill="none"
+                  strokeWidth="3"
+                  stroke={getHealthColor(project.healthScore)}
+                  strokeDasharray={`${(project.healthScore / 100) * 97.4} 97.4`}
+                  strokeLinecap="round"
+                  transform="rotate(-90 18 18)"
+                />
+              </svg>
+              <span className="health-gauge-value">{Math.round(project.healthScore)}</span>
+            </div>
+            <div className="health-project-info">
+              <span
+                className="health-portfolio-dot"
+                style={{ backgroundColor: project.portfolioColor }}
+                title={project.portfolioName || 'No Portfolio'}
+              />
+              <span className="health-project-name">{project.name}</span>
+              {project.initiative_manager && (
+                <span className="health-pm-name">{project.initiative_manager}</span>
+              )}
+            </div>
+            <MdArrowForward className="health-arrow" />
+          </div>
+        );
+
+        // Fullscreen two-column layout
+        if (forDock) {
+          const top10 = projectHealthRankings.allSorted.slice(0, 10);
+          const bottom10 = [...projectHealthRankings.allSorted].reverse().slice(0, 10);
+          return (
+            <div key={panelId} className={`home-quadrant health-rankings-quadrant fullscreen-health panel-${index + 1}`}>
+              <div className="quadrant-content health-two-columns">
+                <div className="health-column">
+                  <h3 className="health-column-title top-title">Top 10</h3>
+                  <div className="health-rankings-list">
+                    {top10.map((project, idx) => renderHealthItem(project, idx, true))}
+                  </div>
+                </div>
+                <div className="health-column">
+                  <h3 className="health-column-title bottom-title">Bottom 10</h3>
+                  <div className="health-rankings-list">
+                    {bottom10.map((project, idx) => renderHealthItem(project, idx, false))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // Regular panel view with toggle
+        const displayProjects = healthRankingView === 'top' ? projectHealthRankings.top : projectHealthRankings.bottom;
         return (
           <div key={panelId} className={`home-quadrant health-rankings-quadrant panel-${index + 1}`}>
             <div className="quadrant-header">
@@ -1356,8 +1517,7 @@ const HomePage = ({
                   Bottom 10
                 </button>
               </div>
-              {!forDock && <MinimizeButton />}
-            </div>
+                          </div>
             <div className="quadrant-content">
               {displayProjects.length === 0 ? (
                 <div className="empty-quadrant">
@@ -1365,54 +1525,7 @@ const HomePage = ({
                 </div>
               ) : (
                 <div className="health-rankings-list">
-                  {displayProjects.map((project, idx) => (
-                    <div
-                      key={project.id}
-                      className="health-ranking-item"
-                      onClick={() => onNavigateToProject(project.id)}
-                    >
-                      <span className="health-rank">
-                        {healthRankingView === 'top' ? idx + 1 : displayProjects.length - idx}
-                      </span>
-                      <div className="health-score-gauge">
-                        <svg viewBox="0 0 36 36" className="health-gauge-svg">
-                          <circle
-                            className="health-gauge-bg"
-                            cx="18"
-                            cy="18"
-                            r="15.5"
-                            fill="none"
-                            strokeWidth="3"
-                          />
-                          <circle
-                            className="health-gauge-progress"
-                            cx="18"
-                            cy="18"
-                            r="15.5"
-                            fill="none"
-                            strokeWidth="3"
-                            stroke={getHealthColor(project.healthScore)}
-                            strokeDasharray={`${(project.healthScore / 100) * 97.4} 97.4`}
-                            strokeLinecap="round"
-                            transform="rotate(-90 18 18)"
-                          />
-                        </svg>
-                        <span className="health-gauge-value">{Math.round(project.healthScore)}</span>
-                      </div>
-                      <div className="health-project-info">
-                        <span
-                          className="health-portfolio-dot"
-                          style={{ backgroundColor: project.portfolioColor }}
-                          title={project.portfolioName || 'No Portfolio'}
-                        />
-                        <span className="health-project-name">{project.name}</span>
-                        {project.initiative_manager && (
-                          <span className="health-pm-name">{project.initiative_manager}</span>
-                        )}
-                      </div>
-                      <MdArrowForward className="health-arrow" />
-                    </div>
-                  ))}
+                  {displayProjects.map((project, idx) => renderHealthItem(project, idx, healthRankingView === 'top'))}
                 </div>
               )}
             </div>
@@ -1421,29 +1534,55 @@ const HomePage = ({
 
       case 'audit':
         if (!isAdmin) return null;
-        const formatAuditDescription = (entry) => {
-          try {
-            const newVals = entry.new_values ? JSON.parse(entry.new_values) : null;
-            const oldVals = entry.old_values ? JSON.parse(entry.old_values) : null;
-            if (entry.action === 'UPDATE' && newVals) {
-              const changes = Object.keys(newVals).slice(0, 2).map(k => {
-                const val = typeof newVals[k] === 'number' ? newVals[k].toLocaleString() : newVals[k];
-                return `${k} to ${val}`;
-              });
-              return changes.length > 0 ? changes.join(', ') : '';
-            } else if (entry.action === 'CREATE' && newVals) {
-              if (newVals.name) return `"${newVals.name}"`;
-              if (newVals.email) return newVals.email;
-              return '';
-            } else if (entry.action === 'DELETE' && oldVals) {
-              if (oldVals.name) return `"${oldVals.name}"`;
-              return '';
+
+        // Generate activity summary
+        const generateActivitySummary = (logs) => {
+          if (!logs || logs.length === 0) return [];
+
+          // Group by user and action type
+          const userActivity = {};
+          logs.forEach(entry => {
+            const userName = entry.user_email?.split('@')[0] || 'System';
+            if (!userActivity[userName]) {
+              userActivity[userName] = { updates: {}, creates: {}, deletes: {} };
             }
-            return '';
-          } catch {
-            return '';
-          }
+
+            const tableName = entry.table_name?.replace(/_/g, ' ') || 'records';
+            const projectContext = entry.project_name ? ` in ${entry.project_name}` : '';
+            const key = `${tableName}${projectContext}`;
+
+            if (entry.action === 'UPDATE') {
+              userActivity[userName].updates[key] = (userActivity[userName].updates[key] || 0) + 1;
+            } else if (entry.action === 'CREATE') {
+              userActivity[userName].creates[key] = (userActivity[userName].creates[key] || 0) + 1;
+            } else if (entry.action === 'DELETE') {
+              userActivity[userName].deletes[key] = (userActivity[userName].deletes[key] || 0) + 1;
+            }
+          });
+
+          // Build detailed summaries for each user's activities
+          const summaries = [];
+          Object.entries(userActivity).forEach(([user, activity]) => {
+            const topUpdates = Object.entries(activity.updates).sort((a, b) => b[1] - a[1]);
+            const topCreates = Object.entries(activity.creates).sort((a, b) => b[1] - a[1]);
+            const topDeletes = Object.entries(activity.deletes).sort((a, b) => b[1] - a[1]);
+
+            topUpdates.slice(0, 2).forEach(([target]) => {
+              summaries.push({ user, text: `updating ${target}` });
+            });
+            topCreates.slice(0, 2).forEach(([target]) => {
+              summaries.push({ user, text: `creating ${target}` });
+            });
+            topDeletes.slice(0, 1).forEach(([target]) => {
+              summaries.push({ user, text: `removing ${target}` });
+            });
+          });
+
+          return summaries.slice(0, forDock ? 10 : 5);
         };
+
+        const activitySummary = generateActivitySummary(auditLog);
+
         const getActionVerb = (action) => {
           switch(action) {
             case 'CREATE': return 'created';
@@ -1452,17 +1591,120 @@ const HomePage = ({
             default: return action.toLowerCase();
           }
         };
-        const getContext = (entry) => {
-          if (entry.metric_name) return entry.metric_name;
-          if (entry.project_name && entry.table_name === 'projects') return entry.project_name;
-          return null;
+        const formatTableName = (tableName) => {
+          return tableName?.replace(/_/g, ' ').replace(/s$/, '') || 'record';
         };
+        const formatValues = (entry) => {
+          try {
+            const newVals = entry.new_values ? JSON.parse(entry.new_values) : null;
+            const oldVals = entry.old_values ? JSON.parse(entry.old_values) : null;
+            const changes = [];
+
+            if (entry.action === 'UPDATE' && newVals && oldVals) {
+              Object.keys(newVals).forEach(key => {
+                const oldVal = oldVals[key];
+                const newVal = newVals[key];
+                const formatVal = (v) => typeof v === 'number' ? v.toLocaleString() : (v || '(empty)');
+                changes.push({ field: key, from: formatVal(oldVal), to: formatVal(newVal) });
+              });
+            } else if (entry.action === 'UPDATE' && newVals) {
+              Object.keys(newVals).forEach(key => {
+                const newVal = newVals[key];
+                const formatVal = (v) => typeof v === 'number' ? v.toLocaleString() : (v || '(empty)');
+                changes.push({ field: key, to: formatVal(newVal) });
+              });
+            } else if (entry.action === 'CREATE' && newVals) {
+              Object.keys(newVals).forEach(key => {
+                const val = newVals[key];
+                const formatVal = (v) => typeof v === 'number' ? v.toLocaleString() : (v || '(empty)');
+                changes.push({ field: key, value: formatVal(val) });
+              });
+            } else if (entry.action === 'DELETE' && oldVals) {
+              Object.keys(oldVals).forEach(key => {
+                const val = oldVals[key];
+                const formatVal = (v) => typeof v === 'number' ? v.toLocaleString() : (v || '(empty)');
+                changes.push({ field: key, value: formatVal(val) });
+              });
+            }
+            return changes;
+          } catch {
+            return [];
+          }
+        };
+
+        // Group entries by date for timeline
+        const groupByDate = (entries) => {
+          const groups = {};
+          entries.forEach(entry => {
+            const date = new Date(entry.created_at);
+            const dateKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            if (!groups[dateKey]) {
+              groups[dateKey] = [];
+            }
+            groups[dateKey].push(entry);
+          });
+          return Object.entries(groups);
+        };
+
+        // Generate daily activity data for horizontal overview
+        const generateDailyActivity = (logs) => {
+          const days = [];
+          const today = new Date();
+          today.setHours(23, 59, 59, 999);
+
+          for (let i = 13; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            date.setHours(0, 0, 0, 0);
+            const nextDay = new Date(date);
+            nextDay.setDate(nextDay.getDate() + 1);
+
+            const dayLogs = logs.filter(log => {
+              const logDate = new Date(log.created_at);
+              return logDate >= date && logDate < nextDay;
+            });
+
+            days.push({
+              date: date,
+              dateKey: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+              total: dayLogs.length
+            });
+          }
+          return days;
+        };
+
+        const dailyActivity = generateDailyActivity(auditLog);
+        const maxDailyActivity = Math.max(...dailyActivity.map(d => d.total), 1);
+
+        // Use top-level state for date filtering - selected takes priority over hover
+        const activeIdx = auditSelectedDateIdx !== null ? auditSelectedDateIdx : auditHoveredDateIdx;
+        const activeDate = activeIdx !== null ? dailyActivity[activeIdx] : null;
+
+        const getActionIcon = (action) => {
+          switch(action) {
+            case 'CREATE': return <MdAdd className="timeline-action-icon create" />;
+            case 'UPDATE': return <MdEdit className="timeline-action-icon update" />;
+            case 'DELETE': return <MdRemove className="timeline-action-icon delete" />;
+            default: return <MdHistory className="timeline-action-icon" />;
+          }
+        };
+
+        const timelineEntries = auditLog.slice(0, forDock ? 100 : 50);
+
+        // Filter entries if a date is selected or hovered
+        const filteredEntries = activeDate
+          ? timelineEntries.filter(entry => {
+              const entryDate = new Date(entry.created_at);
+              return entryDate.toDateString() === activeDate.date.toDateString();
+            })
+          : timelineEntries;
+        const groupedEntries = groupByDate(filteredEntries);
+
         return (
           <div key={panelId} className={`home-quadrant audit-quadrant panel-${index + 1}`}>
             <div className="quadrant-header">
               <MdHistory className="quadrant-icon" />
               <h2>Audit Log</h2>
-              {!forDock && <MinimizeButton />}
             </div>
             <div className="quadrant-content">
               {auditLog.length === 0 ? (
@@ -1471,23 +1713,160 @@ const HomePage = ({
                   <p>No recent activity</p>
                 </div>
               ) : (
-                <div className="audit-console">
-                  {auditLog.map((entry, idx) => {
-                    const description = formatAuditDescription(entry);
-                    const userName = entry.user_email?.split('@')[0] || 'System';
-                    const context = getContext(entry);
-                    return (
-                      <div key={idx} className="audit-line">
-                        <span className="audit-prompt">$</span>
-                        <span className="audit-user">[{userName}]</span>
-                        <span className="audit-verb">{getActionVerb(entry.action)}</span>
-                        <span className="audit-table">[{entry.table_name}]</span>
-                        {context && <span className="audit-context">{context}</span>}
-                        {description && <span className="audit-values">{description}</span>}
-                        <span className="audit-time">@ {formatAuditTimestamp(entry.created_at)}</span>
+                <div className="audit-timeline-container">
+                  {/* Horizontal Activity Overview - Line Chart */}
+                  <div className="audit-activity-overview" onMouseLeave={() => setAuditHoveredDateIdx(null)}>
+                    <svg className="activity-line-chart" viewBox="0 0 200 24" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="activityGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3" />
+                          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.05" />
+                        </linearGradient>
+                      </defs>
+                      {/* Area fill */}
+                      <path
+                        d={`M0,24 ${dailyActivity.map((day, idx) => {
+                          const x = (idx / (dailyActivity.length - 1)) * 200;
+                          const y = 24 - (day.total === 0 ? 1 : Math.max(2, (day.total / maxDailyActivity) * 22));
+                          return `L${x},${y}`;
+                        }).join(' ')} L200,24 Z`}
+                        fill="url(#activityGradient)"
+                      />
+                      {/* Line */}
+                      <path
+                        d={`M${dailyActivity.map((day, idx) => {
+                          const x = (idx / (dailyActivity.length - 1)) * 200;
+                          const y = 24 - (day.total === 0 ? 1 : Math.max(2, (day.total / maxDailyActivity) * 22));
+                          return `${idx === 0 ? '' : 'L'}${x},${y}`;
+                        }).join(' ')}`}
+                        fill="none"
+                        stroke="#3b82f6"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      {/* Hover zones */}
+                      {dailyActivity.map((day, idx) => {
+                        const segmentWidth = 200 / dailyActivity.length;
+                        const x = idx * segmentWidth;
+                        return (
+                          <rect
+                            key={idx}
+                            x={x}
+                            y={0}
+                            width={segmentWidth}
+                            height={24}
+                            fill="transparent"
+                            className="activity-hover-zone"
+                            onMouseEnter={() => setAuditHoveredDateIdx(idx)}
+                            onClick={() => setAuditSelectedDateIdx(auditSelectedDateIdx === idx ? null : idx)}
+                          />
+                        );
+                      })}
+                      {/* Active indicator line */}
+                      {activeIdx !== null && (
+                        <line
+                          x1={(activeIdx / (dailyActivity.length - 1)) * 200}
+                          y1={0}
+                          x2={(activeIdx / (dailyActivity.length - 1)) * 200}
+                          y2={24}
+                          stroke={auditSelectedDateIdx !== null ? '#8b5cf6' : '#94a3b8'}
+                          strokeWidth={auditSelectedDateIdx !== null ? 2 : 1}
+                          strokeDasharray={auditSelectedDateIdx !== null ? '0' : '2,2'}
+                        />
+                      )}
+                    </svg>
+                    <div className="activity-labels">
+                      <span>{dailyActivity[0]?.dateKey}</span>
+                      <span className={`activity-summary ${auditSelectedDateIdx !== null ? 'selected' : ''}`}>
+                        {activeDate ? `${activeDate.dateKey}: ${activeDate.total} changes` : `${auditLog.length} changes`}
+                      </span>
+                      <span>Today</span>
+                    </div>
+                  </div>
+                  <div className="audit-timeline">
+                    {groupedEntries.map(([dateKey, entries], groupIdx) => (
+                      <div key={dateKey} className="timeline-date-group">
+                        <div className="timeline-date-marker">
+                          <span className="timeline-date">{dateKey}</span>
+                        </div>
+                        <div className="timeline-events">
+                          {entries.map((entry, idx) => {
+                            const userName = entry.user_email?.split('@')[0] || 'System';
+                            const values = formatValues(entry);
+                            const projectContext = entry.project_name || null;
+                            const metricContext = entry.metric_name || null;
+                            const isLeft = idx % 2 === 0;
+                            const time = new Date(entry.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+                            return (
+                              <div key={idx} className={`timeline-event ${isLeft ? 'left' : 'right'} action-${entry.action?.toLowerCase()}`}>
+                                <div className="timeline-spur">
+                                  <div className="timeline-node">
+                                    {getActionIcon(entry.action)}
+                                  </div>
+                                </div>
+                                <details className="timeline-card">
+                                  <summary className="timeline-card-summary">
+                                    <div className="timeline-card-header">
+                                      <span className="timeline-user">{userName}</span>
+                                      <span className="timeline-time">{time}</span>
+                                    </div>
+                                    <div className="timeline-card-action">
+                                      <span className="timeline-verb">{getActionVerb(entry.action)}</span>
+                                      <span className="timeline-table">{formatTableName(entry.table_name)}</span>
+                                    </div>
+                                    {(metricContext || projectContext) && (
+                                      <div className="timeline-card-context">
+                                        {metricContext && <span className="timeline-metric">"{metricContext}"</span>}
+                                        {projectContext && <span className="timeline-project"> in {projectContext}</span>}
+                                      </div>
+                                    )}
+                                  </summary>
+                                  <div className="timeline-card-details">
+                                    {values.length > 0 ? (
+                                      <table className="audit-values-table">
+                                        <thead>
+                                          <tr>
+                                            <th>Field</th>
+                                            {entry.action === 'UPDATE' ? (
+                                              <>
+                                                <th>Before</th>
+                                                <th>After</th>
+                                              </>
+                                            ) : (
+                                              <th>Value</th>
+                                            )}
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {values.map((v, i) => (
+                                            <tr key={i}>
+                                              <td className="field-name">{v.field}</td>
+                                              {entry.action === 'UPDATE' ? (
+                                                <>
+                                                  <td className="field-old">{v.from || '—'}</td>
+                                                  <td className="field-new">{v.to}</td>
+                                                </>
+                                              ) : (
+                                                <td className="field-value">{v.value}</td>
+                                              )}
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    ) : (
+                                      <div className="audit-no-details">No additional details</div>
+                                    )}
+                                  </div>
+                                </details>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -1499,10 +1878,9 @@ const HomePage = ({
         return (
           <div key={panelId} className={`home-quadrant database-quadrant panel-${index + 1}`}>
             <div className="quadrant-header">
-              <MdStorage className="quadrant-icon" />
+              <FaDatabase className="quadrant-icon" />
               <h2>Database Stats</h2>
-              {!forDock && <MinimizeButton />}
-            </div>
+                          </div>
             <div className="quadrant-content">
               {!databaseStats ? (
                 <div className="loading-state">Loading...</div>
@@ -1520,65 +1898,216 @@ const HomePage = ({
                     const greenLimit = 100; // GB - optimal performance limit
                     const amberLimit = 200 * 1024; // 200 TB in GB
                     const maxLimit = 281 * 1024; // 281 TB in GB - SQLite max
-                    let status, statusColor, percentFill, tooltipText, rightLabel;
+                    let status, statusColor, percentFill, tooltipText;
 
                     if (sizeGB < greenLimit) {
                       status = 'healthy';
                       statusColor = '#10b981';
-                      // Scale: 0-100GB fills 0-100% of the bar
                       percentFill = Math.max(1, (sizeGB / greenLimit) * 100);
                       tooltipText = `SQLite performs well up to ~100GB. Current: ${sizeMB.toFixed(2)} MB`;
-                      rightLabel = '100 GB';
                     } else if (sizeGB < amberLimit) {
                       status = 'warning';
                       statusColor = '#f59e0b';
-                      // Scale: 100GB-200TB, show as percentage of 200TB range
                       percentFill = Math.max(1, Math.min(100, (sizeGB / amberLimit) * 100));
-                      tooltipText = `Database over 100GB may have performance issues. Consider optimization. Max: 281TB`;
-                      rightLabel = '200 TB';
+                      tooltipText = `Database over 100GB may have performance issues. Max: 281TB`;
                     } else {
                       status = 'critical';
                       statusColor = '#ef4444';
-                      // Scale: show as percentage of 281TB max
                       percentFill = Math.min(100, (sizeGB / maxLimit) * 100);
-                      tooltipText = `Database approaching SQLite maximum (281TB). Consider migrating to PostgreSQL.`;
-                      rightLabel = '281 TB';
+                      tooltipText = `Database approaching SQLite maximum (281TB).`;
                     }
 
                     const displaySize = sizeMB >= 1024 ? `${(sizeMB / 1024).toFixed(2)} GB` : `${sizeMB.toFixed(2)} MB`;
+                    const tableCount = databaseStats.tables?.length || 0;
+                    const indexCount = databaseStats.indexes?.length || 0;
+                    const rightLabel = status === 'healthy' ? '100 GB' : status === 'warning' ? '200 TB' : '281 TB';
 
                     return (
-                      <div className="db-size-indicator" title={tooltipText}>
-                        <div className="db-size-header">
-                          <span className="db-size-value">{displaySize}</span>
-                          <span className={`db-size-status ${status}`}>{status === 'healthy' ? 'Healthy' : status === 'warning' ? 'Warning' : 'Critical'}</span>
+                      <div className="db-summary-line" title={tooltipText}>
+                        <span className="db-size-value">{displaySize}</span>
+                        <div className="db-bar-wrapper">
+                          <div className="db-size-bar-inline">
+                            <div className={`db-size-fill ${status}`} style={{ width: `${percentFill}%`, backgroundColor: statusColor }} />
+                          </div>
+                          <div className="db-bar-scale">
+                            <span>0</span>
+                            <span>{rightLabel}</span>
+                          </div>
                         </div>
-                        <div className="db-size-bar">
-                          <div
-                            className={`db-size-fill ${status}`}
-                            style={{ width: `${percentFill}%`, backgroundColor: statusColor }}
-                          />
-                        </div>
-                        <div className="db-size-limits">
-                          <span>0</span>
-                          <span>{rightLabel}</span>
-                        </div>
+                        <span className="db-counts">{tableCount} tables / {indexCount} indexes</span>
                       </div>
                     );
                   })()}
-                  <div className="db-summary">
-                    <div className="db-stat">
-                      <span className="db-stat-value">{databaseStats.tables?.length || 0}</span>
-                      <span className="db-stat-label">Tables</span>
-                    </div>
-                  </div>
-                  <div className="db-tables">
-                    {databaseStats.tables?.slice().sort((a, b) => b.rowCount - a.rowCount).slice(0, 10).map((table, idx) => (
-                      <div key={idx} className="db-table-row">
-                        <span className="db-table-name">{table.name}</span>
-                        <span className="db-table-count">{table.rowCount.toLocaleString()} rows</span>
-                      </div>
-                    ))}
+                  <div className="db-donut-chart">
+                    {(() => {
+                      const sortedTables = databaseStats.tables
+                        ?.slice()
+                        .sort((a, b) => (b.estimatedKB || b.rowCount) - (a.estimatedKB || a.rowCount));
+                      const colors = ['#00aeef', '#003c71', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#14b8a6', '#f97316', '#6366f1', '#84cc16'];
+
+                      const indexesByTable = {};
+                      databaseStats.indexes?.forEach(idx => {
+                        if (!indexesByTable[idx.tableName]) {
+                          indexesByTable[idx.tableName] = [];
+                        }
+                        indexesByTable[idx.tableName].push(idx.name);
+                      });
+
+                      const formatSize = (kb) => {
+                        if (kb >= 1024) return `${(kb / 1024).toFixed(1)} MB`;
+                        if (kb >= 1) return `${kb.toFixed(1)} KB`;
+                        return `${(kb * 1024).toFixed(0)} B`;
+                      };
+
+                      const chartData = sortedTables?.map((t, idx) => ({
+                        name: t.name,
+                        displayName: t.name.replace(/^(project_|user_|metric_)/, ''),
+                        rows: t.rowCount,
+                        value: t.estimatedKB || Math.round(t.rowCount * 0.15) || 0.1,
+                        fill: colors[idx % colors.length],
+                        sizeLabel: formatSize(t.estimatedKB || Math.round(t.rowCount * 0.15)),
+                        indexes: indexesByTable[t.name] || []
+                      })) || [];
+
+                      const renderLabel = ({ cx, cy, midAngle, outerRadius, innerRadius, displayName, percent, fill }) => {
+                        const RADIAN = Math.PI / 180;
+                        const textColor = darkMode ? '#e5e7eb' : '#374151';
+
+                        // Hide labels for tiny slices (less than 3%)
+                        if (percent < 0.03) return null;
+
+                        // For large slices (>15%), show label inside the slice
+                        if (percent >= 0.15) {
+                          const midRadius = (innerRadius + outerRadius) / 2;
+                          const x = cx + midRadius * Math.cos(-midAngle * RADIAN);
+                          const y = cy + midRadius * Math.sin(-midAngle * RADIAN);
+                          return (
+                            <text
+                              x={x}
+                              y={y}
+                              fill="#ffffff"
+                              fontSize={9}
+                              fontWeight="600"
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+                            >
+                              {displayName}
+                            </text>
+                          );
+                        }
+
+                        // For medium slices (3-15%), show label outside with leader line
+                        const outerLabelRadius = outerRadius * 1.15;
+                        const lineEndRadius = outerRadius * 1.05;
+                        const x = cx + outerLabelRadius * Math.cos(-midAngle * RADIAN);
+                        const y = cy + outerLabelRadius * Math.sin(-midAngle * RADIAN);
+                        const lineStartX = cx + outerRadius * Math.cos(-midAngle * RADIAN);
+                        const lineStartY = cy + outerRadius * Math.sin(-midAngle * RADIAN);
+                        const lineEndX = cx + lineEndRadius * Math.cos(-midAngle * RADIAN);
+                        const lineEndY = cy + lineEndRadius * Math.sin(-midAngle * RADIAN);
+
+                        return (
+                          <g>
+                            <line
+                              x1={lineStartX}
+                              y1={lineStartY}
+                              x2={lineEndX}
+                              y2={lineEndY}
+                              stroke={fill}
+                              strokeWidth={1}
+                            />
+                            <text
+                              x={x}
+                              y={y}
+                              fill={textColor}
+                              fontSize={9}
+                              textAnchor={x > cx ? 'start' : 'end'}
+                              dominantBaseline="central"
+                            >
+                              {displayName}
+                            </text>
+                          </g>
+                        );
+                      };
+
+                      return (
+                        <div className="db-main-content">
+                          <div className="db-chart-section">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={chartData}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius="50%"
+                                  outerRadius="85%"
+                                  dataKey="value"
+                                  label={renderLabel}
+                                  labelLine={false}
+                                >
+                                  {chartData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                                  ))}
+                                </Pie>
+                                <Tooltip
+                                  content={({ active, payload }) => {
+                                    if (!active || !payload?.[0]) return null;
+                                    const data = payload[0].payload;
+                                    return (
+                                      <div className="db-table-tooltip">
+                                        <div className="tooltip-title">{data.name}</div>
+                                        <div className="tooltip-stats">
+                                          <span>{data.sizeLabel}</span>
+                                          <span>{data.rows?.toLocaleString()} rows</span>
+                                        </div>
+                                      </div>
+                                    );
+                                  }}
+                                />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="db-tables-section">
+                            <div className="db-section-title">Tables</div>
+                            <div className="db-data-table">
+                              <div className="db-table-header">
+                                <span>Name</span>
+                                <span>Rows</span>
+                                <span>Size</span>
+                              </div>
+                              {chartData.slice(0, forDock ? 12 : 5).map((table, idx) => (
+                                <div key={idx} className="db-table-row">
+                                  <span className="db-table-name">
+                                    <span className="db-color-dot" style={{ background: table.fill }} />
+                                    {table.displayName}
+                                  </span>
+                                  <span className="db-table-rows">{table.rows?.toLocaleString()}</span>
+                                  <span className="db-table-size">{table.sizeLabel}</span>
+                                </div>
+                              ))}
+                            </div>
+                            {databaseStats.indexes?.length > 0 && (
+                              <>
+                                <div className="db-section-title">Indexes</div>
+                                <div className="db-data-table db-index-table">
+                                  <div className="db-table-header">
+                                    <span>Index</span>
+                                    <span>Table</span>
+                                  </div>
+                                  {databaseStats.indexes.slice(0, forDock ? 10 : 4).map((idx, i) => (
+                                    <div key={i} className="db-table-row">
+                                      <span className="db-index-name">{idx.name}</span>
+                                      <span className="db-index-table-name">{idx.tableName?.replace(/^(project_|user_|metric_)/, '')}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
@@ -1588,14 +2117,242 @@ const HomePage = ({
 
       case 'activeUsers':
         if (!isAdmin) return null;
+
+        // Fullscreen view: logged-in users list + activity charts
+        if (forDock) {
+          // Color palette for activity types
+          const activityColors = {
+            'CREATE_projects': '#047857', 'UPDATE_projects': '#10b981', 'DELETE_projects': '#6ee7b7',
+            'CREATE_project_links': '#4d7c0f', 'UPDATE_project_links': '#84cc16', 'DELETE_project_links': '#bef264',
+            'CREATE_metrics': '#1e40af', 'UPDATE_metrics': '#3b82f6', 'DELETE_metrics': '#93c5fd',
+            'CREATE_metric_periods': '#4c1d95', 'UPDATE_metric_periods': '#8b5cf6', 'DELETE_metric_periods': '#c4b5fd',
+            'CREATE_comments': '#b45309', 'UPDATE_comments': '#f59e0b', 'DELETE_comments': '#fcd34d',
+            'CREATE_feedback': '#9d174d', 'UPDATE_feedback': '#ec4899', 'DELETE_feedback': '#f9a8d4',
+            'CREATE_portfolios': '#0e7490', 'UPDATE_portfolios': '#06b6d4', 'DELETE_portfolios': '#67e8f9',
+            'CREATE_craids': '#991b1b', 'UPDATE_craids': '#ef4444', 'DELETE_craids': '#fca5a5',
+            'CREATE_users': '#334155', 'UPDATE_users': '#64748b', 'DELETE_users': '#cbd5e1',
+            'IMPORT_projects': '#7e22ce'
+          };
+          const getActivityColor = (type) => activityColors[type] || '#94a3b8';
+          const formatActivityType = (type) => {
+            const parts = type.split('_');
+            const action = parts[0].toLowerCase();
+            const table = parts.slice(1).join('_').replace(/_/g, ' ');
+            return `${action} ${table}`;
+          };
+
+          // Transform activity data for chart
+          const getActivityChartData = () => {
+            if (!userActivity?.activityBreakdown) return [];
+            return userActivity.activityBreakdown
+              .map(user => {
+                // Truncate long names to fit on single line
+                const displayName = user.user_name.length > 18
+                  ? user.user_name.substring(0, 16) + '...'
+                  : user.user_name;
+                const chartItem = { name: displayName, fullName: user.user_name, total: 0 };
+                Object.entries(user.activities).forEach(([type, count]) => {
+                  chartItem[type] = count;
+                  chartItem.total += count;
+                });
+                return chartItem;
+              })
+              .sort((a, b) => b.total - a.total);
+          };
+
+          // Timeline chart data - top 10 users + Others
+          const getTimelineUsers = () => {
+            if (!userActivity?.timeline) return [];
+            // Calculate total activity per user
+            const userTotals = {};
+            userActivity.timeline.forEach(item => {
+              userTotals[item.user_name] = (userTotals[item.user_name] || 0) + item.count;
+            });
+            // Sort users by total activity and get top 10
+            const sortedUsers = Object.entries(userTotals)
+              .sort((a, b) => b[1] - a[1])
+              .map(([name]) => name);
+            const top10 = sortedUsers.slice(0, 10);
+            const hasOthers = sortedUsers.length > 10;
+            return hasOthers ? [...top10, 'Others'] : top10;
+          };
+          const getTimelineChartData = () => {
+            if (!userActivity?.timeline) return [];
+            const allUsers = getTimelineUsers();
+            const top10Users = allUsers.filter(u => u !== 'Others');
+            const hasOthers = allUsers.includes('Others');
+
+            const byDate = {};
+            userActivity.timeline.forEach(item => {
+              if (!byDate[item.date]) byDate[item.date] = { date: item.date };
+              if (top10Users.includes(item.user_name)) {
+                byDate[item.date][item.user_name] = item.count;
+              } else if (hasOthers) {
+                byDate[item.date]['Others'] = (byDate[item.date]['Others'] || 0) + item.count;
+              }
+            });
+            return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
+          };
+          const userColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'];
+
+          return (
+            <div key={panelId} className={`home-quadrant active-users-quadrant fullscreen-users panel-${index + 1}`}>
+              <div className="quadrant-content users-fullscreen-layout">
+                {/* Top row: Activity by User (left) + Logged in Users (right) */}
+                <div className="users-top-row">
+                  {/* Activity by User Chart */}
+                  <div className="activity-by-user-section">
+                    <div className="section-header">
+                      <h3>Activity by User</h3>
+                      <select
+                        value={userActivityDays}
+                        onChange={(e) => {
+                          setUserActivityDays(parseInt(e.target.value));
+                          api.get(`/admin/user-activity?days=${e.target.value}`)
+                            .then(res => setUserActivity(res.data))
+                            .catch(err => console.log('Failed to reload activity:', err));
+                        }}
+                        className="activity-days-select"
+                      >
+                        <option value={7}>7 days</option>
+                        <option value={30}>30 days</option>
+                        <option value={90}>90 days</option>
+                      </select>
+                    </div>
+                    {!userActivity ? (
+                      <div className="loading-state">Loading...</div>
+                    ) : userActivity.error ? (
+                      <div className="empty-state compact">
+                        <MdWarning className="empty-icon" />
+                        <p>Unable to load</p>
+                      </div>
+                    ) : userActivity.activityTypes?.length > 0 ? (
+                      <div className="chart-scroll-container">
+                        <ResponsiveContainer width="100%" height={Math.max(200, Math.min(getActivityChartData().length * 22, 280))}>
+                          <BarChart
+                            data={getActivityChartData().slice(0, 12)}
+                            layout="vertical"
+                            margin={{ top: 5, right: 15, left: 5, bottom: 5 }}
+                            barSize={10}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis type="number" tick={{ fontSize: 9 }} />
+                            <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 9 }} interval={0} />
+                            <Tooltip
+                              content={({ active, payload }) => {
+                                if (!active || !payload?.length) return null;
+                                const total = payload.reduce((sum, e) => sum + (e.value || 0), 0);
+                                const fullName = payload[0]?.payload?.fullName || payload[0]?.payload?.name;
+                                return (
+                                  <div className="activity-tooltip">
+                                    <p className="tooltip-label">{fullName}</p>
+                                    <p className="tooltip-total">Total: {total}</p>
+                                    <div className="tooltip-breakdown">
+                                      {payload.filter(e => e.value > 0).sort((a, b) => b.value - a.value).slice(0, 6).map((e, i) => (
+                                        <div key={i} className="tooltip-item">
+                                          <span className="tooltip-color" style={{ backgroundColor: e.color }} />
+                                          <span className="tooltip-name">{formatActivityType(e.dataKey)}</span>
+                                          <span className="tooltip-value">{e.value}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              }}
+                            />
+                            {userActivity.activityTypes.map((type) => (
+                              <Bar key={type} dataKey={type} stackId="a" fill={getActivityColor(type)} />
+                            ))}
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <div className="empty-state compact">No activity data</div>
+                    )}
+                  </div>
+
+                  {/* Logged in Users list */}
+                  <div className="users-list-section">
+                    <h3>Logged In <span className="subtitle">Last 30 min</span></h3>
+                    {!activeUsers ? (
+                      <div className="loading-state">Loading...</div>
+                    ) : activeUsers.error ? (
+                      <div className="empty-state compact">
+                        <MdWarning className="empty-icon" />
+                        <p>Unable to load</p>
+                      </div>
+                    ) : activeUsers.count === 0 ? (
+                      <div className="empty-state compact">
+                        <MdPeople className="empty-icon" />
+                        <p>No active users</p>
+                      </div>
+                    ) : (
+                      <div className="active-users-list">
+                        {activeUsers.users?.map((user, idx) => (
+                          <div key={idx} className="active-user-item">
+                            <div className="active-user-info">
+                              <span className="active-user-name">{user.name}</span>
+                              <span className="active-user-email">{user.email}</span>
+                            </div>
+                            <span className="active-user-time">{formatTimestamp(user.lastActivity)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bottom row: Timeline (full width) */}
+                {userActivity && !userActivity.error && getTimelineChartData().length > 0 && (
+                  <div className="timeline-section">
+                    <h3>Activity Timeline</h3>
+                    <ResponsiveContainer width="100%" height={180}>
+                      <BarChart data={getTimelineChartData()} margin={{ top: 5, right: 20, left: 10, bottom: 40 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" angle={-45} textAnchor="end" height={50} tick={{ fontSize: 9 }} />
+                        <YAxis tick={{ fontSize: 9 }} />
+                        <Tooltip
+                          content={({ active, payload, label }) => {
+                            if (!active || !payload?.length) return null;
+                            const total = payload.reduce((sum, e) => sum + (e.value || 0), 0);
+                            return (
+                              <div className="activity-tooltip">
+                                <p className="tooltip-label">{label}</p>
+                                <p className="tooltip-total">Total: {total}</p>
+                                <div className="tooltip-breakdown">
+                                  {payload.filter(e => e.value > 0).sort((a, b) => b.value - a.value).map((e, i) => (
+                                    <div key={i} className="tooltip-item">
+                                      <span className="tooltip-color" style={{ background: e.color }} />
+                                      <span className="tooltip-name">{e.dataKey}</span>
+                                      <span className="tooltip-value">{e.value}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          }}
+                        />
+                        <Legend wrapperStyle={{ fontSize: '9px', paddingLeft: '80px', paddingTop: '12px' }} align="left" />
+                        {getTimelineUsers().map((user, idx) => (
+                          <Bar key={user} dataKey={user} stackId="timeline" fill={user === 'Others' ? '#9ca3af' : userColors[idx % userColors.length]} />
+                        ))}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        // Normal panel view
         return (
           <div key={panelId} className={`home-quadrant active-users-quadrant panel-${index + 1}`}>
             <div className="quadrant-header">
               <MdPeople className="quadrant-icon" />
               <h2>Active Users</h2>
               <span className="quadrant-subtitle">Last 30 minutes</span>
-              {!forDock && <MinimizeButton />}
-            </div>
+                          </div>
             <div className="quadrant-content">
               {!activeUsers ? (
                 <div className="loading-state">Loading...</div>
@@ -1721,9 +2478,8 @@ const HomePage = ({
 
       {/* Hover Tab Bar - shows panel previews on hover */}
       {(() => {
-        // Get all available panels (filter admin-only if not admin)
-        const availableForDock = Object.values(PANEL_CONFIG)
-          .filter(panel => !panel.adminOnly || isAdmin);
+        // Get all panels (show all, but mark locked ones)
+        const allPanels = Object.values(PANEL_CONFIG);
 
         return (
           <div
@@ -1740,6 +2496,29 @@ const HomePage = ({
                     return PanelIcon ? <PanelIcon className="expanded-panel-icon" /> : null;
                   })()}
                   <h2>{PANEL_CONFIG[expandedDockPanel]?.name}</h2>
+                  {/* Space indicator for space-aware panels */}
+                  {['heatmap', 'metrics', 'commentary', 'inconsistencies', 'projectHealth'].includes(expandedDockPanel) && (
+                    <span className="space-filter-indicator">
+                      <MdFilterList className="filter-icon" />
+                      {selectedSpace === 'all'
+                        ? 'All Spaces'
+                        : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space'}
+                    </span>
+                  )}
+                  {/* Panel-specific controls for fullscreen */}
+                  {expandedDockPanel === 'projectHealth' && (
+                    <label className="active-filter-switch fullscreen-switch">
+                      <span className="switch-label">Active only</span>
+                      <div className="switch-track">
+                        <input
+                          type="checkbox"
+                          checked={hideInactiveProjects}
+                          onChange={(e) => setHideInactiveProjects(e.target.checked)}
+                        />
+                        <span className="switch-slider"></span>
+                      </div>
+                    </label>
+                  )}
                   <button
                     className="preview-close-btn"
                     onClick={dismissPreview}
@@ -1756,13 +2535,15 @@ const HomePage = ({
 
             {/* Icon tab bar - always visible at bottom */}
             <div className="minimized-tabs">
-              {availableForDock.map((panel) => {
+              {allPanels.map((panel) => {
                 const PanelIcon = panel.icon;
+                const isLocked = panel.adminOnly && !isAdmin;
                 return (
                   <button
                     key={panel.id}
-                    className={`minimized-tab ${expandedDockPanel === panel.id ? 'active' : ''}`}
-                    onMouseEnter={() => handlePanelHoverStart(panel.id)}
+                    className={`minimized-tab ${expandedDockPanel === panel.id ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+                    data-panel={panel.id}
+                    onMouseEnter={() => !isLocked && handlePanelHoverStart(panel.id)}
                     onMouseLeave={() => {
                       // Only clear timeout, don't dismiss if already showing
                       if (hoverTimeoutRef.current) {
@@ -1770,9 +2551,12 @@ const HomePage = ({
                         hoverTimeoutRef.current = null;
                       }
                     }}
+                    disabled={isLocked}
+                    title={isLocked ? `${panel.name} (Admin only)` : panel.name}
                   >
                     <PanelIcon />
-                    <span className="tab-tooltip">{panel.name}</span>
+                    {isLocked && <MdLock className="lock-icon" />}
+                    <span className="tab-tooltip">{panel.name}{isLocked ? ' (Admin)' : ''}</span>
                   </button>
                 );
               })}

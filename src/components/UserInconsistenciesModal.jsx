@@ -36,8 +36,8 @@ const UserInconsistenciesModal = ({
   if (!isOpen || inconsistencies.length === 0) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content user-inconsistencies-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-content user-inconsistencies-modal">
         <div className="modal-header">
           <Lottie
             animationData={fixingAnimation}

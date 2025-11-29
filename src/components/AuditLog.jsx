@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Select from 'react-select';
 import { api } from '../api/client';
 import { compactSelectStyles } from './SelectStyles';
@@ -6,8 +6,10 @@ import './AuditLog.css';
 
 const AuditLog = () => {
   const [logs, setLogs] = useState([]);
+  const [allLogs, setAllLogs] = useState([]); // For timeline
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
   const [filters, setFilters] = useState({
     table_name: '',
     action: '',
@@ -18,7 +20,52 @@ const AuditLog = () => {
   useEffect(() => {
     loadUsers();
     loadLogs();
+    loadAllLogsForTimeline();
   }, [filters]);
+
+  const loadAllLogsForTimeline = async () => {
+    try {
+      // Load last 30 days of logs for the timeline
+      const response = await api.getAuditLog({ limit: 1000 });
+      setAllLogs(response.data);
+    } catch (err) {
+      console.error('Failed to load logs for timeline:', err);
+    }
+  };
+
+  // Generate timeline data for last 30 days
+  const timelineData = useMemo(() => {
+    const days = [];
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      const dateStr = date.toISOString().split('T')[0];
+
+      const dayLogs = allLogs.filter(log => {
+        const logDate = new Date(log.created_at).toISOString().split('T')[0];
+        return logDate === dateStr;
+      });
+
+      days.push({
+        date: date,
+        dateStr: dateStr,
+        total: dayLogs.length,
+        creates: dayLogs.filter(l => l.action === 'CREATE').length,
+        updates: dayLogs.filter(l => l.action === 'UPDATE').length,
+        deletes: dayLogs.filter(l => l.action === 'DELETE').length
+      });
+    }
+
+    return days;
+  }, [allLogs]);
+
+  const maxActivity = useMemo(() => {
+    return Math.max(...timelineData.map(d => d.total), 1);
+  }, [timelineData]);
 
   const loadUsers = async () => {
     try {
@@ -47,6 +94,27 @@ const AuditLog = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Filter logs by selected date
+  const filteredLogs = useMemo(() => {
+    if (!selectedDate) return logs;
+    return logs.filter(log => {
+      const logDate = new Date(log.created_at).toISOString().split('T')[0];
+      return logDate === selectedDate;
+    });
+  }, [logs, selectedDate]);
+
+  const handleDayClick = (dateStr) => {
+    if (selectedDate === dateStr) {
+      setSelectedDate(null); // Toggle off
+    } else {
+      setSelectedDate(dateStr);
+    }
+  };
+
+  const formatShortDate = (date) => {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   const formatDate = (dateString) => {
@@ -103,6 +171,42 @@ const AuditLog = () => {
 
   return (
     <div className="audit-log-container">
+      {/* Timeline Slider */}
+      <div className="audit-timeline-slider">
+        <div className="timeline-track">
+          {timelineData.map((day, idx) => {
+            const barHeight = day.total === 0 ? 4 : Math.max(8, (day.total / maxActivity) * 40);
+            const isSelected = selectedDate === day.dateStr;
+            return (
+              <div
+                key={day.dateStr}
+                className={`timeline-bar-wrapper ${isSelected ? 'selected' : ''}`}
+                onClick={() => handleDayClick(day.dateStr)}
+              >
+                <div
+                  className="timeline-bar"
+                  style={{ height: `${barHeight}px` }}
+                  title={`${formatShortDate(day.date)}: ${day.total} changes`}
+                />
+                {isSelected && <div className="selection-indicator" />}
+              </div>
+            );
+          })}
+        </div>
+        <div className="timeline-labels">
+          <span>{formatShortDate(timelineData[0]?.date)}</span>
+          <span className="timeline-selected-label">
+            {selectedDate ? formatShortDate(new Date(selectedDate)) : 'All time'}
+          </span>
+          <span>Today</span>
+        </div>
+        {selectedDate && (
+          <button className="clear-date-btn" onClick={() => setSelectedDate(null)}>
+            Show all entries
+          </button>
+        )}
+      </div>
+
       <div className="audit-log-header">
         <div className="audit-filters">
           <Select
@@ -145,11 +249,11 @@ const AuditLog = () => {
 
       {loading ? (
         <div className="audit-loading">Loading audit log...</div>
-      ) : logs.length === 0 ? (
-        <div className="audit-empty">No audit log entries found</div>
+      ) : filteredLogs.length === 0 ? (
+        <div className="audit-empty">{selectedDate ? `No entries for ${formatShortDate(new Date(selectedDate))}` : 'No audit log entries found'}</div>
       ) : (
         <div className="audit-log-list">
-          {logs.map((log) => (
+          {filteredLogs.map((log) => (
             <div key={log.id} className="audit-log-entry">
               <div className="audit-log-main">
                 <div className="audit-log-top">

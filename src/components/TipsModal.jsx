@@ -310,8 +310,8 @@ const TipsModal = ({ isOpen, onClose, selectedCategory, onSelectCategory }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content tips-modal-tabbed" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-content tips-modal-tabbed">
         <div className="modal-header">
           <MdLightbulb className="modal-icon" />
           <h2>Purpose & Best Practices</h2>

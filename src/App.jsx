@@ -71,6 +71,7 @@ function App() {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [timeTravelTimestamp, setTimeTravelTimestamp] = useState(null);
   const [projectLinks, setProjectLinks] = useState([]);
+  const [projectRecoveryPlans, setProjectRecoveryPlans] = useState([]);
   const [showLinksEditor, setShowLinksEditor] = useState(false);
   const [showImportData, setShowImportData] = useState(false);
   const [showPortfolioManager, setShowPortfolioManager] = useState(false);
@@ -226,6 +227,7 @@ function App() {
       loadProjectData();
       loadProjectMetrics();
       loadProjectLinks();
+      loadProjectRecoveryPlans();
 
       // Track page view for analytics
       const project = projects.find(p => p.id === parseInt(selectedProject));
@@ -320,6 +322,16 @@ function App() {
     } catch (err) {
       console.error('Failed to load project links:', err);
       setProjectLinks([]);
+    }
+  };
+
+  const loadProjectRecoveryPlans = async () => {
+    try {
+      const response = await api.get(`/recovery-plans?project_id=${selectedProject}`);
+      setProjectRecoveryPlans(response.data || []);
+    } catch (err) {
+      console.error('Failed to load recovery plans:', err);
+      setProjectRecoveryPlans([]);
     }
   };
 
@@ -902,10 +914,12 @@ function App() {
     return projects.reduce((acc, project) => {
       acc[project.id] = {
         name: project.name,
+        description: project.description,
         portfolio_id: project.portfolio_id,
         portfolio_name: project.portfolio_name,
         portfolio_color: project.portfolio_color,
-        initiative_manager: project.initiative_manager
+        initiative_manager: project.initiative_manager,
+        link_count: project.link_count
       };
       return acc;
     }, {});
@@ -1287,7 +1301,7 @@ function App() {
                       </h2>
                     )}
                     {(() => {
-                      const healthScore = calculateHealthScore(currentProject, projectData, projectMetrics, []);
+                      const healthScore = calculateHealthScore(currentProject, projectData, projectMetrics, projectRecoveryPlans, projectLinks);
                       const getScoreColor = (score) => {
                         if (score >= 80) return '#10b981';
                         if (score >= 60) return '#f59e0b';
@@ -2013,7 +2027,7 @@ function App() {
           project={currentProject}
           projectData={projectData}
           metrics={projectMetrics}
-          recoveryPlans={[]}
+          recoveryPlans={projectRecoveryPlans}
           projectLinks={projectLinks}
           onClose={() => setShowProjectHealth(false)}
         />

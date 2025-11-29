@@ -415,9 +415,11 @@
 
 .metric-chart-container.compact .chart-and-legend-container > div:first-child {
   width: 100%;
+  flex: 1 1 100%;
 }
 
-.metric-chart-container.compact .custom-legend {
+.metric-chart-container.compact .custom-legend,
+.compact-legend {
   min-width: unset;
   max-width: unset;
   width: 100%;
@@ -432,19 +434,22 @@
   box-shadow: none;
 }
 
-.metric-chart-container.compact .legend-title {
+.metric-chart-container.compact .legend-title,
+.compact-legend .legend-title {
   display: none;
 }
 
-.metric-chart-container.compact .legend-items {
+.metric-chart-container.compact .legend-items,
+.compact-legend .legend-items {
   flex-direction: row;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 12px;
+  gap: 8px 16px;
 }
 
-.metric-chart-container.compact .legend-item {
-  padding: 0;
+.metric-chart-container.compact .legend-item,
+.compact-legend .legend-item {
+  padding: 2px 0;
   gap: 4px;
   border-radius: 0;
   background: transparent;
@@ -452,16 +457,23 @@
   border: none;
 }
 
-.metric-chart-container.compact .legend-item:hover {
+.metric-chart-container.compact .legend-item:hover,
+.compact-legend .legend-item:hover {
   transform: none;
   border: none;
   box-shadow: none;
 }
 
-.metric-chart-container.compact .legend-indicator {
-  width: 8px;
-  height: 8px;
+.metric-chart-container.compact .legend-indicator,
+.compact-legend .legend-indicator {
+  width: 10px;
+  height: 10px;
   border-radius: 2px;
+}
+
+.compact-legend .legend-text {
+  font-size: 11px;
+  color: #64748b;
 }
 
 .metric-chart-container.compact .legend-indicator.line {
@@ -957,12 +969,12 @@
 }
 
 .pagination-btn {
-  padding: 6px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: white;
-  color: #374151;
-  font-size: 13px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  background: #00aeef;
+  color: white;
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -970,9 +982,7 @@
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background: #f3f4f6;
-  border-color: #00aeef;
-  color: #00aeef;
+  background: #0095d1;
 }
 
 .pagination-btn:disabled {
@@ -1796,17 +1806,7 @@
   color: #f9fafb;
 }
 
-:root.dark-mode .pagination-btn {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
-}
-
-:root.dark-mode .pagination-btn:hover:not(:disabled) {
-  background: #4b5563;
-  border-color: #00aeef;
-  color: #00aeef;
-}
+/* pagination-btn stays blue in both light and dark mode */
 
 :root.dark-mode .pagination-info {
   color: #9ca3af;

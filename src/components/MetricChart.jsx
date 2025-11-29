@@ -1503,26 +1503,30 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           )}
         </div>
 
-        {/* Custom Legend */}
-        <div className="custom-legend">
-          <div className="legend-title">Legend</div>
+        {/* Custom Legend - compact version for multi-metric view */}
+        <div className={`custom-legend ${compactMode ? 'compact-legend' : ''}`}>
+          {!compactMode && <div className="legend-title">Legend</div>}
 
           <div className="legend-items">
             <div
               className={`legend-item ${highlightedSeries === 'green' ? 'active' : ''}`}
               onMouseEnter={() => setHighlightedSeries('green')}
               onMouseLeave={() => setHighlightedSeries(null)}
+              title="Healthy"
             >
               <div className="legend-indicator" style={{ backgroundColor: RAG_COLORS.green }}></div>
-              <span className="legend-text">Green: On track or ahead</span>
+              {!compactMode && <span className="legend-text">Green: Healthy</span>}
             </div>
             <div
               className={`legend-item ${highlightedSeries === 'amber' ? 'active' : ''}`}
               onMouseEnter={() => setHighlightedSeries('amber')}
               onMouseLeave={() => setHighlightedSeries(null)}
+              title={`>${amberTolerance}% behind`}
             >
               <div className="legend-indicator" style={{ backgroundColor: RAG_COLORS.amber }}></div>
-              {editingTolerance === 'amber' ? (
+              {compactMode ? (
+                <span className="legend-text">&gt;{amberTolerance}%</span>
+              ) : editingTolerance === 'amber' ? (
                 <span className="legend-text">
                   Amber: &gt;
                   <input
@@ -1554,9 +1558,12 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               className={`legend-item ${highlightedSeries === 'red' ? 'active' : ''}`}
               onMouseEnter={() => setHighlightedSeries('red')}
               onMouseLeave={() => setHighlightedSeries(null)}
+              title={`>${redTolerance}% behind`}
             >
               <div className="legend-indicator" style={{ backgroundColor: RAG_COLORS.red }}></div>
-              {editingTolerance === 'red' ? (
+              {compactMode ? (
+                <span className="legend-text">&gt;{redTolerance}%</span>
+              ) : editingTolerance === 'red' ? (
                 <span className="legend-text">
                   Red: &gt;
                   <input
@@ -1588,6 +1595,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               className={`legend-item ${highlightedSeries === 'remaining' ? 'active' : ''}`}
               onMouseEnter={() => setHighlightedSeries('remaining')}
               onMouseLeave={() => setHighlightedSeries(null)}
+              title="Remaining"
             >
               <div className="legend-indicator" style={{ backgroundColor: '#d1d5db' }}></div>
               <span className="legend-text">Remaining</span>
@@ -1596,6 +1604,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               className={`legend-item ${highlightedSeries === 'expected' ? 'active' : ''}`}
               onMouseEnter={() => setHighlightedSeries('expected')}
               onMouseLeave={() => setHighlightedSeries(null)}
+              title="Expected"
             >
               <div className="legend-indicator line" style={{ backgroundColor: BARCLAYS_BLUE }}></div>
               <span className="legend-text">Expected</span>
@@ -1790,7 +1799,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                     disabled={currentPage === 0}
                     className="pagination-btn"
                   >
-                    ← Prev
+                    ← Previous
                   </button>
                   <span className="pagination-info">
                     {startIndex + 1}-{endIndex} of {totalPeriods}

@@ -55,13 +55,17 @@ vi.mock('react-icons/md', () => ({
   MdFeedback: () => <div>FeedbackIcon</div>,
   MdBugReport: () => <div>BugReportIcon</div>,
   MdSettings: () => <div>SettingsIcon</div>,
-  MdStorage: () => <div>StorageIcon</div>,
   MdPieChart: () => <div>PieChartIcon</div>,
   MdAccessTime: () => <div>AccessTimeIcon</div>,
   MdFavorite: () => <div>FavoriteIcon</div>,
   MdRemove: () => <div>RemoveIcon</div>,
   MdAdd: () => <div>AddIcon</div>,
   MdClose: () => <div>CloseIcon</div>,
+}));
+
+// Mock FontAwesome icons
+vi.mock('react-icons/fa', () => ({
+  FaDatabase: () => <div>DatabaseIcon</div>,
 }));
 
 // Mock DashboardConfigModal

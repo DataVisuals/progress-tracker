@@ -224,8 +224,8 @@ function createApp(dbPath) {
       // Login successful
       logger.auth.loginSuccess(user, req.ip);
   
-      const token = jwt.sign({ userId: user.id, email: user.email, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
-      res.json({ token, user: { id: user.id, userId: user.id, email: user.email, name: user.name, role: user.role, default_space_id: user.default_space_id } });
+      const token = jwt.sign({ userId: user.id, email: user.email, role: user.role, name: user.name, isSystemAdmin: user.is_system_admin === 1 }, JWT_SECRET, { expiresIn: '7d' });
+      res.json({ token, user: { id: user.id, userId: user.id, email: user.email, name: user.name, role: user.role, isSystemAdmin: user.is_system_admin === 1, default_space_id: user.default_space_id } });
     } catch (err) {
       logger.error('AUTH', 'Login error', { error: err.message, stack: err.stack });
       res.status(500).json({ error: err.message });
@@ -2028,7 +2028,13 @@ function createApp(dbPath) {
   app.get('/api/projects', async (req, res) => {
     try {
       const { portfolio_id } = req.query;
-      let query = 'SELECT p.*, po.name as portfolio_name, po.color as portfolio_color FROM projects p LEFT JOIN portfolios po ON p.portfolio_id = po.id';
+      let query = `
+        SELECT p.*,
+               po.name as portfolio_name,
+               po.color as portfolio_color,
+               (SELECT COUNT(*) FROM project_links pl WHERE pl.project_id = p.id) as link_count
+        FROM projects p
+        LEFT JOIN portfolios po ON p.portfolio_id = po.id`;
       let params = [];
 
       if (portfolio_id) {
@@ -4846,14 +4852,42 @@ function createApp(dbPath) {
       // Get all table names
       const tables = await dbAll(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`);
 
-      // Get row count for each table
+      // Estimated average bytes per row for each table type
+      const avgBytesPerRow = {
+        page_views: 150,      // timestamp, user_id, page, project_id, etc
+        metric_periods: 100,  // metric_id, period dates, values
+        audit_log: 300,       // user, action, details JSON, timestamp
+        periods: 80,          // dates and status
+        users: 200,           // name, email, password hash, settings
+        feedback: 250,        // text content, user, project, status
+        comments: 400,        // comment text can be longer
+        permissions: 50,      // just IDs and role
+        craids: 350,          // description, status, dates
+        metrics: 200,         // name, description, settings
+        projects: 400,        // name, description, settings
+        portfolios: 150,      // name, description
+        spaces: 100,          // name, settings
+        project_links: 150,   // url, title, type
+        recovery_plans: 300,  // plan text, dates
+      };
+      const defaultBytesPerRow = 150;
+
+      // Get row count and estimate size for each table
       const tableStats = [];
       for (const table of tables) {
         try {
           const countResult = await dbGet(`SELECT COUNT(*) as count FROM "${table.name}"`);
-          tableStats.push({ name: table.name, rowCount: countResult.count });
+          const rowCount = countResult.count;
+          const bytesPerRow = avgBytesPerRow[table.name] || defaultBytesPerRow;
+          const estimatedBytes = rowCount * bytesPerRow;
+          tableStats.push({
+            name: table.name,
+            rowCount,
+            estimatedBytes,
+            estimatedKB: Math.round(estimatedBytes / 1024 * 10) / 10
+          });
         } catch (err) {
-          tableStats.push({ name: table.name, rowCount: -1, error: err.message });
+          tableStats.push({ name: table.name, rowCount: -1, estimatedBytes: 0, error: err.message });
         }
       }
 
@@ -4899,10 +4933,23 @@ function createApp(dbPath) {
         ORDER BY periodCount DESC
       `);
 
+      // Get all indexes
+      const indexes = await dbAll(`
+        SELECT
+          name,
+          tbl_name as tableName,
+          sql
+        FROM sqlite_master
+        WHERE type='index'
+          AND name NOT LIKE 'sqlite_%'
+        ORDER BY tbl_name, name
+      `);
+
       res.json({
         tables: tableStats,
         totalSizeBytes,
-        spaceUsage
+        spaceUsage,
+        indexes
       });
     } catch (err) {
       console.error('Database stats error:', err);
@@ -4919,6 +4966,8 @@ function createApp(dbPath) {
 
       const thirtyMinutesAgo = new Date();
       thirtyMinutesAgo.setMinutes(thirtyMinutesAgo.getMinutes() - 30);
+      // Format as SQLite-compatible datetime (YYYY-MM-DD HH:MM:SS)
+      const sqliteTimestamp = thirtyMinutesAgo.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
 
       const activeUsers = await dbAll(`
         SELECT
@@ -4932,7 +4981,7 @@ function createApp(dbPath) {
         WHERE pv.created_at >= ?
         GROUP BY u.id, u.name, u.email
         ORDER BY lastActivity DESC
-      `, [thirtyMinutesAgo.toISOString()]);
+      `, [sqliteTimestamp]);
 
       res.json({
         users: activeUsers,

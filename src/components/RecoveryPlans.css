@@ -58,12 +58,12 @@
   background: #f59e0b;
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
   cursor: pointer;
   transition: background 0.2s;
-  font-size: 13px;
+  font-size: 11px;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -90,12 +90,12 @@
   background: #00aeef;
   color: white;
   border: none;
-  padding: 8px 16px;
+  padding: 6px 12px;
   border-radius: 6px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: background 0.2s;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .btn-add-plan:hover {

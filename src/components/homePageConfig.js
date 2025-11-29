@@ -6,9 +6,9 @@ import {
   MdBuild,
   MdFavorite,
   MdHistory,
-  MdStorage,
   MdPeople
 } from 'react-icons/md';
+import { FaDatabase } from 'react-icons/fa';
 
 // Panel configuration - defines all available panels
 export const PANEL_CONFIG = {
@@ -19,7 +19,7 @@ export const PANEL_CONFIG = {
   attention: { id: 'attention', name: 'My Projects Needing Attention', icon: MdBuild, adminOnly: false },
   projectHealth: { id: 'projectHealth', name: 'Project Health Rankings', icon: MdFavorite, adminOnly: false },
   audit: { id: 'audit', name: 'Audit Log', icon: MdHistory, adminOnly: true },
-  database: { id: 'database', name: 'Database Stats', icon: MdStorage, adminOnly: true },
+  database: { id: 'database', name: 'Database Stats', icon: FaDatabase, adminOnly: true },
   activeUsers: { id: 'activeUsers', name: 'Active Users', icon: MdPeople, adminOnly: true }
 };
 
