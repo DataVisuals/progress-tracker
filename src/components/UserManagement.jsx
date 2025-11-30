@@ -23,6 +23,7 @@ const UserManagement = ({ currentUser, onClose }) => {
   const [checkingName, setCheckingName] = useState(false);
   const [showEmailsList, setShowEmailsList] = useState(false);
   const [emailFormat, setEmailFormat] = useState('newline'); // 'newline', 'comma', 'semicolon'
+  const [selectedUserIds, setSelectedUserIds] = useState(new Set());
 
   useEffect(() => {
     loadUsers();
