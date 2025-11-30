@@ -1639,31 +1639,26 @@ const HomePage = ({
             const newVals = entry.new_values ? JSON.parse(entry.new_values) : null;
             const oldVals = entry.old_values ? JSON.parse(entry.old_values) : null;
             const changes = [];
+            const formatVal = (v) => typeof v === 'number' ? v.toLocaleString() : (v || '(empty)');
 
-            if (entry.action === 'UPDATE' && newVals && oldVals) {
+            // Ensure we have actual objects, not strings or other primitives
+            const isObject = (v) => v && typeof v === 'object' && !Array.isArray(v);
+
+            if (entry.action === 'UPDATE' && isObject(newVals) && isObject(oldVals)) {
               Object.keys(newVals).forEach(key => {
-                const oldVal = oldVals[key];
-                const newVal = newVals[key];
-                const formatVal = (v) => typeof v === 'number' ? v.toLocaleString() : (v || '(empty)');
-                changes.push({ field: key, from: formatVal(oldVal), to: formatVal(newVal) });
+                changes.push({ field: key, from: formatVal(oldVals[key]), to: formatVal(newVals[key]) });
               });
-            } else if (entry.action === 'UPDATE' && newVals) {
+            } else if (entry.action === 'UPDATE' && isObject(newVals)) {
               Object.keys(newVals).forEach(key => {
-                const newVal = newVals[key];
-                const formatVal = (v) => typeof v === 'number' ? v.toLocaleString() : (v || '(empty)');
-                changes.push({ field: key, to: formatVal(newVal) });
+                changes.push({ field: key, to: formatVal(newVals[key]) });
               });
-            } else if (entry.action === 'CREATE' && newVals) {
+            } else if (entry.action === 'CREATE' && isObject(newVals)) {
               Object.keys(newVals).forEach(key => {
-                const val = newVals[key];
-                const formatVal = (v) => typeof v === 'number' ? v.toLocaleString() : (v || '(empty)');
-                changes.push({ field: key, value: formatVal(val) });
+                changes.push({ field: key, value: formatVal(newVals[key]) });
               });
-            } else if (entry.action === 'DELETE' && oldVals) {
+            } else if (entry.action === 'DELETE' && isObject(oldVals)) {
               Object.keys(oldVals).forEach(key => {
-                const val = oldVals[key];
-                const formatVal = (v) => typeof v === 'number' ? v.toLocaleString() : (v || '(empty)');
-                changes.push({ field: key, value: formatVal(val) });
+                changes.push({ field: key, value: formatVal(oldVals[key]) });
               });
             }
             return changes;
