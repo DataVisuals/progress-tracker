@@ -1278,11 +1278,11 @@ function App() {
                         className="user-modal-link"
                         onClick={() => {
                           setShowTipsModal(true);
-                          setSelectedTipsCategory('Getting Started');
+                          setSelectedTipsCategory('Best Practices');
                           setShowUserModal(false);
                         }}
                       >
-                        Getting Started
+                        Best Practices
                       </button>
                       <a
                         className="user-modal-link"

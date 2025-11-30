@@ -32,7 +32,7 @@ import {
 
 // Tips organized by theme
 export const tipsByCategory = {
-  "Getting Started": [
+  "Best Practices": [
     {
       icon: <MdFolderSpecial />,
       title: "1. Create a Project",
@@ -329,7 +329,7 @@ const TipsModal = ({ isOpen, onClose, selectedCategory, onSelectCategory }) => {
           ))}
         </div>
         <div className="modal-body tips-tabbed-content">
-          {selectedCategory ? (
+          {selectedCategory && tipsByCategory[selectedCategory] ? (
             <div className="tips-grid">
               {tipsByCategory[selectedCategory].map((tip, index) => (
                 <div key={index} className="modal-tip-card">

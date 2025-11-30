@@ -2587,8 +2587,8 @@ const HomePage = ({
 
       {/* Footer Links */}
       <div className="homepage-footer">
-        <button className="footer-link" onClick={() => { setShowTipsModal(true); setSelectedTipsCategory('Getting Started'); }}>
-          Getting Started
+        <button className="footer-link" onClick={() => { setShowTipsModal(true); setSelectedTipsCategory('Best Practices'); }}>
+          Best Practices
         </button>
         <span className="footer-divider">|</span>
         <a
