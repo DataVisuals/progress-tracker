@@ -90,6 +90,11 @@
   line-height: 1;
 }
 
+.score-value .percent-sign {
+  font-size: 0.6em;
+  font-weight: 600;
+}
+
 .score-label {
   font-size: 10px;
   color: #6b7280;

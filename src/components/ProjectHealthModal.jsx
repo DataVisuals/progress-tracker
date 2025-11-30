@@ -11,7 +11,37 @@ import {
 import { MdClose, MdCheckCircle, MdWarning, MdError, MdInfo } from 'react-icons/md';
 import './ProjectHealthModal.css';
 
+// Helper to calculate when a period ends based on its start date and frequency
+// A period should only be evaluated after it has ended
+const getPeriodEndDate = (reportingDate, frequency) => {
+  const startDate = new Date(reportingDate);
+  startDate.setHours(0, 0, 0, 0);
+
+  switch (frequency) {
+    case 'weekly':
+      return new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+    case 'fortnightly':
+      return new Date(startDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+    case 'monthly':
+      // Period ends at start of next month
+      return new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+    case 'quarterly':
+      // Period ends at start of next quarter
+      return new Date(startDate.getFullYear(), startDate.getMonth() + 3, 1);
+    default:
+      // Default to monthly if unknown
+      return new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+  }
+};
+
+// Check if a period has ended (should have data by now)
+const hasPeriodEnded = (reportingDate, frequency, today) => {
+  const periodEnd = getPeriodEndDate(reportingDate, frequency);
+  return today >= periodEnd;
+};
+
 // Helper function to get red metrics (used by both exported function and modal)
+// Only considers periods that have ENDED (based on frequency) - not current active periods
 const getRedMetrics = (data, metricsList) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -22,16 +52,23 @@ const getRedMetrics = (data, metricsList) => {
       new Date(a.reporting_date) - new Date(b.reporting_date)
     );
 
+    // Find the most recent ENDED period (not just any period <= today)
     let currentPeriod = null;
     for (let i = sortedPeriods.length - 1; i >= 0; i--) {
-      const periodDate = new Date(sortedPeriods[i].reporting_date);
-      if (periodDate <= today) {
-        currentPeriod = sortedPeriods[i];
+      const period = sortedPeriods[i];
+      const frequency = period.frequency || 'monthly';
+      if (hasPeriodEnded(period.reporting_date, frequency, today)) {
+        currentPeriod = period;
         break;
       }
     }
 
     if (!currentPeriod) return false;
+
+    // Only check variance if complete value has actually been entered
+    if (currentPeriod.complete === null || currentPeriod.complete === undefined || currentPeriod.complete === '') {
+      return false;
+    }
 
     const complete = parseFloat(currentPeriod.complete) || 0;
     const expected = parseFloat(currentPeriod.expected) || 0;
@@ -47,13 +84,14 @@ const getRedMetrics = (data, metricsList) => {
 };
 
 // Exported helper to calculate health scores for all dimensions
-// Returns { overall, wellDescribed, metricCoverage, metricManagement, projectControl }
+// Returns { overall, projectDescribed, metricsDescribed, metricCoverage, metricManagement, projectControl }
 // projectLinks can be an array of links OR a number (link_count from API)
 export const calculateHealthScores = (project, projectData, metrics, recoveryPlans = [], projectLinks = []) => {
   if (!project || !projectData || !metrics) {
     return {
       overall: 0,
-      wellDescribed: 0,
+      projectDescribed: 0,
+      metricsDescribed: 0,
       metricCoverage: 0,
       metricManagement: 0,
       projectControl: 0
@@ -72,19 +110,24 @@ export const calculateHealthScores = (project, projectData, metrics, recoveryPla
     linkCount = project.link_count;
   }
 
-  // 1. Well Described Score
-  let wellDescribedScore = 0;
+  // 1. Project Described Score (project-level documentation)
+  let projectDescribedScore = 0;
   if (project.description && project.description.trim().length > 10) {
-    wellDescribedScore += 25;
+    projectDescribedScore += 50;
   }
   if (linkCount >= 3) {
-    wellDescribedScore += 25;
+    projectDescribedScore += 50;
   } else if (linkCount > 0) {
-    wellDescribedScore += Math.round((linkCount / 3) * 25);
+    projectDescribedScore += Math.round((linkCount / 3) * 50);
   }
+
+  // 2. Metrics Described Score (metric-level documentation)
+  let metricsDescribedScore = 0;
   if (metrics.length > 0) {
     const metricsWithDesc = metrics.filter(m => m.description && m.description.trim().length > 5).length;
-    wellDescribedScore += Math.round((metricsWithDesc / metrics.length) * 25);
+    metricsDescribedScore += Math.round((metricsWithDesc / metrics.length) * 50);
+  } else {
+    metricsDescribedScore += 50; // No metrics = full points for this part
   }
   const redMetrics = getRedMetrics(projectData, metrics);
   if (redMetrics.length > 0) {
@@ -92,9 +135,9 @@ export const calculateHealthScores = (project, projectData, metrics, recoveryPla
     const redMetricsWithPlans = redMetrics.filter(m =>
       activeRecoveryPlans.some(p => p.metric_id === m.id)
     ).length;
-    wellDescribedScore += Math.round((redMetricsWithPlans / redMetrics.length) * 25);
+    metricsDescribedScore += Math.round((redMetricsWithPlans / redMetrics.length) * 50);
   } else {
-    wellDescribedScore += 25;
+    metricsDescribedScore += 50;
   }
 
   // 2. Metric Coverage Score
@@ -111,6 +154,7 @@ export const calculateHealthScores = (project, projectData, metrics, recoveryPla
   }
 
   // 3. Metric Management Score
+  // Only evaluate periods that have ENDED (based on frequency) - active periods are not penalized
   let metricManagementScore = 0;
   if (metrics.length > 0 && projectData.length > 0) {
     const today = new Date();
@@ -127,14 +171,18 @@ export const calculateHealthScores = (project, projectData, metrics, recoveryPla
         new Date(a.reporting_date) - new Date(b.reporting_date)
       );
 
-      const pastPeriods = sortedPeriods.filter(p => new Date(p.reporting_date) <= today);
+      // Only include periods that have ENDED based on their frequency
+      const endedPeriods = sortedPeriods.filter(p => {
+        const frequency = p.frequency || 'monthly';
+        return hasPeriodEnded(p.reporting_date, frequency, today);
+      });
 
-      if (pastPeriods.length > 0) {
-        const filledPeriods = pastPeriods.filter(p =>
+      if (endedPeriods.length > 0) {
+        const filledPeriods = endedPeriods.filter(p =>
           p.complete !== null && p.complete !== undefined && p.complete !== ''
         ).length;
 
-        const fillRate = filledPeriods / pastPeriods.length;
+        const fillRate = filledPeriods / endedPeriods.length;
         totalScore += fillRate * 100;
         scoreCount++;
       }
@@ -144,6 +192,7 @@ export const calculateHealthScores = (project, projectData, metrics, recoveryPla
   }
 
   // 4. Project Control Score
+  // Only evaluate periods that have ENDED and have data entered
   let projectControlScore = 100;
   if (metrics.length > 0 && projectData.length > 0) {
     const today = new Date();
@@ -156,12 +205,14 @@ export const calculateHealthScores = (project, projectData, metrics, recoveryPla
 
     metrics.forEach(metric => {
       const metricPeriods = projectData.filter(p => p.metric_id === metric.id);
-      const pastPeriods = metricPeriods.filter(p => {
-        const periodDate = new Date(p.reporting_date);
-        return periodDate <= today && p.complete !== null && p.complete !== undefined;
+      // Only include periods that have ENDED and have complete data
+      const endedPeriods = metricPeriods.filter(p => {
+        const frequency = p.frequency || 'monthly';
+        return hasPeriodEnded(p.reporting_date, frequency, today) &&
+               p.complete !== null && p.complete !== undefined;
       });
 
-      pastPeriods.forEach(period => {
+      endedPeriods.forEach(period => {
         const complete = parseFloat(period.complete) || 0;
         const expected = parseFloat(period.expected) || 0;
 
@@ -191,12 +242,13 @@ export const calculateHealthScores = (project, projectData, metrics, recoveryPla
     }
   }
 
-  // Calculate overall score (average of all 4 dimensions)
-  const overall = Math.round((wellDescribedScore + metricCoverageScore + metricManagementScore + projectControlScore) / 4);
+  // Calculate overall score (average of all 5 dimensions)
+  const overall = Math.round((projectDescribedScore + metricsDescribedScore + metricCoverageScore + metricManagementScore + projectControlScore) / 5);
 
   return {
     overall,
-    wellDescribed: wellDescribedScore,
+    projectDescribed: projectDescribedScore,
+    metricsDescribed: metricsDescribedScore,
     metricCoverage: metricCoverageScore,
     metricManagement: metricManagementScore,
     projectControl: projectControlScore
@@ -220,18 +272,24 @@ const ProjectHealthModal = ({
   const healthScores = useMemo(() => {
     const scores = calculateHealthScores(project, projectData, metrics, recoveryPlans, projectLinks);
     return {
-      wellDescribed: scores.wellDescribed,
+      projectDescribed: scores.projectDescribed,
+      metricsDescribed: scores.metricsDescribed,
       metricCoverage: scores.metricCoverage,
       metricManagement: scores.metricManagement,
       projectControl: scores.projectControl
     };
   }, [project, projectData, metrics, recoveryPlans, projectLinks]);
 
-  // Prepare data for radar chart
+  // Prepare data for radar chart (5 dimensions)
   const radarData = [
     {
-      dimension: 'Well Described',
-      score: healthScores.wellDescribed,
+      dimension: 'Project Described',
+      score: healthScores.projectDescribed,
+      fullMark: 100
+    },
+    {
+      dimension: 'Metrics Described',
+      score: healthScores.metricsDescribed,
       fullMark: 100
     },
     {
@@ -251,12 +309,13 @@ const ProjectHealthModal = ({
     }
   ];
 
-  // Calculate overall health score (average)
+  // Calculate overall health score (average of 5 dimensions)
   const overallScore = Math.round(
-    (healthScores.wellDescribed +
+    (healthScores.projectDescribed +
+     healthScores.metricsDescribed +
      healthScores.metricCoverage +
      healthScores.metricManagement +
-     healthScores.projectControl) / 4
+     healthScores.projectControl) / 5
   );
 
   // Get status color based on score
@@ -283,32 +342,42 @@ const ProjectHealthModal = ({
     const linkCount = projectLinks?.length || 0;
     const metricsWithDesc = metrics?.filter(m => m.description?.trim().length > 5).length || 0;
     const redMetricsList = getRedMetrics(projectData, metrics);
-    const activeRecoveryCount = recoveryPlans.filter(p => p.status === 'active').length;
+    const activeRecoveryPlans = recoveryPlans.filter(p => p.status === 'active');
+    const redMetricsWithPlans = redMetricsList.filter(m =>
+      activeRecoveryPlans.some(p => p.metric_id === m.id)
+    ).length;
 
     switch (dimension) {
-      case 'Well Described':
+      case 'Project Described':
         return [
           {
             label: 'Project description',
             met: project?.description?.trim().length > 10,
-            tooltip: 'Requires description > 10 characters. Worth 25 points.'
+            tooltip: 'Requires description > 10 characters. Worth 50 points.'
           },
           {
             label: `Documentation links (${linkCount}/3)`,
             met: linkCount >= 3,
-            tooltip: `Need 3+ links for full 25 points. Current: ${linkCount} link${linkCount !== 1 ? 's' : ''} = ${linkCount >= 3 ? 25 : Math.round((linkCount / 3) * 25)} points.`
-          },
+            tooltip: `Need 3+ links for full 50 points. Current: ${linkCount} link${linkCount !== 1 ? 's' : ''} = ${linkCount >= 3 ? 50 : Math.round((linkCount / 3) * 50)} points.`
+          }
+        ];
+      case 'Metrics Described':
+        return [
           {
             label: `Metric descriptions (${metricsWithDesc}/${metrics?.length || 0})`,
-            met: metricsWithDesc === (metrics?.length || 0),
-            tooltip: `Each metric with description (>5 chars) contributes. ${metricsWithDesc}/${metrics?.length || 0} = ${metrics?.length ? Math.round((metricsWithDesc / metrics.length) * 25) : 0} points of 25.`
+            met: metrics?.length === 0 || metricsWithDesc === metrics?.length,
+            tooltip: metrics?.length === 0
+              ? 'No metrics defined - full 50 points awarded.'
+              : `Each metric with description (>5 chars) contributes. ${metricsWithDesc}/${metrics.length} = ${Math.round((metricsWithDesc / metrics.length) * 50)} points of 50.`
           },
           {
-            label: 'Recovery plans for red metrics',
-            met: redMetricsList.length === 0 || activeRecoveryCount > 0,
+            label: redMetricsList.length === 0
+              ? 'No red metrics (full points)'
+              : `Recovery plans (${redMetricsWithPlans}/${redMetricsList.length} red metrics)`,
+            met: redMetricsList.length === 0 || redMetricsWithPlans === redMetricsList.length,
             tooltip: redMetricsList.length === 0
-              ? 'No red metrics - full 25 points awarded.'
-              : `${redMetricsList.length} red metric${redMetricsList.length !== 1 ? 's' : ''}, ${activeRecoveryCount} active plan${activeRecoveryCount !== 1 ? 's' : ''}. Points based on coverage.`
+              ? 'No red metrics - full 50 points awarded.'
+              : `${redMetricsList.length} red metric${redMetricsList.length !== 1 ? 's' : ''}, ${redMetricsWithPlans} with active recovery plan${redMetricsWithPlans !== 1 ? 's' : ''}. Points based on coverage.`
           }
         ];
       case 'Metric Coverage':
@@ -379,7 +448,7 @@ const ProjectHealthModal = ({
                 className="score-circle"
                 style={{ borderColor: getStatusColor(overallScore) }}
               >
-                <span className="score-value">{overallScore}</span>
+                <span className="score-value" style={{ color: getStatusColor(overallScore) }}>{overallScore}<span className="percent-sign">%</span></span>
                 <span className="score-label">Overall</span>
               </div>
               <div className="score-status">
