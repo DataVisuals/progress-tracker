@@ -69,7 +69,8 @@ const HomePage = ({
   showAttentionModal,
   onAttentionModalShown,
   showTipsModal = false,
-  setShowTipsModal
+  setShowTipsModal,
+  setSelectedTipsCategory
 }) => {
 
   const [recentCommentary, setRecentCommentary] = useState([]);
@@ -83,8 +84,6 @@ const HomePage = ({
   const [recoveryPlans, setRecoveryPlans] = useState([]); // Track active recovery plans
   const [inconsistencies, setInconsistencies] = useState(null); // Inconsistency report data
   const [pageHeatmap, setPageHeatmap] = useState(null); // Page heatmap data for quadrant
-  // showTipsModal and setShowTipsModal now passed from App.jsx
-  const [selectedTipsCategory, setSelectedTipsCategory] = useState('Getting Started'); // Selected category in tips modal
   const [showUserInconsistenciesModal, setShowUserInconsistenciesModal] = useState(false); // Modal for user's own inconsistencies
   const [userInconsistenciesDismissed, setUserInconsistenciesDismissed] = useState(false); // Track if user dismissed the modal
   const [expandedPMs, setExpandedPMs] = useState({}); // Track which PMs are expanded in inconsistency report
@@ -2485,14 +2484,6 @@ const HomePage = ({
         />
       )}
 
-      {/* Modals */}
-      <TipsModal
-        isOpen={showTipsModal}
-        onClose={() => { setShowTipsModal(false); setSelectedTipsCategory(null); }}
-        selectedCategory={selectedTipsCategory}
-        onSelectCategory={setSelectedTipsCategory}
-      />
-
       {/* User Inconsistencies Modal */}
       <UserInconsistenciesModal
         isOpen={showUserInconsistenciesModal}
@@ -2596,7 +2587,7 @@ const HomePage = ({
 
       {/* Footer Links */}
       <div className="homepage-footer">
-        <button className="footer-link" onClick={() => setShowTipsModal(true)}>
+        <button className="footer-link" onClick={() => { setShowTipsModal(true); setSelectedTipsCategory('Getting Started'); }}>
           Getting Started
         </button>
         <span className="footer-divider">|</span>

@@ -23,6 +23,7 @@ import ImportData from './components/ImportData';
 import UserActivityReport from './components/UserActivityReport';
 import PageHeatmapReport from './components/PageHeatmapReport';
 import HomePage from './components/HomePage';
+import TipsModal from './components/TipsModal';
 import { api } from './api/client';
 import { selectStyles } from './components/SelectStyles';
 import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
@@ -91,6 +92,7 @@ function App() {
   const [showAttentionModal, setShowAttentionModal] = useState(false); // Trigger to show attention modal
   const [showUserModal, setShowUserModal] = useState(false);
   const [showTipsModal, setShowTipsModal] = useState(false);
+  const [selectedTipsCategory, setSelectedTipsCategory] = useState(null);
   const [loginTime, setLoginTime] = useState(null);
   const [darkMode, setDarkMode] = useState(() => {
     try {
@@ -133,6 +135,7 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const projectId = params.get('project');
     const metricName = params.get('metric');
+    const tipsCategory = params.get('tips');
 
     if (projectId) {
       setSelectedProject(projectId);
@@ -141,14 +144,29 @@ function App() {
       }
     }
 
+    // Open tips modal if tips param is present
+    if (tipsCategory) {
+      setShowTipsModal(true);
+      setSelectedTipsCategory(tipsCategory);
+    }
+
     // Handle browser back/forward buttons
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
       const projectId = params.get('project');
       const metricName = params.get('metric');
+      const tipsCategory = params.get('tips');
 
       setSelectedProject(projectId || '');
       setSelectedMetric(metricName || '');
+
+      if (tipsCategory) {
+        setShowTipsModal(true);
+        setSelectedTipsCategory(tipsCategory);
+      } else {
+        setShowTipsModal(false);
+        setSelectedTipsCategory(null);
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -1231,7 +1249,14 @@ function App() {
               <div
                 className="user-indicator-container"
                 onMouseEnter={() => setShowUserModal(true)}
-                onMouseLeave={() => setShowUserModal(false)}
+                onMouseLeave={(e) => {
+                  // Don't close if moving to the modal or its children
+                  const relatedTarget = e.relatedTarget;
+                  if (relatedTarget && e.currentTarget.contains(relatedTarget)) {
+                    return;
+                  }
+                  setShowUserModal(false);
+                }}
               >
                 <span className="user-indicator-circle">
                   {getUserInitials(currentUser.name)}
@@ -1251,7 +1276,11 @@ function App() {
                     <div className="user-modal-links">
                       <button
                         className="user-modal-link"
-                        onClick={() => setShowTipsModal(true)}
+                        onClick={() => {
+                          setShowTipsModal(true);
+                          setSelectedTipsCategory('Getting Started');
+                          setShowUserModal(false);
+                        }}
                       >
                         Getting Started
                       </button>
@@ -1714,6 +1743,7 @@ function App() {
             onAttentionModalShown={() => setShowAttentionModal(false)}
             showTipsModal={showTipsModal}
             setShowTipsModal={setShowTipsModal}
+            setSelectedTipsCategory={setSelectedTipsCategory}
           />
         )}
       </div>
@@ -2050,6 +2080,31 @@ function App() {
           onClose={() => setShowProjectHealth(false)}
         />
       )}
+
+      {/* Tips Modal - rendered at App level so it works from user popup */}
+      <TipsModal
+        isOpen={showTipsModal}
+        onClose={() => {
+          setShowTipsModal(false);
+          setSelectedTipsCategory(null);
+          // Remove tips param from URL
+          const url = new URL(window.location);
+          url.searchParams.delete('tips');
+          window.history.replaceState({}, '', url);
+        }}
+        selectedCategory={selectedTipsCategory}
+        onSelectCategory={(category) => {
+          setSelectedTipsCategory(category);
+          // Update URL with tips category for sharing
+          const url = new URL(window.location);
+          if (category) {
+            url.searchParams.set('tips', category);
+          } else {
+            url.searchParams.delete('tips');
+          }
+          window.history.replaceState({}, '', url);
+        }}
+      />
     </div>
   );
 }

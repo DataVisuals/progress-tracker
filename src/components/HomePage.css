@@ -3637,9 +3637,12 @@ html.dark-mode .quadrant-content {
 
 /* Tabbed Tips Modal */
 .modal-content.tips-modal-tabbed {
-  max-width: 1400px;
+  max-width: 1200px;
   width: 95%;
+  height: 600px;
   max-height: 80vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .tips-tabs {
@@ -3677,7 +3680,8 @@ html.dark-mode .quadrant-content {
 
 .tips-tabbed-content {
   padding: 24px;
-  min-height: 300px;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .tips-grid {
