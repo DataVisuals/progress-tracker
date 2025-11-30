@@ -1639,18 +1639,28 @@ const HomePage = ({
             const newVals = entry.new_values ? JSON.parse(entry.new_values) : null;
             const oldVals = entry.old_values ? JSON.parse(entry.old_values) : null;
             const changes = [];
-            const formatVal = (v) => typeof v === 'number' ? v.toLocaleString() : (v || '(empty)');
+            const formatVal = (v) => {
+              if (v === null || v === undefined) return '(empty)';
+              if (typeof v === 'number') return v.toLocaleString();
+              if (typeof v === 'string' && v.trim() === '') return '(empty)';
+              return v;
+            };
 
             // Ensure we have actual objects, not strings or other primitives
             const isObject = (v) => v && typeof v === 'object' && !Array.isArray(v);
 
             if (entry.action === 'UPDATE' && isObject(newVals) && isObject(oldVals)) {
               Object.keys(newVals).forEach(key => {
-                changes.push({ field: key, from: formatVal(oldVals[key]), to: formatVal(newVals[key]) });
+                const oldVal = formatVal(oldVals[key]);
+                const newVal = formatVal(newVals[key]);
+                const changed = oldVal !== newVal;
+                changes.push({ field: key, from: oldVal, to: newVal, changed });
               });
+              // Sort so changed fields appear first
+              changes.sort((a, b) => (b.changed ? 1 : 0) - (a.changed ? 1 : 0));
             } else if (entry.action === 'UPDATE' && isObject(newVals)) {
               Object.keys(newVals).forEach(key => {
-                changes.push({ field: key, to: formatVal(newVals[key]) });
+                changes.push({ field: key, to: formatVal(newVals[key]), changed: true });
               });
             } else if (entry.action === 'CREATE' && isObject(newVals)) {
               Object.keys(newVals).forEach(key => {
@@ -1860,12 +1870,12 @@ const HomePage = ({
                                         </thead>
                                         <tbody>
                                           {values.map((v, i) => (
-                                            <tr key={i}>
+                                            <tr key={i} className={v.changed === false ? 'unchanged' : 'changed'}>
                                               <td className="field-name">{v.field}</td>
                                               {entry.action === 'UPDATE' ? (
                                                 <>
-                                                  <td className="field-old">{v.from || '—'}</td>
-                                                  <td className="field-new">{v.to}</td>
+                                                  <td className={`field-old ${v.changed === false ? 'dimmed' : ''}`}>{v.from || '—'}</td>
+                                                  <td className={`field-new ${v.changed === false ? 'dimmed' : ''}`}>{v.to}</td>
                                                 </>
                                               ) : (
                                                 <td className="field-value">{v.value}</td>

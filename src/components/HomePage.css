@@ -673,16 +673,42 @@
 .audit-values-table .field-old {
   color: #dc2626;
   text-decoration: line-through;
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
 .audit-values-table .field-new {
   color: #059669;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .audit-values-table .field-value {
   color: #334155;
+}
+
+/* Unchanged fields (dimmed) */
+.audit-values-table tr.unchanged {
+  opacity: 0.5;
+}
+
+.audit-values-table tr.unchanged .field-name {
+  font-weight: 400;
+}
+
+.audit-values-table .field-old.dimmed,
+.audit-values-table .field-new.dimmed {
+  color: #9ca3af;
+  text-decoration: none;
+  font-weight: 400;
+}
+
+/* Changed fields (highlighted) */
+.audit-values-table tr.changed {
+  background: #f0fdf4;
+}
+
+.audit-values-table tr.changed .field-name {
+  color: #374151;
+  font-weight: 600;
 }
 
 .audit-no-details {
@@ -766,6 +792,24 @@
 
 :root.dark-mode .audit-values-table .field-new {
   color: #34d399;
+}
+
+:root.dark-mode .audit-values-table tr.unchanged {
+  opacity: 0.5;
+}
+
+:root.dark-mode .audit-values-table .field-old.dimmed,
+:root.dark-mode .audit-values-table .field-new.dimmed {
+  color: #6b7280;
+  text-decoration: none;
+}
+
+:root.dark-mode .audit-values-table tr.changed {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+:root.dark-mode .audit-values-table tr.changed .field-name {
+  color: #e5e7eb;
 }
 
 :root.dark-mode .audit-no-details {
