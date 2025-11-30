@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
-import { MdContentCopy, MdCheck } from 'react-icons/md';
+import { MdContentCopy } from 'react-icons/md';
 import { api } from '../api/client';
 import { selectStyles, compactSelectStyles } from './SelectStyles';
 import './FormInputs.css';
@@ -21,26 +21,7 @@ const UserManagement = ({ currentUser, onClose }) => {
   });
   const [nameError, setNameError] = useState('');
   const [checkingName, setCheckingName] = useState(false);
-  const [emailsCopied, setEmailsCopied] = useState(false);
-
-  const handleCopyAllEmails = async () => {
-    const emailList = users.map(u => u.email).join('; ');
-    try {
-      await navigator.clipboard.writeText(emailList);
-      setEmailsCopied(true);
-      setTimeout(() => setEmailsCopied(false), 2000);
-    } catch (err) {
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = emailList;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      setEmailsCopied(true);
-      setTimeout(() => setEmailsCopied(false), 2000);
-    }
-  };
+  const [showEmailsList, setShowEmailsList] = useState(false);
 
   useEffect(() => {
     loadUsers();
@@ -248,12 +229,12 @@ const UserManagement = ({ currentUser, onClose }) => {
               <h3>Users</h3>
               <div className="users-list-actions">
                 <button
-                  className={`copy-emails-btn ${emailsCopied ? 'copied' : ''}`}
-                  onClick={handleCopyAllEmails}
-                  title="Copy all user emails as semicolon-separated list"
+                  className="copy-emails-btn"
+                  onClick={() => setShowEmailsList(true)}
+                  title="Get all user emails as semicolon-separated list"
                 >
-                  {emailsCopied ? <MdCheck /> : <MdContentCopy />}
-                  {emailsCopied ? 'Copied!' : 'Copy Emails'}
+                  <MdContentCopy />
+                  Get Emails
                 </button>
                 <button className="add-user-btn" onClick={() => setShowAddUser(true)}>
                   + Add User
@@ -428,6 +409,27 @@ const UserManagement = ({ currentUser, onClose }) => {
                 </button>
                 <button className="cancel-btn" onClick={() => setShowAddUser(false)}>
                   Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showEmailsList && (
+          <div className="add-user-modal" onClick={() => setShowEmailsList(false)}>
+            <div className="emails-list-content" onClick={(e) => e.stopPropagation()}>
+              <h3>All User Emails</h3>
+              <p className="emails-list-hint">Select all and copy (Ctrl+A, Ctrl+C or Cmd+A, Cmd+C)</p>
+              <textarea
+                className="emails-textarea"
+                value={users.map(u => u.email).join('; ')}
+                readOnly
+                onClick={(e) => e.target.select()}
+                rows={4}
+              />
+              <div className="emails-list-actions">
+                <button className="cancel-btn" onClick={() => setShowEmailsList(false)}>
+                  Close
                 </button>
               </div>
             </div>

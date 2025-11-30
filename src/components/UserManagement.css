@@ -49,12 +49,6 @@
   border-color: #9ca3af;
 }
 
-.copy-emails-btn.copied {
-  background-color: #d1fae5;
-  color: #059669;
-  border-color: #6ee7b7;
-}
-
 .copy-emails-btn svg {
   font-size: 16px;
 }
@@ -70,10 +64,74 @@
   border-color: #6b7280;
 }
 
-:root.dark-mode .copy-emails-btn.copied {
-  background-color: #064e3b;
-  color: #6ee7b7;
-  border-color: #10b981;
+/* Emails List Modal */
+.emails-list-content {
+  background-color: white;
+  padding: 24px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.emails-list-content h3 {
+  margin: 0 0 8px 0;
+  color: #333;
+}
+
+.emails-list-hint {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0 0 12px 0;
+}
+
+.emails-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: monospace;
+  resize: vertical;
+  min-height: 80px;
+  box-sizing: border-box;
+  background-color: #f9fafb;
+  color: #374151;
+}
+
+.emails-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.emails-list-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+:root.dark-mode .emails-list-content {
+  background-color: #1f2937;
+}
+
+:root.dark-mode .emails-list-content h3 {
+  color: #f9fafb;
+}
+
+:root.dark-mode .emails-list-hint {
+  color: #9ca3af;
+}
+
+:root.dark-mode .emails-textarea {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:root.dark-mode .emails-textarea:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
 }
 
 .add-user-btn {
