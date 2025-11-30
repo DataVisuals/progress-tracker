@@ -868,6 +868,56 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* Health Gauge Button (circular progress) */
+.project-health-btn.health-gauge-btn {
+  position: relative;
+  background: transparent;
+  border: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10px;
+  flex-shrink: 0;
+}
+
+.project-health-btn.health-gauge-btn:hover {
+  transform: scale(1.1);
+}
+
+.project-health-btn.health-gauge-btn .health-gauge-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.project-health-btn.health-gauge-btn .health-gauge-bg {
+  stroke: #e5e7eb;
+}
+
+.project-health-btn.health-gauge-btn .health-gauge-progress {
+  transition: stroke-dasharray 0.5s ease;
+}
+
+.project-health-btn.health-gauge-btn .health-gauge-value {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.project-health-btn.health-gauge-btn .health-gauge-value .percent-sign {
+  font-size: 0.7em;
+  font-weight: 600;
+}
+
+:root.dark-mode .project-health-btn.health-gauge-btn .health-gauge-bg {
+  stroke: #374151;
+}
+
 .project-portfolio-section {
   display: flex;
   align-items: center;

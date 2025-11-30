@@ -1484,7 +1484,7 @@ const HomePage = ({
                   transform="rotate(-90 18 18)"
                 />
               </svg>
-              <span className="health-gauge-value">{Math.round(project.healthScore)}</span>
+              <span className="health-gauge-value">{Math.round(project.healthScore)}<span className="percent-sign">%</span></span>
             </div>
             <div className="health-project-info">
               <span

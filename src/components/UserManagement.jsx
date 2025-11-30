@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
+import { MdContentCopy, MdCheck } from 'react-icons/md';
 import { api } from '../api/client';
 import { selectStyles, compactSelectStyles } from './SelectStyles';
 import './FormInputs.css';
@@ -20,6 +21,26 @@ const UserManagement = ({ currentUser, onClose }) => {
   });
   const [nameError, setNameError] = useState('');
   const [checkingName, setCheckingName] = useState(false);
+  const [emailsCopied, setEmailsCopied] = useState(false);
+
+  const handleCopyAllEmails = async () => {
+    const emailList = users.map(u => u.email).join('; ');
+    try {
+      await navigator.clipboard.writeText(emailList);
+      setEmailsCopied(true);
+      setTimeout(() => setEmailsCopied(false), 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = emailList;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setEmailsCopied(true);
+      setTimeout(() => setEmailsCopied(false), 2000);
+    }
+  };
 
   useEffect(() => {
     loadUsers();
@@ -225,9 +246,19 @@ const UserManagement = ({ currentUser, onClose }) => {
           <div className="users-list">
             <div className="users-list-header">
               <h3>Users</h3>
-              <button className="add-user-btn" onClick={() => setShowAddUser(true)}>
-                + Add User
-              </button>
+              <div className="users-list-actions">
+                <button
+                  className={`copy-emails-btn ${emailsCopied ? 'copied' : ''}`}
+                  onClick={handleCopyAllEmails}
+                  title="Copy all user emails as semicolon-separated list"
+                >
+                  {emailsCopied ? <MdCheck /> : <MdContentCopy />}
+                  {emailsCopied ? 'Copied!' : 'Copy Emails'}
+                </button>
+                <button className="add-user-btn" onClick={() => setShowAddUser(true)}>
+                  + Add User
+                </button>
+              </div>
             </div>
             {loading ? (
               <p>Loading...</p>

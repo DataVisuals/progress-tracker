@@ -1309,15 +1309,33 @@ function App() {
                       };
                       return (
                         <button
-                          className="project-health-btn score-badge"
+                          className="project-health-btn health-gauge-btn"
                           onClick={() => setShowProjectHealth(true)}
                           title="View project health"
-                          style={{
-                            borderColor: getScoreColor(healthScore),
-                            color: getScoreColor(healthScore)
-                          }}
                         >
-                          {healthScore}
+                          <svg viewBox="0 0 36 36" className="health-gauge-svg">
+                            <circle
+                              className="health-gauge-bg"
+                              cx="18"
+                              cy="18"
+                              r="15.5"
+                              fill="none"
+                              strokeWidth="3"
+                            />
+                            <circle
+                              className="health-gauge-progress"
+                              cx="18"
+                              cy="18"
+                              r="15.5"
+                              fill="none"
+                              strokeWidth="3"
+                              stroke={getScoreColor(healthScore)}
+                              strokeDasharray={`${(healthScore / 100) * 97.4} 97.4`}
+                              strokeLinecap="round"
+                              transform="rotate(-90 18 18)"
+                            />
+                          </svg>
+                          <span className="health-gauge-value" style={{ color: getScoreColor(healthScore) }}>{Math.round(healthScore)}<span className="percent-sign">%</span></span>
                         </button>
                       );
                     })()}
