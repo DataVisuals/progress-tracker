@@ -840,31 +840,25 @@
 
 .audit-timeline {
   position: relative;
-  padding-left: 50%;
+  padding-left: 0;
 }
 
-/* Central vertical line */
+/* Vertical line on left side */
 .audit-timeline::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: linear-gradient(180deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
-  transform: translateX(-50%);
+  display: none; /* Remove central line for cleaner single-column layout */
 }
 
 .timeline-date-group {
   position: relative;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .timeline-date-marker {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  left: 0;
+  transform: none;
   z-index: 10;
+  margin-bottom: 6px;
 }
 
 .timeline-date {
@@ -880,7 +874,7 @@
 }
 
 .timeline-events {
-  padding-top: 28px;
+  padding-top: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -888,20 +882,17 @@
 
 .timeline-event {
   position: relative;
-  width: 45%;
+  width: 100%;
   display: flex;
   align-items: flex-start;
+  gap: 8px;
 }
 
-.timeline-event.left {
-  margin-right: auto;
-  margin-left: 5%;
-  flex-direction: row-reverse;
-}
-
+.timeline-event.left,
 .timeline-event.right {
-  margin-left: auto;
-  margin-right: 5%;
+  flex-direction: row;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 /* Spur line connecting to central timeline */
@@ -912,14 +903,11 @@
 }
 
 .timeline-event.left .timeline-spur {
-  flex-direction: row-reverse;
+  flex-direction: row;
 }
 
 .timeline-spur::before {
-  content: '';
-  width: 20px;
-  height: 2px;
-  background: #cbd5e1;
+  display: none; /* Remove spur line for single-column layout */
 }
 
 .timeline-node {
@@ -991,6 +979,54 @@
 .timeline-card-summary {
   padding: 8px 10px;
   list-style: none;
+}
+
+.timeline-card-summary.compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Compact layout font overrides - consistent sizing */
+.timeline-card-summary.compact .timeline-time {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.timeline-card-summary.compact .timeline-user {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0369a1;
+}
+
+.timeline-card-summary.compact .timeline-verb {
+  font-size: 12px;
+  font-weight: 400;
+  color: #475569;
+}
+
+.timeline-card-summary.compact .timeline-table {
+  font-size: 12px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.timeline-card-summary.compact .timeline-metric {
+  font-size: 12px;
+  color: #7c3aed;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.timeline-card-summary.compact .timeline-project {
+  font-size: 12px;
+  color: #059669;
+  font-weight: 400;
 }
 
 .timeline-card-summary::-webkit-details-marker {
@@ -4463,9 +4499,7 @@ html.dark-mode .quadrant-content {
 }
 
 /* Flex spacer after space indicator */
-.expanded-panel-header .space-filter-indicator {
-  margin-right: auto;
-}
+/* Close button handles right positioning via margin-left: auto */
 
 .preview-close-btn {
   display: flex;
@@ -4481,6 +4515,7 @@ html.dark-mode .quadrant-content {
   color: #6b7280;
   font-size: 18px;
   transition: all 0.2s;
+  margin-left: auto;
 }
 
 .preview-close-btn:hover {

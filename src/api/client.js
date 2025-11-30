@@ -96,6 +96,7 @@ export const api = {
     const queryString = new URLSearchParams(params).toString();
     return client.get(`/audit${queryString ? `?${queryString}` : ''}`);
   },
+  getAuditTimeline: (days = 14) => client.get(`/audit/timeline?days=${days}`),
 
   // User Management
   getUsers: () => client.get('/users'),

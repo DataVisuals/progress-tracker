@@ -112,6 +112,8 @@ const HomePage = ({
     return DEFAULT_DASHBOARD_CONFIG;
   });
   const [auditLog, setAuditLog] = useState([]); // Audit log data for admin panel
+  const [auditTimeline, setAuditTimeline] = useState([]); // Timeline counts for audit visualization
+  const [auditSelectedDate, setAuditSelectedDate] = useState(null); // Selected date string for lazy loading
   const [databaseStats, setDatabaseStats] = useState(null); // Database stats for admin panel
   const [activeUsers, setActiveUsers] = useState(null); // Active users for admin panel
   const [userActivity, setUserActivity] = useState(null); // User activity data for fullscreen admin panel
@@ -522,9 +524,18 @@ const HomePage = ({
       // Load admin panel data if user is admin
       // Always load all admin data since toolbar gives access to any panel
       if (isAdmin) {
-        // Load audit log
+        // Load audit timeline (for visualization)
         try {
-          const auditResponse = await api.get('/audit?limit=100');
+          const timelineResponse = await api.getAuditTimeline(14);
+          setAuditTimeline(timelineResponse.data || []);
+        } catch (timelineErr) {
+          console.log('Could not load audit timeline:', timelineErr.message);
+          setAuditTimeline([]);
+        }
+
+        // Load audit log (recent entries)
+        try {
+          const auditResponse = await api.get('/audit?limit=50');
           setAuditLog(auditResponse.data || []);
         } catch (auditErr) {
           console.log('Could not load audit log:', auditErr.message);
@@ -600,6 +611,35 @@ const HomePage = ({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [expandedDockPanel]);
+
+  // Fetch audit log entries when a date is selected
+  useEffect(() => {
+    const fetchAuditEntriesForDate = async () => {
+      if (auditSelectedDateIdx === null || auditTimeline.length === 0) {
+        // No date selected, load recent entries
+        try {
+          const response = await api.get('/audit?limit=50');
+          setAuditLog(response.data || []);
+        } catch (err) {
+          console.log('Could not load audit log:', err.message);
+        }
+        return;
+      }
+
+      // Get the date string from timeline data
+      const selectedDate = auditTimeline[auditSelectedDateIdx]?.date;
+      if (!selectedDate) return;
+
+      try {
+        const response = await api.get(`/audit?date=${selectedDate}&limit=200`);
+        setAuditLog(response.data || []);
+      } catch (err) {
+        console.log('Could not load audit log for date:', err.message);
+      }
+    };
+
+    fetchAuditEntriesForDate();
+  }, [auditSelectedDateIdx, auditTimeline]);
 
   const handleMetricClick = (projectId, metricName) => {
     if (onNavigateToProject) {
@@ -1646,39 +1686,19 @@ const HomePage = ({
           return Object.entries(groups);
         };
 
-        // Generate daily activity data for horizontal overview
-        const generateDailyActivity = (logs) => {
-          const days = [];
-          const today = new Date();
-          today.setHours(23, 59, 59, 999);
-
-          for (let i = 13; i >= 0; i--) {
-            const date = new Date(today);
-            date.setDate(date.getDate() - i);
-            date.setHours(0, 0, 0, 0);
-            const nextDay = new Date(date);
-            nextDay.setDate(nextDay.getDate() + 1);
-
-            const dayLogs = logs.filter(log => {
-              const logDate = new Date(log.created_at);
-              return logDate >= date && logDate < nextDay;
-            });
-
-            days.push({
-              date: date,
-              dateKey: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-              total: dayLogs.length
-            });
-          }
-          return days;
-        };
-
-        const dailyActivity = generateDailyActivity(auditLog);
+        // Use timeline data from backend (more accurate counts)
+        const dailyActivity = auditTimeline.map(day => ({
+          date: new Date(day.date + 'T00:00:00'), // Parse as local date
+          dateKey: new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          dateStr: day.date, // Keep original YYYY-MM-DD format for filtering
+          total: day.total
+        }));
         const maxDailyActivity = Math.max(...dailyActivity.map(d => d.total), 1);
+        const totalChanges = dailyActivity.reduce((sum, d) => sum + d.total, 0);
 
-        // Use top-level state for date filtering - selected takes priority over hover
-        const activeIdx = auditSelectedDateIdx !== null ? auditSelectedDateIdx : auditHoveredDateIdx;
-        const activeDate = activeIdx !== null ? dailyActivity[activeIdx] : null;
+        // For tooltip/summary: hover takes priority so user can scan dates while maintaining selection
+        const displayIdx = auditHoveredDateIdx !== null ? auditHoveredDateIdx : auditSelectedDateIdx;
+        const displayDate = displayIdx !== null && displayIdx < dailyActivity.length ? dailyActivity[displayIdx] : null;
 
         const getActionIcon = (action) => {
           switch(action) {
@@ -1691,11 +1711,12 @@ const HomePage = ({
 
         const timelineEntries = auditLog.slice(0, forDock ? 100 : 50);
 
-        // Filter entries if a date is selected or hovered
-        const filteredEntries = activeDate
+        // When a date is selected, entries are already filtered by backend
+        // Only do client-side filtering for hover (non-selected) state
+        const filteredEntries = (auditSelectedDateIdx === null && displayDate)
           ? timelineEntries.filter(entry => {
-              const entryDate = new Date(entry.created_at);
-              return entryDate.toDateString() === activeDate.date.toDateString();
+              const entryDateStr = new Date(entry.created_at).toISOString().split('T')[0];
+              return entryDateStr === displayDate.dateKey;
             })
           : timelineEntries;
         const groupedEntries = groupByDate(filteredEntries);
@@ -1707,7 +1728,7 @@ const HomePage = ({
               <h2>Audit Log</h2>
             </div>
             <div className="quadrant-content">
-              {auditLog.length === 0 ? (
+              {auditTimeline.length === 0 && auditLog.length === 0 ? (
                 <div className="empty-state">
                   <MdHistory className="empty-icon" />
                   <p>No recent activity</p>
@@ -1763,23 +1784,34 @@ const HomePage = ({
                           />
                         );
                       })}
-                      {/* Active indicator line */}
-                      {activeIdx !== null && (
+                      {/* Selected date indicator line (solid) */}
+                      {auditSelectedDateIdx !== null && (
                         <line
-                          x1={(activeIdx / (dailyActivity.length - 1)) * 200}
+                          x1={(auditSelectedDateIdx / (dailyActivity.length - 1)) * 200}
                           y1={0}
-                          x2={(activeIdx / (dailyActivity.length - 1)) * 200}
+                          x2={(auditSelectedDateIdx / (dailyActivity.length - 1)) * 200}
                           y2={24}
-                          stroke={auditSelectedDateIdx !== null ? '#8b5cf6' : '#94a3b8'}
-                          strokeWidth={auditSelectedDateIdx !== null ? 2 : 1}
-                          strokeDasharray={auditSelectedDateIdx !== null ? '0' : '2,2'}
+                          stroke="#8b5cf6"
+                          strokeWidth={2}
+                        />
+                      )}
+                      {/* Hovered date indicator line (dashed) */}
+                      {auditHoveredDateIdx !== null && auditHoveredDateIdx !== auditSelectedDateIdx && (
+                        <line
+                          x1={(auditHoveredDateIdx / (dailyActivity.length - 1)) * 200}
+                          y1={0}
+                          x2={(auditHoveredDateIdx / (dailyActivity.length - 1)) * 200}
+                          y2={24}
+                          stroke="#94a3b8"
+                          strokeWidth={1}
+                          strokeDasharray="2,2"
                         />
                       )}
                     </svg>
                     <div className="activity-labels">
                       <span>{dailyActivity[0]?.dateKey}</span>
                       <span className={`activity-summary ${auditSelectedDateIdx !== null ? 'selected' : ''}`}>
-                        {activeDate ? `${activeDate.dateKey}: ${activeDate.total} changes` : `${auditLog.length} changes`}
+                        {displayDate ? `${displayDate.dateKey}: ${displayDate.total} changes` : `${totalChanges} changes (14 days)`}
                       </span>
                       <span>Today</span>
                     </div>
@@ -1807,21 +1839,13 @@ const HomePage = ({
                                   </div>
                                 </div>
                                 <details className="timeline-card">
-                                  <summary className="timeline-card-summary">
-                                    <div className="timeline-card-header">
-                                      <span className="timeline-user">{userName}</span>
-                                      <span className="timeline-time">{time}</span>
-                                    </div>
-                                    <div className="timeline-card-action">
-                                      <span className="timeline-verb">{getActionVerb(entry.action)}</span>
-                                      <span className="timeline-table">{formatTableName(entry.table_name)}</span>
-                                    </div>
-                                    {(metricContext || projectContext) && (
-                                      <div className="timeline-card-context">
-                                        {metricContext && <span className="timeline-metric">"{metricContext}"</span>}
-                                        {projectContext && <span className="timeline-project"> in {projectContext}</span>}
-                                      </div>
-                                    )}
+                                  <summary className="timeline-card-summary compact">
+                                    <span className="timeline-time">{time}</span>
+                                    <span className="timeline-user">{userName}</span>
+                                    <span className="timeline-verb">{getActionVerb(entry.action)}</span>
+                                    <span className="timeline-table">{formatTableName(entry.table_name)}</span>
+                                    {metricContext && <span className="timeline-metric">"{metricContext}"</span>}
+                                    {projectContext && <span className="timeline-project">in {projectContext}</span>}
                                   </summary>
                                   <div className="timeline-card-details">
                                     {values.length > 0 ? (

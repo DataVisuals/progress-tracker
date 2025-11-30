@@ -3647,7 +3647,7 @@ function createApp(dbPath) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
-      const { limit = 100, offset = 0, table_name, user_id, action, project_id } = req.query;
+      const { limit = 100, offset = 0, table_name, user_id, action, project_id, date } = req.query;
 
       let query = '';
       const params = [];
@@ -3687,6 +3687,10 @@ function createApp(dbPath) {
           query += ' AND action = ?';
           params.push(action);
         }
+        if (date) {
+          query += ' AND DATE(created_at) = ?';
+          params.push(date);
+        }
       } else {
         query = 'SELECT *, created_at as timestamp FROM audit_log WHERE 1=1';
 
@@ -3701,6 +3705,10 @@ function createApp(dbPath) {
         if (action) {
           query += ' AND action = ?';
           params.push(action);
+        }
+        if (date) {
+          query += ' AND DATE(created_at) = ?';
+          params.push(date);
         }
       }
 
@@ -3754,6 +3762,51 @@ function createApp(dbPath) {
       }));
 
       res.json(enrichedLogs);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ===== AUDIT LOG TIMELINE (Daily counts for visualization) =====
+  app.get('/api/audit/timeline', authenticateToken, async (req, res) => {
+    try {
+      // Admin only
+      const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
+      if (!isAdmin(user)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { days = 14 } = req.query;
+      const numDays = Math.min(parseInt(days) || 14, 90); // Cap at 90 days
+
+      // Get daily counts using SQLite date functions
+      const counts = await dbAll(`
+        SELECT
+          DATE(created_at) as date,
+          COUNT(*) as total
+        FROM audit_log
+        WHERE created_at >= DATE('now', '-' || ? || ' days')
+        GROUP BY DATE(created_at)
+        ORDER BY date ASC
+      `, [numDays]);
+
+      // Build array with all days (including zeros)
+      const result = [];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      for (let i = numDays - 1; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayData = counts.find(c => c.date === dateStr);
+        result.push({
+          date: dateStr,
+          total: dayData ? dayData.total : 0
+        });
+      }
+
+      res.json(result);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
