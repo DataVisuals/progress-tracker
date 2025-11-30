@@ -46,3 +46,4 @@ Thumbs.db
 *.db-wal
 node_modules
 backend/exports/
+backend/uploads/
