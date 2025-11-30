@@ -22,6 +22,7 @@ const UserManagement = ({ currentUser, onClose }) => {
   const [nameError, setNameError] = useState('');
   const [checkingName, setCheckingName] = useState(false);
   const [showEmailsList, setShowEmailsList] = useState(false);
+  const [emailFormat, setEmailFormat] = useState('newline'); // 'newline', 'comma', 'semicolon'
 
   useEffect(() => {
     loadUsers();
@@ -418,14 +419,42 @@ const UserManagement = ({ currentUser, onClose }) => {
         {showEmailsList && (
           <div className="add-user-modal" onClick={() => setShowEmailsList(false)}>
             <div className="emails-list-content" onClick={(e) => e.stopPropagation()}>
-              <h3>All User Emails</h3>
-              <p className="emails-list-hint">Select all and copy (Ctrl+A, Ctrl+C or Cmd+A, Cmd+C)</p>
+              <h3>All User Emails ({users.length})</h3>
+              <div className="email-format-selector">
+                <label>Format:</label>
+                <div className="format-options">
+                  <button
+                    className={`format-btn ${emailFormat === 'newline' ? 'active' : ''}`}
+                    onClick={() => setEmailFormat('newline')}
+                    title="Best for Teams group chat"
+                  >
+                    One per line
+                  </button>
+                  <button
+                    className={`format-btn ${emailFormat === 'comma' ? 'active' : ''}`}
+                    onClick={() => setEmailFormat('comma')}
+                  >
+                    Comma
+                  </button>
+                  <button
+                    className={`format-btn ${emailFormat === 'semicolon' ? 'active' : ''}`}
+                    onClick={() => setEmailFormat('semicolon')}
+                    title="Best for Outlook"
+                  >
+                    Semicolon
+                  </button>
+                </div>
+              </div>
+              <p className="emails-list-hint">Click to select all, then copy (Ctrl+C / Cmd+C)</p>
               <textarea
                 className="emails-textarea"
-                value={users.map(u => u.email).join('; ')}
+                value={users.map(u => u.email).join(
+                  emailFormat === 'newline' ? '\n' :
+                  emailFormat === 'comma' ? ', ' : '; '
+                )}
                 readOnly
                 onClick={(e) => e.target.select()}
-                rows={4}
+                rows={emailFormat === 'newline' ? Math.min(users.length, 10) : 4}
               />
               <div className="emails-list-actions">
                 <button className="cancel-btn" onClick={() => setShowEmailsList(false)}>
