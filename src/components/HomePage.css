@@ -2827,12 +2827,12 @@ html.dark-mode .quadrant-content {
 
 /* Metrics List */
 .metrics-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   text-align: left;
-  align-items: start;
-  align-content: start;
+  background-color: white;
+  padding: 4px;
 }
 
 .portfolio-group-header {
@@ -2868,18 +2868,26 @@ html.dark-mode .quadrant-content {
 }
 
 .metric-item {
+  display: -webkit-flex;
   display: flex;
+  -webkit-justify-content: space-between;
   justify-content: space-between;
+  -webkit-align-items: center;
   align-items: center;
-  gap: 4px;
-  padding: 3px 4px;
+  padding: 8px 10px;
   background-color: #fef2f2;
-  border-radius: 3px;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid #fecaca;
   text-align: left;
-  line-height: 1.1;
+  line-height: 1;
+  box-sizing: border-box;
+  min-height: 48px;
+}
+
+.metric-item .metric-left {
+  margin-right: 12px;
 }
 
 .metric-item:hover {
@@ -2898,38 +2906,56 @@ html.dark-mode .quadrant-content {
 }
 
 .metric-left {
+  -webkit-flex: 1;
   flex: 1;
   min-width: 0;
+  display: -webkit-flex;
   display: flex;
+  -webkit-flex-direction: column;
   flex-direction: column;
-  gap: 0;
+  -webkit-align-items: flex-start;
   align-items: flex-start;
 }
 
 .metric-right {
+  display: -webkit-flex;
   display: flex;
+  -webkit-align-items: center;
   align-items: center;
-  gap: 4px;
+  -webkit-flex-shrink: 0;
   flex-shrink: 0;
+}
+
+.metric-right > * {
+  margin-left: 6px;
+}
+
+.metric-right > *:first-child {
+  margin-left: 0;
 }
 
 .metric-header {
+  display: -webkit-flex;
   display: flex;
+  -webkit-align-items: center;
   align-items: center;
-  gap: 3px;
 }
 
 .metric-portfolio-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  -webkit-flex-shrink: 0;
   flex-shrink: 0;
+  margin-right: 8px;
 }
 
 .metric-text {
+  display: -webkit-flex;
   display: flex;
+  -webkit-flex-direction: column;
   flex-direction: column;
-  gap: 0px;
+  -webkit-flex: 1;
   flex: 1;
   min-width: 0;
 }
@@ -2948,17 +2974,17 @@ html.dark-mode .quadrant-content {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.1;
+  line-height: 16px;
+  padding: 2px 0;
 }
 
 .recovery-plan-indicator {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline;
   color: #f59e0b;
-  font-size: 12px;
+  font-size: 11px;
   cursor: help;
-  flex-shrink: 0;
+  margin-left: 4px;
+  vertical-align: middle;
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -2978,7 +3004,8 @@ html.dark-mode .quadrant-content {
 .metric-name {
   font-size: 10px;
   color: #6b7280;
-  line-height: 1.1;
+  line-height: 14px;
+  padding: 2px 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3419,6 +3446,10 @@ html.dark-mode .quadrant-content {
 
 :root.dark-mode .commentary-text {
   color: #d1d5db;
+}
+
+:root.dark-mode .metrics-list {
+  background-color: #1f2937;
 }
 
 :root.dark-mode .portfolio-group-header {
@@ -5432,7 +5463,9 @@ html.dark-mode .quadrant-content {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  background-color: transparent;
+  padding: 0;
 }
 
 /* Larger metric items in fullscreen */

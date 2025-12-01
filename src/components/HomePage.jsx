@@ -1191,11 +1191,8 @@ const HomePage = ({
                               {item.portfolioColor && <span className="metric-portfolio-dot" style={{ backgroundColor: item.portfolioColor }} title={item.portfolioName || 'No Portfolio'} />}
                               <div className="metric-text">
                                 <span className="metric-project">{item.projectName}</span>
-                                <span className="metric-name">{item.metricName}</span>
+                                <span className="metric-name">{item.metricName}{needsRecoveryPlan(item.metricId) && <MdErrorOutline className="recovery-plan-indicator" title="Recovery Plan Required" />}</span>
                               </div>
-                              {needsRecoveryPlan(item.metricId) && (
-                                <div className="recovery-plan-indicator" title="Recovery Plan Required"><MdErrorOutline /></div>
-                              )}
                             </div>
                           </div>
                           <div className="metric-right">
@@ -1281,11 +1278,8 @@ const HomePage = ({
                               {item.portfolioColor && <span className="metric-portfolio-dot" style={{ backgroundColor: item.portfolioColor }} title={item.portfolioName || 'No Portfolio'} />}
                               <div className="metric-text">
                                 <span className="metric-project">{item.projectName}</span>
-                                <span className="metric-name">{item.metricName}</span>
+                                <span className="metric-name">{item.metricName}{item.ragStatus === 'red' && needsRecoveryPlan(item.metricId) && <MdErrorOutline className="recovery-plan-indicator" title="Recovery Plan Required" />}</span>
                               </div>
-                              {item.ragStatus === 'red' && needsRecoveryPlan(item.metricId) && (
-                                <div className="recovery-plan-indicator" title="Recovery Plan Required"><MdErrorOutline /></div>
-                              )}
                             </div>
                           </div>
                           <div className="metric-right">
