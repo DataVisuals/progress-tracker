@@ -937,6 +937,8 @@ function App() {
         portfolio_name: project.portfolio_name,
         portfolio_color: project.portfolio_color,
         initiative_manager: project.initiative_manager,
+        secondary_pm: project.secondary_pm,
+        pm_id: project.pm_id,
         link_count: project.link_count
       };
       return acc;

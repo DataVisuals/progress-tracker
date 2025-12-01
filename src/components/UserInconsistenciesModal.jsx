@@ -6,7 +6,8 @@ import {
   MdLink,
   MdWarning,
   MdArrowForward,
-  MdFeedback
+  MdFeedback,
+  MdCalendarToday
 } from 'react-icons/md';
 
 // Helper function to format timestamps
@@ -31,9 +32,13 @@ const UserInconsistenciesModal = ({
   isOpen,
   onClose,
   inconsistencies,
-  feedback
+  feedback,
+  upcomingMetrics = []
 }) => {
-  if (!isOpen || inconsistencies.length === 0) return null;
+  // Show modal if there are inconsistencies OR upcoming metrics (forward view)
+  if (!isOpen || (inconsistencies.length === 0 && upcomingMetrics.length === 0)) return null;
+
+  const hasIssues = inconsistencies.length > 0 || feedback.length > 0;
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -44,14 +49,16 @@ const UserInconsistenciesModal = ({
             loop={true}
             className="modal-icon-lottie"
           />
-          <h2>Your Projects Need Attention</h2>
+          <h2>{hasIssues ? 'Your Projects Need Attention' : 'Coming Up'}</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
-          <p className="inconsistency-intro">
-            You have {inconsistencies.length} issue{inconsistencies.length !== 1 ? 's' : ''} that need attention.
-            Click on any item to open it in a new tab.
-          </p>
+          {hasIssues && (
+            <p className="inconsistency-intro">
+              You have {inconsistencies.length} issue{inconsistencies.length !== 1 ? 's' : ''} that need attention.
+              Click on any item to open it in a new tab.
+            </p>
+          )}
           <div className="user-inconsistency-list">
             {inconsistencies.map((issue, idx) => {
               let issueTitle = '';
@@ -132,6 +139,50 @@ const UserInconsistenciesModal = ({
                         </div>
                       </a>
                     </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {/* Coming Up Section - Forward View */}
+          {upcomingMetrics.length > 0 && (
+            <>
+              <div className="feedback-divider" />
+              <p className="inconsistency-intro" style={{ marginTop: '16px' }}>
+                <MdCalendarToday style={{ verticalAlign: 'middle', marginRight: '6px' }} />
+                Coming up - metrics needing updates soon:
+              </p>
+              <div className="upcoming-metrics-list">
+                {upcomingMetrics.map((item, idx) => {
+                  const projectUrl = `${window.location.origin}${window.location.pathname}?project=${item.projectId}&metric=${encodeURIComponent(item.metricName)}`;
+                  return (
+                    <a
+                      key={idx}
+                      href={projectUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`upcoming-metric-item ${item.daysDiff < 0 ? 'overdue' : item.daysDiff <= 3 ? 'soon' : ''}`}
+                    >
+                      <div className="issue-icon-wrapper">
+                        <span className={`upcoming-dot ${item.daysDiff < 0 ? 'overdue' : item.daysDiff <= 3 ? 'soon' : ''}`} />
+                      </div>
+                      <div className="issue-details">
+                        <div className="issue-title">{item.metricName}</div>
+                        <div className="issue-project">{item.projectName}</div>
+                      </div>
+                      <div className="upcoming-due-info">
+                        <span className={`due-label ${item.daysDiff < 0 ? 'overdue' : item.daysDiff <= 3 ? 'soon' : ''}`}>
+                          {item.daysDiff < 0
+                            ? `${Math.abs(item.daysDiff)} day${Math.abs(item.daysDiff) !== 1 ? 's' : ''} overdue`
+                            : item.daysDiff === 0
+                              ? 'Due today'
+                              : `In ${item.daysDiff} day${item.daysDiff !== 1 ? 's' : ''}`}
+                        </span>
+                        <span className="due-date">{new Date(item.periodDate).toLocaleDateString()}</span>
+                      </div>
+                      <MdArrowForward className="issue-arrow" />
+                    </a>
                   );
                 })}
               </div>

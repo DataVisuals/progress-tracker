@@ -198,15 +198,66 @@ async function seed() {
         const fields = possibleFields[activity.table] || ['value'];
         const field = fields[Math.floor(Math.random() * fields.length)];
 
+        // Generate realistic values based on field type
+        const generateValue = (fieldName, isOld = false) => {
+          const offset = isOld ? 0 : Math.floor(Math.random() * 20) + 5;
+          switch (fieldName) {
+            case 'actual':
+            case 'target':
+              return Math.floor(Math.random() * 100) + offset;
+            case 'amber_tolerance':
+              return Math.floor(Math.random() * 10) + 5;
+            case 'red_tolerance':
+              return Math.floor(Math.random() * 15) + 10;
+            case 'name':
+              const names = ['Q1 Review', 'Sprint Update', 'Phase 2', 'Migration', 'Release v2.0'];
+              return names[Math.floor(Math.random() * names.length)];
+            case 'description':
+              const descs = ['Updated scope', 'New requirements added', 'Timeline adjusted', 'Resources allocated'];
+              return descs[Math.floor(Math.random() * descs.length)];
+            case 'status':
+              const statuses = ['active', 'on-hold', 'completed', 'at-risk', 'pending'];
+              return statuses[Math.floor(Math.random() * statuses.length)];
+            case 'notes':
+              const notes = ['On track', 'Delayed due to dependencies', 'Ahead of schedule', 'Needs review'];
+              return notes[Math.floor(Math.random() * notes.length)];
+            case 'unit':
+              const units = ['%', 'days', 'count', 'hours', '$'];
+              return units[Math.floor(Math.random() * units.length)];
+            case 'url':
+              return `https://example.com/doc-${Math.floor(Math.random() * 1000)}`;
+            case 'text':
+              const texts = ['Great progress this week', 'Need more resources', 'Blocked by external team'];
+              return texts[Math.floor(Math.random() * texts.length)];
+            case 'owner':
+              const owners = ['John Smith', 'Sarah Johnson', 'Mike Chen', 'Lisa Brown'];
+              return owners[Math.floor(Math.random() * owners.length)];
+            case 'due_date':
+            case 'start_date':
+            case 'end_date':
+              const d = new Date();
+              d.setDate(d.getDate() + Math.floor(Math.random() * 90) - 30);
+              return d.toISOString().split('T')[0];
+            case 'initiative_manager':
+              const managers = ['Alice Wong', 'Bob Taylor', 'Carol Martinez'];
+              return managers[Math.floor(Math.random() * managers.length)];
+            case 'response':
+              const responses = ['Thank you for the feedback', 'We will look into this', 'Implemented in next release'];
+              return responses[Math.floor(Math.random() * responses.length)];
+            default:
+              return isOld ? 'previous' : 'updated';
+          }
+        };
+
         if (activity.action === 'CREATE') {
-          newValues = JSON.stringify({ [field]: 'new value' });
+          newValues = JSON.stringify({ [field]: generateValue(field, false) });
           description = `Created ${activity.table.replace('_', ' ')}`;
         } else if (activity.action === 'DELETE') {
-          oldValues = JSON.stringify({ [field]: 'deleted value' });
+          oldValues = JSON.stringify({ [field]: generateValue(field, true) });
           description = `Deleted ${activity.table.replace('_', ' ')}`;
         } else {
-          oldValues = JSON.stringify({ [field]: 'old value' });
-          newValues = JSON.stringify({ [field]: 'new value' });
+          oldValues = JSON.stringify({ [field]: generateValue(field, true) });
+          newValues = JSON.stringify({ [field]: generateValue(field, false) });
           description = `Updated ${field} on ${activity.table.replace('_', ' ')}`;
         }
 
