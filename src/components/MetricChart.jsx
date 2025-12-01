@@ -24,6 +24,8 @@ import RecoveryPlans from './RecoveryPlans';
 // import CRAIDs from './CRAIDs'; // DISABLED: CRAIDs feature hidden
 import Lottie from 'lottie-react';
 import fixingAnimation from '../../public/fixing-animation.json';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import './MetricChart.css';
 
 // Barclays blue color for expected line
@@ -232,6 +234,14 @@ const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance })
   }
 
   return null;
+};
+
+// Helper to check if HTML content from Quill is empty
+const isHtmlEmpty = (html) => {
+  if (!html) return true;
+  // Strip HTML tags and check if there's actual content
+  const textContent = html.replace(/<[^>]*>/g, '').trim();
+  return textContent === '';
 };
 
 const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange, onTargetChange, onProgressionChange, onDescriptionChange, onDatesChange, currentUser, compactMode = false }) => {
@@ -730,7 +740,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   };
 
   const handleAddComment = async () => {
-    if (!selectedDate || !newCommentText.trim()) {
+    if (!selectedDate || isHtmlEmpty(newCommentText)) {
       alert('Please select a date and enter a comment');
       return;
     }
@@ -793,7 +803,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   };
 
   const handleSaveComment = async (commentId, periodId) => {
-    if (!editingCommentText.trim()) {
+    if (isHtmlEmpty(editingCommentText)) {
       alert('Comment cannot be empty');
       return;
     }
@@ -1640,13 +1650,20 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                       ))}
                     </select>
                   </div>
-                  <textarea
-                    className="commentary-textarea-sidebar"
+                  <ReactQuill
+                    theme="snow"
                     value={newCommentText}
-                    onChange={(e) => setNewCommentText(e.target.value)}
-                    rows={3}
+                    onChange={setNewCommentText}
                     placeholder="Add comment..."
-                    autoFocus
+                    className="commentary-quill-sidebar"
+                    modules={{
+                      toolbar: [
+                        ['bold', 'italic', 'underline'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['link'],
+                        ['clean']
+                      ]
+                    }}
                   />
                   <div className="commentary-actions-sidebar">
                     <button className="save-btn-small" onClick={handleAddComment}>Add</button>
@@ -1663,12 +1680,19 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                       >
                         {editingCommentId === comment.id ? (
                           <div className="editing-comment-sidebar">
-                            <textarea
+                            <ReactQuill
+                              theme="snow"
                               value={editingCommentText}
-                              onChange={(e) => setEditingCommentText(e.target.value)}
-                              className="commentary-textarea-sidebar"
-                              rows={2}
-                              autoFocus
+                              onChange={setEditingCommentText}
+                              className="commentary-quill-sidebar"
+                              modules={{
+                                toolbar: [
+                                  ['bold', 'italic', 'underline'],
+                                  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                  ['link'],
+                                  ['clean']
+                                ]
+                              }}
                             />
                             <div className="commentary-actions-sidebar">
                               <button className="save-btn-small" onClick={() => handleSaveComment(comment.id, comment.period_id)}>Save</button>
@@ -1690,9 +1714,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                                 )}
                               </span>
                             </div>
-                            {/* Rich text support commented out for now */}
-                            {/* <div className="comment-text-sidebar" dangerouslySetInnerHTML={{ __html: comment.comment_text }} /> */}
-                            <div className="comment-text-sidebar">{comment.comment_text}</div>
+                            <div className="comment-text-sidebar ql-editor" dangerouslySetInnerHTML={{ __html: comment.comment_text }} />
                           </>
                         )}
                       </div>
@@ -1710,9 +1732,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       {/* Compact Mode: Show just the latest commentary */}
       {compactMode && allComments.length > 0 && (
         <div className="compact-commentary">
-          <div className="compact-commentary-text" title={allComments[0].comment_text}>
-            {allComments[0].comment_text}
-          </div>
+          <div className="compact-commentary-text ql-editor" dangerouslySetInnerHTML={{ __html: allComments[0].comment_text }} />
           <div className="compact-commentary-date">
             {formatDate(allComments[0].reporting_date)}
           </div>

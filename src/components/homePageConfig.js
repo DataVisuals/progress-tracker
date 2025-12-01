@@ -1,6 +1,6 @@
 import {
   MdVisibility,
-  MdSpeed,
+  MdPriorityHigh,
   MdComment,
   MdBugReport,
   MdBuild,
@@ -13,7 +13,7 @@ import { FaDatabase } from 'react-icons/fa';
 // Panel configuration - defines all available panels
 export const PANEL_CONFIG = {
   heatmap: { id: 'heatmap', name: 'Most Viewed Projects', icon: MdVisibility, adminOnly: false },
-  metrics: { id: 'metrics', name: 'Metrics at Risk', icon: MdSpeed, adminOnly: false },
+  metrics: { id: 'metrics', name: 'Metrics at Risk', icon: MdPriorityHigh, adminOnly: false },
   commentary: { id: 'commentary', name: 'Recent Commentary', icon: MdComment, adminOnly: false },
   inconsistencies: { id: 'inconsistencies', name: 'Inconsistencies', icon: MdBugReport, adminOnly: false },
   attention: { id: 'attention', name: 'My Projects Needing Attention', icon: MdBuild, adminOnly: false },

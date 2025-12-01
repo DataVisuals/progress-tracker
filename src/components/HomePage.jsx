@@ -20,7 +20,7 @@ import {
   MdFileDownload,
   MdAutorenew,
   MdViewWeek,
-  MdSpeed,
+  MdPriorityHigh,
   MdFlag,
   MdPeople,
   MdCompareArrows,
@@ -50,9 +50,9 @@ import { trackPage } from '../hooks/usePageTracking';
 import { smallSelectStyles } from './SelectStyles';
 import DashboardConfigModal from './DashboardConfigModal';
 import TipsModal, { getAllTips } from './TipsModal';
-import UserInconsistenciesModal from './UserInconsistenciesModal';
 import { PANEL_CONFIG, LAYOUT_CONFIG, DEFAULT_DASHBOARD_CONFIG } from './homePageConfig';
 import { calculateHealthScore } from './ProjectHealthModal';
+import 'react-quill/dist/quill.snow.css';
 import './HomePage.css';
 import './MetricTabs.css';
 
@@ -75,6 +75,7 @@ const HomePage = ({
 
   const [recentCommentary, setRecentCommentary] = useState([]);
   const [atRiskMetrics, setAtRiskMetrics] = useState([]);
+  const [upcomingMetrics, setUpcomingMetrics] = useState([]); // Metrics with upcoming updates needed
   const [ragFilter, setRagFilter] = useState('all'); // 'all', 'red', 'amber'
   const [portfolioFilter, setPortfolioFilter] = useState('all'); // 'all' or portfolio_id for metrics
   const [commentaryPortfolioFilter, setCommentaryPortfolioFilter] = useState('all'); // 'all' or portfolio_id for commentary
@@ -84,8 +85,6 @@ const HomePage = ({
   const [recoveryPlans, setRecoveryPlans] = useState([]); // Track active recovery plans
   const [inconsistencies, setInconsistencies] = useState(null); // Inconsistency report data
   const [pageHeatmap, setPageHeatmap] = useState(null); // Page heatmap data for quadrant
-  const [showUserInconsistenciesModal, setShowUserInconsistenciesModal] = useState(false); // Modal for user's own inconsistencies
-  const [userInconsistenciesDismissed, setUserInconsistenciesDismissed] = useState(false); // Track if user dismissed the modal
   const [expandedPMs, setExpandedPMs] = useState({}); // Track which PMs are expanded in inconsistency report
   const [userProjectFeedback, setUserProjectFeedback] = useState([]); // Unresolved feedback on user's projects
   const [viewsDays, setViewsDays] = useState(() => {
@@ -404,6 +403,74 @@ const HomePage = ({
       console.log('At-risk metrics found:', sortedAtRiskMetrics.length, '(red:', sortedAtRiskMetrics.filter(m => m.ragStatus === 'red').length, ', amber:', sortedAtRiskMetrics.filter(m => m.ragStatus === 'amber').length, ')');
       setAtRiskMetrics(sortedAtRiskMetrics);
 
+      // Calculate upcoming metrics (next period needing update) for PM forward view
+      const upcomingList = [];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      Object.entries(projectsData).forEach(([projectId, data]) => {
+        if (!data || !Array.isArray(data)) return;
+        const projectInfo = projects[projectId];
+        if (!projectInfo) return;
+
+        // Only show projects where user is PM or secondary IM (this is "My Projects" view)
+        const isProjectOwner = projectInfo.initiative_manager === currentUser?.name;
+        const isSecondaryIM = projectInfo.secondary_pm === currentUser?.name;
+        if (!isProjectOwner && !isSecondaryIM) return;
+
+        const metricGroups = {};
+        data.forEach(period => {
+          if (!metricGroups[period.metric]) {
+            metricGroups[period.metric] = [];
+          }
+          metricGroups[period.metric].push(period);
+        });
+
+        Object.entries(metricGroups).forEach(([metricName, periods]) => {
+          const sortedPeriods = [...periods].sort((a, b) =>
+            new Date(a.reporting_date) - new Date(b.reporting_date)
+          );
+
+          // Find the next period that needs an update (complete is null or 0 and date has passed or is soon)
+          for (let i = 0; i < sortedPeriods.length; i++) {
+            const period = sortedPeriods[i];
+            const periodDate = new Date(period.reporting_date);
+            periodDate.setHours(0, 0, 0, 0);
+            const complete = parseFloat(period.complete) || 0;
+            const expected = parseFloat(period.expected) || 0;
+
+            // Skip periods in the past that have been completed
+            if (periodDate < today && complete > 0) continue;
+
+            // Calculate days until/since this period
+            const daysDiff = Math.ceil((periodDate - today) / (1000 * 60 * 60 * 24));
+
+            // Include periods that are due within the next 7 days or are overdue (up to 14 days)
+            if (daysDiff <= 7 && daysDiff >= -14 && !complete && expected > 0) {
+              upcomingList.push({
+                projectId: parseInt(projectId),
+                projectName: projectInfo.name,
+                metricId: period.metric_id,
+                metricName,
+                periodDate: period.reporting_date,
+                daysDiff,
+                expected,
+                target: parseFloat(sortedPeriods[sortedPeriods.length - 1].target) || expected,
+                portfolioId: projectInfo.portfolio_id,
+                portfolioName: projectInfo.portfolio_name,
+                portfolioColor: projectInfo.portfolio_color
+              });
+              break; // Only show the next upcoming period per metric
+            }
+          }
+        });
+      });
+
+      // Sort by days until due (overdue first, then soonest)
+      upcomingList.sort((a, b) => a.daysDiff - b.daysDiff);
+      console.log('Upcoming metrics found:', upcomingList.length, upcomingList);
+      setUpcomingMetrics(upcomingList);
+
       // Load recovery plans for all projects to check which red metrics have active plans
       let recoveryPlansList = [];
       try {
@@ -590,10 +657,10 @@ const HomePage = ({
     }
   }, [userInconsistencies.length, userProjectFeedback.length, onAttentionCountChange]);
 
-  // Handle external request to show attention modal
+  // Handle external request to show attention panel (from bell icon)
   useEffect(() => {
     if (showAttentionModal) {
-      setShowUserInconsistenciesModal(true);
+      setExpandedDockPanel('attention');
       if (onAttentionModalShown) {
         onAttentionModalShown();
       }
@@ -1072,7 +1139,7 @@ const HomePage = ({
         return (
           <div key={panelId} className={`home-quadrant metrics-quadrant panel-${index + 1}`}>
             <div className="quadrant-header">
-              <MdSpeed className="quadrant-icon warning" />
+              <MdPriorityHigh className="quadrant-icon warning" />
               <h2>Metrics at Risk</h2>
               <div className="filter-controls">
                 <div className="rag-filter-buttons">
@@ -1303,7 +1370,7 @@ const HomePage = ({
                               <span className="commentary-period">{item.periodName}</span>
                             </div>
                           </div>
-                          <p className="commentary-text">{item.commentary}</p>
+                          <div className="commentary-text ql-editor" dangerouslySetInnerHTML={{ __html: item.commentary }} />
                           <div className="commentary-footer">
                             {item.createdBy && <span className="commentary-author">{item.createdBy}</span>}
                             <span className="commentary-time">{formatTimestamp(item.timestamp)}</span>
@@ -1395,13 +1462,126 @@ const HomePage = ({
             <div className="quadrant-content">
               {loading ? (
                 <div className="loading-state">Loading...</div>
-              ) : userInconsistencies.length === 0 && userProjectFeedback.length === 0 ? (
+              ) : userInconsistencies.length === 0 && userProjectFeedback.length === 0 && upcomingMetrics.length === 0 ? (
                 <div className="empty-state success">
                   <MdCheckCircle className="empty-icon" />
                   <p>All caught up!</p>
-                  <span>No issues or feedback requiring your attention</span>
+                  <span>No issues or upcoming updates</span>
+                </div>
+              ) : forDock ? (
+                // Fullscreen two-column layout
+                <div className="attention-columns-container">
+                  <div className="attention-column split-column">
+                    <div className="attention-split-section">
+                      <div className="attention-column-header">
+                        <MdWarning className="column-icon" />
+                        <h3>Inconsistencies ({userInconsistencies.length})</h3>
+                      </div>
+                      <div className="attention-column-list">
+                        {userInconsistencies.length === 0 ? (
+                          <div className="empty-column-state">
+                            <MdCheckCircle className="empty-icon-small" />
+                            <span>No inconsistencies</span>
+                          </div>
+                        ) : (
+                          userInconsistencies.map((issue, idx) => {
+                            let issueTitle = '';
+                            if (issue.type === 'missing_recovery_plan' && issue.metric_name) {
+                              issueTitle = `${issue.metric_name} is ${issue.rag_status?.toUpperCase()} - no recovery plan`;
+                            } else if (issue.type === 'missing_metric_description' && issue.metric_name) {
+                              issueTitle = `${issue.metric_name} - missing description`;
+                            } else if (issue.type === 'missing_project_description') {
+                              issueTitle = `Missing project description`;
+                            } else if (issue.type === 'missing_documentation') {
+                              issueTitle = `No documentation links`;
+                            } else {
+                              issueTitle = issue.details;
+                            }
+                            return (
+                              <div key={`issue-${idx}`} className="attention-item" onClick={() => onNavigateToProject(issue.project_id)}>
+                                <div className="attention-icon-wrapper">
+                                  {issue.type === 'missing_recovery_plan' ? <span className={`metric-rag-marker ${issue.rag_status}`} /> : <MdWarning className="attention-icon" />}
+                                </div>
+                                <div className="attention-details">
+                                  <div className="attention-title">{issueTitle}</div>
+                                  <div className="attention-project">{issue.project_name}</div>
+                                </div>
+                                <MdArrowForward className="attention-arrow" />
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                    <div className="attention-split-section feedback-section">
+                      <div className="attention-column-header feedback-header">
+                        <MdFeedback className="column-icon feedback" />
+                        <h3>Feedback ({userProjectFeedback.length})</h3>
+                      </div>
+                      <div className="attention-column-list">
+                        {userProjectFeedback.length === 0 ? (
+                          <div className="empty-column-state">
+                            <MdCheckCircle className="empty-icon-small" />
+                            <span>No feedback</span>
+                          </div>
+                        ) : (
+                          userProjectFeedback.map((fb) => (
+                            <div key={`fb-${fb.id}`} className="attention-item feedback-item" onClick={() => onNavigateToProject(fb.project_id)}>
+                              <div className="attention-icon-wrapper"><MdFeedback className="attention-icon feedback" /></div>
+                              <div className="attention-details">
+                                <div className="attention-title">{fb.text}</div>
+                                <div className="attention-project">{fb.project_name} - {fb.user_name || 'Anonymous'} - {formatTimestamp(fb.created_at)}</div>
+                              </div>
+                              <MdArrowForward className="attention-arrow" />
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="attention-column upcoming-column">
+                    <div className="attention-column-header upcoming">
+                      <MdCalendarToday className="column-icon" />
+                      <h3>Upcoming Updates - Next 7 Days ({upcomingMetrics.length})</h3>
+                    </div>
+                    <div className="attention-column-list">
+                      {upcomingMetrics.length === 0 ? (
+                        <div className="empty-column-state">
+                          <MdCheckCircle className="empty-icon-small" />
+                          <span>No updates due in the next 7 days</span>
+                        </div>
+                      ) : (
+                        upcomingMetrics.map((item, idx) => (
+                          <div
+                            key={`upcoming-${idx}`}
+                            className={`attention-item compact upcoming-item ${item.daysDiff < 0 ? 'overdue' : item.daysDiff <= 3 ? 'soon' : ''}`}
+                            onClick={() => handleMetricClick(item.projectId, item.metricName)}
+                          >
+                            <div className="attention-icon-wrapper">
+                              <span className={`upcoming-dot ${item.daysDiff < 0 ? 'overdue' : item.daysDiff <= 3 ? 'soon' : ''}`} />
+                            </div>
+                            <div className="attention-details">
+                              <div className="attention-title">{item.metricName}</div>
+                              <div className="attention-project">{item.projectName}</div>
+                            </div>
+                            <div className="upcoming-due-badge">
+                              <span className={`due-label ${item.daysDiff < 0 ? 'overdue' : item.daysDiff <= 3 ? 'soon' : ''}`}>
+                                {item.daysDiff < 0
+                                  ? `${Math.abs(item.daysDiff)}d overdue`
+                                  : item.daysDiff === 0
+                                    ? 'Today'
+                                    : `In ${item.daysDiff}d`}
+                              </span>
+                            </div>
+                            <MdArrowForward className="attention-arrow" />
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </div>
               ) : (
+                // Quadrant single-column layout
                 <div className="attention-list">
                   {userInconsistencies.map((issue, idx) => {
                     let issueTitle = '';
@@ -1439,6 +1619,42 @@ const HomePage = ({
                       <MdArrowForward className="attention-arrow" />
                     </div>
                   ))}
+                  {/* Coming Up section in quadrant view */}
+                  {upcomingMetrics.length > 0 && (
+                    <>
+                      {(userInconsistencies.length > 0 || userProjectFeedback.length > 0) && (
+                        <div className="attention-section-divider">
+                          <MdCalendarToday className="section-icon" />
+                          <span>Coming Up</span>
+                        </div>
+                      )}
+                      {upcomingMetrics.slice(0, 3).map((item, idx) => (
+                        <div
+                          key={`upcoming-${idx}`}
+                          className={`attention-item upcoming-item ${item.daysDiff < 0 ? 'overdue' : item.daysDiff <= 3 ? 'soon' : ''}`}
+                          onClick={() => handleMetricClick(item.projectId, item.metricName)}
+                        >
+                          <div className="attention-icon-wrapper">
+                            <span className={`upcoming-dot ${item.daysDiff < 0 ? 'overdue' : item.daysDiff <= 3 ? 'soon' : ''}`} />
+                          </div>
+                          <div className="attention-details">
+                            <div className="attention-title">{item.metricName}</div>
+                            <div className="attention-project">{item.projectName}</div>
+                          </div>
+                          <div className="upcoming-due-badge">
+                            <span className={`due-label ${item.daysDiff < 0 ? 'overdue' : item.daysDiff <= 3 ? 'soon' : ''}`}>
+                              {item.daysDiff < 0
+                                ? `${Math.abs(item.daysDiff)}d overdue`
+                                : item.daysDiff === 0
+                                  ? 'Today'
+                                  : `In ${item.daysDiff}d`}
+                            </span>
+                          </div>
+                          <MdArrowForward className="attention-arrow" />
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -2484,16 +2700,6 @@ const HomePage = ({
         />
       )}
 
-      {/* User Inconsistencies Modal */}
-      <UserInconsistenciesModal
-        isOpen={showUserInconsistenciesModal}
-        onClose={() => {
-          setShowUserInconsistenciesModal(false);
-          setUserInconsistenciesDismissed(true);
-        }}
-        inconsistencies={userInconsistencies}
-        feedback={userProjectFeedback}
-      />
 
 
       {/* Hover Tab Bar - shows panel previews on hover */}
