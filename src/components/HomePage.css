@@ -2829,7 +2829,7 @@ html.dark-mode .quadrant-content {
 .metrics-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   text-align: left;
   background-color: white;
   padding: 4px;
@@ -2840,8 +2840,8 @@ html.dark-mode .quadrant-content {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 4px 2px;
-  margin-top: 4px;
+  padding: 2px 4px;
+  margin-top: 6px;
   font-size: 10px;
   font-weight: 600;
   color: #6b7280;
@@ -2874,7 +2874,7 @@ html.dark-mode .quadrant-content {
   justify-content: space-between;
   -webkit-align-items: center;
   align-items: center;
-  padding: 8px 10px;
+  padding: 6px 10px;
   background-color: #fef2f2;
   border-radius: 4px;
   cursor: pointer;
@@ -2883,7 +2883,7 @@ html.dark-mode .quadrant-content {
   text-align: left;
   line-height: 1;
   box-sizing: border-box;
-  min-height: 48px;
+  min-height: 36px;
 }
 
 .metric-item .metric-left {
@@ -2934,6 +2934,73 @@ html.dark-mode .quadrant-content {
   margin-left: 0;
 }
 
+.metric-stats {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: baseline;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.stat-actual {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.stat-expected {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.stat-separator {
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+.stat-divider {
+  color: #d1d5db;
+  margin: 0 2px;
+}
+
+.stat-target {
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.stat-variance {
+  font-size: 11px;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.stat-variance.red {
+  color: #dc2626;
+}
+
+.stat-variance.amber {
+  color: #d97706;
+}
+
+/* Dark mode for metric stats */
+.dark-mode .stat-actual,
+.dark-mode .stat-expected {
+  color: #f3f4f6;
+}
+
+.dark-mode .stat-separator {
+  color: #6b7280;
+}
+
+.dark-mode .stat-divider {
+  color: #4b5563;
+}
+
+.dark-mode .stat-target {
+  color: #9ca3af;
+}
+
 .metric-header {
   display: -webkit-flex;
   display: flex;
@@ -2953,11 +3020,14 @@ html.dark-mode .quadrant-content {
 .metric-text {
   display: -webkit-flex;
   display: flex;
-  -webkit-flex-direction: column;
-  flex-direction: column;
+  -webkit-flex-direction: row;
+  flex-direction: row;
+  -webkit-align-items: baseline;
+  align-items: baseline;
   -webkit-flex: 1;
   flex: 1;
   min-width: 0;
+  gap: 6px;
 }
 
 .portfolio-dot {
@@ -2972,10 +3042,15 @@ html.dark-mode .quadrant-content {
   font-weight: 600;
   color: #003c71;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   line-height: 16px;
-  padding: 2px 0;
+  flex-shrink: 0;
+}
+
+.metric-project::after {
+  content: "›";
+  margin-left: 6px;
+  color: #9ca3af;
+  font-weight: 400;
 }
 
 .recovery-plan-indicator {
@@ -3002,13 +3077,14 @@ html.dark-mode .quadrant-content {
 }
 
 .metric-name {
-  font-size: 10px;
+  font-size: 11px;
   color: #6b7280;
-  line-height: 14px;
-  padding: 2px 0;
+  line-height: 16px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
 
 .metric-variance {
@@ -3028,16 +3104,16 @@ html.dark-mode .quadrant-content {
 
 .metric-gauge {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
 }
 
 .gauge-track {
-  width: 40px;
-  height: 5px;
+  width: 50px;
+  height: 4px;
   background-color: #e5e7eb;
-  border-radius: 3px;
+  border-radius: 2px;
   overflow: hidden;
 }
 
