@@ -3140,7 +3140,7 @@ function createApp(dbPath) {
         JOIN metric_periods mp ON c.period_id = mp.id
         JOIN metrics m ON mp.metric_id = m.id
         JOIN projects p ON m.project_id = p.id
-        ORDER BY c.created_at DESC
+        ORDER BY COALESCE(c.updated_at, c.created_at) DESC
         LIMIT ?
       `, [limit]);
       res.json(comments);
