@@ -106,7 +106,31 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
     const frequency = currentPeriod.frequency || 'monthly';
     const periodEnded = hasPeriodEnded(currentPeriod.reporting_date, frequency, today);
 
-    return calculateRAGForPeriod(currentPeriod, periodEnded);
+    // Check if current period has a value
+    const hasCurrentValue = currentPeriod.complete !== null &&
+                            currentPeriod.complete !== undefined &&
+                            currentPeriod.complete !== '';
+
+    // If current period has a value, use it
+    if (hasCurrentValue) {
+      return calculateRAGForPeriod(currentPeriod, periodEnded);
+    }
+
+    // Current period has no value
+    if (periodEnded) {
+      // Period ended with no value = red (missing data)
+      return calculateRAGForPeriod(currentPeriod, true);
+    }
+
+    // Period hasn't ended and no value - carry forward previous period's status
+    if (currentPeriodIndex > 0) {
+      const previousPeriod = sortedPeriods[currentPeriodIndex - 1];
+      // Previous period has ended, so pass true
+      return calculateRAGForPeriod(previousPeriod, true);
+    }
+
+    // No previous period, no current value, period not ended = grey
+    return 'grey';
   };
 
   // Helper to detect if trajectory is flat (no significant change)

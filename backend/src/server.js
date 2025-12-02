@@ -4411,9 +4411,12 @@ function createApp(dbPath) {
 
       // 4. Metrics that are red or amber but have no recovery plan
       // Calculate RAG status in SQL using window functions
-      // Only flag as red/amber if: 1) has a complete value that's behind, OR 2) period has ended with no value
+      // Logic:
+      // - If current period has value: use it
+      // - If current period ended with no value: red (missing data)
+      // - If current period not ended and no value: carry forward previous period's status
       const metricsNeedingRecovery = await dbAll(`
-        WITH CurrentPeriods AS (
+        WITH RankedPeriods AS (
           SELECT
             mp.metric_id,
             mp.reporting_date,
@@ -4425,7 +4428,7 @@ function createApp(dbPath) {
           FROM metric_periods mp
           WHERE mp.reporting_date <= DATE('now')
         ),
-        LatestPeriods AS (
+        PeriodsWithMeta AS (
           SELECT
             metric_id,
             reporting_date,
@@ -4433,6 +4436,7 @@ function createApp(dbPath) {
             expected,
             frequency,
             next_date,
+            rn,
             CASE
               WHEN next_date IS NULL OR DATE('now') < next_date THEN 1
               ELSE 0
@@ -4444,13 +4448,28 @@ function createApp(dbPath) {
               WHEN 'monthly' THEN DATE(reporting_date, '+1 month')
               WHEN 'quarterly' THEN DATE(reporting_date, '+3 months')
               ELSE DATE(reporting_date, '+1 month')
-            END as period_end_date
-          FROM CurrentPeriods
-          WHERE rn = 1
+            END as period_end_date,
+            -- Has a complete value entered
+            CASE WHEN complete IS NOT NULL AND complete != '' THEN 1 ELSE 0 END as has_complete_value
+          FROM RankedPeriods
+        ),
+        CurrentAndPrevious AS (
+          SELECT
+            curr.metric_id,
+            curr.complete as curr_complete,
+            curr.expected as curr_expected,
+            curr.has_complete_value as curr_has_value,
+            CASE WHEN DATE('now') >= curr.period_end_date THEN 1 ELSE 0 END as curr_period_ended,
+            prev.complete as prev_complete,
+            prev.expected as prev_expected,
+            CASE WHEN prev.complete IS NOT NULL AND prev.complete != '' THEN 1 ELSE 0 END as prev_has_value
+          FROM PeriodsWithMeta curr
+          LEFT JOIN PeriodsWithMeta prev ON curr.metric_id = prev.metric_id AND prev.rn = 2
+          WHERE curr.rn = 1
         ),
         RAGCalculation AS (
           SELECT
-            lp.metric_id,
+            cp.metric_id,
             m.name as metric_name,
             m.project_id,
             p.name as project_name,
@@ -4459,15 +4478,26 @@ function createApp(dbPath) {
             m.amber_tolerance,
             m.red_tolerance,
             m.created_at as first_detected,
-            lp.complete,
-            lp.expected,
-            lp.is_current_period,
-            -- Period has ended if today >= period_end_date
-            CASE WHEN DATE('now') >= lp.period_end_date THEN 1 ELSE 0 END as period_ended,
-            -- Has a complete value entered (not null and not empty string)
-            CASE WHEN lp.complete IS NOT NULL AND lp.complete != '' THEN 1 ELSE 0 END as has_complete_value
-          FROM LatestPeriods lp
-          JOIN metrics m ON lp.metric_id = m.id
+            -- Determine which values to use
+            CASE
+              WHEN cp.curr_has_value = 1 THEN cp.curr_complete
+              WHEN cp.curr_period_ended = 1 THEN cp.curr_complete
+              WHEN cp.prev_has_value = 1 THEN cp.prev_complete
+              ELSE NULL
+            END as use_complete,
+            CASE
+              WHEN cp.curr_has_value = 1 THEN cp.curr_expected
+              WHEN cp.curr_period_ended = 1 THEN cp.curr_expected
+              WHEN cp.prev_has_value = 1 THEN cp.prev_expected
+              ELSE NULL
+            END as use_expected,
+            -- Flag if we should skip (no current value, period not ended, no previous)
+            CASE
+              WHEN cp.curr_has_value = 0 AND cp.curr_period_ended = 0 AND cp.prev_has_value = 0 THEN 1
+              ELSE 0
+            END as should_skip
+          FROM CurrentAndPrevious cp
+          JOIN metrics m ON cp.metric_id = m.id
           JOIN projects p ON m.project_id = p.id
           LEFT JOIN recovery_plans rp ON m.id = rp.metric_id AND rp.status = 'active'
           WHERE rp.id IS NULL
@@ -4481,12 +4511,11 @@ function createApp(dbPath) {
           secondary_pm,
           first_detected,
           CASE
-            -- If no complete value and period hasn't ended, grey (not at risk yet)
-            WHEN has_complete_value = 0 AND period_ended = 0 THEN 'grey'
-            WHEN expected IS NULL OR expected = 0 THEN 'grey'
-            WHEN COALESCE(complete, 0) >= expected THEN 'green'
-            WHEN ABS((COALESCE(complete, 0) - expected) * 100.0 / expected) > red_tolerance THEN 'red'
-            WHEN ABS((COALESCE(complete, 0) - expected) * 100.0 / expected) > amber_tolerance THEN 'amber'
+            WHEN should_skip = 1 THEN 'grey'
+            WHEN use_expected IS NULL OR use_expected = 0 THEN 'grey'
+            WHEN COALESCE(use_complete, 0) >= use_expected THEN 'green'
+            WHEN ABS((COALESCE(use_complete, 0) - use_expected) * 100.0 / use_expected) > red_tolerance THEN 'red'
+            WHEN ABS((COALESCE(use_complete, 0) - use_expected) * 100.0 / use_expected) > amber_tolerance THEN 'amber'
             ELSE 'green'
           END as rag_status
         FROM RAGCalculation

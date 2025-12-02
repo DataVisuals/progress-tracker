@@ -346,43 +346,55 @@ const HomePage = ({
                                    currentPeriod.complete !== undefined &&
                                    currentPeriod.complete !== '';
 
-          const complete = parseFloat(currentPeriod.complete) || 0;
-          const expected = parseFloat(currentPeriod.expected) || 0;
           // Get the final target from the last period (the ultimate goal)
           const lastPeriod = sortedPeriods[sortedPeriods.length - 1];
+
+          // Helper to calculate RAG for a period
+          const calculateRAGForPeriod = (period) => {
+            const complete = parseFloat(period.complete) || 0;
+            const expected = parseFloat(period.expected) || 0;
+            if (expected === 0) return { ragStatus: 'grey', complete, expected, variancePercent: 0 };
+
+            const variance = complete - expected;
+            const variancePercent = Math.abs((variance / expected) * 100);
+            const redTolerance = parseFloat(period.red_tolerance) || 10.0;
+            const amberTolerance = parseFloat(period.amber_tolerance) || 5.0;
+
+            let ragStatus = 'green';
+            if (variance < 0) {
+              if (variancePercent > redTolerance) {
+                ragStatus = 'red';
+              } else if (variancePercent > amberTolerance) {
+                ragStatus = 'amber';
+              }
+            }
+            return { ragStatus, complete, expected, variancePercent };
+          };
+
+          let ragResult;
+          let usedPeriod = currentPeriod;
+
+          if (hasCompleteValue) {
+            // Current period has a value, use it
+            ragResult = calculateRAGForPeriod(currentPeriod);
+          } else if (periodHasEnded) {
+            // Period ended with no value = calculate based on 0 complete (will be red)
+            ragResult = calculateRAGForPeriod(currentPeriod);
+          } else if (currentPeriodIndex > 0) {
+            // Period hasn't ended, no value - carry forward previous period's status
+            usedPeriod = sortedPeriods[currentPeriodIndex - 1];
+            ragResult = calculateRAGForPeriod(usedPeriod);
+            console.log(`${metricName}: carrying forward previous period RAG`);
+          } else {
+            // No previous period, no current value, period not ended = skip (grey)
+            console.log(`${metricName}: no previous period, no value, period not ended - skipping`);
+            return;
+          }
+
+          const { ragStatus, complete, expected, variancePercent } = ragResult;
           const finalTarget = parseFloat(lastPeriod.target) || parseFloat(lastPeriod.expected) || expected;
 
-          console.log(`${metricName}: periods=${sortedPeriods.length}, currentIdx=${currentPeriodIndex}, complete=${complete}, expected=${expected}, periodEnded=${periodHasEnded}, hasValue=${hasCompleteValue}`);
-
-          if (expected === 0) {
-            console.log(`  -> Skipping: expected=0`);
-            return;
-          }
-
-          // Only calculate RAG if:
-          // 1. We have a complete value that's behind, OR
-          // 2. The period has ended and there's no value (missing data)
-          if (!hasCompleteValue && !periodHasEnded) {
-            console.log(`  -> Skipping: no complete value and period not ended yet`);
-            return;
-          }
-
-          const variance = complete - expected;
-          const variancePercent = Math.abs((variance / expected) * 100);
-          const redTolerance = parseFloat(currentPeriod.red_tolerance) || 10.0;
-          const amberTolerance = parseFloat(currentPeriod.amber_tolerance) || 5.0;
-
-          // Determine RAG status
-          let ragStatus = 'green';
-          if (variance < 0) {
-            if (variancePercent > redTolerance) {
-              ragStatus = 'red';
-            } else if (variancePercent > amberTolerance) {
-              ragStatus = 'amber';
-            }
-          }
-
-          console.log(`  -> variance=${variancePercent.toFixed(1)}%, amber=${amberTolerance}%, red=${redTolerance}%, status=${ragStatus}`);
+          console.log(`${metricName}: periods=${sortedPeriods.length}, currentIdx=${currentPeriodIndex}, complete=${complete}, expected=${expected}, periodEnded=${periodHasEnded}, hasValue=${hasCompleteValue}, status=${ragStatus}`);
 
           // Add to list if red or amber
           if (ragStatus === 'red' || ragStatus === 'amber') {
