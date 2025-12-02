@@ -374,11 +374,15 @@ const HomePage = ({
           let ragResult;
           let usedPeriod = currentPeriod;
 
+          console.log(`${metricName}: DEBUG - currentPeriodIndex=${currentPeriodIndex}, hasCompleteValue=${hasCompleteValue}, periodHasEnded=${periodHasEnded}, reportingDate=${currentPeriod.reporting_date}, frequency=${frequency}`);
+
           if (hasCompleteValue) {
             // Current period has a value, use it
+            console.log(`${metricName}: using current period (has value)`);
             ragResult = calculateRAGForPeriod(currentPeriod);
           } else if (periodHasEnded) {
             // Period ended with no value = calculate based on 0 complete (will be red)
+            console.log(`${metricName}: period ended with no value - will be red`);
             ragResult = calculateRAGForPeriod(currentPeriod);
           } else if (currentPeriodIndex > 0) {
             // Period hasn't ended, no value - carry forward previous period's status
@@ -387,7 +391,7 @@ const HomePage = ({
             console.log(`${metricName}: carrying forward previous period RAG`);
           } else {
             // No previous period, no current value, period not ended = skip (grey)
-            console.log(`${metricName}: no previous period, no value, period not ended - skipping`);
+            console.log(`${metricName}: SKIP - no previous period (idx=0), no value, period not ended`);
             return;
           }
 
