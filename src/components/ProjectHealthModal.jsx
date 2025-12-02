@@ -500,10 +500,29 @@ const ProjectHealthModal = ({
           <div className="health-left-column">
             {/* Overall Score */}
             <div className="overall-health-score">
-              <div
-                className="score-circle"
-                style={{ borderColor: getStatusColor(overallScore) }}
-              >
+              <div className="score-gauge">
+                <svg viewBox="0 0 36 36" className="score-gauge-svg">
+                  <circle
+                    className="score-gauge-bg"
+                    cx="18"
+                    cy="18"
+                    r="15.5"
+                    fill="none"
+                    strokeWidth="3"
+                  />
+                  <circle
+                    className="score-gauge-progress"
+                    cx="18"
+                    cy="18"
+                    r="15.5"
+                    fill="none"
+                    strokeWidth="3"
+                    stroke={getStatusColor(overallScore)}
+                    strokeDasharray={`${(overallScore / 100) * 97.4} 97.4`}
+                    strokeLinecap="round"
+                    transform="rotate(-90 18 18)"
+                  />
+                </svg>
                 <span className="score-value" style={{ color: getStatusColor(overallScore) }}>{overallScore}<span className="percent-sign">%</span></span>
                 <span className="score-label">Overall</span>
               </div>

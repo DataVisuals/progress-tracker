@@ -70,24 +70,38 @@
   flex-shrink: 0;
 }
 
-.score-circle {
+.score-gauge {
+  position: relative;
   width: 100px;
   height: 100px;
-  border-radius: 50%;
-  border: 5px solid;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.score-gauge-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.score-gauge-bg {
+  stroke: #e5e7eb;
+}
+
+.score-gauge-progress {
+  transition: stroke-dasharray 0.5s ease-out;
 }
 
 .score-value {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   color: #111827;
   line-height: 1;
+  z-index: 1;
 }
 
 .score-value .percent-sign {
@@ -101,6 +115,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-top: 2px;
+  z-index: 1;
 }
 
 .score-status {
@@ -229,8 +244,8 @@
   color: #f9fafb;
 }
 
-:root.dark-mode .score-circle {
-  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+:root.dark-mode .score-gauge-bg {
+  stroke: #374151;
 }
 
 :root.dark-mode .score-value {
