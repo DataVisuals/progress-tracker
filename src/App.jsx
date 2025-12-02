@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // App version - increment on each release
-const APP_VERSION = '1.0.2';
+const APP_VERSION = '1.0.3';
 import Select from 'react-select';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';

@@ -4449,8 +4449,8 @@ function createApp(dbPath) {
               WHEN 'quarterly' THEN DATE(reporting_date, '+3 months')
               ELSE DATE(reporting_date, '+1 month')
             END as period_end_date,
-            -- Has a complete value entered
-            CASE WHEN complete IS NOT NULL AND complete != '' THEN 1 ELSE 0 END as has_complete_value
+            -- Has a complete value entered (0 is the database default, treat as no value)
+            CASE WHEN complete IS NOT NULL AND complete != '' AND complete != 0 THEN 1 ELSE 0 END as has_complete_value
           FROM RankedPeriods
         ),
         CurrentAndPrevious AS (
@@ -4462,7 +4462,7 @@ function createApp(dbPath) {
             CASE WHEN DATE('now') >= curr.period_end_date THEN 1 ELSE 0 END as curr_period_ended,
             prev.complete as prev_complete,
             prev.expected as prev_expected,
-            CASE WHEN prev.complete IS NOT NULL AND prev.complete != '' THEN 1 ELSE 0 END as prev_has_value
+            CASE WHEN prev.complete IS NOT NULL AND prev.complete != '' AND prev.complete != 0 THEN 1 ELSE 0 END as prev_has_value
           FROM PeriodsWithMeta curr
           LEFT JOIN PeriodsWithMeta prev ON curr.metric_id = prev.metric_id AND prev.rn = 2
           WHERE curr.rn = 1

@@ -106,10 +106,13 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
     const frequency = currentPeriod.frequency || 'monthly';
     const periodEnded = hasPeriodEnded(currentPeriod.reporting_date, frequency, today);
 
-    // Check if current period has a value
-    const hasCurrentValue = currentPeriod.complete !== null &&
-                            currentPeriod.complete !== undefined &&
-                            currentPeriod.complete !== '';
+    // Check if current period has a value entered
+    // Note: complete defaults to 0 in database, so we treat 0 as "no value" for periods that haven't ended
+    const completeValue = currentPeriod.complete;
+    const hasCurrentValue = completeValue !== null &&
+                            completeValue !== undefined &&
+                            completeValue !== '' &&
+                            completeValue !== 0;
 
     // If current period has a value, use it
     if (hasCurrentValue) {

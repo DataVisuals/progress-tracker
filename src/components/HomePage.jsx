@@ -342,9 +342,11 @@ const HomePage = ({
           const periodHasEnded = hasPeriodEnded(currentPeriod.reporting_date, frequency);
 
           // Check if complete value has been entered
+          // Note: complete defaults to 0 in database, so we treat 0 as "no value" for periods that haven't ended
           const hasCompleteValue = currentPeriod.complete !== null &&
                                    currentPeriod.complete !== undefined &&
-                                   currentPeriod.complete !== '';
+                                   currentPeriod.complete !== '' &&
+                                   currentPeriod.complete !== 0;
 
           // Get the final target from the last period (the ultimate goal)
           const lastPeriod = sortedPeriods[sortedPeriods.length - 1];
