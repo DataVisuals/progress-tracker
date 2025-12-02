@@ -135,6 +135,7 @@
   border-bottom: 2px solid #00aeef;
   background: transparent;
   border-radius: 5px 5px 0 0;
+  position: relative;
 }
 
 .commentary-sidebar-title {
@@ -191,9 +192,13 @@
 
 .comment-header-sidebar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 6px;
   margin-bottom: 1px;
+}
+
+.comment-header-sidebar .comment-meta-sidebar {
+  margin-left: auto;
 }
 
 .comment-date-sidebar {
@@ -426,8 +431,14 @@
 
 .commentary-actions-sidebar {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.commentary-actions-sidebar .action-buttons {
+  display: flex;
   gap: 4px;
-  justify-content: flex-end;
 }
 
 .save-btn-small,
@@ -1793,6 +1804,16 @@
   flex: 1;
   min-width: 250px;
   font-size: 12px;
+  line-height: 1.4;
+}
+
+.metric-description-text.editable {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.metric-description-text.editable:hover {
+  color: #00aeef;
 }
 
 .metric-description-text.filled {

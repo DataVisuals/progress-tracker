@@ -23,9 +23,10 @@ import Feedback from './Feedback';
 import RecoveryPlans from './RecoveryPlans';
 // import CRAIDs from './CRAIDs'; // DISABLED: CRAIDs feature hidden
 import Lottie from 'lottie-react';
-import fixingAnimation from '../../public/fixing-animation.json';
+import fixingAnimation from '../assets/fixing-animation.json';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import ClarityIndicator from './ClarityIndicator';
 import './MetricChart.css';
 
 // Barclays blue color for expected line
@@ -1343,6 +1344,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             <div className="metric-property" style={{ flex: 1 }}>
               {editingDescription && onDescriptionChange ? (
                 <div style={{ display: 'inline-flex', gap: '4px', alignItems: 'center', width: '100%' }}>
+                  <ClarityIndicator text={tempDescriptionValue} size="sm" compact contentType="description" />
                   <input
                     type="text"
                     value={tempDescriptionValue}
@@ -1357,16 +1359,16 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                   <button onClick={() => setEditingDescription(false)} style={{ fontSize: '11px', padding: '2px 6px' }}>✕</button>
                 </div>
               ) : (
-                <span
-                  onClick={handleDescriptionClick}
-                  className={`metric-description-text ${sortedData[0]?.metric_description ? 'filled' : 'placeholder'}`}
-                  style={{
-                    cursor: canEdit && onDescriptionChange ? 'pointer' : 'default'
-                  }}
-                  title={canEdit && onDescriptionChange ? 'Click to edit description' : ''}
-                >
-                  {sortedData[0]?.metric_description || (canEdit && onDescriptionChange ? 'Add a description of precisely what the metric measures here...' : '')}
-                </span>
+                <div className="metric-description-wrapper" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                  <ClarityIndicator text={sortedData[0]?.metric_description} size="sm" compact hoverReveal contentType="description" />
+                  <span
+                    className={`metric-description-text ${canEdit && onDescriptionChange ? 'editable' : ''} ${sortedData[0]?.metric_description ? 'filled' : 'placeholder'}`}
+                    onClick={handleDescriptionClick}
+                    title={canEdit && onDescriptionChange ? 'Click to edit description' : ''}
+                  >
+                    {sortedData[0]?.metric_description || (canEdit && onDescriptionChange ? 'Add a description of precisely what the metric measures here...' : '')}
+                  </span>
+                </div>
               )}
             </div>
           )}
@@ -1666,8 +1668,11 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                     }}
                   />
                   <div className="commentary-actions-sidebar">
-                    <button className="save-btn-small" onClick={handleAddComment}>Add</button>
-                    <button className="cancel-btn-small" onClick={handleCancelAdd}>Cancel</button>
+                    <ClarityIndicator text={newCommentText} size="sm" hoverReveal />
+                    <div className="action-buttons">
+                      <button className="save-btn-small" onClick={handleAddComment}>Add</button>
+                      <button className="cancel-btn-small" onClick={handleCancelAdd}>Cancel</button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -1695,14 +1700,18 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                               }}
                             />
                             <div className="commentary-actions-sidebar">
-                              <button className="save-btn-small" onClick={() => handleSaveComment(comment.id, comment.period_id)}>Save</button>
-                              <button className="cancel-btn-small" onClick={handleCancelEdit}>Cancel</button>
+                              <ClarityIndicator text={editingCommentText} size="sm" hoverReveal />
+                              <div className="action-buttons">
+                                <button className="save-btn-small" onClick={() => handleSaveComment(comment.id, comment.period_id)}>Save</button>
+                                <button className="cancel-btn-small" onClick={handleCancelEdit}>Cancel</button>
+                              </div>
                             </div>
                           </div>
                         ) : (
                           <>
                             <div className="comment-header-sidebar">
                               <span className="comment-date-sidebar">{comment.reporting_date}</span>
+                              <ClarityIndicator text={comment.comment_text} size="sm" compact hoverReveal />
                               <span className="comment-meta-sidebar">
                                 {comment.created_by_name && !comment.is_system && comment.created_by_name}
                                 {comment.is_system && 'System'}

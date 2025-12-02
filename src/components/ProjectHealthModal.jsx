@@ -9,6 +9,7 @@ import {
   Tooltip
 } from 'recharts';
 import { MdClose, MdCheckCircle, MdWarning, MdError, MdInfo } from 'react-icons/md';
+import { calculateClarityScore } from '../utils/clarityScore';
 import './ProjectHealthModal.css';
 
 // Helper to calculate when a period ends based on its start date and frequency
@@ -84,7 +85,8 @@ const getRedMetrics = (data, metricsList) => {
 };
 
 // Exported helper to calculate health scores for all dimensions
-// Returns { overall, projectDescribed, metricsDescribed, metricCoverage, metricManagement, projectControl }
+// Returns { overall, projectDescribed, metricsDescribed, metricCoverage, metricManagement, projectControl, contentClarity }
+// contentClarity evaluates project description, metric descriptions, and period commentary
 // projectLinks can be an array of links OR a number (link_count from API)
 export const calculateHealthScores = (project, projectData, metrics, recoveryPlans = [], projectLinks = []) => {
   if (!project || !projectData || !metrics) {
@@ -94,7 +96,8 @@ export const calculateHealthScores = (project, projectData, metrics, recoveryPla
       metricsDescribed: 0,
       metricCoverage: 0,
       metricManagement: 0,
-      projectControl: 0
+      projectControl: 0,
+      contentClarity: 0
     };
   }
 
@@ -242,8 +245,40 @@ export const calculateHealthScores = (project, projectData, metrics, recoveryPla
     }
   }
 
-  // Calculate overall score (average of all 5 dimensions)
-  const overall = Math.round((projectDescribedScore + metricsDescribedScore + metricCoverageScore + metricManagementScore + projectControlScore) / 5);
+  // 5. Content Clarity Score
+  // Evaluate clarity of project description, metric descriptions, and period commentary
+  let contentClarityScore = 50; // Default if no commentary
+  const textToAnalyze = [];
+
+  // Include project description
+  if (project.description && project.description.trim().length > 10) {
+    textToAnalyze.push(project.description);
+  }
+
+  // Include period commentary
+  projectData.forEach(period => {
+    if (period.commentary && period.commentary.trim().length > 10) {
+      textToAnalyze.push(period.commentary);
+    }
+  });
+
+  // Include metric descriptions
+  metrics.forEach(metric => {
+    if (metric.description && metric.description.trim().length > 10) {
+      textToAnalyze.push(metric.description);
+    }
+  });
+
+  if (textToAnalyze.length > 0) {
+    // Calculate average clarity score across all text
+    const clarityScores = textToAnalyze.map(text => calculateClarityScore(text).score);
+    const avgClarity = clarityScores.reduce((sum, s) => sum + s, 0) / clarityScores.length;
+    // Convert 1-5 scale to 0-100
+    contentClarityScore = Math.round((avgClarity / 5) * 100);
+  }
+
+  // Calculate overall score (average of all 6 dimensions)
+  const overall = Math.round((projectDescribedScore + metricsDescribedScore + metricCoverageScore + metricManagementScore + projectControlScore + contentClarityScore) / 6);
 
   return {
     overall,
@@ -251,7 +286,8 @@ export const calculateHealthScores = (project, projectData, metrics, recoveryPla
     metricsDescribed: metricsDescribedScore,
     metricCoverage: metricCoverageScore,
     metricManagement: metricManagementScore,
-    projectControl: projectControlScore
+    projectControl: projectControlScore,
+    contentClarity: contentClarityScore
   };
 };
 
@@ -276,11 +312,12 @@ const ProjectHealthModal = ({
       metricsDescribed: scores.metricsDescribed,
       metricCoverage: scores.metricCoverage,
       metricManagement: scores.metricManagement,
-      projectControl: scores.projectControl
+      projectControl: scores.projectControl,
+      contentClarity: scores.contentClarity
     };
   }, [project, projectData, metrics, recoveryPlans, projectLinks]);
 
-  // Prepare data for radar chart (5 dimensions)
+  // Prepare data for radar chart (6 dimensions)
   const radarData = [
     {
       dimension: 'Project Described',
@@ -306,16 +343,22 @@ const ProjectHealthModal = ({
       dimension: 'Project Control',
       score: healthScores.projectControl,
       fullMark: 100
+    },
+    {
+      dimension: 'Content Clarity',
+      score: healthScores.contentClarity,
+      fullMark: 100
     }
   ];
 
-  // Calculate overall health score (average of 5 dimensions)
+  // Calculate overall health score (average of 6 dimensions)
   const overallScore = Math.round(
     (healthScores.projectDescribed +
      healthScores.metricsDescribed +
      healthScores.metricCoverage +
      healthScores.metricManagement +
-     healthScores.projectControl) / 5
+     healthScores.projectControl +
+     healthScores.contentClarity) / 6
   );
 
   // Get status color based on score
@@ -422,6 +465,19 @@ const ProjectHealthModal = ({
             label: 'Minimal red/amber periods',
             met: healthScores.projectControl >= 60,
             tooltip: 'Fewer negative variances in recent periods improves this score.'
+          }
+        ];
+      case 'Content Clarity':
+        return [
+          {
+            label: 'Clear, concise writing',
+            met: healthScores.contentClarity >= 80,
+            tooltip: 'Evaluates project description, metric descriptions, and commentary for clarity. Rewards concise sentences (10-20 words) and plain language.'
+          },
+          {
+            label: 'Minimal jargon & abbreviations',
+            met: healthScores.contentClarity >= 60,
+            tooltip: 'Penalizes business jargon (synergy, leverage, etc.) and unexplained abbreviations. Defined abbreviations like "PMO (Project Management Office)" are OK.'
           }
         ];
       default:

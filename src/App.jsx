@@ -28,6 +28,7 @@ import { api } from './api/client';
 import { selectStyles } from './components/SelectStyles';
 import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
 import ProjectHealthModal, { calculateHealthScore } from './components/ProjectHealthModal';
+import ClarityIndicator from './components/ClarityIndicator';
 import Lottie from 'lottie-react';
 import progressChartAnimation from './assets/progress-chart.json';
 import bellNotificationAnimation from './assets/bell-notification.json';
@@ -1612,26 +1613,32 @@ function App() {
                 {(currentProject?.description || canEdit()) && (
                   <div className="report-header-right" style={{ flex: 2 }}>
                     {editingProjectDesc ? (
-                      <textarea
-                        className="project-desc-input"
-                        value={editProjectDescValue}
-                        onChange={(e) => setEditProjectDescValue(e.target.value)}
-                        onKeyDown={handleProjectDescKeyDown}
-                        onBlur={handleSaveProjectDesc}
-                        placeholder="Add a description of what the project will achieve here..."
-                        rows={3}
-                        autoFocus
-                        style={{ textAlign: 'right' }}
-                      />
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                        <ClarityIndicator text={editProjectDescValue} size="sm" compact contentType="description" />
+                        <textarea
+                          className="project-desc-input"
+                          value={editProjectDescValue}
+                          onChange={(e) => setEditProjectDescValue(e.target.value)}
+                          onKeyDown={handleProjectDescKeyDown}
+                          onBlur={handleSaveProjectDesc}
+                          placeholder="Add a description of what the project will achieve here..."
+                          rows={3}
+                          autoFocus
+                          style={{ textAlign: 'right', flex: 1 }}
+                        />
+                      </div>
                     ) : (
-                      <p
-                        className={`project-description ${canEdit() ? 'editable' : ''} ${currentProject?.description ? 'filled' : 'empty'}`}
-                        onClick={handleProjectDescClick}
-                        title={currentProject?.description ? currentProject.description : (canEdit() ? "Click to edit description" : undefined)}
-                        style={{ textAlign: 'right' }}
-                      >
-                        {currentProject?.description || (canEdit() ? 'Click to add a description...' : '')}
-                      </p>
+                      <div className="project-description-wrapper" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', textAlign: 'right' }}>
+                        <ClarityIndicator text={currentProject?.description} size="sm" compact hoverReveal contentType="description" />
+                        <p
+                          className={`project-description ${canEdit() ? 'editable' : ''} ${currentProject?.description ? 'filled' : 'empty'}`}
+                          onClick={handleProjectDescClick}
+                          title={currentProject?.description ? currentProject.description : (canEdit() ? "Click to edit description" : undefined)}
+                          style={{ flex: 1, margin: 0 }}
+                        >
+                          {currentProject?.description || (canEdit() ? 'Click to add a description...' : '')}
+                        </p>
+                      </div>
                     )}
                   </div>
                 )}

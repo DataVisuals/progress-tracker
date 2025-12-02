@@ -4275,12 +4275,13 @@ function createApp(dbPath) {
       // TODO: Implement RAG status calculation for metrics without recovery plans
       // For now, just check other types of inconsistencies
 
-      // 1. Projects without descriptions
+      // 1. Projects without descriptions (include both primary and secondary PM)
       const projectsWithoutDesc = await dbAll(`
         SELECT
           p.id as project_id,
           p.name as project_name,
           p.initiative_manager as pm_name,
+          p.secondary_pm,
           p.created_at as first_detected
         FROM projects p
         WHERE p.description IS NULL OR p.description = ''
@@ -4288,21 +4289,39 @@ function createApp(dbPath) {
       `);
 
       for (const project of projectsWithoutDesc) {
-        inconsistencies.push({
-          type: 'missing_project_description',
-          severity: 'low',
-          pm_name: project.pm_name,
-          project_id: project.project_id,
-          project_name: project.project_name,
-          metric_id: null,
-          metric_name: null,
-          details: 'Project missing description',
-          first_detected: project.first_detected,
-          age_days: Math.floor((Date.now() - new Date(project.first_detected)) / (1000 * 60 * 60 * 24))
-        });
+        // Add for primary PM
+        if (project.pm_name) {
+          inconsistencies.push({
+            type: 'missing_project_description',
+            severity: 'low',
+            pm_name: project.pm_name,
+            project_id: project.project_id,
+            project_name: project.project_name,
+            metric_id: null,
+            metric_name: null,
+            details: 'Project missing description',
+            first_detected: project.first_detected,
+            age_days: Math.floor((Date.now() - new Date(project.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
+        // Add for secondary PM if different from primary
+        if (project.secondary_pm && project.secondary_pm !== project.pm_name) {
+          inconsistencies.push({
+            type: 'missing_project_description',
+            severity: 'low',
+            pm_name: project.secondary_pm,
+            project_id: project.project_id,
+            project_name: project.project_name,
+            metric_id: null,
+            metric_name: null,
+            details: 'Project missing description',
+            first_detected: project.first_detected,
+            age_days: Math.floor((Date.now() - new Date(project.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
       }
 
-      // 2. Metrics without descriptions
+      // 2. Metrics without descriptions (include both primary and secondary PM)
       const metricsWithoutDescriptions = await dbAll(`
         SELECT
           m.id as metric_id,
@@ -4310,6 +4329,7 @@ function createApp(dbPath) {
           m.project_id,
           p.name as project_name,
           p.initiative_manager as pm_name,
+          p.secondary_pm,
           m.created_at as first_detected
         FROM metrics m
         JOIN projects p ON m.project_id = p.id
@@ -4318,26 +4338,43 @@ function createApp(dbPath) {
       `);
 
       for (const metric of metricsWithoutDescriptions) {
-        inconsistencies.push({
-          type: 'missing_metric_description',
-          severity: 'low',
-          pm_name: metric.pm_name,
-          project_id: metric.project_id,
-          project_name: metric.project_name,
-          metric_id: metric.metric_id,
-          metric_name: metric.metric_name,
-          details: 'Metric missing description',
-          first_detected: metric.first_detected,
-          age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
-        });
+        if (metric.pm_name) {
+          inconsistencies.push({
+            type: 'missing_metric_description',
+            severity: 'low',
+            pm_name: metric.pm_name,
+            project_id: metric.project_id,
+            project_name: metric.project_name,
+            metric_id: metric.metric_id,
+            metric_name: metric.metric_name,
+            details: 'Metric missing description',
+            first_detected: metric.first_detected,
+            age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
+        if (metric.secondary_pm && metric.secondary_pm !== metric.pm_name) {
+          inconsistencies.push({
+            type: 'missing_metric_description',
+            severity: 'low',
+            pm_name: metric.secondary_pm,
+            project_id: metric.project_id,
+            project_name: metric.project_name,
+            metric_id: metric.metric_id,
+            metric_name: metric.metric_name,
+            details: 'Metric missing description',
+            first_detected: metric.first_detected,
+            age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
       }
 
-      // 3. Projects without documentation links
+      // 3. Projects without documentation links (include both primary and secondary PM)
       const projectsWithoutDocs = await dbAll(`
         SELECT
           p.id as project_id,
           p.name as project_name,
           p.initiative_manager as pm_name,
+          p.secondary_pm,
           p.created_at as first_detected
         FROM projects p
         LEFT JOIN project_links pl ON p.id = pl.project_id
@@ -4346,16 +4383,30 @@ function createApp(dbPath) {
       `);
 
       for (const proj of projectsWithoutDocs) {
-        inconsistencies.push({
-          type: 'missing_documentation',
-          severity: 'low',
-          pm_name: proj.pm_name,
-          project_id: proj.project_id,
-          project_name: proj.project_name,
-          details: 'Project has no documentation links',
-          first_detected: proj.first_detected,
-          age_days: Math.floor((Date.now() - new Date(proj.first_detected)) / (1000 * 60 * 60 * 24))
-        });
+        if (proj.pm_name) {
+          inconsistencies.push({
+            type: 'missing_documentation',
+            severity: 'low',
+            pm_name: proj.pm_name,
+            project_id: proj.project_id,
+            project_name: proj.project_name,
+            details: 'Project has no documentation links',
+            first_detected: proj.first_detected,
+            age_days: Math.floor((Date.now() - new Date(proj.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
+        if (proj.secondary_pm && proj.secondary_pm !== proj.pm_name) {
+          inconsistencies.push({
+            type: 'missing_documentation',
+            severity: 'low',
+            pm_name: proj.secondary_pm,
+            project_id: proj.project_id,
+            project_name: proj.project_name,
+            details: 'Project has no documentation links',
+            first_detected: proj.first_detected,
+            age_days: Math.floor((Date.now() - new Date(proj.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
       }
 
       // 4. Metrics that are red or amber but have no recovery plan
@@ -4397,6 +4448,7 @@ function createApp(dbPath) {
             m.project_id,
             p.name as project_name,
             p.initiative_manager as pm_name,
+            p.secondary_pm,
             m.amber_tolerance,
             m.red_tolerance,
             m.created_at as first_detected,
@@ -4423,6 +4475,7 @@ function createApp(dbPath) {
           project_id,
           project_name,
           pm_name,
+          secondary_pm,
           first_detected,
           CASE
             WHEN use_complete IS NULL OR use_expected IS NULL THEN 'grey'
@@ -4438,19 +4491,36 @@ function createApp(dbPath) {
       `);
 
       for (const metric of metricsNeedingRecovery) {
-        inconsistencies.push({
-          type: 'missing_recovery_plan',
-          severity: 'high',
-          pm_name: metric.pm_name,
-          project_id: metric.project_id,
-          project_name: metric.project_name,
-          metric_id: metric.metric_id,
-          metric_name: metric.metric_name,
-          details: `${metric.metric_name} is ${metric.rag_status.toUpperCase()} but has no recovery plan`,
-          rag_status: metric.rag_status,
-          first_detected: metric.first_detected,
-          age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
-        });
+        if (metric.pm_name) {
+          inconsistencies.push({
+            type: 'missing_recovery_plan',
+            severity: 'high',
+            pm_name: metric.pm_name,
+            project_id: metric.project_id,
+            project_name: metric.project_name,
+            metric_id: metric.metric_id,
+            metric_name: metric.metric_name,
+            details: `${metric.metric_name} is ${metric.rag_status.toUpperCase()} but has no recovery plan`,
+            rag_status: metric.rag_status,
+            first_detected: metric.first_detected,
+            age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
+        if (metric.secondary_pm && metric.secondary_pm !== metric.pm_name) {
+          inconsistencies.push({
+            type: 'missing_recovery_plan',
+            severity: 'high',
+            pm_name: metric.secondary_pm,
+            project_id: metric.project_id,
+            project_name: metric.project_name,
+            metric_id: metric.metric_id,
+            metric_name: metric.metric_name,
+            details: `${metric.metric_name} is ${metric.rag_status.toUpperCase()} but has no recovery plan`,
+            rag_status: metric.rag_status,
+            first_detected: metric.first_detected,
+            age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
       }
 
       // Severity order for sorting (high = 0, medium = 1, low = 2)
