@@ -416,7 +416,8 @@ const HomePage = ({
               portfolioId: projectInfo.portfolio_id,
               portfolioColor: projectInfo.portfolio_color,
               portfolioName: projectInfo.portfolio_name,
-              ragStatus
+              ragStatus,
+              hasActualValue: hasCompleteValue // Track if current period has a value entered
             });
           }
         });

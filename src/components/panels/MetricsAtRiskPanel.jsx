@@ -101,7 +101,7 @@ const MetricsAtRiskPanel = ({
                         {item.portfolioColor && <span className="metric-portfolio-dot" style={{ backgroundColor: item.portfolioColor }} title={item.portfolioName || 'No Portfolio'} />}
                         <div className="metric-text">
                           <span className="metric-project">{item.projectName}</span>
-                          <span className="metric-name">{item.metricName}{needsRecoveryPlan(item.metricId) && <MdErrorOutline className="recovery-plan-indicator" title="Recovery Plan Required" />}</span>
+                          <span className="metric-name">{item.metricName}{item.hasActualValue && needsRecoveryPlan(item.metricId) && <MdErrorOutline className="recovery-plan-indicator" title="Recovery Plan Required" />}</span>
                         </div>
                       </div>
                     </div>
@@ -164,7 +164,7 @@ const MetricsAtRiskPanel = ({
                         {item.portfolioColor && <span className="metric-portfolio-dot" style={{ backgroundColor: item.portfolioColor }} title={item.portfolioName || 'No Portfolio'} />}
                         <div className="metric-text">
                           <span className="metric-project">{item.projectName}</span>
-                          <span className="metric-name">{item.metricName}{item.ragStatus === 'red' && needsRecoveryPlan(item.metricId) && <MdErrorOutline className="recovery-plan-indicator" title="Recovery Plan Required" />}</span>
+                          <span className="metric-name">{item.metricName}{item.ragStatus === 'red' && item.hasActualValue && needsRecoveryPlan(item.metricId) && <MdErrorOutline className="recovery-plan-indicator" title="Recovery Plan Required" />}</span>
                         </div>
                       </div>
                     </div>
