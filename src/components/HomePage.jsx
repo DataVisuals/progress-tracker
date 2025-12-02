@@ -314,14 +314,37 @@ const HomePage = ({
             isInCurrentPeriod = today < nextPeriodStart;
           }
 
-          // If we're in the current period and complete is 0, use the previous period instead
-          if (isInCurrentPeriod && currentPeriodIndex > 0) {
-            const currentComplete = parseFloat(currentPeriod.complete) || 0;
-            if (currentComplete === 0) {
-              console.log(`${metricName}: in current period with complete=0, using previous period`);
-              currentPeriod = sortedPeriods[currentPeriodIndex - 1];
+          // Helper to check if a period has ended based on frequency
+          const hasPeriodEnded = (reportingDate, frequency) => {
+            const startDate = new Date(reportingDate);
+            startDate.setHours(0, 0, 0, 0);
+            let periodEnd;
+            switch (frequency) {
+              case 'weekly':
+                periodEnd = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+                break;
+              case 'fortnightly':
+                periodEnd = new Date(startDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+                break;
+              case 'monthly':
+                periodEnd = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+                break;
+              case 'quarterly':
+                periodEnd = new Date(startDate.getFullYear(), startDate.getMonth() + 3, 1);
+                break;
+              default:
+                periodEnd = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
             }
-          }
+            return today >= periodEnd;
+          };
+
+          const frequency = currentPeriod.frequency || 'monthly';
+          const periodHasEnded = hasPeriodEnded(currentPeriod.reporting_date, frequency);
+
+          // Check if complete value has been entered
+          const hasCompleteValue = currentPeriod.complete !== null &&
+                                   currentPeriod.complete !== undefined &&
+                                   currentPeriod.complete !== '';
 
           const complete = parseFloat(currentPeriod.complete) || 0;
           const expected = parseFloat(currentPeriod.expected) || 0;
@@ -329,10 +352,18 @@ const HomePage = ({
           const lastPeriod = sortedPeriods[sortedPeriods.length - 1];
           const finalTarget = parseFloat(lastPeriod.target) || parseFloat(lastPeriod.expected) || expected;
 
-          console.log(`${metricName}: periods=${sortedPeriods.length}, currentIdx=${currentPeriodIndex}, complete=${complete}, expected=${expected}`);
+          console.log(`${metricName}: periods=${sortedPeriods.length}, currentIdx=${currentPeriodIndex}, complete=${complete}, expected=${expected}, periodEnded=${periodHasEnded}, hasValue=${hasCompleteValue}`);
 
           if (expected === 0) {
             console.log(`  -> Skipping: expected=0`);
+            return;
+          }
+
+          // Only calculate RAG if:
+          // 1. We have a complete value that's behind, OR
+          // 2. The period has ended and there's no value (missing data)
+          if (!hasCompleteValue && !periodHasEnded) {
+            console.log(`  -> Skipping: no complete value and period not ended yet`);
             return;
           }
 

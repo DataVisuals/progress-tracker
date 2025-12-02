@@ -12,7 +12,34 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
   const dropdownRef = useRef(null);
   const menuButtonRefs = useRef({});
 
+  // Helper to check if a period has ended based on frequency
+  const hasPeriodEnded = (reportingDate, frequency, today) => {
+    const startDate = new Date(reportingDate);
+    startDate.setHours(0, 0, 0, 0);
+    let periodEnd;
+    switch (frequency) {
+      case 'weekly':
+        periodEnd = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'fortnightly':
+        periodEnd = new Date(startDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+        break;
+      case 'monthly':
+        periodEnd = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+        break;
+      case 'quarterly':
+        periodEnd = new Date(startDate.getFullYear(), startDate.getMonth() + 3, 1);
+        break;
+      default:
+        periodEnd = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+    }
+    return today >= periodEnd;
+  };
+
   // Helper to calculate RAG status for a metric
+  // Only shows red/amber when:
+  // 1. We have a complete value that's behind, OR
+  // 2. The period has ended and there's no value (missing data)
   const getRAGStatus = (metricName) => {
     const metricDataPoints = projectData.filter(item => item.metric === metricName);
     if (metricDataPoints.length === 0) return null;
@@ -22,54 +49,51 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
       new Date(a.reporting_date) - new Date(b.reporting_date)
     );
 
-    // Find the current period (period has started but next period hasn't started yet)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Get metric date range
-    const metricStartDate = new Date(sortedPeriods[0].reporting_date);
-    const metricEndDate = new Date(sortedPeriods[sortedPeriods.length - 1].reporting_date);
-    metricStartDate.setHours(0, 0, 0, 0);
-    metricEndDate.setHours(0, 0, 0, 0);
+    // Helper function to calculate RAG for a specific period
+    const calculateRAGForPeriod = (period, periodEnded) => {
+      const hasCompleteValue = period.complete !== null &&
+                               period.complete !== undefined &&
+                               period.complete !== '';
 
-    // Check if metric is historical (today is past the metric's end date)
-    const isHistoricalMetric = today > metricEndDate;
+      // If no complete value and period hasn't ended, return grey (not at risk yet)
+      if (!hasCompleteValue && !periodEnded) {
+        return 'grey';
+      }
 
-    // For historical metrics, show the final period's RAG status
-    if (isHistoricalMetric) {
-      const finalPeriod = sortedPeriods[sortedPeriods.length - 1];
-      const complete = parseFloat(finalPeriod.complete) || 0;
-      const expected = parseFloat(finalPeriod.expected) || 0;
-      const variance = complete - expected;
-      const variancePercent = expected > 0 ? Math.abs((variance / expected) * 100) : 0;
-      const amberTolerance = parseFloat(finalPeriod.amber_tolerance) || 5.0;
-      const redTolerance = parseFloat(finalPeriod.red_tolerance) || 10.0;
+      const complete = parseFloat(period.complete) || 0;
+      const expected = parseFloat(period.expected) || 0;
 
       if (expected === 0) return 'grey';
+
+      const variance = complete - expected;
+      const variancePercent = expected > 0 ? Math.abs((variance / expected) * 100) : 0;
+      const amberTolerance = parseFloat(period.amber_tolerance) || 5.0;
+      const redTolerance = parseFloat(period.red_tolerance) || 10.0;
+
       if (variance >= 0) return 'green';
       if (variancePercent > redTolerance) return 'red';
       if (variancePercent > amberTolerance) return 'amber';
       return 'green';
-    }
+    };
 
+    // Find the current period (period has started but next period hasn't started yet)
     let currentPeriodIndex = -1;
     for (let i = 0; i < sortedPeriods.length; i++) {
       const periodStart = new Date(sortedPeriods[i].reporting_date);
       periodStart.setHours(0, 0, 0, 0);
 
-      // Check if this period has started
       if (periodStart <= today) {
-        // Check if next period has started
         if (i + 1 < sortedPeriods.length) {
           const nextPeriodStart = new Date(sortedPeriods[i + 1].reporting_date);
           nextPeriodStart.setHours(0, 0, 0, 0);
           if (today < nextPeriodStart) {
-            // We're in this period (started but next hasn't started)
             currentPeriodIndex = i;
             break;
           }
         } else {
-          // This is the last period and it has started
           currentPeriodIndex = i;
         }
       }
@@ -78,52 +102,11 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
     // If no current period found (all periods are in the future), return grey
     if (currentPeriodIndex === -1) return 'grey';
 
-    // Check if we're still in the current period (next period hasn't started yet)
-    const isInCurrentPeriod = currentPeriodIndex === sortedPeriods.length - 1 ||
-      today < new Date(sortedPeriods[currentPeriodIndex + 1].reporting_date);
-
-    // Helper function to calculate RAG for a specific period
-    const calculateRAGForPeriod = (period) => {
-      if (period.complete === null || period.complete === undefined ||
-          period.expected === null || period.expected === undefined) {
-        return null;
-      }
-
-      const complete = parseFloat(period.complete);
-      const expected = parseFloat(period.expected);
-      const variance = complete - expected;
-      const variancePercent = expected > 0 ? Math.abs((variance / expected) * 100) : 0;
-      const amberTolerance = parseFloat(period.amber_tolerance) || 5.0;
-      const redTolerance = parseFloat(period.red_tolerance) || 10.0;
-
-      if (expected === 0) return 'grey';
-      if (variance >= 0) return 'green';
-      if (variancePercent > redTolerance) return 'red';
-      if (variancePercent > amberTolerance) return 'amber';
-      return 'green';
-    };
-
     const currentPeriod = sortedPeriods[currentPeriodIndex];
+    const frequency = currentPeriod.frequency || 'monthly';
+    const periodEnded = hasPeriodEnded(currentPeriod.reporting_date, frequency, today);
 
-    // If we're in the current period and it doesn't have data yet, use the previous period's status
-    if (isInCurrentPeriod) {
-      const currentComplete = parseFloat(currentPeriod.complete) || 0;
-      const currentExpected = parseFloat(currentPeriod.expected) || 0;
-
-      // If current period has no meaningful data (complete is 0 or null), use previous period
-      if (currentComplete === 0 && currentPeriodIndex > 0) {
-        const previousPeriod = sortedPeriods[currentPeriodIndex - 1];
-        const previousRAG = calculateRAGForPeriod(previousPeriod);
-        return previousRAG || 'grey';
-      }
-
-      // Current period has data - calculate its RAG
-      // But if behind schedule, still show the status (user wants to see red/amber)
-      return calculateRAGForPeriod(currentPeriod) || 'grey';
-    }
-
-    // For completed periods, calculate normally
-    return calculateRAGForPeriod(currentPeriod) || 'grey';
+    return calculateRAGForPeriod(currentPeriod, periodEnded);
   };
 
   // Helper to detect if trajectory is flat (no significant change)
