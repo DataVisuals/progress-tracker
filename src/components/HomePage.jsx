@@ -128,7 +128,7 @@ const HomePage = ({
   const [userActivityDays, setUserActivityDays] = useState(30); // Days for user activity report
   const [healthRankingView, setHealthRankingView] = useState(() => {
     const stored = localStorage.getItem('healthRankingView');
-    return stored === 'bottom' ? 'bottom' : 'top';
+    return stored === 'top' ? 'top' : 'bottom';
   }); // 'top' or 'bottom' for health rankings panel
   const [hideInactiveProjects, setHideInactiveProjects] = useState(true); // Filter inactive (grey) projects by default
   const [healthModalProject, setHealthModalProject] = useState(null); // Project to show in health modal

@@ -38,5 +38,5 @@ export const LAYOUT_CONFIG = {
 // Default dashboard configuration
 export const DEFAULT_DASHBOARD_CONFIG = {
   layout: '2x2',
-  panels: ['heatmap', 'metrics', 'commentary', 'inconsistencies']
+  panels: ['heatmap', 'projectHealth', 'commentary', 'inconsistencies']
 };
