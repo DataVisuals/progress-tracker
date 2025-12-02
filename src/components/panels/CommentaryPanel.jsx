@@ -88,41 +88,30 @@ const CommentaryPanel = ({
           </div>
         ) : (
           <div className="commentary-list">
-            {filteredCommentary.map((item, idx) => {
-              const showPortfolioHeader = idx === 0 || item.portfolioName !== filteredCommentary[idx - 1].portfolioName;
-              return (
-                <React.Fragment key={idx}>
-                  {showPortfolioHeader && (
-                    <div className="portfolio-group-header">
-                      {item.portfolioColor && <span className="portfolio-header-dot" style={{ backgroundColor: item.portfolioColor }} title={item.portfolioName || 'No Portfolio'} />}
-                      <span className="portfolio-header-name">{item.portfolioName || 'No Portfolio'}</span>
-                    </div>
-                  )}
-                  <div className="commentary-item" onClick={() => onMetricClick(item.projectId, item.metricName)}>
-                    <div className="commentary-header">
-                      <div className="commentary-context">
-                        {item.portfolioColor && <span className="commentary-portfolio-dot" style={{ backgroundColor: item.portfolioColor }} title={item.portfolioName || 'No Portfolio'} />}
-                        <span className="commentary-label">Project:</span>
-                        <span className="commentary-project">{item.projectName}</span>
-                      </div>
-                      <div className="commentary-context">
-                        <span className="commentary-label">Metric:</span>
-                        <span className="commentary-metric">{item.metricName}</span>
-                      </div>
-                      <div className="commentary-context">
-                        <span className="commentary-label">Period:</span>
-                        <span className="commentary-period">{item.periodName}</span>
-                      </div>
-                    </div>
-                    <div className="commentary-text ql-editor" dangerouslySetInnerHTML={{ __html: item.commentary }} />
-                    <div className="commentary-footer">
-                      {item.createdBy && <span className="commentary-author">{item.createdBy}</span>}
-                      <span className="commentary-time">{formatTimestamp(item.timestamp)}</span>
-                    </div>
+            {filteredCommentary.map((item, idx) => (
+              <div key={idx} className="commentary-item" onClick={() => onMetricClick(item.projectId, item.metricName)}>
+                <div className="commentary-header">
+                  <div className="commentary-context">
+                    {item.portfolioColor && <span className="commentary-portfolio-dot" style={{ backgroundColor: item.portfolioColor }} title={item.portfolioName || 'No Portfolio'} />}
+                    <span className="commentary-label">Project:</span>
+                    <span className="commentary-project">{item.projectName}</span>
                   </div>
-                </React.Fragment>
-              );
-            })}
+                  <div className="commentary-context">
+                    <span className="commentary-label">Metric:</span>
+                    <span className="commentary-metric">{item.metricName}</span>
+                  </div>
+                  <div className="commentary-context">
+                    <span className="commentary-label">Period:</span>
+                    <span className="commentary-period">{item.periodName}</span>
+                  </div>
+                </div>
+                <div className="commentary-text ql-editor" dangerouslySetInnerHTML={{ __html: item.commentary }} />
+                <div className="commentary-footer">
+                  {item.createdBy && <span className="commentary-author">{item.createdBy}</span>}
+                  <span className="commentary-time">{formatTimestamp(item.timestamp)}</span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
