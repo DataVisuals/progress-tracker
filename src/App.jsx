@@ -1280,6 +1280,7 @@ function App() {
                       <div className="user-modal-login-time">
                         Logged in: {loginTime ? loginTime.toLocaleString() : 'Unknown'}
                       </div>
+                      <div className="user-modal-version">v{APP_VERSION}</div>
                     </div>
                     <div className="user-modal-links">
                       <button
@@ -1301,7 +1302,6 @@ function App() {
                         What's New
                       </a>
                     </div>
-                    <div className="user-modal-version">v{APP_VERSION}</div>
                   </div>
                 )}
               </div>

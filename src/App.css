@@ -258,8 +258,7 @@
 .user-modal-version {
   font-size: 10px;
   color: #9ca3af;
-  margin-top: 8px;
-  text-align: center;
+  margin-top: 2px;
 }
 
 :root.dark-mode .user-modal-version {
