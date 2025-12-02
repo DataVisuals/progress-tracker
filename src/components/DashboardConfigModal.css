@@ -1,17 +1,18 @@
 /* Dashboard Config Modal */
 .modal-content.dashboard-config-modal {
-  max-width: 1050px;
+  max-width: 1400px;
   width: 95vw;
 }
 
 .dashboard-config-modal .modal-body {
-  padding: 20px;
-  max-height: 78vh;
+  padding: 0 24px;
+  min-height: 65vh;
+  max-height: 80vh;
   overflow-y: auto;
 }
 
 .config-section {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .config-section:last-child {
@@ -19,7 +20,7 @@
 }
 
 .config-section h3 {
-  margin: 0 0 12px 0;
+  margin: 0 0 6px 0;
   font-size: 14px;
   font-weight: 600;
   color: #374151;
@@ -36,7 +37,7 @@
 
 .layout-option {
   position: relative;
-  padding: 12px;
+  padding: 8px;
   border: 2px solid #e5e7eb;
   border-radius: 8px;
   cursor: pointer;
@@ -44,8 +45,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  min-width: 100px;
+  gap: 4px;
+  min-width: 80px;
 }
 
 .layout-option:hover {
@@ -75,9 +76,9 @@
 /* Layout Previews */
 .layout-preview {
   display: grid;
-  gap: 3px;
-  width: 70px;
-  height: 50px;
+  gap: 2px;
+  width: 50px;
+  height: 36px;
 }
 
 .preview-cell {
@@ -118,7 +119,7 @@
 .layout-3x2-preview {
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr 1fr;
-  height: 65px;
+  height: 48px;
 }
 
 .layout-option.selected .preview-cell {
@@ -129,14 +130,14 @@
 .panel-slots {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 8px;
 }
 
 .panel-slot {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  padding: 12px;
+  padding: 8px;
 }
 
 .panel-slot.full-width {
@@ -147,7 +148,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .slot-number {
@@ -188,8 +189,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 8px;
-  padding: 8px;
+  margin-top: 4px;
+  padding: 6px;
   background: white;
   border-radius: 4px;
   font-size: 12px;

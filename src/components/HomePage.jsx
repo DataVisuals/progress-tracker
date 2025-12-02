@@ -1251,15 +1251,13 @@ const HomePage = ({
             <span className="stat-value red">{spaceFilteredAtRisk.length}</span>
             <span className="stat-label">At Risk</span>
           </div>
-          {isAdmin && (
-            <button
-              className="dashboard-config-btn"
-              onClick={() => setShowConfigModal(true)}
-              title="Configure Dashboard"
-            >
-              <MdSettings />
-            </button>
-          )}
+          <button
+            className="dashboard-config-btn"
+            onClick={() => setShowConfigModal(true)}
+            title="Configure Dashboard"
+          >
+            <MdSettings />
+          </button>
         </div>
       </div>
 
