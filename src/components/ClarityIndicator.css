@@ -20,7 +20,7 @@
 
 .clarity-indicator.hover-reveal:hover,
 *:hover > .clarity-indicator.hover-reveal {
-  opacity: 0.6;
+  opacity: 1;
 }
 
 .gem-icon {
