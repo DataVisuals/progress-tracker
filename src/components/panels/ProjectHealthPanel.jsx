@@ -111,13 +111,13 @@ const ProjectHealthPanel = ({
         <div className="health-toggle-buttons">
           <button
             className={`health-toggle-btn ${healthRankingView === 'top' ? 'active' : ''}`}
-            onClick={() => setHealthRankingView('top')}
+            onClick={() => { setHealthRankingView('top'); localStorage.setItem('healthRankingView', 'top'); }}
           >
             Top 10
           </button>
           <button
             className={`health-toggle-btn ${healthRankingView === 'bottom' ? 'active' : ''}`}
-            onClick={() => setHealthRankingView('bottom')}
+            onClick={() => { setHealthRankingView('bottom'); localStorage.setItem('healthRankingView', 'bottom'); }}
           >
             Bottom 10
           </button>

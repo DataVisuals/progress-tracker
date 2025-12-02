@@ -126,7 +126,10 @@ const HomePage = ({
   const [activeUsers, setActiveUsers] = useState(null); // Active users for admin panel
   const [userActivity, setUserActivity] = useState(null); // User activity data for fullscreen admin panel
   const [userActivityDays, setUserActivityDays] = useState(30); // Days for user activity report
-  const [healthRankingView, setHealthRankingView] = useState('top'); // 'top' or 'bottom' for health rankings panel
+  const [healthRankingView, setHealthRankingView] = useState(() => {
+    const stored = localStorage.getItem('healthRankingView');
+    return stored === 'bottom' ? 'bottom' : 'top';
+  }); // 'top' or 'bottom' for health rankings panel
   const [hideInactiveProjects, setHideInactiveProjects] = useState(true); // Filter inactive (grey) projects by default
   const [minimizedPanels, setMinimizedPanels] = useState(() => {
     // Load minimized panels from localStorage
