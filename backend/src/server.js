@@ -4411,6 +4411,7 @@ function createApp(dbPath) {
 
       // 4. Metrics that are red or amber but have no recovery plan
       // Calculate RAG status in SQL using window functions
+      // Only flag as red/amber if: 1) has a complete value that's behind, OR 2) period has ended with no value
       const metricsNeedingRecovery = await dbAll(`
         WITH CurrentPeriods AS (
           SELECT
@@ -4418,9 +4419,8 @@ function createApp(dbPath) {
             mp.reporting_date,
             mp.complete,
             mp.expected,
+            mp.frequency,
             ROW_NUMBER() OVER (PARTITION BY mp.metric_id ORDER BY mp.reporting_date DESC) as rn,
-            LAG(mp.complete) OVER (PARTITION BY mp.metric_id ORDER BY mp.reporting_date) as prev_complete,
-            LAG(mp.expected) OVER (PARTITION BY mp.metric_id ORDER BY mp.reporting_date) as prev_expected,
             LEAD(mp.reporting_date) OVER (PARTITION BY mp.metric_id ORDER BY mp.reporting_date) as next_date
           FROM metric_periods mp
           WHERE mp.reporting_date <= DATE('now')
@@ -4431,13 +4431,20 @@ function createApp(dbPath) {
             reporting_date,
             complete,
             expected,
-            prev_complete,
-            prev_expected,
+            frequency,
             next_date,
             CASE
               WHEN next_date IS NULL OR DATE('now') < next_date THEN 1
               ELSE 0
-            END as is_current_period
+            END as is_current_period,
+            -- Calculate period end date based on frequency (default monthly)
+            CASE COALESCE(frequency, 'monthly')
+              WHEN 'weekly' THEN DATE(reporting_date, '+7 days')
+              WHEN 'fortnightly' THEN DATE(reporting_date, '+14 days')
+              WHEN 'monthly' THEN DATE(reporting_date, '+1 month')
+              WHEN 'quarterly' THEN DATE(reporting_date, '+3 months')
+              ELSE DATE(reporting_date, '+1 month')
+            END as period_end_date
           FROM CurrentPeriods
           WHERE rn = 1
         ),
@@ -4452,17 +4459,13 @@ function createApp(dbPath) {
             m.amber_tolerance,
             m.red_tolerance,
             m.created_at as first_detected,
-            CASE
-              -- Use previous period if current period has no data and we're in current period
-              WHEN lp.is_current_period = 1 AND COALESCE(lp.complete, 0) = 0 AND lp.prev_complete IS NOT NULL
-                THEN lp.prev_complete
-              ELSE lp.complete
-            END as use_complete,
-            CASE
-              WHEN lp.is_current_period = 1 AND COALESCE(lp.complete, 0) = 0 AND lp.prev_expected IS NOT NULL
-                THEN lp.prev_expected
-              ELSE lp.expected
-            END as use_expected
+            lp.complete,
+            lp.expected,
+            lp.is_current_period,
+            -- Period has ended if today >= period_end_date
+            CASE WHEN DATE('now') >= lp.period_end_date THEN 1 ELSE 0 END as period_ended,
+            -- Has a complete value entered (not null and not empty string)
+            CASE WHEN lp.complete IS NOT NULL AND lp.complete != '' THEN 1 ELSE 0 END as has_complete_value
           FROM LatestPeriods lp
           JOIN metrics m ON lp.metric_id = m.id
           JOIN projects p ON m.project_id = p.id
@@ -4478,11 +4481,12 @@ function createApp(dbPath) {
           secondary_pm,
           first_detected,
           CASE
-            WHEN use_complete IS NULL OR use_expected IS NULL THEN 'grey'
-            WHEN use_expected = 0 THEN 'grey'
-            WHEN use_complete >= use_expected THEN 'green'
-            WHEN ABS((use_complete - use_expected) * 100.0 / use_expected) > red_tolerance THEN 'red'
-            WHEN ABS((use_complete - use_expected) * 100.0 / use_expected) > amber_tolerance THEN 'amber'
+            -- If no complete value and period hasn't ended, grey (not at risk yet)
+            WHEN has_complete_value = 0 AND period_ended = 0 THEN 'grey'
+            WHEN expected IS NULL OR expected = 0 THEN 'grey'
+            WHEN COALESCE(complete, 0) >= expected THEN 'green'
+            WHEN ABS((COALESCE(complete, 0) - expected) * 100.0 / expected) > red_tolerance THEN 'red'
+            WHEN ABS((COALESCE(complete, 0) - expected) * 100.0 / expected) > amber_tolerance THEN 'amber'
             ELSE 'green'
           END as rag_status
         FROM RAGCalculation
