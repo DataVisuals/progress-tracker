@@ -16,7 +16,8 @@ const ProjectHealthPanel = ({
   setHealthRankingView,
   hideInactiveProjects,
   setHideInactiveProjects,
-  onNavigateToProject
+  onNavigateToProject,
+  onShowHealthModal
 }) => {
   // Helper function to render a health ranking item
   const renderHealthItem = (project, idx, isTop) => (
@@ -26,7 +27,14 @@ const ProjectHealthPanel = ({
       onClick={() => onNavigateToProject(project.id)}
     >
       <span className="health-rank">{idx + 1}</span>
-      <div className="health-score-gauge">
+      <div
+        className="health-score-gauge clickable"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (onShowHealthModal) onShowHealthModal(project);
+        }}
+        title="Click for health breakdown"
+      >
         <svg viewBox="0 0 36 36" className="health-gauge-svg">
           <circle
             className="health-gauge-bg"

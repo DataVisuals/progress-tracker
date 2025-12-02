@@ -51,7 +51,7 @@ import { smallSelectStyles } from './SelectStyles';
 import DashboardConfigModal from './DashboardConfigModal';
 import TipsModal, { getAllTips } from './TipsModal';
 import { PANEL_CONFIG, LAYOUT_CONFIG, DEFAULT_DASHBOARD_CONFIG } from './homePageConfig';
-import { calculateHealthScore } from './ProjectHealthModal';
+import ProjectHealthModal, { calculateHealthScore } from './ProjectHealthModal';
 import CommentaryPanel from './panels/CommentaryPanel';
 import InconsistenciesPanel from './panels/InconsistenciesPanel';
 import DatabasePanel from './panels/DatabasePanel';
@@ -131,6 +131,7 @@ const HomePage = ({
     return stored === 'bottom' ? 'bottom' : 'top';
   }); // 'top' or 'bottom' for health rankings panel
   const [hideInactiveProjects, setHideInactiveProjects] = useState(true); // Filter inactive (grey) projects by default
+  const [healthModalProject, setHealthModalProject] = useState(null); // Project to show in health modal
   const [minimizedPanels, setMinimizedPanels] = useState(() => {
     // Load minimized panels from localStorage
     const stored = localStorage.getItem('homePageMinimizedPanels');
@@ -1151,6 +1152,7 @@ const HomePage = ({
             hideInactiveProjects={hideInactiveProjects}
             setHideInactiveProjects={setHideInactiveProjects}
             onNavigateToProject={onNavigateToProject}
+            onShowHealthModal={setHealthModalProject}
           />
         );
 
@@ -1373,6 +1375,32 @@ const HomePage = ({
           </div>
         );
       })()}
+
+      {/* Project Health Modal */}
+      {healthModalProject && (
+        <ProjectHealthModal
+          project={projects[healthModalProject.id] || healthModalProject}
+          projectData={projectsData[healthModalProject.id] || []}
+          metrics={(() => {
+            // Extract metrics from project data
+            const projectData = projectsData[healthModalProject.id] || [];
+            const metricsMap = {};
+            projectData.forEach(period => {
+              if (period.metric_id && !metricsMap[period.metric_id]) {
+                metricsMap[period.metric_id] = {
+                  id: period.metric_id,
+                  name: period.metric,
+                  description: period.metric_description || ''
+                };
+              }
+            });
+            return Object.values(metricsMap);
+          })()}
+          recoveryPlans={recoveryPlans.filter(rp => rp.project_id === healthModalProject.id)}
+          projectLinks={healthModalProject.link_count || 0}
+          onClose={() => setHealthModalProject(null)}
+        />
+      )}
 
       {/* Footer Links */}
       <div className="homepage-footer">

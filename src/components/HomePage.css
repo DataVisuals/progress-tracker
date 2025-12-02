@@ -720,6 +720,15 @@
   flex-shrink: 0;
 }
 
+.health-score-gauge.clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.health-score-gauge.clickable:hover {
+  transform: scale(1.15);
+}
+
 .health-gauge-svg {
   width: 100%;
   height: 100%;
