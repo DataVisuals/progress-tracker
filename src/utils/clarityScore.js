@@ -66,6 +66,62 @@ const getAvgWordsPerSentence = (text) => {
 };
 
 /**
+ * Count syllables in a word (approximation)
+ * Rules:
+ * - Count vowel groups (consecutive vowels = 1 syllable)
+ * - Subtract 1 for silent 'e' at end (if word > 2 chars)
+ * - Minimum 1 syllable per word
+ */
+const countSyllables = (word) => {
+  if (!word) return 0;
+  word = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (word.length <= 2) return 1;
+
+  // Count vowel groups
+  const vowelGroups = word.match(/[aeiouy]+/g) || [];
+  let count = vowelGroups.length;
+
+  // Subtract for silent 'e' at end
+  if (word.endsWith('e') && count > 1) {
+    count--;
+  }
+
+  // Handle common suffixes that add syllables
+  if (word.endsWith('le') && word.length > 2 && !/[aeiouy]/.test(word[word.length - 3])) {
+    count++; // 'ble', 'tle', 'ple' etc.
+  }
+
+  return Math.max(1, count);
+};
+
+/**
+ * Count total syllables in text
+ */
+const countTotalSyllables = (text) => {
+  if (!text) return 0;
+  const words = text.split(/\s+/).filter(w => w.length > 0);
+  return words.reduce((sum, word) => sum + countSyllables(word), 0);
+};
+
+/**
+ * Calculate Flesch-Kincaid Grade Level
+ * Formula: 0.39 * (words/sentences) + 11.8 * (syllables/words) - 15.59
+ * Returns US grade level (e.g., 8 = 8th grade reading level)
+ * Lower is easier to read. Target: 6-10 for general business writing.
+ */
+const calculateFleschKincaid = (text, wordCount, sentenceCount) => {
+  if (!text || wordCount < 5 || sentenceCount === 0) return null;
+
+  const syllableCount = countTotalSyllables(text);
+  const avgWordsPerSentence = wordCount / sentenceCount;
+  const avgSyllablesPerWord = syllableCount / wordCount;
+
+  const gradeLevel = 0.39 * avgWordsPerSentence + 11.8 * avgSyllablesPerWord - 15.59;
+
+  return Math.max(0, Math.round(gradeLevel * 10) / 10);
+};
+
+/**
  * Count jargon words in text
  */
 const countJargon = (text) => {
@@ -178,6 +234,7 @@ export const calculateClarityScore = (text, contentType = 'comment') => {
   const avgWordsPerSentence = getAvgWordsPerSentence(cleanText);
   const jargonCount = countJargon(cleanText);
   const abbreviationCount = countProblematicAbbreviations(cleanText);
+  const fleschKincaid = calculateFleschKincaid(cleanText, wordCount, sentenceCount);
 
   // Start at 1 - reward for good writing
   let score = 1;
@@ -203,39 +260,39 @@ export const calculateClarityScore = (text, contentType = 'comment') => {
       issues.push('Very brief - descriptions need more detail');
     }
   } else {
-    // More lenient thresholds for comments
-    if (wordCount >= 15 && wordCount <= 150) {
-      score += 1.5; // Ideal length
-    } else if (wordCount >= 8 && wordCount < 15) {
+    // Lenient thresholds for comments - short updates are fine
+    if (wordCount >= 5 && wordCount <= 150) {
+      score += 1.5; // Good length for a comment
+    } else if (wordCount >= 3 && wordCount < 5) {
       score += 1; // Brief but acceptable
-    } else if (wordCount >= 4 && wordCount < 8) {
-      score += 0.5; // Very brief
-      issues.push('Brief - consider adding more detail');
     } else if (wordCount > 150 && wordCount <= 250) {
       score += 1; // Acceptable length
     } else if (wordCount > 250) {
       score += 0.5; // Too long
       issues.push('Long - consider summarizing');
     } else {
-      // Under 4 words is too brief for comments
+      // Under 3 words is too brief
       issues.push('Very brief - add more detail');
     }
   }
 
-  // 2. Sentence structure - reward reasonable sentence length
-  if (sentenceCount > 0 && wordCount >= 5) {
-    if (avgWordsPerSentence >= 8 && avgWordsPerSentence <= 20) {
-      score += 1.5; // Good sentence length (8-20 words)
-    } else if (avgWordsPerSentence >= 5 && avgWordsPerSentence < 8) {
-      score += 1; // Acceptable sentence length
-    } else if (avgWordsPerSentence > 20 && avgWordsPerSentence <= 25) {
-      score += 0.75; // Slightly long but ok
-      issues.push('Slightly long sentences');
-    } else if (avgWordsPerSentence > 25) {
-      issues.push('Long sentences (>25 words avg)');
-    } else if (avgWordsPerSentence < 5) {
-      score += 0.5; // Very short sentences
+  // 2. Readability - use Flesch-Kincaid Grade Level
+  // Only apply to longer text (FK unreliable for short text)
+  // For business writing, only flag truly excessive complexity
+  if (fleschKincaid !== null && wordCount >= 15) {
+    if (fleschKincaid <= 16) {
+      score += 1.5; // Good readability for professional content
+    } else if (fleschKincaid > 16 && fleschKincaid <= 18) {
+      score += 1; // Academic level but acceptable
+    } else if (fleschKincaid > 18 && fleschKincaid <= 20) {
+      score += 0.5; // Getting complex
+      issues.push('Complex language (grade ' + fleschKincaid + ')');
+    } else if (fleschKincaid > 20) {
+      issues.push('Very complex language (grade ' + fleschKincaid + ')');
     }
+  } else if (wordCount >= 5) {
+    // For shorter text, give benefit of the doubt
+    score += 1.5;
   }
 
   // 3. Plain language - reward no jargon (only if sufficient content)
@@ -251,16 +308,17 @@ export const calculateClarityScore = (text, contentType = 'comment') => {
     }
   }
 
-  // 4. Clear abbreviations - reward no unexplained abbreviations (only if sufficient content)
-  if (wordCount >= minWordsForBonuses) {
-    if (abbreviationCount === 0) {
-      score += 1; // No unexplained abbreviations
-    } else if (abbreviationCount === 1) {
-      score += 0.5;
-      issues.push('Unexplained abbreviation');
-    } else {
-      issues.push(`Unexplained abbreviations (${abbreviationCount})`);
+  // 4. Clear abbreviations - always penalize unexplained abbreviations
+  if (abbreviationCount === 0) {
+    if (wordCount >= minWordsForBonuses) {
+      score += 1; // Bonus only for longer text with no abbreviations
     }
+  } else if (abbreviationCount === 1) {
+    score -= 0.5; // Penalty for unexplained abbreviation
+    issues.push('Unexplained abbreviation');
+  } else {
+    score -= 1; // Larger penalty for multiple
+    issues.push(`Unexplained abbreviations (${abbreviationCount})`);
   }
 
   // Clamp score to 1-5 range
@@ -272,7 +330,7 @@ export const calculateClarityScore = (text, contentType = 'comment') => {
       length: cleanText.length,
       wordCount,
       sentenceCount,
-      avgWordsPerSentence: Math.round(avgWordsPerSentence * 10) / 10,
+      fleschKincaid,
       jargonCount,
       abbreviationCount,
       issues
@@ -282,8 +340,29 @@ export const calculateClarityScore = (text, contentType = 'comment') => {
 
 /**
  * Get a description of what the clarity score means
+ * @param {number} score - The clarity score (1-5)
+ * @param {object} details - The scoring details (optional, for context-aware descriptions)
  */
-export const getClarityDescription = (score) => {
+export const getClarityDescription = (score, details = null) => {
+  // If we have details, provide context-aware descriptions
+  if (details && details.wordCount < 10) {
+    switch (score) {
+      case 5:
+        return 'Excellent';
+      case 4:
+        return 'Good';
+      case 3:
+        return 'Average - Add more detail';
+      case 2:
+        return 'Below average - Needs more detail';
+      case 1:
+        return 'Poor - Too brief';
+      default:
+        return 'Not rated';
+    }
+  }
+
+  // Standard descriptions for longer text
   switch (score) {
     case 5:
       return 'Excellent - Clear, concise, and well-structured';
@@ -292,9 +371,9 @@ export const getClarityDescription = (score) => {
     case 3:
       return 'Average - Could benefit from simplification';
     case 2:
-      return 'Below average - Consider shortening and simplifying';
+      return 'Below average - Consider simplifying language';
     case 1:
-      return 'Poor - Needs significant revision for clarity';
+      return 'Poor - Needs revision for clarity';
     default:
       return 'Not rated';
   }
@@ -302,18 +381,34 @@ export const getClarityDescription = (score) => {
 
 /**
  * Get the methodology explanation for tooltip
+ * @param {string} contentType - 'description' or 'comment'
  */
-export const getClarityMethodology = () => {
+export const getClarityMethodology = (contentType = 'comment') => {
+  const isDescription = contentType === 'description';
+  const wordTarget = isDescription ? '30-150' : '5-150';
+  const minWords = isDescription ? '12' : '3';
+
   return `Clarity Score (1-5)
 
-Starts at 1, rewards good writing:
+Score starts at 1, with points added for:
 
-• Good length (20-150 words): +1.5
-• Good sentences (8-20 words avg): +1.5
-• No jargon: +1
-• No unexplained abbreviations: +1
+1. LENGTH (up to +1.5)
+   Target: ${wordTarget} words
+   Minimum for bonuses: ${minWords} words
 
-Define abbreviations like: "PMO (Project Management Office)"`;
+2. READABILITY (up to +1.5)
+   Uses Flesch-Kincaid Grade Level (15+ words)
+   Target: Grade 16 or below
+   Short text (<15 words) gets full points
+
+3. PLAIN LANGUAGE (up to +1)
+   No business jargon detected
+
+4. CLEAR ABBREVIATIONS (up to +1)
+   No undefined abbreviations
+   Define like: "PMO (Project Management Office)"
+
+Maximum possible: 5 points`;
 };
 
 export default calculateClarityScore;

@@ -1668,7 +1668,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                     }}
                   />
                   <div className="commentary-actions-sidebar">
-                    <ClarityIndicator text={newCommentText} size="sm" hoverReveal />
+                    <ClarityIndicator text={newCommentText} size="sm" />
                     <div className="action-buttons">
                       <button className="save-btn-small" onClick={handleAddComment}>Add</button>
                       <button className="cancel-btn-small" onClick={handleCancelAdd}>Cancel</button>
@@ -1700,7 +1700,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                               }}
                             />
                             <div className="commentary-actions-sidebar">
-                              <ClarityIndicator text={editingCommentText} size="sm" hoverReveal />
+                              <ClarityIndicator text={editingCommentText} size="sm" />
                               <div className="action-buttons">
                                 <button className="save-btn-small" onClick={() => handleSaveComment(comment.id, comment.period_id)}>Save</button>
                                 <button className="cancel-btn-small" onClick={handleCancelEdit}>Cancel</button>

@@ -66,7 +66,7 @@ const ClarityIndicator = ({ text, showTooltip = true, size = 'md', compact = fal
 
   // For compact mode, use native title tooltip to avoid clipping issues
   const nativeTooltip = compact || !showTooltip
-    ? `Clarity: ${score}/5 - ${getClarityDescription(score)}${details.issues.length > 0 ? '\n\nSuggestions:\n• ' + details.issues.join('\n• ') : ''}`
+    ? `Clarity: ${score}/5 - ${getClarityDescription(score, details)}${details.issues.length > 0 ? '\n\nSuggestions:\n• ' + details.issues.join('\n• ') : ''}`
     : undefined;
 
   return (
@@ -83,7 +83,7 @@ const ClarityIndicator = ({ text, showTooltip = true, size = 'md', compact = fal
         <div className="clarity-tooltip">
           <div className="clarity-tooltip-header">
             <span className="clarity-score-label">Clarity Score: {score}/5</span>
-            <span className="clarity-description">{getClarityDescription(score)}</span>
+            <span className="clarity-description">{getClarityDescription(score, details)}</span>
           </div>
 
           {details.issues.length > 0 && (
@@ -100,15 +100,19 @@ const ClarityIndicator = ({ text, showTooltip = true, size = 'md', compact = fal
           <div className="clarity-stats">
             <span>{details.wordCount} words</span>
             <span>•</span>
-            <span>{details.sentenceCount} sentences</span>
-            <span>•</span>
-            <span>{details.avgWordsPerSentence} words/sentence avg</span>
+            <span>{details.sentenceCount} sentence{details.sentenceCount !== 1 ? 's' : ''}</span>
+            {details.fleschKincaid !== null && (
+              <>
+                <span>•</span>
+                <span>Grade {details.fleschKincaid}</span>
+              </>
+            )}
           </div>
 
           <div className="clarity-methodology">
             <details>
               <summary>How is this calculated?</summary>
-              <pre>{getClarityMethodology()}</pre>
+              <pre>{getClarityMethodology(contentType)}</pre>
             </details>
           </div>
         </div>
