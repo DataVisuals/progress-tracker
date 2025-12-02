@@ -2918,6 +2918,7 @@ html.dark-mode .quadrant-content {
   -webkit-flex: 1;
   flex: 1;
   min-width: 0;
+  overflow: hidden;
   display: -webkit-flex;
   display: flex;
   -webkit-flex-direction: column;
@@ -3015,6 +3016,8 @@ html.dark-mode .quadrant-content {
   display: flex;
   -webkit-align-items: center;
   align-items: center;
+  min-width: 0;
+  width: 100%;
 }
 
 .metric-portfolio-dot {
