@@ -241,22 +241,8 @@ const HomePage = ({
         console.log('Could not load recent comments:', commentsErr.message);
       }
 
-      // Group commentary by portfolio and sort
-      const groupedCommentary = enrichedCommentary.reduce((acc, comment) => {
-        const portfolio = comment.portfolioName || 'No Portfolio';
-        if (!acc[portfolio]) {
-          acc[portfolio] = [];
-        }
-        acc[portfolio].push(comment);
-        return acc;
-      }, {});
-
-      // Convert to array and sort portfolios alphabetically, then flatten
-      const sortedCommentary = Object.entries(groupedCommentary)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .flatMap(([portfolio, comments]) => comments);
-
-      setRecentCommentary(sortedCommentary);
+      // Keep comments in date order (already sorted DESC by backend)
+      setRecentCommentary(enrichedCommentary);
 
       // Calculate at-risk metrics (red and amber) across all projects
       const atRiskMetricsList = [];
