@@ -255,6 +255,17 @@
   color: #a7e1ff;
 }
 
+.user-modal-version {
+  font-size: 10px;
+  color: #9ca3af;
+  margin-top: 8px;
+  text-align: center;
+}
+
+:root.dark-mode .user-modal-version {
+  color: #6b7280;
+}
+
 /* Attention Bell Button */
 .attention-bell-button {
   position: relative;

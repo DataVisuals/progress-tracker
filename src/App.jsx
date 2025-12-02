@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+
+// App version - increment on each release
+const APP_VERSION = '1.0.1';
 import Select from 'react-select';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';
@@ -1298,6 +1301,7 @@ function App() {
                         What's New
                       </a>
                     </div>
+                    <div className="user-modal-version">v{APP_VERSION}</div>
                   </div>
                 )}
               </div>
