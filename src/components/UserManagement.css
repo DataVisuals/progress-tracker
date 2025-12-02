@@ -609,7 +609,7 @@
 }
 
 /* Inline editing styles */
-.editable-cell {
+.users-table .editable-cell {
   display: block;
   cursor: text;
   padding: 2px 4px;
@@ -617,7 +617,7 @@
   transition: background-color 0.15s;
 }
 
-.editable-cell:hover {
+.users-table .editable-cell:hover {
   background-color: rgba(59, 130, 246, 0.1);
 }
 
@@ -637,7 +637,7 @@
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-:root.dark-mode .editable-cell:hover {
+:root.dark-mode .users-table .editable-cell:hover {
   background-color: rgba(96, 165, 250, 0.15);
 }
 
