@@ -6,7 +6,6 @@
 
 .dashboard-config-modal .modal-body {
   padding: 0 24px;
-  min-height: 65vh;
   max-height: 80vh;
   overflow-y: auto;
 }
