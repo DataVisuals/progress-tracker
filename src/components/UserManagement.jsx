@@ -24,6 +24,8 @@ const UserManagement = ({ currentUser, onClose }) => {
   const [showEmailsList, setShowEmailsList] = useState(false);
   const [emailFormat, setEmailFormat] = useState('newline'); // 'newline', 'comma', 'semicolon'
   const [selectedUserIds, setSelectedUserIds] = useState(new Set());
+  const [editingField, setEditingField] = useState(null); // { userId, field: 'name' | 'email' }
+  const [editValue, setEditValue] = useState('');
 
   useEffect(() => {
     loadUsers();
@@ -121,6 +123,56 @@ const UserManagement = ({ currentUser, onClose }) => {
     } catch (err) {
       console.error('Failed to delete user:', err);
       alert('Failed to delete user: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const startEditing = (userId, field, currentValue) => {
+    setEditingField({ userId, field });
+    setEditValue(currentValue);
+  };
+
+  const cancelEditing = () => {
+    setEditingField(null);
+    setEditValue('');
+  };
+
+  const saveEdit = async () => {
+    if (!editingField || !editValue.trim()) {
+      cancelEditing();
+      return;
+    }
+
+    const user = users.find(u => u.id === editingField.userId);
+    if (!user) {
+      cancelEditing();
+      return;
+    }
+
+    // No change made
+    if (editValue.trim() === user[editingField.field]) {
+      cancelEditing();
+      return;
+    }
+
+    try {
+      await api.updateUser(editingField.userId, { [editingField.field]: editValue.trim() });
+      await loadUsers();
+      // Update selectedUser if it was the one being edited
+      if (selectedUser && selectedUser.id === editingField.userId) {
+        setSelectedUser({ ...selectedUser, [editingField.field]: editValue.trim() });
+      }
+      cancelEditing();
+    } catch (err) {
+      console.error('Failed to update user:', err);
+      alert('Failed to update: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleEditKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      saveEdit();
+    } else if (e.key === 'Escape') {
+      cancelEditing();
     }
   };
 
@@ -262,8 +314,48 @@ const UserManagement = ({ currentUser, onClose }) => {
                       className={selectedUser?.id === user.id ? 'selected' : ''}
                       onClick={() => handleSelectUser(user)}
                     >
-                      <td>{user.email}</td>
-                      <td>{user.name}</td>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        {editingField?.userId === user.id && editingField?.field === 'email' ? (
+                          <input
+                            type="email"
+                            className="inline-edit-input"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={saveEdit}
+                            onKeyDown={handleEditKeyDown}
+                            autoFocus
+                          />
+                        ) : (
+                          <span
+                            className="editable-cell"
+                            onDoubleClick={() => startEditing(user.id, 'email', user.email)}
+                            title="Double-click to edit"
+                          >
+                            {user.email}
+                          </span>
+                        )}
+                      </td>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        {editingField?.userId === user.id && editingField?.field === 'name' ? (
+                          <input
+                            type="text"
+                            className="inline-edit-input"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={saveEdit}
+                            onKeyDown={handleEditKeyDown}
+                            autoFocus
+                          />
+                        ) : (
+                          <span
+                            className="editable-cell"
+                            onDoubleClick={() => startEditing(user.id, 'name', user.name)}
+                            title="Double-click to edit"
+                          >
+                            {user.name}
+                          </span>
+                        )}
+                      </td>
                       <td>
                         <span className={`role-badge ${getRoleBadgeClass(user.role)}`}>
                           {user.role}

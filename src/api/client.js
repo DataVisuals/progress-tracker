@@ -100,6 +100,7 @@ export const api = {
 
   // User Management
   getUsers: () => client.get('/users'),
+  updateUser: (userId, data) => client.put(`/users/${userId}`, data),
   updateUserRole: (userId, role) => client.put(`/users/${userId}/role`, { role }),
   deleteUser: (userId) => client.delete(`/users/${userId}`),
 

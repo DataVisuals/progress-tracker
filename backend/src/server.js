@@ -3451,6 +3451,76 @@ function createApp(dbPath) {
     }
   });
   
+  // Update user details (Admin only)
+  app.put('/api/users/:id', authenticateToken, async (req, res) => {
+    try {
+      const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
+      if (!isAdmin(user)) {
+        return res.status(403).json({ error: 'Only admins can update user details' });
+      }
+
+      const { name, email } = req.body;
+      const targetUser = await dbGet('SELECT * FROM users WHERE id = ?', [req.params.id]);
+      if (!targetUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Check if new name is taken by another user
+      if (name && name !== targetUser.name) {
+        const existingName = await dbGet('SELECT id FROM users WHERE name = ? AND id != ?', [name, req.params.id]);
+        if (existingName) {
+          return res.status(400).json({ error: 'This name is already taken by another user' });
+        }
+      }
+
+      // Check if new email is taken by another user
+      if (email && email !== targetUser.email) {
+        const existingEmail = await dbGet('SELECT id FROM users WHERE email = ? AND id != ?', [email, req.params.id]);
+        if (existingEmail) {
+          return res.status(400).json({ error: 'This email is already taken by another user' });
+        }
+      }
+
+      const updates = [];
+      const params = [];
+      const oldValues = {};
+      const newValues = {};
+
+      if (name && name !== targetUser.name) {
+        updates.push('name = ?');
+        params.push(name);
+        oldValues.name = targetUser.name;
+        newValues.name = name;
+      }
+
+      if (email && email !== targetUser.email) {
+        updates.push('email = ?');
+        params.push(email);
+        oldValues.email = targetUser.email;
+        newValues.email = email;
+      }
+
+      if (updates.length === 0) {
+        return res.json({ success: true, message: 'No changes made' });
+      }
+
+      params.push(req.params.id);
+      await dbRun(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
+
+      const changes = Object.keys(newValues).map(k => `${k}: ${oldValues[k]} → ${newValues[k]}`).join(', ');
+      await logAudit(req.user, 'UPDATE', 'users', req.params.id,
+        oldValues,
+        newValues,
+        `Updated user ${targetUser.email}: ${changes}`,
+        req.ip
+      );
+
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Update user role (Admin only)
   app.put('/api/users/:id/role', authenticateToken, async (req, res) => {
     try {

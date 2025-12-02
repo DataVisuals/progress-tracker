@@ -607,3 +607,46 @@
     border-top-color: #374151;
   }
 }
+
+/* Inline editing styles */
+.editable-cell {
+  display: block;
+  cursor: text;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background-color 0.15s;
+}
+
+.editable-cell:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.inline-edit-input {
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 14px;
+  border: 2px solid #3b82f6;
+  border-radius: 4px;
+  box-sizing: border-box;
+  background-color: white;
+  color: #1f2937;
+}
+
+.inline-edit-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+:root.dark-mode .editable-cell:hover {
+  background-color: rgba(96, 165, 250, 0.15);
+}
+
+:root.dark-mode .inline-edit-input {
+  background-color: #374151;
+  border-color: #60a5fa;
+  color: #f9fafb;
+}
+
+:root.dark-mode .inline-edit-input:focus {
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+}
