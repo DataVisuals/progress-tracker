@@ -46,7 +46,7 @@ import {
 import { FaDatabase } from 'react-icons/fa';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, RadialBarChart, RadialBar, Legend, PolarAngleAxis, LabelList, Treemap, CartesianGrid, PieChart, Pie } from 'recharts';
 import { api } from '../api/client';
-import { trackPage } from '../hooks/usePageTracking';
+import { trackPage, startPageLoadTimer } from '../hooks/usePageTracking';
 import { smallSelectStyles } from './SelectStyles';
 import DashboardConfigModal from './DashboardConfigModal';
 import TipsModal, { getAllTips } from './TipsModal';
@@ -61,6 +61,7 @@ import AttentionPanel from './panels/AttentionPanel';
 import ProjectHealthPanel from './panels/ProjectHealthPanel';
 import AuditPanel from './panels/AuditPanel';
 import HeatmapPanel from './panels/HeatmapPanel';
+import PerformancePanel from './panels/PerformancePanel';
 import 'react-quill/dist/quill.snow.css';
 import './HomePage.css';
 import './MetricTabs.css';
@@ -148,8 +149,9 @@ const HomePage = ({
   // Tips from TipsModal
   const allTips = useMemo(() => getAllTips(), []);
 
-  // Randomize tips on component mount only
+  // Start page load timer and randomize tips on component mount only
   useEffect(() => {
+    startPageLoadTimer();
     selectRandomTips();
   }, []); // Only run once on mount
 
@@ -1207,6 +1209,20 @@ const HomePage = ({
             setUserActivityDays={setUserActivityDays}
             setUserActivity={setUserActivity}
             api={api}
+          />
+        );
+
+      case 'performance':
+        return (
+          <PerformancePanel
+            key={panelId}
+            panelId={panelId}
+            index={index}
+            darkMode={darkMode}
+            forDock={forDock}
+            onNavigateToProject={onNavigateToProject}
+            projects={projects}
+            getDisplayLimit={getDisplayLimit}
           />
         );
 

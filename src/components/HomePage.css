@@ -3373,6 +3373,185 @@ html.dark-mode .quadrant-content {
   color: #6b7280;
 }
 
+/* Performance Panel */
+.performance-quadrant .quadrant-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.performance-stats {
+  display: flex;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.perf-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  min-width: 80px;
+}
+
+.perf-stat.fast .perf-value {
+  color: #10b981;
+}
+
+.perf-stat.medium .perf-value {
+  color: #f59e0b;
+}
+
+.perf-stat.slow .perf-value {
+  color: #dc2626;
+}
+
+.perf-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #003c71;
+}
+
+.perf-label {
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.performance-chart {
+  padding: 8px 0;
+}
+
+.performance-chart h4 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.performance-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.performance-list h4 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.perf-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.perf-row:hover {
+  background: #f3f4f6;
+}
+
+.perf-row.clickable {
+  cursor: pointer;
+}
+
+.perf-row.clickable:hover {
+  background: #e5e7eb;
+}
+
+.perf-rank {
+  width: 20px;
+  font-weight: 600;
+  color: #6b7280;
+  text-align: center;
+}
+
+.perf-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #374151;
+}
+
+.perf-time {
+  font-weight: 600;
+  min-width: 50px;
+  text-align: right;
+}
+
+.perf-time.fast {
+  color: #10b981;
+}
+
+.perf-time.medium {
+  color: #f59e0b;
+}
+
+.perf-time.slow {
+  color: #dc2626;
+}
+
+.perf-views {
+  color: #9ca3af;
+  font-size: 11px;
+  min-width: 60px;
+  text-align: right;
+}
+
+.empty-hint {
+  font-size: 11px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* Performance Panel Dark Mode */
+:root.dark-mode .perf-stat {
+  background: #374151;
+}
+
+:root.dark-mode .perf-value {
+  color: #e5e7eb;
+}
+
+:root.dark-mode .perf-label {
+  color: #9ca3af;
+}
+
+:root.dark-mode .performance-chart h4,
+:root.dark-mode .performance-list h4 {
+  color: #e5e7eb;
+}
+
+:root.dark-mode .perf-row:hover {
+  background: #374151;
+}
+
+:root.dark-mode .perf-row.clickable:hover {
+  background: #4b5563;
+}
+
+:root.dark-mode .perf-rank {
+  color: #9ca3af;
+}
+
+:root.dark-mode .perf-name {
+  color: #e5e7eb;
+}
+
+:root.dark-mode .perf-views {
+  color: #6b7280;
+}
+
+:root.dark-mode .empty-hint {
+  color: #6b7280;
+}
+
 .tips-link-btn {
   display: flex;
   align-items: center;

@@ -32,7 +32,7 @@ import ClarityIndicator from './components/ClarityIndicator';
 import Lottie from 'lottie-react';
 import progressChartAnimation from './assets/progress-chart.json';
 import bellNotificationAnimation from './assets/bell-notification.json';
-import { trackPage } from './hooks/usePageTracking';
+import { trackPage, startPageLoadTimer } from './hooks/usePageTracking';
 import './App.css';
 
 function App() {
@@ -376,6 +376,7 @@ function App() {
   // No longer blocking on authentication - allow unauthenticated viewing
 
   const handleProjectChange = (projectId) => {
+    startPageLoadTimer(); // Start timing page load
     setSelectedProject(projectId);
     setSelectedMetric(''); // Reset metric when changing projects
     updateURL(projectId, '');
@@ -388,6 +389,7 @@ function App() {
 
   // Navigate to a specific project and optionally a metric (for HomePage)
   const handleNavigateToProject = (projectId, metricName = '') => {
+    startPageLoadTimer(); // Start timing page load
     setSelectedProject(projectId.toString());
     if (metricName) {
       setSelectedMetric(metricName);

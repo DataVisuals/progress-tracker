@@ -6,7 +6,8 @@ import {
   MdBuild,
   MdFavorite,
   MdHistory,
-  MdPeople
+  MdPeople,
+  MdSpeed
 } from 'react-icons/md';
 import { FaDatabase } from 'react-icons/fa';
 
@@ -20,7 +21,8 @@ export const PANEL_CONFIG = {
   projectHealth: { id: 'projectHealth', name: 'Project Health Rankings', icon: MdFavorite, adminOnly: false },
   audit: { id: 'audit', name: 'Audit Log', icon: MdHistory, adminOnly: true },
   database: { id: 'database', name: 'Database Stats', icon: FaDatabase, adminOnly: true },
-  activeUsers: { id: 'activeUsers', name: 'Active Users', icon: MdPeople, adminOnly: true }
+  activeUsers: { id: 'activeUsers', name: 'Active Users', icon: MdPeople, adminOnly: true },
+  performance: { id: 'performance', name: 'Page Performance', icon: MdSpeed, adminOnly: true }
 };
 
 // Layout configurations

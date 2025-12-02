@@ -4836,7 +4836,7 @@ function createApp(dbPath) {
   // Track page view (optional authentication - captures user if logged in)
   app.post('/api/analytics/pageview', optionalAuthenticateToken, async (req, res) => {
     try {
-      const { path, session_id } = req.body;
+      const { path, session_id, load_time_ms } = req.body;
       const userId = req.user?.userId || null;
 
       if (!path) {
@@ -4845,8 +4845,8 @@ function createApp(dbPath) {
 
       // Store page view asynchronously (fire and forget)
       dbRun(
-        'INSERT INTO page_views (user_id, path, session_id) VALUES (?, ?, ?)',
-        [userId, path, session_id]
+        'INSERT INTO page_views (user_id, path, session_id, load_time_ms) VALUES (?, ?, ?, ?)',
+        [userId, path, session_id, load_time_ms || null]
       ).catch(err => {
         console.error('Page view tracking error:', err);
       });
@@ -5178,6 +5178,104 @@ function createApp(dbPath) {
       });
     } catch (err) {
       console.error('Page heatmap error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Get page performance stats
+  app.get('/api/analytics/performance', optionalAuthenticateToken, async (req, res) => {
+    try {
+      const days = parseInt(req.query.days) || 30;
+      const daysAgo = new Date();
+      daysAgo.setDate(daysAgo.getDate() - days);
+
+      // Overall average load time
+      const overallStats = await dbGet(`
+        SELECT
+          AVG(load_time_ms) as avg_load_time,
+          MIN(load_time_ms) as min_load_time,
+          MAX(load_time_ms) as max_load_time,
+          COUNT(*) as total_views,
+          COUNT(load_time_ms) as views_with_timing
+        FROM page_views
+        WHERE created_at >= ? AND load_time_ms IS NOT NULL
+      `, [daysAgo.toISOString()]);
+
+      // Average load time by day (for trend chart)
+      const dailyTrend = await dbAll(`
+        SELECT
+          DATE(created_at) as date,
+          AVG(load_time_ms) as avg_load_time,
+          COUNT(*) as views
+        FROM page_views
+        WHERE created_at >= ? AND load_time_ms IS NOT NULL
+        GROUP BY DATE(created_at)
+        ORDER BY date
+      `, [daysAgo.toISOString()]);
+
+      // Top 10 slowest pages (by average load time, min 3 views)
+      const slowestPages = await dbAll(`
+        SELECT
+          path,
+          AVG(load_time_ms) as avg_load_time,
+          MIN(load_time_ms) as min_load_time,
+          MAX(load_time_ms) as max_load_time,
+          COUNT(*) as views
+        FROM page_views
+        WHERE created_at >= ? AND load_time_ms IS NOT NULL
+        GROUP BY path
+        HAVING COUNT(*) >= 3
+        ORDER BY avg_load_time DESC
+        LIMIT 10
+      `, [daysAgo.toISOString()]);
+
+      // Top 10 fastest pages (by average load time, min 3 views)
+      const fastestPages = await dbAll(`
+        SELECT
+          path,
+          AVG(load_time_ms) as avg_load_time,
+          MIN(load_time_ms) as min_load_time,
+          MAX(load_time_ms) as max_load_time,
+          COUNT(*) as views
+        FROM page_views
+        WHERE created_at >= ? AND load_time_ms IS NOT NULL
+        GROUP BY path
+        HAVING COUNT(*) >= 3
+        ORDER BY avg_load_time ASC
+        LIMIT 10
+      `, [daysAgo.toISOString()]);
+
+      res.json({
+        overallStats: {
+          avgLoadTime: Math.round(overallStats.avg_load_time) || 0,
+          minLoadTime: overallStats.min_load_time || 0,
+          maxLoadTime: overallStats.max_load_time || 0,
+          totalViews: overallStats.total_views || 0,
+          viewsWithTiming: overallStats.views_with_timing || 0
+        },
+        dailyTrend: dailyTrend.map(d => ({
+          date: d.date,
+          avgLoadTime: Math.round(d.avg_load_time),
+          views: d.views
+        })),
+        slowestPages: slowestPages.map(p => ({
+          path: p.path,
+          avgLoadTime: Math.round(p.avg_load_time),
+          minLoadTime: p.min_load_time,
+          maxLoadTime: p.max_load_time,
+          views: p.views
+        })),
+        fastestPages: fastestPages.map(p => ({
+          path: p.path,
+          avgLoadTime: Math.round(p.avg_load_time),
+          minLoadTime: p.min_load_time,
+          maxLoadTime: p.max_load_time,
+          views: p.views
+        })),
+        period: days
+      });
+    } catch (err) {
+      console.error('Performance stats error:', err);
       res.status(500).json({ error: err.message });
     }
   });
@@ -6313,6 +6411,14 @@ function createApp(dbPath) {
       console.log('✅ Created page_views table');
     } catch (err) {
       // Table already exists, that's fine
+    }
+
+    // Migration: Add load_time_ms column to page_views
+    try {
+      await dbRun(`ALTER TABLE page_views ADD COLUMN load_time_ms INTEGER`);
+      console.log('✅ Added load_time_ms column to page_views');
+    } catch (err) {
+      // Column already exists, that's fine
     }
 
     // Migration: Create recovery_plans table for Return to Green plans
