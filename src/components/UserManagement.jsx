@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Select from 'react-select';
-import { MdContentCopy } from 'react-icons/md';
+import { MdContentCopy, MdSearch } from 'react-icons/md';
 import { api } from '../api/client';
 import { selectStyles, compactSelectStyles } from './SelectStyles';
 import './FormInputs.css';
@@ -26,6 +26,8 @@ const UserManagement = ({ currentUser, onClose }) => {
   const [selectedUserIds, setSelectedUserIds] = useState(new Set());
   const [editingField, setEditingField] = useState(null); // { userId, field: 'name' | 'email' }
   const [editValue, setEditValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [projectSearchQuery, setProjectSearchQuery] = useState('');
 
   useEffect(() => {
     loadUsers();
@@ -267,9 +269,47 @@ const UserManagement = ({ currentUser, onClose }) => {
     }
   };
 
-  const availableProjects = projects.filter(
+  // Sort and filter users
+  const sortedFilteredUsers = useMemo(() => {
+    let filtered = users;
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = users.filter(u =>
+        u.name?.toLowerCase().includes(query) ||
+        u.email?.toLowerCase().includes(query)
+      );
+    }
+    return [...filtered].sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '')
+    );
+  }, [users, searchQuery]);
+
+  // Sort projects alphabetically
+  const sortedProjects = useMemo(() => {
+    return [...projects].sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '')
+    );
+  }, [projects]);
+
+  // Sort user permissions alphabetically
+  const sortedUserPermissions = useMemo(() => {
+    return [...userPermissions].sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '')
+    );
+  }, [userPermissions]);
+
+  const availableProjects = sortedProjects.filter(
     p => !userPermissions.some(up => up.id === p.id)
   );
+
+  // Filter available projects by search query
+  const filteredAvailableProjects = useMemo(() => {
+    if (!projectSearchQuery.trim()) return availableProjects;
+    const query = projectSearchQuery.toLowerCase();
+    return availableProjects.filter(p =>
+      p.name?.toLowerCase().includes(query)
+    );
+  }, [availableProjects, projectSearchQuery]);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -280,25 +320,44 @@ const UserManagement = ({ currentUser, onClose }) => {
         <div className="user-management-container">
           <div className="users-list">
             <div className="users-list-header">
-              <h3>Users</h3>
+              <h3>Users ({sortedFilteredUsers.length}{searchQuery ? ` of ${users.length}` : ''}) <span className="select-hint">Click row to manage permissions</span></h3>
               <div className="users-list-actions">
+                <div className="users-search-box">
+                  <MdSearch className="search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Search by name or email..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="users-search-input"
+                  />
+                  {searchQuery && (
+                    <button
+                      className="search-clear-btn"
+                      onClick={() => setSearchQuery('')}
+                      title="Clear search"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <button
                   className="copy-emails-btn"
                   onClick={() => setShowEmailsList(true)}
                   title="Get all user emails as semicolon-separated list"
                 >
                   <MdContentCopy />
-                  Get Emails
+                  Emails
                 </button>
                 <button className="add-user-btn" onClick={() => setShowAddUser(true)}>
-                  + Add User
+                  + Add
                 </button>
               </div>
             </div>
             {loading ? (
               <p>Loading...</p>
             ) : (
-              <table className="users-table">
+              <table className="users-table compact">
                 <thead>
                   <tr>
                     <th>Email</th>
@@ -308,13 +367,13 @@ const UserManagement = ({ currentUser, onClose }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map(user => (
+                  {sortedFilteredUsers.map(user => (
                     <tr
                       key={user.id}
                       className={selectedUser?.id === user.id ? 'selected' : ''}
                       onClick={() => handleSelectUser(user)}
                     >
-                      <td onClick={(e) => e.stopPropagation()}>
+                      <td>
                         {editingField?.userId === user.id && editingField?.field === 'email' ? (
                           <input
                             type="email"
@@ -323,19 +382,20 @@ const UserManagement = ({ currentUser, onClose }) => {
                             onChange={(e) => setEditValue(e.target.value)}
                             onBlur={saveEdit}
                             onKeyDown={handleEditKeyDown}
+                            onClick={(e) => e.stopPropagation()}
                             autoFocus
                           />
                         ) : (
                           <span
                             className="editable-cell"
-                            onDoubleClick={() => startEditing(user.id, 'email', user.email)}
+                            onDoubleClick={(e) => { e.stopPropagation(); startEditing(user.id, 'email', user.email); }}
                             title="Double-click to edit"
                           >
                             {user.email}
                           </span>
                         )}
                       </td>
-                      <td onClick={(e) => e.stopPropagation()}>
+                      <td>
                         {editingField?.userId === user.id && editingField?.field === 'name' ? (
                           <input
                             type="text"
@@ -344,12 +404,13 @@ const UserManagement = ({ currentUser, onClose }) => {
                             onChange={(e) => setEditValue(e.target.value)}
                             onBlur={saveEdit}
                             onKeyDown={handleEditKeyDown}
+                            onClick={(e) => e.stopPropagation()}
                             autoFocus
                           />
                         ) : (
                           <span
                             className="editable-cell"
-                            onDoubleClick={() => startEditing(user.id, 'name', user.name)}
+                            onDoubleClick={(e) => { e.stopPropagation(); startEditing(user.id, 'name', user.name); }}
                             title="Double-click to edit"
                           >
                             {user.name}
@@ -361,8 +422,8 @@ const UserManagement = ({ currentUser, onClose }) => {
                           {user.role}
                         </span>
                       </td>
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <div style={{ display: 'inline-block', minWidth: '120px', marginRight: '8px' }}>
+                      <td>
+                        <div style={{ display: 'inline-block', minWidth: '80px', marginRight: '6px' }} onClick={(e) => e.stopPropagation()}>
                           <Select
                             value={{ value: user.role, label: user.role.toUpperCase() }}
                             onChange={(option) => handleChangeRole(user.id, option.value)}
@@ -372,11 +433,12 @@ const UserManagement = ({ currentUser, onClose }) => {
                             ]}
                             styles={compactSelectStyles}
                             className="role-select"
+                            menuPlacement="auto"
                           />
                         </div>
                         {user.id !== currentUser.userId && (
                           <button
-                            onClick={() => handleDeleteUser(user.id, user.email)}
+                            onClick={(e) => { e.stopPropagation(); handleDeleteUser(user.id, user.email); }}
                             className="delete-user-btn"
                           >
                             Delete
@@ -396,11 +458,11 @@ const UserManagement = ({ currentUser, onClose }) => {
 
               <div className="permissions-section">
                 <h4>Current Permissions</h4>
-                {userPermissions.length === 0 ? (
+                {sortedUserPermissions.length === 0 ? (
                   <p className="no-permissions">No project permissions assigned</p>
                 ) : (
                   <ul className="permissions-list">
-                    {userPermissions.map(project => (
+                    {sortedUserPermissions.map(project => (
                       <li key={project.id}>
                         {project.name}
                         <button
@@ -417,9 +479,30 @@ const UserManagement = ({ currentUser, onClose }) => {
 
               {availableProjects.length > 0 && (
                 <div className="permissions-section">
-                  <h4>Grant Access to Projects</h4>
+                  <div className="permissions-section-header">
+                    <h4>Grant Access ({filteredAvailableProjects.length}{projectSearchQuery ? ` of ${availableProjects.length}` : ''})</h4>
+                    <div className="project-search-box">
+                      <MdSearch className="search-icon" />
+                      <input
+                        type="text"
+                        placeholder="Search projects..."
+                        value={projectSearchQuery}
+                        onChange={(e) => setProjectSearchQuery(e.target.value)}
+                        className="project-search-input"
+                      />
+                      {projectSearchQuery && (
+                        <button
+                          className="search-clear-btn"
+                          onClick={() => setProjectSearchQuery('')}
+                          title="Clear search"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <ul className="permissions-list">
-                    {availableProjects.map(project => (
+                    {filteredAvailableProjects.map(project => (
                       <li key={project.id}>
                         {project.name}
                         <button

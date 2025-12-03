@@ -8,8 +8,8 @@
 
 .user-management-container {
   display: flex;
-  gap: 20px;
-  margin: 20px 0;
+  gap: 16px;
+  margin: 12px 0;
 }
 
 .users-list {
@@ -23,23 +23,119 @@
   margin-bottom: 10px;
 }
 
+.users-list-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.select-hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+:root.dark-mode .select-hint {
+  color: #6b7280;
+}
+
 .users-list-actions {
   display: flex;
   gap: 8px;
   align-items: center;
 }
 
+/* Search box styles */
+.users-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.users-search-box .search-icon {
+  position: absolute;
+  left: 10px;
+  color: #9ca3af;
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.users-search-input {
+  padding: 6px 28px 6px 32px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 13px;
+  width: 280px;
+}
+
+.users-search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.users-search-input::placeholder {
+  color: #9ca3af;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 6px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 6px;
+  line-height: 1;
+  border-radius: 50%;
+}
+
+.search-clear-btn:hover {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+:root.dark-mode .users-search-input {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:root.dark-mode .users-search-input:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.15);
+}
+
+:root.dark-mode .users-search-input::placeholder {
+  color: #6b7280;
+}
+
+:root.dark-mode .users-search-box .search-icon {
+  color: #6b7280;
+}
+
+:root.dark-mode .search-clear-btn {
+  color: #6b7280;
+}
+
+:root.dark-mode .search-clear-btn:hover {
+  background-color: #4b5563;
+  color: #e5e7eb;
+}
+
 .copy-emails-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 4px;
+  padding: 6px 10px;
   background-color: #f3f4f6;
   color: #374151;
   border: 1px solid #d1d5db;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   transition: all 0.2s;
 }
@@ -194,13 +290,13 @@
 }
 
 .add-user-btn {
-  padding: 8px 16px;
+  padding: 6px 12px;
   background-color: #4caf50;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -211,24 +307,37 @@
 .user-permissions {
   flex: 1;
   border-left: 1px solid #ddd;
-  padding-left: 20px;
+  padding-left: 16px;
+}
+
+.user-permissions h3 {
+  font-size: 15px;
+  margin: 0 0 8px 0;
 }
 
 .users-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
+  margin-top: 8px;
   table-layout: fixed;
 }
 
 .users-table th,
 .users-table td {
-  padding: 12px;
+  padding: 8px 10px;
   text-align: left;
   border-bottom: 1px solid #eee;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Compact table variant */
+.users-table.compact th,
+.users-table.compact td {
+  padding: 4px 8px;
+  font-size: 13px;
+  line-height: 1.3;
 }
 
 /* Allow the Actions column to overflow so dropdowns aren't clipped */
@@ -265,7 +374,8 @@
 
 .users-table tbody tr {
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s;
+  border-left: 3px solid transparent;
 }
 
 .users-table tbody {
@@ -273,18 +383,25 @@
 }
 
 .users-table tbody tr:hover {
-  background-color: #f8f9fa;
+  background-color: #e8f4fc;
+  border-left-color: #00aeef;
 }
 
 .users-table tbody tr.selected {
-  background-color: #e3f2fd;
+  background-color: #d1e9f9;
+  border-left-color: #00aeef;
+  font-weight: 500;
+}
+
+.users-table tbody tr.selected:hover {
+  background-color: #c5e2f5;
 }
 
 .role-badge {
   display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
 }
@@ -309,13 +426,13 @@
 }
 
 .delete-user-btn {
-  padding: 6px 12px;
+  padding: 2px 8px;
   background-color: #f44336;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 3px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 11px;
   white-space: nowrap;
 }
 
@@ -324,13 +441,100 @@
 }
 
 .permissions-section {
-  margin-top: 20px;
+  margin-top: 14px;
 }
 
 .permissions-section h4 {
-  margin-bottom: 10px;
+  margin: 0;
   color: #333;
-  font-size: 16px;
+  font-size: 13px;
+}
+
+.permissions-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+
+/* Project search box */
+.project-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.project-search-box .search-icon {
+  position: absolute;
+  left: 6px;
+  color: #9ca3af;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.project-search-input {
+  padding: 4px 22px 4px 24px;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  font-size: 11px;
+  width: 140px;
+}
+
+.project-search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.project-search-input::placeholder {
+  color: #9ca3af;
+}
+
+.project-search-box .search-clear-btn {
+  position: absolute;
+  right: 4px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 1px 4px;
+  line-height: 1;
+  border-radius: 50%;
+}
+
+.project-search-box .search-clear-btn:hover {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+:root.dark-mode .project-search-input {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:root.dark-mode .project-search-input:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.15);
+}
+
+:root.dark-mode .project-search-input::placeholder {
+  color: #6b7280;
+}
+
+:root.dark-mode .project-search-box .search-icon {
+  color: #6b7280;
+}
+
+:root.dark-mode .project-search-box .search-clear-btn {
+  color: #6b7280;
+}
+
+:root.dark-mode .project-search-box .search-clear-btn:hover {
+  background-color: #4b5563;
+  color: #e5e7eb;
 }
 
 .permissions-list {
@@ -343,20 +547,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px;
+  padding: 4px 8px;
   border: 1px solid #eee;
-  border-radius: 4px;
-  margin-bottom: 8px;
+  border-radius: 3px;
+  margin-bottom: 3px;
   background-color: #f8f9fa;
+  font-size: 12px;
+  line-height: 1.3;
 }
 
 .grant-btn,
 .revoke-btn {
-  padding: 6px 12px;
+  padding: 2px 8px;
   border: none;
-  border-radius: 4px;
+  border-radius: 3px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 500;
 }
 
@@ -514,11 +720,17 @@
 }
 
 :root.dark-mode .users-table tbody tr:hover {
-  background-color: #374151;
+  background-color: #2d3a4d;
+  border-left-color: #00aeef;
 }
 
 :root.dark-mode .users-table tbody tr.selected {
   background-color: #1e3a5f;
+  border-left-color: #00aeef;
+}
+
+:root.dark-mode .users-table tbody tr.selected:hover {
+  background-color: #254a6f;
 }
 
 :root.dark-mode .role-select {
