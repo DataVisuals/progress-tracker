@@ -20,13 +20,13 @@ const ProjectHealthPanel = ({
   onShowHealthModal
 }) => {
   // Helper function to render a health ranking item
-  const renderHealthItem = (project, idx, isTop) => (
+  const renderHealthItem = (project, rank, isTop) => (
     <div
       key={project.id}
-      className="health-ranking-item"
+      className={`health-ranking-item ${isTop ? 'top' : 'bottom'}`}
       onClick={() => onNavigateToProject(project.id)}
     >
-      <span className="health-rank">{idx + 1}</span>
+      <span className={`health-rank ${isTop ? 'top' : 'bottom'}`}>{rank}</span>
       <div
         className="health-score-gauge clickable"
         onClick={(e) => {
@@ -76,21 +76,22 @@ const ProjectHealthPanel = ({
 
   // Fullscreen two-column layout
   if (forDock) {
+    const totalProjects = projectHealthRankings.allSorted.length;
     const top10 = projectHealthRankings.allSorted.slice(0, 10);
     const bottom10 = [...projectHealthRankings.allSorted].reverse().slice(0, 10);
     return (
       <div key={panelId} className={`home-quadrant health-rankings-quadrant fullscreen-health panel-${index + 1}`}>
         <div className="quadrant-content health-two-columns">
           <div className="health-column">
-            <h3 className="health-column-title top-title">Top 10</h3>
+            <h4 className="health-column-title top-title">Top 10 Healthiest Projects</h4>
             <div className="health-rankings-list">
-              {top10.map((project, idx) => renderHealthItem(project, idx, true))}
+              {top10.map((project, idx) => renderHealthItem(project, idx + 1, true))}
             </div>
           </div>
           <div className="health-column">
-            <h3 className="health-column-title bottom-title">Bottom 10</h3>
+            <h4 className="health-column-title bottom-title">Bottom 10 - Needs Attention</h4>
             <div className="health-rankings-list">
-              {bottom10.map((project, idx) => renderHealthItem(project, idx, false))}
+              {bottom10.map((project, idx) => renderHealthItem(project, totalProjects - idx, false))}
             </div>
           </div>
         </div>
@@ -100,6 +101,17 @@ const ProjectHealthPanel = ({
 
   // Regular panel view with toggle
   const displayProjects = healthRankingView === 'top' ? projectHealthRankings.top : projectHealthRankings.bottom;
+  const totalProjects = projectHealthRankings.allSorted?.length || 0;
+
+  const getRank = (idx) => {
+    if (healthRankingView === 'top') {
+      return idx + 1;
+    } else {
+      // Bottom view: show actual rank from end
+      return totalProjects - idx;
+    }
+  };
+
   return (
     <div key={panelId} className={`home-quadrant health-rankings-quadrant panel-${index + 1}`}>
       <div className="quadrant-header">
@@ -138,7 +150,7 @@ const ProjectHealthPanel = ({
           </div>
         ) : (
           <div className="health-rankings-list">
-            {displayProjects.map((project, idx) => renderHealthItem(project, idx, healthRankingView === 'top'))}
+            {displayProjects.map((project, idx) => renderHealthItem(project, getRank(idx), healthRankingView === 'top'))}
           </div>
         )}
       </div>

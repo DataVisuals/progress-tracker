@@ -2088,6 +2088,14 @@ function createApp(dbPath) {
         return res.status(403).json({ error: 'You do not have permission to create projects' });
       }
 
+      // Validate required dates
+      if (!start_date) {
+        return res.status(400).json({ error: 'Start date is required' });
+      }
+      if (!end_date) {
+        return res.status(400).json({ error: 'End date is required' });
+      }
+
       // Validate initiative managers are real users
       if (initiative_manager && initiative_manager.trim()) {
         const user = await dbGet('SELECT id FROM users WHERE name = ?', [initiative_manager.trim()]);
@@ -3119,6 +3127,32 @@ function createApp(dbPath) {
   });
   
   // ===== COMMENTS (for periods) =====
+
+  // Get all comments grouped by user for clarity scoring (admin only)
+  app.get('/api/comments/by-user', authenticateToken, async (req, res) => {
+    try {
+      // Check if user is admin
+      const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
+      if (!isAdmin(user)) {
+        return res.status(403).json({ error: 'Only admins can view clarity rankings' });
+      }
+
+      const comments = await dbAll(`
+        SELECT
+          c.id,
+          c.comment_text,
+          c.created_by,
+          u.name as user_name,
+          u.email as user_email
+        FROM comments c
+        JOIN users u ON c.created_by = u.id
+        WHERE c.comment_text IS NOT NULL AND c.comment_text != ''
+      `);
+      res.json(comments);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 
   // Get recent comments across all projects (for dashboard)
   app.get('/api/comments/recent', async (req, res) => {

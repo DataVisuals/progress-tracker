@@ -209,12 +209,6 @@ const ProjectTimelinePanel = ({
                     }}
                   />
 
-                  {/* Today line overlay */}
-                  <div
-                    className="timeline-today-line"
-                    style={{ left: `${nowPosition}%` }}
-                  />
-
                   {/* Hover tooltip - show above for bottom entries, below for top entries */}
                   {isHovered && (
                     <div

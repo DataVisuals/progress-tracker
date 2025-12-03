@@ -60,6 +60,7 @@ import MetricsAtRiskPanel from './panels/MetricsAtRiskPanel';
 import AttentionPanel from './panels/AttentionPanel';
 import ProjectHealthPanel from './panels/ProjectHealthPanel';
 import ProjectTimelinePanel from './panels/ProjectTimelinePanel';
+import ClarityPanel from './panels/ClarityPanel';
 import AuditPanel from './panels/AuditPanel';
 import HeatmapPanel from './panels/HeatmapPanel';
 import PerformancePanel from './panels/PerformancePanel';
@@ -1229,6 +1230,16 @@ const HomePage = ({
           />
         );
 
+      case 'clarity':
+        return (
+          <ClarityPanel
+            key={panelId}
+            panelId={panelId}
+            index={index}
+            forDock={forDock}
+          />
+        );
+
       case 'audit':
         return (
           <AuditPanel
@@ -1419,9 +1430,36 @@ const HomePage = ({
 
             {/* Icon tab bar - always visible at bottom */}
             <div className="minimized-tabs">
-              {allPanels.map((panel) => {
+              {/* Regular panels */}
+              {allPanels.filter(p => !p.adminOnly).map((panel) => {
                 const PanelIcon = panel.icon;
-                const isLocked = panel.adminOnly && !isAdmin;
+                return (
+                  <button
+                    key={panel.id}
+                    className={`minimized-tab ${expandedDockPanel === panel.id ? 'active' : ''}`}
+                    data-panel={panel.id}
+                    onMouseEnter={() => handlePanelHoverStart(panel.id)}
+                    onMouseLeave={() => {
+                      if (hoverTimeoutRef.current) {
+                        clearTimeout(hoverTimeoutRef.current);
+                        hoverTimeoutRef.current = null;
+                      }
+                    }}
+                    title={panel.name}
+                  >
+                    <PanelIcon />
+                    <span className="tab-tooltip">{panel.name}</span>
+                  </button>
+                );
+              })}
+
+              {/* Divider between regular and admin panels */}
+              <div className="dock-divider" />
+
+              {/* Admin panels */}
+              {allPanels.filter(p => p.adminOnly).map((panel) => {
+                const PanelIcon = panel.icon;
+                const isLocked = !isAdmin;
                 return (
                   <button
                     key={panel.id}
@@ -1429,7 +1467,6 @@ const HomePage = ({
                     data-panel={panel.id}
                     onMouseEnter={() => !isLocked && handlePanelHoverStart(panel.id)}
                     onMouseLeave={() => {
-                      // Only clear timeout, don't dismiss if already showing
                       if (hoverTimeoutRef.current) {
                         clearTimeout(hoverTimeoutRef.current);
                         hoverTimeoutRef.current = null;

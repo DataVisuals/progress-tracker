@@ -1,0 +1,313 @@
+/* Clarity Panel Styles */
+
+.clarity-quadrant .quadrant-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clarity-rankings-container {
+  display: flex;
+  gap: 24px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.clarity-rankings-container.fullscreen {
+  padding: 8px 0;
+}
+
+.clarity-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.clarity-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.clarity-header-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.clarity-column-header.top {
+  color: #10b981;
+  border-bottom-color: #10b981;
+}
+
+.clarity-column-header.bottom {
+  color: #ef4444;
+  border-bottom-color: #ef4444;
+}
+
+.clarity-avg-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.clarity-avg-badge.top {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.clarity-avg-badge.bottom {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.clarity-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.clarity-ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  background: #f9fafb;
+  border-radius: 6px;
+  transition: background-color 0.15s;
+}
+
+.clarity-ranking-item:hover {
+  background: #f3f4f6;
+}
+
+.clarity-rank {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  background: #e5e7eb;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.clarity-ranking-item.top .clarity-rank {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.clarity-ranking-item.bottom .clarity-rank {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.clarity-crystal {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clarity-crystal.clarity-good {
+  color: #10b981;
+}
+
+.clarity-crystal.clarity-average {
+  color: #f59e0b;
+}
+
+.clarity-crystal.clarity-poor {
+  color: #ef4444;
+}
+
+.clarity-user-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.clarity-user-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clarity-comment-count {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.clarity-score-value {
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+  min-width: 32px;
+  text-align: right;
+}
+
+.clarity-score-value.clarity-good {
+  color: #10b981;
+}
+
+.clarity-score-value.clarity-average {
+  color: #f59e0b;
+}
+
+.clarity-score-value.clarity-poor {
+  color: #ef4444;
+}
+
+.clarity-loading,
+.clarity-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.clarity-error {
+  color: #ef4444;
+}
+
+/* Fullscreen Layout */
+.fullscreen-clarity .clarity-rankings-container {
+  gap: 40px;
+}
+
+.fullscreen-clarity .clarity-column-header {
+  font-size: 14px;
+}
+
+.fullscreen-clarity .clarity-ranking-item {
+  padding: 8px 12px;
+}
+
+.fullscreen-clarity .clarity-user-name {
+  font-size: 14px;
+}
+
+.fullscreen-clarity .clarity-score-value {
+  font-size: 15px;
+}
+
+/* Dark Mode */
+:root.dark-mode .clarity-column-header {
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .clarity-column-header.top {
+  color: #34d399;
+  border-bottom-color: #34d399;
+}
+
+:root.dark-mode .clarity-column-header.bottom {
+  color: #f87171;
+  border-bottom-color: #f87171;
+}
+
+:root.dark-mode .clarity-ranking-item {
+  background: #374151;
+}
+
+:root.dark-mode .clarity-ranking-item:hover {
+  background: #4b5563;
+}
+
+:root.dark-mode .clarity-rank {
+  background: #4b5563;
+  color: #9ca3af;
+}
+
+:root.dark-mode .clarity-ranking-item.top .clarity-rank {
+  background: #064e3b;
+  color: #6ee7b7;
+}
+
+:root.dark-mode .clarity-ranking-item.bottom .clarity-rank {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+:root.dark-mode .clarity-avg-badge.top {
+  background: #064e3b;
+  color: #6ee7b7;
+}
+
+:root.dark-mode .clarity-avg-badge.bottom {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+:root.dark-mode .clarity-user-name {
+  color: #f9fafb;
+}
+
+:root.dark-mode .clarity-comment-count {
+  color: #6b7280;
+}
+
+:root.dark-mode .clarity-crystal.clarity-good {
+  color: #34d399;
+}
+
+:root.dark-mode .clarity-crystal.clarity-average {
+  color: #fbbf24;
+}
+
+:root.dark-mode .clarity-crystal.clarity-poor {
+  color: #f87171;
+}
+
+:root.dark-mode .clarity-score-value.clarity-good {
+  color: #34d399;
+}
+
+:root.dark-mode .clarity-score-value.clarity-average {
+  color: #fbbf24;
+}
+
+:root.dark-mode .clarity-score-value.clarity-poor {
+  color: #f87171;
+}
+
+:root.dark-mode .clarity-loading,
+:root.dark-mode .clarity-error {
+  color: #9ca3af;
+}
+
+:root.dark-mode .clarity-error {
+  color: #f87171;
+}
+
+/* Empty State */
+.clarity-quadrant .empty-quadrant {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  font-size: 13px;
+}

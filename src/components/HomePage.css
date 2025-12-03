@@ -5163,6 +5163,15 @@ html.dark-mode .quadrant-content {
   border-top: 1px solid #e5e7eb;
 }
 
+/* Vertical divider between regular and admin panels */
+.dock-divider {
+  width: 1px;
+  height: 28px;
+  background: #d1d5db;
+  margin: 6px 8px;
+  flex-shrink: 0;
+}
+
 /* Icon-only tab buttons */
 .minimized-tab {
   position: relative;
@@ -5258,6 +5267,10 @@ html.dark-mode .quadrant-content {
 :root.dark-mode .minimized-tabs {
   background: #1f2937;
   border-top-color: #374151;
+}
+
+:root.dark-mode .dock-divider {
+  background: #4b5563;
 }
 
 :root.dark-mode .minimized-tab {
@@ -5930,8 +5943,8 @@ html.dark-mode .quadrant-content {
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
   flex-direction: unset !important;
-  gap: 16px;
-  padding: 4px 12px;
+  gap: 24px;
+  padding: 8px 12px;
   max-height: 100%;
   overflow-y: auto !important;
   align-content: start;
@@ -5945,10 +5958,10 @@ html.dark-mode .quadrant-content {
 }
 
 .health-column-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  margin: 0 0 4px 0;
-  padding-bottom: 4px;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
   border-bottom: 2px solid;
 }
 
@@ -5965,18 +5978,18 @@ html.dark-mode .quadrant-content {
 .fullscreen-health .health-rankings-list {
   display: flex !important;
   flex-direction: column !important;
-  gap: 2px;
+  gap: 4px;
 }
 
 .fullscreen-health .health-ranking-item {
   padding: 6px 10px;
-  border-radius: 4px;
-  background: var(--bg-secondary, #f9fafb);
-  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 6px;
+  background: #f9fafb;
+  border: none;
 }
 
 .fullscreen-health .health-ranking-item:hover {
-  background: var(--bg-hover, #f3f4f6);
+  background: #f3f4f6;
 }
 
 .fullscreen-health .health-rank {
@@ -6013,12 +6026,11 @@ html.dark-mode .quadrant-content {
 }
 
 .dark-mode .fullscreen-health .health-ranking-item {
-  background: #1f2937;
-  border-color: #374151;
+  background: #374151;
 }
 
 .dark-mode .fullscreen-health .health-ranking-item:hover {
-  background: #374151;
+  background: #4b5563;
 }
 
 /* Active users fullscreen */

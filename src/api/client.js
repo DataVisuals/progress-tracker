@@ -84,6 +84,7 @@ export const api = {
   createComment: (periodId, data) => client.post(`/periods/${periodId}/comments`, data),
   updateComment: (id, data) => client.put(`/comments/${id}`, data),
   deleteComment: (id) => client.delete(`/comments/${id}`),
+  getCommentsByUser: () => client.get('/comments/by-user'),
 
   // CRAIDs
   getProjectCRAIDs: (projectId, type) => client.get(`/projects/${projectId}/craids${type ? `?type=${type}` : ''}`),
