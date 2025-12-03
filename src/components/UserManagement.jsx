@@ -28,6 +28,8 @@ const UserManagement = ({ currentUser, onClose }) => {
   const [editValue, setEditValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [projectSearchQuery, setProjectSearchQuery] = useState('');
+  const [resetPasswordUser, setResetPasswordUser] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
 
   useEffect(() => {
     loadUsers();
@@ -125,6 +127,25 @@ const UserManagement = ({ currentUser, onClose }) => {
     } catch (err) {
       console.error('Failed to delete user:', err);
       alert('Failed to delete user: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordUser || !newPassword) return;
+
+    if (newPassword.length < 6) {
+      alert('Password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      await api.adminResetPassword(resetPasswordUser.id, newPassword);
+      alert(`Password reset successfully for ${resetPasswordUser.email}`);
+      setResetPasswordUser(null);
+      setNewPassword('');
+    } catch (err) {
+      console.error('Failed to reset password:', err);
+      alert('Failed to reset password: ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -437,12 +458,21 @@ const UserManagement = ({ currentUser, onClose }) => {
                           />
                         </div>
                         {user.id !== currentUser.userId && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDeleteUser(user.id, user.email); }}
-                            className="delete-user-btn"
-                          >
-                            Delete
-                          </button>
+                          <>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setResetPasswordUser(user); }}
+                              className="reset-password-btn"
+                              title="Reset user's password"
+                            >
+                              Reset PW
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteUser(user.id, user.email); }}
+                              className="delete-user-btn"
+                            >
+                              Delete
+                            </button>
+                          </>
                         )}
                       </td>
                     </tr>
@@ -635,6 +665,42 @@ const UserManagement = ({ currentUser, onClose }) => {
               <div className="emails-list-actions">
                 <button className="cancel-btn" onClick={() => setShowEmailsList(false)}>
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {resetPasswordUser && (
+          <div className="add-user-modal" onClick={() => { setResetPasswordUser(null); setNewPassword(''); }}>
+            <div className="add-user-content" onClick={(e) => e.stopPropagation()}>
+              <h3>Reset Password</h3>
+              <p className="reset-password-info">
+                Set a new password for <strong>{resetPasswordUser.email}</strong>
+              </p>
+              <div className="form-group">
+                <label>New Password:</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password (min 6 characters)"
+                  autoFocus
+                />
+              </div>
+              <div className="add-user-actions">
+                <button
+                  className="save-btn"
+                  onClick={handleResetPassword}
+                  disabled={!newPassword || newPassword.length < 6}
+                >
+                  Reset Password
+                </button>
+                <button
+                  className="cancel-btn"
+                  onClick={() => { setResetPasswordUser(null); setNewPassword(''); }}
+                >
+                  Cancel
                 </button>
               </div>
             </div>

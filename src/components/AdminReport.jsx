@@ -143,7 +143,7 @@ const AdminReport = ({ type, id, name, onClose, onMetricClick }) => {
                         <td className="metric-comment">
                           {metric.latestComment ? (
                             <div className="comment-box">
-                              <p>{metric.latestComment.comment_text}</p>
+                              <div className="comment-text ql-editor" dangerouslySetInnerHTML={{ __html: metric.latestComment.comment_text }} />
                               <span className="comment-meta">
                                 {formatDate(metric.latestComment.created_at)} - {metric.latestComment.created_by}
                               </span>

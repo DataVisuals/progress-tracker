@@ -1,0 +1,319 @@
+/* Project Timeline Panel Styles */
+
+.timeline-quadrant .quadrant-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Timeline Container */
+.timeline-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.timeline-container.fullscreen {
+  padding: 8px 0;
+}
+
+/* Timeline Header with Month Markers */
+.timeline-header {
+  position: relative;
+  height: 32px;
+  margin-bottom: 8px;
+  padding-left: 220px;
+  padding-right: 60px;
+}
+
+.timeline-axis {
+  position: relative;
+  height: 100%;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.timeline-month-marker {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timeline-month-marker .month-label {
+  font-size: 10px;
+  color: #6b7280;
+  white-space: nowrap;
+  padding: 0 2px;
+}
+
+.timeline-month-marker .month-tick {
+  width: 1px;
+  height: 8px;
+  background: #d1d5db;
+  margin-top: 2px;
+}
+
+/* Today Marker */
+.timeline-today-marker {
+  position: absolute;
+  top: 100%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 5;
+}
+
+.timeline-today-marker .today-line {
+  position: absolute;
+  top: 0;
+  bottom: -200vh;
+  width: 2px;
+  background: #00aeef;
+  opacity: 0.5;
+}
+
+/* Timeline Projects List */
+.timeline-projects {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.timeline-project-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 0;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.timeline-project-row:hover,
+.timeline-project-row.hovered {
+  background-color: #f8fafc;
+}
+
+.timeline-project-row.past {
+  opacity: 0.7;
+}
+
+/* Project Label */
+.timeline-project-label {
+  width: 220px;
+  min-width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 12px;
+  overflow: hidden;
+}
+
+.timeline-project-label .portfolio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.timeline-project-label .project-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Timeline Bar Area */
+.timeline-bar-area {
+  flex: 1;
+  position: relative;
+  height: 20px;
+  margin-right: 8px;
+}
+
+.timeline-quadrant .timeline-bar {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 12px;
+  border-radius: 6px;
+  transition: opacity 0.15s, height 0.15s, filter 0.15s;
+  min-width: 8px;
+  max-width: none;
+}
+
+.timeline-quadrant .timeline-bar.has-start {
+  border-radius: 6px;
+}
+
+.timeline-quadrant .timeline-bar.no-start {
+  border-radius: 3px 6px 6px 3px;
+  opacity: 0.7;
+}
+
+.timeline-quadrant .timeline-project-row:hover .timeline-bar {
+  height: 14px;
+  filter: brightness(1.1);
+}
+
+.timeline-today-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #00aeef;
+  opacity: 0.3;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Days to Completion Badge */
+.timeline-days-badge {
+  width: 56px;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+  padding-right: 4px;
+}
+
+.timeline-arrow {
+  color: #9ca3af;
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-right: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.timeline-project-row:hover .timeline-arrow {
+  opacity: 1;
+}
+
+/* Tooltip */
+.timeline-tooltip {
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 100;
+  pointer-events: none;
+}
+
+.timeline-tooltip.tooltip-below {
+  top: calc(100% + 8px);
+}
+
+.timeline-tooltip.tooltip-above {
+  bottom: calc(100% + 8px);
+}
+
+.timeline-tooltip .tooltip-content {
+  background: #1f2937;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.timeline-tooltip .tooltip-content strong {
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.timeline-tooltip .tooltip-date {
+  color: #9ca3af;
+}
+
+.timeline-tooltip .tooltip-days {
+  font-weight: 600;
+}
+
+.timeline-tooltip .tooltip-days.critical {
+  color: #fca5a5;
+}
+
+.timeline-tooltip .tooltip-days.soon {
+  color: #fcd34d;
+}
+
+.timeline-tooltip .tooltip-days.past {
+  color: #9ca3af;
+}
+
+.timeline-tooltip .tooltip-pm {
+  color: #9ca3af;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+/* Fullscreen Timeline */
+.fullscreen-timeline .timeline-header {
+  padding-left: 250px;
+  padding-right: 80px;
+}
+
+.fullscreen-timeline .timeline-project-label {
+  width: 250px;
+  min-width: 250px;
+}
+
+.fullscreen-timeline .timeline-project-label .project-name {
+  font-size: 13px;
+}
+
+.fullscreen-timeline .timeline-days-badge {
+  width: 60px;
+  font-size: 12px;
+}
+
+/* Dark Mode */
+:root.dark-mode .timeline-axis {
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .timeline-month-marker .month-label {
+  color: #9ca3af;
+}
+
+:root.dark-mode .timeline-month-marker .month-tick {
+  background: #4b5563;
+}
+
+:root.dark-mode .timeline-project-row {
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .timeline-project-row:hover,
+:root.dark-mode .timeline-project-row.hovered {
+  background-color: #374151;
+}
+
+:root.dark-mode .timeline-project-label .project-name {
+  color: #f9fafb;
+}
+
+:root.dark-mode .timeline-tooltip .tooltip-content {
+  background: #374151;
+}
+
+:root.dark-mode .timeline-arrow {
+  color: #6b7280;
+}
+
+/* Empty State */
+.timeline-quadrant .empty-quadrant {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  font-size: 13px;
+}

@@ -3554,6 +3554,49 @@ function createApp(dbPath) {
     }
   });
   
+  // Admin reset password for another user (Admin only)
+  app.post('/api/users/:id/reset-password', authenticateToken, async (req, res) => {
+    try {
+      const adminUser = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
+      if (!isAdmin(adminUser)) {
+        return res.status(403).json({ error: 'Only admins can reset user passwords' });
+      }
+
+      const { newPassword } = req.body;
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ error: 'New password must be at least 6 characters' });
+      }
+
+      const targetUser = await dbGet('SELECT * FROM users WHERE id = ?', [req.params.id]);
+      if (!targetUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Hash new password
+      const newHash = await hashPassword(newPassword);
+
+      // Update password
+      await dbRun('UPDATE users SET password_hash = ? WHERE id = ?', [newHash, req.params.id]);
+
+      // Log audit entry
+      await logAudit(
+        req.user,
+        'UPDATE',
+        'users',
+        req.params.id,
+        { action: 'password_reset_by_admin' },
+        { action: 'password_reset' },
+        `Admin ${adminUser.email} reset password for user ${targetUser.email}`,
+        req.ip
+      );
+
+      res.json({ message: 'Password reset successfully' });
+    } catch (err) {
+      console.error('Admin password reset error:', err);
+      res.status(500).json({ error: 'Failed to reset password' });
+    }
+  });
+
   // Delete user (Admin only)
   app.delete('/api/users/:id', authenticateToken, async (req, res) => {
     try {

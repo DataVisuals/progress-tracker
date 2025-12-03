@@ -59,6 +59,7 @@ import ActiveUsersPanel from './panels/ActiveUsersPanel';
 import MetricsAtRiskPanel from './panels/MetricsAtRiskPanel';
 import AttentionPanel from './panels/AttentionPanel';
 import ProjectHealthPanel from './panels/ProjectHealthPanel';
+import ProjectTimelinePanel from './panels/ProjectTimelinePanel';
 import AuditPanel from './panels/AuditPanel';
 import HeatmapPanel from './panels/HeatmapPanel';
 import PerformancePanel from './panels/PerformancePanel';
@@ -914,6 +915,14 @@ const HomePage = ({
 
   const projectCount = filteredProjects.length;
 
+  // Get projects array for timeline (from object to array)
+  const projectsArray = useMemo(() => {
+    return Object.entries(projects).map(([id, project]) => ({
+      ...project,
+      id: parseInt(id, 10)
+    }));
+  }, [projects]);
+
   // Calculate metric count from filtered projects only
   const metricCount = filteredProjects.reduce((sum, [id, project]) => {
     const data = projectsData[id];
@@ -1203,6 +1212,20 @@ const HomePage = ({
             setHideInactiveProjects={setHideInactiveProjects}
             onNavigateToProject={onNavigateToProject}
             onShowHealthModal={setHealthModalProject}
+          />
+        );
+
+      case 'timeline':
+        return (
+          <ProjectTimelinePanel
+            key={panelId}
+            panelId={panelId}
+            index={index}
+            forDock={forDock}
+            projects={projectsArray}
+            portfolios={portfolios}
+            selectedSpace={selectedSpace}
+            onNavigateToProject={onNavigateToProject}
           />
         );
 

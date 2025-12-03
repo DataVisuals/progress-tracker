@@ -102,6 +102,7 @@ export const api = {
   getUsers: () => client.get('/users'),
   updateUser: (userId, data) => client.put(`/users/${userId}`, data),
   updateUserRole: (userId, role) => client.put(`/users/${userId}/role`, { role }),
+  adminResetPassword: (userId, newPassword) => client.post(`/users/${userId}/reset-password`, { newPassword }),
   deleteUser: (userId) => client.delete(`/users/${userId}`),
 
   // Project Permissions

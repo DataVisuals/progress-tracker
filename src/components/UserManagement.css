@@ -425,6 +425,22 @@
   min-width: 100px;
 }
 
+.reset-password-btn {
+  padding: 2px 8px;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+.reset-password-btn:hover {
+  background-color: #1976D2;
+}
+
 .delete-user-btn {
   padding: 2px 8px;
   background-color: #f44336;
@@ -438,6 +454,16 @@
 
 .delete-user-btn:hover {
   background-color: #d32f2f;
+}
+
+.reset-password-info {
+  margin: 0 0 16px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.reset-password-info strong {
+  color: #333;
 }
 
 .permissions-section {
@@ -861,4 +887,12 @@
 
 :root.dark-mode .inline-edit-input:focus {
   box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+}
+
+:root.dark-mode .reset-password-info {
+  color: #9ca3af;
+}
+
+:root.dark-mode .reset-password-info strong {
+  color: #f9fafb;
 }

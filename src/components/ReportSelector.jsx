@@ -13,11 +13,14 @@ export default function ReportSelector({ spaces, portfolios, onClose, onGenerate
     : portfolios;
 
   const handleGenerate = () => {
-    if (selectedPortfolio) {
-      // Generate portfolio report
+    if (selectedPortfolio && selectedPortfolio.value !== 'all') {
+      // Generate single portfolio report
       onGenerate({ type: 'portfolio', id: selectedPortfolio.value, name: selectedPortfolio.label });
+    } else if (selectedPortfolio && selectedPortfolio.value === 'all' && selectedSpace && selectedSpace.value !== null) {
+      // Generate all portfolios in space report (space report)
+      onGenerate({ type: 'space', id: selectedSpace.value, name: `${selectedSpace.label} - All Portfolios` });
     } else if (selectedSpace && selectedSpace.value !== null) {
-      // Generate space report
+      // Generate space report (same as all portfolios in space)
       onGenerate({ type: 'space', id: selectedSpace.value, name: selectedSpace.label });
     } else if (selectedSpace && selectedSpace.value === null) {
       // Generate all spaces report
@@ -59,22 +62,24 @@ export default function ReportSelector({ spaces, portfolios, onClose, onGenerate
           </div>
 
           <div className="form-group">
-            <label>Portfolio (Optional)</label>
+            <label>Portfolio</label>
             <Select
               styles={selectStyles}
               value={selectedPortfolio}
               onChange={setSelectedPortfolio}
-              options={filteredPortfolios.map(portfolio => ({
-                value: portfolio.id,
-                label: portfolio.name
-              }))}
-              isClearable
+              options={[
+                { value: 'all', label: 'All Portfolios' },
+                ...filteredPortfolios.map(portfolio => ({
+                  value: portfolio.id,
+                  label: portfolio.name
+                }))
+              ]}
               isDisabled={!selectedSpace}
               placeholder={selectedSpace ? "Select a portfolio..." : "Select a space first..."}
             />
             <small className="form-hint">
               {selectedSpace
-                ? "Leave empty to view all portfolios in the space, or select one portfolio"
+                ? "Select 'All Portfolios' to view all in the space, or choose a specific portfolio"
                 : "Select a space first to choose a portfolio"}
             </small>
           </div>
