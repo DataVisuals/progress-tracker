@@ -131,6 +131,13 @@ const Milestones = ({ projectId, currentUser, onMilestonesChange }) => {
         )}
       </div>
 
+      <div className="milestones-info-banner">
+        <p>
+          <strong>Note:</strong> Don't add your milestones here if you are already tracking in another tool.
+          Integrations are in development. This is for initiatives not already milestone tracking elsewhere.
+        </p>
+      </div>
+
       {error && <div className="milestones-error">{error}</div>}
 
       {showAddForm && (

@@ -18,11 +18,86 @@
   padding: 8px 0;
 }
 
+/* Scrollable wrapper for both axis and projects */
+.timeline-scroll-wrapper {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sticky axis header */
+.timeline-axis-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  flex-shrink: 0;
+}
+
+/* Time Axis Header */
+.timeline-axis {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 0 4px 0;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+  min-width: fit-content;
+}
+
+.timeline-axis-label-spacer {
+  width: 180px;
+  min-width: 180px;
+  flex-shrink: 0;
+}
+
+.timeline-axis-track {
+  flex: 1;
+  min-width: 1400px;
+  position: relative;
+  height: 16px;
+}
+
+.timeline-axis-marker {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timeline-axis-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  background: transparent;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.timeline-axis-countdown-spacer {
+  width: 60px;
+  min-width: 60px;
+  flex-shrink: 0;
+}
+
+.fullscreen-timeline .timeline-axis-label-spacer {
+  width: 250px;
+  min-width: 250px;
+}
+
 /* Timeline Projects List */
 .timeline-projects {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  padding: 2px 0;
+  min-width: fit-content;
 }
 
 .timeline-project-row {
@@ -32,6 +107,8 @@
   cursor: pointer;
   transition: background-color 0.15s;
   border-bottom: 1px solid #f3f4f6;
+  min-height: 32px;
+  min-width: fit-content;
 }
 
 .timeline-project-row:hover {
@@ -44,25 +121,27 @@
 
 /* Project Label */
 .timeline-project-label {
-  width: 220px;
-  min-width: 220px;
+  width: 180px;
+  min-width: 180px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding-right: 12px;
-  overflow: hidden;
+  padding-right: 8px;
+  overflow: visible;
+  position: relative;
+  cursor: pointer;
 }
 
 .timeline-project-label .portfolio-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
 .timeline-project-label .project-name {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: #1f2937;
   white-space: nowrap;
@@ -70,11 +149,46 @@
   text-overflow: ellipsis;
 }
 
+/* Project Label Tooltip */
+.project-label-tooltip {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  background: #1f2937;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  z-index: 150;
+}
+
+.project-label-tooltip strong {
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.project-label-tooltip .tooltip-date {
+  color: #9ca3af;
+}
+
+.project-label-tooltip .tooltip-pm {
+  color: #9ca3af;
+  font-size: 9px;
+  margin-top: 2px;
+}
+
 /* Tubemap Track */
 .tubemap-track {
   flex: 1;
+  min-width: 1400px;
   position: relative;
-  height: 24px;
+  height: 20px;
   overflow: visible;
 }
 
@@ -82,8 +196,8 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  height: 4px;
-  border-radius: 2px;
+  height: 3px;
+  border-radius: 1.5px;
   z-index: 1;
 }
 
@@ -108,25 +222,25 @@
 }
 
 .terminus-circle {
-  width: 12px;
-  height: 12px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   transition: all 0.2s ease;
 }
 
 .tubemap-terminus:hover .terminus-circle {
-  transform: scale(1.2);
+  transform: scale(1.15);
 }
 
 /* Project Countdown Badge (right side) */
 .project-countdown-badge {
-  width: 70px;
-  min-width: 70px;
+  width: 60px;
+  min-width: 60px;
   flex-shrink: 0;
   text-align: right;
-  padding-right: 8px;
-  font-size: 11px;
+  padding-right: 6px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -149,13 +263,13 @@
 }
 
 .tubemap-stop:hover {
-  transform: translate(-50%, -50%) scale(1.15);
+  transform: translate(-50%, -50%) scale(1.2);
   z-index: 10;
 }
 
 .stop-marker {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -164,12 +278,12 @@
 }
 
 .stop-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: white;
   border: 2px solid #00aeef;
-  box-shadow: 0 1px 3px rgba(0, 174, 239, 0.4);
+  box-shadow: 0 1px 2px rgba(0, 174, 239, 0.3);
   transition: all 0.2s ease;
 }
 
@@ -194,40 +308,40 @@
 }
 
 .stop-icon {
-  font-size: 11px;
+  font-size: 9px;
   color: #10b981;
-  filter: drop-shadow(0 1px 2px rgba(16, 185, 129, 0.3));
+  filter: drop-shadow(0 1px 1px rgba(16, 185, 129, 0.3));
 }
 
 /* Milestone Tooltip */
 .tubemap-stop .milestone-tooltip {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
   background: #1f2937;
   color: white;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 9px;
   white-space: nowrap;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  gap: 1px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   pointer-events: none;
   z-index: 150;
 }
 
 .tubemap-stop .milestone-tooltip strong {
-  font-size: 11px;
-  margin-bottom: 2px;
+  font-size: 10px;
+  margin-bottom: 1px;
 }
 
 .tubemap-stop .milestone-tooltip .completed-badge {
   color: #10b981;
   font-weight: 600;
-  font-size: 10px;
+  font-size: 9px;
 }
 
 /* Project Tooltip (on end terminus) */
@@ -305,6 +419,19 @@
 }
 
 /* Dark Mode */
+:root.dark-mode .timeline-axis-sticky {
+  background: #1e293b;
+}
+
+:root.dark-mode .timeline-axis {
+  border-bottom-color: #334155;
+}
+
+:root.dark-mode .timeline-axis-label {
+  color: #94a3b8;
+  background: #0f172a;
+}
+
 :root.dark-mode .timeline-project-row {
   border-bottom-color: #374151;
 }
@@ -315,6 +442,10 @@
 
 :root.dark-mode .timeline-project-label .project-name {
   color: #f9fafb;
+}
+
+:root.dark-mode .project-label-tooltip {
+  background: #374151;
 }
 
 :root.dark-mode .tubemap-stop .milestone-tooltip {

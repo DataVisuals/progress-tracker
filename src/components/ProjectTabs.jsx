@@ -21,8 +21,7 @@ const ProjectTabs = ({
       id: 'milestones',
       label: 'Milestones',
       icon: <MdFlag />,
-      badge: milestonesCount > 0 ? milestonesCount : null,
-      adminOnly: true
+      badge: milestonesCount > 0 ? milestonesCount : null
     },
     {
       id: 'feedback',
@@ -56,7 +55,10 @@ const ProjectTabs = ({
           title={tab.id === 'recovery' && needsRecoveryPlan ? 'Recovery plan needed for delinquent metric' : ''}
         >
           {tab.icon}
-          <span className="project-tab-label">{tab.label}</span>
+          <span className="project-tab-label">
+            {tab.label}
+            {tab.experimental && <span className="experimental-badge">Experimental</span>}
+          </span>
           {tab.badge && <span className="project-tab-badge">{tab.badge}</span>}
         </button>
       ))}

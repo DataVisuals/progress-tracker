@@ -318,15 +318,18 @@ function App() {
             // Current project not in this portfolio, select the first one
             setSelectedProject(response.data[0].id.toString());
             setSelectedMetric('');
+            setSelectedProjectTab('overview'); // Reset to overview tab when auto-selecting a new project
           } else if (!projectInList) {
             // No projects in this portfolio
             setSelectedProject('');
             setSelectedMetric('');
+            setSelectedProjectTab('overview'); // Reset to overview tab
           }
         } else if (selectedPortfolio && !selectedProject && response.data.length > 0) {
           // Portfolio selected but no project selected - select first project
           setSelectedProject(response.data[0].id.toString());
           setSelectedMetric('');
+          setSelectedProjectTab('overview'); // Reset to overview tab when selecting first project
         }
       } catch (err) {
         console.error('Failed to load projects:', err);

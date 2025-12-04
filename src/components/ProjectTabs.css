@@ -42,6 +42,21 @@
 
 .project-tab-label {
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.experimental-badge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #f59e0b;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  opacity: 0.9;
 }
 
 .project-tab-badge {

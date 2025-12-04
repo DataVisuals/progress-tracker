@@ -7002,6 +7002,14 @@ function createApp(dbPath) {
       console.log('✅ Created default admin user: admin@example.com / admin123');
     }
 
+    // Seed Illustrative Examples Portfolio (if not exists)
+    try {
+      const { seedIllustrativeExamples } = require('./seed-illustrative-examples');
+      await seedIllustrativeExamples();
+    } catch (err) {
+      console.log('ℹ️  Illustrative examples seed skipped or failed:', err.message);
+    }
+
     console.log('✅ Database ready at backend/data/progress-tracker.db');
   }
 

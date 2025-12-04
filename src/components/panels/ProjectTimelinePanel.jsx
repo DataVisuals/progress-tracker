@@ -164,8 +164,28 @@ const ProjectTimelinePanel = ({
 
     return (
       <div className={`timeline-container ${isFullscreen ? 'fullscreen' : ''}`}>
-        {/* Project rows with tubemap design */}
-        <div className="timeline-projects">
+        {/* Scrollable content wrapper */}
+        <div className="timeline-scroll-wrapper">
+          {/* Time axis header - sticky */}
+          <div className="timeline-axis-sticky">
+            <div className="timeline-axis">
+              <div className="timeline-axis-label-spacer" />
+              <div className="timeline-axis-track">
+                {timeMarkers.map((marker, idx) => (
+                  <div
+                    key={idx}
+                    className="timeline-axis-marker"
+                    style={{ left: `${marker.position}%` }}
+                  >
+                    <span className="timeline-axis-label">{marker.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="timeline-axis-countdown-spacer" />
+            </div>
+          </div>
+          {/* Project rows with tubemap design */}
+          <div className="timeline-projects">
           {timelineData.projects.map((project) => {
             const endPosition = getPosition(project.endDate);
             const startPosition = project.startDate ? getPosition(project.startDate) : Math.max(0, endPosition - 10);
@@ -186,15 +206,30 @@ const ProjectTimelinePanel = ({
                 onClick={() => onNavigateToProject(project.id)}
               >
                 {/* Project name label */}
-                <div className="timeline-project-label">
+                <div
+                  className="timeline-project-label"
+                  onMouseEnter={() => setHoveredProject(project.id)}
+                  onMouseLeave={() => setHoveredProject(null)}
+                >
                   <span
                     className="portfolio-dot"
                     style={{ backgroundColor: project.portfolio_color || '#6b7280' }}
                     title={project.portfolio_name || 'No Portfolio'}
                   />
-                  <span className="project-name" title={project.name}>
+                  <span className="project-name">
                     {project.name}
                   </span>
+                  {hoveredProject === project.id && (
+                    <div className="project-label-tooltip">
+                      <strong>{project.name}</strong>
+                      <span className="tooltip-date">
+                        {project.startDate ? formatDate(project.startDate) : 'No start'} → {formatDate(project.endDate)}
+                      </span>
+                      {project.initiative_manager && (
+                        <span className="tooltip-pm">PM: {project.initiative_manager}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Tubemap track */}
@@ -251,7 +286,7 @@ const ProjectTimelinePanel = ({
                           <div className="milestone-tooltip">
                             <strong>{milestone.title}</strong>
                             <span>{formatDate(milestoneDate)}</span>
-                            {milestone.completed && <span className="completed-badge">✓ Complete</span>}
+                            {milestone.completed === 1 && <span className="completed-badge">✓ Complete</span>}
                           </div>
                         )}
                       </div>
@@ -299,6 +334,7 @@ const ProjectTimelinePanel = ({
               </div>
             );
           })}
+        </div>
         </div>
       </div>
     );
