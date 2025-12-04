@@ -9,16 +9,19 @@ const AuditLog = () => {
   const [allLogs, setAllLogs] = useState([]); // For timeline
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [filters, setFilters] = useState({
     table_name: '',
     action: '',
     user_id: '',
+    project_id: '',
     limit: 100
   });
 
   useEffect(() => {
     loadUsers();
+    loadProjects();
     loadLogs();
     loadAllLogsForTimeline();
   }, [filters]);
@@ -77,6 +80,16 @@ const AuditLog = () => {
     }
   };
 
+  const loadProjects = async () => {
+    try {
+      const response = await api.getProjects();
+      setProjects(response.data);
+    } catch (err) {
+      console.error('Failed to load projects:', err);
+      setProjects([]);
+    }
+  };
+
   const loadLogs = async () => {
     try {
       setLoading(true);
@@ -84,6 +97,7 @@ const AuditLog = () => {
       if (filters.table_name) params.table_name = filters.table_name;
       if (filters.action) params.action = filters.action;
       if (filters.user_id) params.user_id = filters.user_id;
+      if (filters.project_id) params.project_id = filters.project_id;
       if (filters.limit) params.limit = filters.limit;
 
       const response = await api.getAuditLog(params);
@@ -162,6 +176,11 @@ const AuditLog = () => {
     ...users.map(user => ({ value: user.id.toString(), label: user.name }))
   ];
 
+  const projectOptions = [
+    { value: '', label: 'All Projects' },
+    ...projects.map(project => ({ value: project.id.toString(), label: project.name }))
+  ];
+
   const limitOptions = [
     { value: '50', label: '50 entries' },
     { value: '100', label: '100 entries' },
@@ -233,6 +252,15 @@ const AuditLog = () => {
             options={userOptions}
             styles={compactSelectStyles}
             placeholder="Filter by user..."
+            isClearable={false}
+          />
+
+          <Select
+            value={projectOptions.find(opt => opt.value === filters.project_id)}
+            onChange={(option) => setFilters({ ...filters, project_id: option.value })}
+            options={projectOptions}
+            styles={compactSelectStyles}
+            placeholder="Filter by project..."
             isClearable={false}
           />
 
