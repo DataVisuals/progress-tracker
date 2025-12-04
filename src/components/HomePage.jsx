@@ -642,7 +642,7 @@ const HomePage = ({
 
       // Load admin panel data if user is admin
       // Always load all admin data since toolbar gives access to any panel
-      if (isAdmin) {
+      if (currentUser?.role === 'admin') {
         // Load audit timeline (for visualization)
         try {
           const timelineResponse = await api.getAuditTimeline(14);
