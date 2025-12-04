@@ -4569,10 +4569,11 @@ function createApp(dbPath) {
             mp.reporting_date,
             mp.complete,
             mp.expected,
-            mp.frequency,
+            m.frequency,
             ROW_NUMBER() OVER (PARTITION BY mp.metric_id ORDER BY mp.reporting_date DESC) as rn,
             LEAD(mp.reporting_date) OVER (PARTITION BY mp.metric_id ORDER BY mp.reporting_date) as next_date
           FROM metric_periods mp
+          JOIN metrics m ON mp.metric_id = m.id
           WHERE mp.reporting_date <= DATE('now')
         ),
         PeriodsWithMeta AS (
