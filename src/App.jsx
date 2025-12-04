@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
-// App version - increment on each release
-const APP_VERSION = '1.0.3';
+// Build timestamp - updated automatically before each commit to gh
+const BUILD_TIMESTAMP = '2025-12-04 08:55:33';
 import Select from 'react-select';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';
@@ -1279,7 +1279,7 @@ function App() {
                       <div className="user-modal-login-time">
                         Logged in: {loginTime ? loginTime.toLocaleString() : 'Unknown'}
                       </div>
-                      <div className="user-modal-version">v{APP_VERSION}</div>
+                      <div className="user-modal-version">{BUILD_TIMESTAMP}</div>
                     </div>
                     <div className="user-modal-links">
                       <button
