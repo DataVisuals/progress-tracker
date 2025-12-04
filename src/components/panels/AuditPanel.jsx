@@ -1,18 +1,89 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
 import { MdHistory, MdAdd, MdEdit, MdRemove } from 'react-icons/md';
+import { api } from '../../api/client';
+import { compactSelectStyles } from '../SelectStyles';
 
 const AuditPanel = ({
   panelId,
   index,
   isAdmin,
   forDock,
-  auditLog,
-  auditTimeline,
+  auditLog: auditLogProp,
+  auditTimeline: auditTimelineProp,
   auditHoveredDateIdx,
   setAuditHoveredDateIdx,
   auditSelectedDateIdx,
   setAuditSelectedDateIdx
 }) => {
+  const [users, setUsers] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [filters, setFilters] = useState({
+    table_name: '',
+    action: '',
+    user_id: '',
+    project_id: '',
+    limit: forDock ? 100 : 50
+  });
+  const [localAuditLog, setLocalAuditLog] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Use local audit log if filters are active, otherwise use prop
+  const hasActiveFilters = filters.table_name || filters.action || filters.user_id || filters.project_id;
+  const auditLog = hasActiveFilters ? localAuditLog : auditLogProp;
+  const auditTimeline = auditTimelineProp;
+
+  useEffect(() => {
+    if (forDock && isAdmin) {
+      loadUsers();
+      loadProjects();
+    }
+  }, [forDock, isAdmin]);
+
+  useEffect(() => {
+    if (forDock && hasActiveFilters) {
+      loadFilteredLogs();
+    }
+  }, [filters, forDock]);
+
+  const loadUsers = async () => {
+    try {
+      const response = await api.getUsers();
+      setUsers(response.data);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+    }
+  };
+
+  const loadProjects = async () => {
+    try {
+      const response = await api.getProjects();
+      setProjects(response.data);
+    } catch (err) {
+      console.error('Failed to load projects:', err);
+    }
+  };
+
+  const loadFilteredLogs = async () => {
+    try {
+      setLoading(true);
+      const params = {};
+      if (filters.table_name) params.table_name = filters.table_name;
+      if (filters.action) params.action = filters.action;
+      if (filters.user_id) params.user_id = filters.user_id;
+      if (filters.project_id) params.project_id = filters.project_id;
+      if (filters.limit) params.limit = filters.limit;
+
+      const response = await api.getAuditLog(params);
+      setLocalAuditLog(response.data);
+    } catch (err) {
+      console.error('Failed to load filtered audit log:', err);
+      setLocalAuditLog([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isAdmin) return null;
 
   // Generate activity summary
@@ -166,6 +237,31 @@ const AuditPanel = ({
     : timelineEntries;
   const groupedEntries = groupByDate(filteredEntries);
 
+  const tableOptions = [
+    { value: '', label: 'All Tables' },
+    { value: 'projects', label: 'Projects' },
+    { value: 'metrics', label: 'Metrics' },
+    { value: 'metric_periods', label: 'Metric Periods' },
+    { value: 'comments', label: 'Comments' }
+  ];
+
+  const actionOptions = [
+    { value: '', label: 'All Actions' },
+    { value: 'CREATE', label: 'Create' },
+    { value: 'UPDATE', label: 'Update' },
+    { value: 'DELETE', label: 'Delete' }
+  ];
+
+  const userOptions = [
+    { value: '', label: 'All Users' },
+    ...users.map(user => ({ value: user.id.toString(), label: user.name }))
+  ];
+
+  const projectOptions = [
+    { value: '', label: 'All Projects' },
+    ...projects.map(project => ({ value: project.id.toString(), label: project.name }))
+  ];
+
   return (
     <div key={panelId} className={`home-quadrant audit-quadrant panel-${index + 1}`}>
       <div className="quadrant-header">
@@ -173,10 +269,50 @@ const AuditPanel = ({
         <h2>Audit Log</h2>
       </div>
       <div className="quadrant-content">
+        {forDock && (
+          <div className="audit-filters-row">
+            <Select
+              value={tableOptions.find(opt => opt.value === filters.table_name)}
+              onChange={(option) => setFilters({ ...filters, table_name: option.value })}
+              options={tableOptions}
+              styles={compactSelectStyles}
+              placeholder="Table..."
+              isClearable={false}
+            />
+            <Select
+              value={actionOptions.find(opt => opt.value === filters.action)}
+              onChange={(option) => setFilters({ ...filters, action: option.value })}
+              options={actionOptions}
+              styles={compactSelectStyles}
+              placeholder="Action..."
+              isClearable={false}
+            />
+            <Select
+              value={userOptions.find(opt => opt.value === filters.user_id)}
+              onChange={(option) => setFilters({ ...filters, user_id: option.value })}
+              options={userOptions}
+              styles={compactSelectStyles}
+              placeholder="User..."
+              isClearable={false}
+            />
+            <Select
+              value={projectOptions.find(opt => opt.value === filters.project_id)}
+              onChange={(option) => setFilters({ ...filters, project_id: option.value })}
+              options={projectOptions}
+              styles={compactSelectStyles}
+              placeholder="Project..."
+              isClearable={false}
+            />
+          </div>
+        )}
         {auditTimeline.length === 0 && auditLog.length === 0 ? (
           <div className="empty-state">
             <MdHistory className="empty-icon" />
             <p>No recent activity</p>
+          </div>
+        ) : loading ? (
+          <div className="empty-state">
+            <p>Loading filtered logs...</p>
           </div>
         ) : (
           <div className="audit-timeline-container">

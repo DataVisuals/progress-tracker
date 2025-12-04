@@ -1184,9 +1184,6 @@ function App() {
                     <button onMouseDown={() => { setShowUserManagement(true); setShowAdminDropdown(false); }}>
                       Manage Users
                     </button>
-                    <button onMouseDown={() => { setShowAuditLog(true); setShowAdminDropdown(false); }}>
-                      Audit Log
-                    </button>
                     <button onMouseDown={() => { setShowUserActivity(true); setShowAdminDropdown(false); }}>
                       User Activity Report
                     </button>
