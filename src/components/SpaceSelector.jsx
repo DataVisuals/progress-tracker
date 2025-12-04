@@ -54,9 +54,8 @@ export default function SpaceSelector({
     }
   };
 
-  if (spaces.length === 0) {
-    return null; // Don't show selector if no spaces
-  }
+  // Always show selector so admins can access "Manage Spaces" button
+  // even when no spaces exist yet
 
   return (
     <div className="portfolio-selector" ref={dropdownRef} data-testid="space-selector-main">
@@ -74,8 +73,10 @@ export default function SpaceSelector({
           <div className="trigger-content">
             {selectedSpaceData ? (
               <span className="selected-text">{selectedSpaceData.name || 'Unnamed Space'}</span>
+            ) : selectedSpace === 'all' ? (
+              <span className="selected-text">All Spaces</span>
             ) : (
-              <span className="placeholder-text">Space...</span>
+              <span className="placeholder-text">Select Space...</span>
             )}
           </div>
           <svg

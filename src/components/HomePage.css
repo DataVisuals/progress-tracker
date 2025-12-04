@@ -1149,11 +1149,13 @@
   gap: 8px;
   margin-bottom: 12px;
   flex-wrap: wrap;
+  padding: 0 8px;
 }
 
 .audit-filters-row > div {
   flex: 1;
-  min-width: 150px;
+  min-width: 120px;
+  font-size: 13px;
 }
 
 .audit-timeline-container {

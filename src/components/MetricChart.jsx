@@ -1757,32 +1757,6 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           >
             Latest Progress
           </button>
-          {currentUser && (
-            <button
-              className={`tab-button ${activeTab === 'feedback' ? 'active' : ''}`}
-              onClick={() => setActiveTab('feedback')}
-            >
-              Feedback
-              {hasRecentFeedback() && <span className="recent-indicator" title="New in last 24 hours" />}
-            </button>
-          )}
-          {currentUser && (currentUser.role === 'pm' || currentUser.role === 'admin') && (
-            <button
-              className={`tab-button ${activeTab === 'recovery' ? 'active' : ''} ${needsRecoveryPlan() ? 'needs-action' : ''}`}
-              onClick={() => setActiveTab('recovery')}
-            >
-              Recovery Plan
-              {hasRecentRecoveryPlans() && <span className="recent-indicator" title="New in last 24 hours" />}
-              {needsRecoveryPlan() && (
-                <Lottie
-                  animationData={fixingAnimation}
-                  loop={true}
-                  className="tab-warning-lottie"
-                  title="Recovery plan needed for delinquent metric"
-                />
-              )}
-            </button>
-          )}
           {projectId && onTimeTravelChange && currentUser && (
             <button
               className={`tab-button ${activeTab === 'timetravel' ? 'active' : ''}`}
@@ -1996,23 +1970,6 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           </tbody>
         </table>
             </div>
-          </div>
-        )}
-
-        {/* Feedback Tab Content */}
-        {activeTab === 'feedback' && currentUser && projectId && (
-          <div className="tab-content">
-            <Feedback currentUser={currentUser} projectId={projectId} />
-          </div>
-        )}
-
-        {/* Recovery Plan Tab Content */}
-        {activeTab === 'recovery' && currentUser && projectId && (
-          <div className="tab-content">
-            <RecoveryPlans
-              currentUser={currentUser}
-              projectId={projectId}
-            />
           </div>
         )}
 

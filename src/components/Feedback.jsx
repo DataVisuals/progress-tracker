@@ -3,7 +3,7 @@ import { MdInfo, MdWarning, MdError, MdCheckCircle } from 'react-icons/md';
 import { api } from '../api/client';
 import './Feedback.css';
 
-const Feedback = ({ currentUser, projectId }) => {
+const Feedback = ({ currentUser, projectId, onFeedbackChange }) => {
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, open, resolved
@@ -29,6 +29,9 @@ const Feedback = ({ currentUser, projectId }) => {
       setLoading(true);
       const response = await api.get(`/feedback?project_id=${projectId}`);
       setFeedback(response.data);
+      if (onFeedbackChange) {
+        onFeedbackChange();
+      }
     } catch (err) {
       console.error('Failed to load feedback:', err);
       setFeedback([]);

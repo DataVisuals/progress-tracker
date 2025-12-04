@@ -1,5 +1,5 @@
 import React from 'react';
-import { MdFavorite, MdArrowForward } from 'react-icons/md';
+import { MdFavorite, MdArrowForward, MdTrendingUp } from 'react-icons/md';
 
 const getHealthColor = (score) => {
   if (score >= 80) return '#10b981'; // green
@@ -14,8 +14,6 @@ const ProjectHealthPanel = ({
   projectHealthRankings,
   healthRankingView,
   setHealthRankingView,
-  hideInactiveProjects,
-  setHideInactiveProjects,
   onNavigateToProject,
   onShowHealthModal
 }) => {
@@ -117,17 +115,6 @@ const ProjectHealthPanel = ({
       <div className="quadrant-header">
         <MdFavorite className="quadrant-icon" />
         <h2>Project Health</h2>
-        <label className="active-filter-switch">
-          <span className="switch-label">Active only</span>
-          <div className="switch-track">
-            <input
-              type="checkbox"
-              checked={hideInactiveProjects}
-              onChange={(e) => setHideInactiveProjects(e.target.checked)}
-            />
-            <span className="switch-slider"></span>
-          </div>
-        </label>
         <div className="health-toggle-buttons">
           <button
             className={`health-toggle-btn ${healthRankingView === 'top' ? 'active' : ''}`}
@@ -145,8 +132,10 @@ const ProjectHealthPanel = ({
       </div>
       <div className="quadrant-content">
         {displayProjects.length === 0 ? (
-          <div className="empty-quadrant">
+          <div className="empty-state">
+            <MdTrendingUp className="empty-icon" />
             <p>No projects to display</p>
+            <span>Add projects with metrics to see health rankings</span>
           </div>
         ) : (
           <div className="health-rankings-list">

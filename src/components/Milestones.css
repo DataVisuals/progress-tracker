@@ -1,0 +1,373 @@
+.milestones-container {
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.milestones-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.milestones-header h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #003c71;
+  margin: 0;
+}
+
+.add-milestone-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #00aeef;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-milestone-btn:hover {
+  background: #0099d6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 174, 239, 0.3);
+}
+
+.add-milestone-btn svg {
+  font-size: 18px;
+}
+
+.milestones-loading {
+  text-align: center;
+  padding: 48px;
+  color: #64748b;
+  font-size: 16px;
+}
+
+.milestones-error {
+  padding: 16px;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 8px;
+  color: #c00;
+  margin-bottom: 16px;
+}
+
+/* Form Styling */
+.milestone-form {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  color: #003c71;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #00aeef;
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.save-btn,
+.cancel-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-btn {
+  background: #00aeef;
+  color: white;
+}
+
+.save-btn:hover {
+  background: #0099d6;
+  transform: translateY(-1px);
+}
+
+.cancel-btn {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.cancel-btn:hover {
+  background: #e2e8f0;
+}
+
+/* Empty State */
+.no-milestones {
+  text-align: center;
+  padding: 64px 32px;
+  color: #94a3b8;
+}
+
+.no-milestones-icon {
+  font-size: 64px;
+  color: #cbd5e1;
+  margin-bottom: 16px;
+}
+
+.no-milestones p {
+  font-size: 18px;
+  margin: 8px 0;
+}
+
+.no-milestones-subtitle {
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+/* Compact Milestone List */
+.milestones-list {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.milestones-list h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #003c71;
+  margin: 0 0 12px 0;
+}
+
+.milestone-item {
+  padding: 10px 12px;
+  border-left: 3px solid #e2e8f0;
+  margin-bottom: 6px;
+  background: #f8fafc;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.milestone-item:last-child {
+  margin-bottom: 0;
+}
+
+.milestone-item:hover {
+  background: #f1f5f9;
+  border-left-color: #00aeef;
+}
+
+.milestone-item.completed {
+  border-left-color: #10b981;
+  background: #f0fdf4;
+}
+
+.milestone-item.overdue {
+  border-left-color: #ef4444;
+  background: #fef2f2;
+}
+
+.milestone-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.milestone-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.milestone-status-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.milestone-status-icon.completed {
+  color: #10b981;
+}
+
+.milestone-status-icon.overdue {
+  color: #ef4444;
+}
+
+.milestone-status-icon.upcoming {
+  color: #00aeef;
+}
+
+.milestone-info h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #003c71;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.milestone-date {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.milestone-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  padding: 4px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: #e2e8f0;
+  color: #003c71;
+}
+
+.action-btn.complete-btn.completed {
+  color: #10b981;
+}
+
+.action-btn.delete-btn:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.milestone-description {
+  margin: 6px 0 0 28px;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* Dark mode support */
+:root.dark-mode .milestones-header h2 {
+  color: #00aeef;
+}
+
+:root.dark-mode .milestone-form {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+:root.dark-mode .form-group label {
+  color: #f8fafc;
+}
+
+:root.dark-mode .form-group input,
+:root.dark-mode .form-group textarea {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+:root.dark-mode .form-group input:focus,
+:root.dark-mode .form-group textarea:focus {
+  border-color: #00aeef;
+}
+
+:root.dark-mode .cancel-btn {
+  background: #334155;
+  color: #cbd5e1;
+}
+
+:root.dark-mode .cancel-btn:hover {
+  background: #475569;
+}
+
+:root.dark-mode .tube-station-content {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+:root.dark-mode .tube-station:hover .tube-station-content {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+:root.dark-mode .tube-station.completed .tube-station-content {
+  background: linear-gradient(to right, #14532d, #1e293b);
+}
+
+:root.dark-mode .tube-station.overdue .tube-station-content {
+  background: linear-gradient(to right, #7f1d1d, #1e293b);
+}
+
+:root.dark-mode .station-title {
+  color: #f8fafc;
+}
+
+:root.dark-mode .station-description {
+  color: #cbd5e1;
+}
+
+:root.dark-mode .station-actions button {
+  color: #94a3b8;
+}
+
+:root.dark-mode .station-actions button:hover {
+  background: #334155;
+  color: #f8fafc;
+}

@@ -1,0 +1,334 @@
+.project-timeline-bar {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 24px 40px 130px 40px;
+  margin-bottom: 32px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  overflow: visible;
+}
+
+.timeline-track {
+  position: relative;
+  height: 220px;
+  padding: 0 30px;
+  overflow: visible;
+}
+
+.timeline-line {
+  position: absolute;
+  top: 90px;
+  left: 80px;
+  right: 80px;
+  height: 3px;
+  background: linear-gradient(to right, #00aeef, #003c71);
+  border-radius: 1.5px;
+  z-index: 1;
+}
+
+.timeline-terminus {
+  position: absolute;
+  top: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateY(-50%);
+  z-index: 3;
+}
+
+.timeline-terminus.start {
+  left: 40px;
+}
+
+.timeline-terminus.end {
+  right: 40px;
+}
+
+.terminus-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #003c71;
+  box-shadow: 0 2px 6px rgba(0, 60, 113, 0.4);
+}
+
+.terminus-label {
+  position: absolute;
+  top: 100%;
+  margin-top: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #003c71;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 1;
+  white-space: nowrap;
+}
+
+.terminus-date {
+  position: absolute;
+  top: 100%;
+  margin-top: 28px;
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 1;
+}
+
+.terminus-countdown {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: calc(100% + 20px);
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 1;
+  background: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  white-space: nowrap;
+}
+
+.countdown-positive {
+  color: #10b981;
+}
+
+.countdown-negative {
+  color: #ef4444;
+}
+
+/* Milestones - alternating labels */
+.timeline-stop {
+  position: absolute;
+  top: 91.5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%) translateY(-50%);
+  z-index: 2;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.timeline-stop:hover {
+  transform: translateX(-50%) translateY(-50%) scale(1.1);
+  z-index: 10;
+}
+
+.stop-marker {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.stop-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid #00aeef;
+  box-shadow: 0 2px 6px rgba(0, 174, 239, 0.4);
+  transition: all 0.2s ease;
+}
+
+.timeline-stop.completed .stop-dot {
+  background: #10b981;
+  border-color: #10b981;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+}
+
+.timeline-stop.overdue .stop-dot {
+  border-color: #ef4444;
+  animation: pulse-stop 2s ease-in-out infinite;
+}
+
+@keyframes pulse-stop {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+
+.stop-icon {
+  font-size: 18px;
+  color: #10b981;
+  background: white;
+  border-radius: 50%;
+  filter: drop-shadow(0 2px 4px rgba(16, 185, 129, 0.4));
+}
+
+/* Alternating labels - always visible */
+.stop-label {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 600;
+  color: #003c71;
+  text-align: center;
+  max-width: 110px;
+  word-wrap: break-word;
+  white-space: normal;
+  opacity: 1;
+  background: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+  line-height: 1.3;
+  z-index: 5;
+}
+
+.timeline-stop.above .stop-label {
+  top: 100%;
+  margin-top: 10px;
+}
+
+.timeline-stop.below .stop-label {
+  bottom: 100%;
+  margin-bottom: 10px;
+}
+
+.stop-date {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #003c71;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 1;
+  background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 60, 113, 0.15);
+  border: 1px solid #bae6fd;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.timeline-stop.above .stop-date {
+  bottom: 100%;
+  margin-bottom: 34px;
+}
+
+.timeline-stop.below .stop-date {
+  top: 100%;
+  margin-top: 34px;
+}
+
+.timeline-stop.completed .stop-label {
+  color: #10b981;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.timeline-stop.overdue .stop-label {
+  color: #ef4444;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+/* Today indicator */
+.timeline-today {
+  position: absolute;
+  top: -24px;
+  bottom: -130px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  transform: translateX(-50%);
+  z-index: 4;
+  pointer-events: none;
+}
+
+.today-line {
+  position: absolute;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: #f59e0b;
+  opacity: 0.7;
+}
+
+.today-label {
+  position: absolute;
+  top: 2px;
+  font-size: 8px;
+  font-weight: 700;
+  color: white;
+  background: #f59e0b;
+  padding: 2px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.5);
+  opacity: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+/* Dark mode support */
+:root.dark-mode .project-timeline-bar {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+:root.dark-mode .timeline-line {
+  background: linear-gradient(to right, #00aeef, #0284c7);
+}
+
+:root.dark-mode .terminus-circle {
+  background: #0284c7;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.5);
+}
+
+:root.dark-mode .terminus-label {
+  color: #00aeef;
+}
+
+:root.dark-mode .terminus-date {
+  color: #94a3b8;
+}
+
+:root.dark-mode .terminus-label,
+:root.dark-mode .terminus-date,
+:root.dark-mode .terminus-countdown {
+  background: #1e293b;
+}
+
+:root.dark-mode .stop-label {
+  color: #e2e8f0;
+  background: #334155;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  border: 1px solid #475569;
+}
+
+:root.dark-mode .stop-date {
+  color: #94a3b8;
+  background: rgba(30, 41, 59, 0.95);
+}
+
+:root.dark-mode .timeline-stop.completed .stop-label {
+  color: #10b981;
+  background: #14532d;
+  border-color: #166534;
+}
+
+:root.dark-mode .timeline-stop.overdue .stop-label {
+  color: #ef4444;
+  background: #7f1d1d;
+  border-color: #991b1b;
+}
+
+:root.dark-mode .stop-dot {
+  background: #1e293b;
+}

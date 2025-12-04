@@ -13,6 +13,11 @@ import AdminReport from './components/AdminReport';
 import ReportSelector from './components/ReportSelector';
 import MetricChart from './components/MetricChart';
 import MetricTabs from './components/MetricTabs';
+import ProjectTabs from './components/ProjectTabs';
+import Feedback from './components/Feedback';
+import RecoveryPlans from './components/RecoveryPlans';
+import Milestones from './components/Milestones';
+import ProjectTimelineBar from './components/ProjectTimelineBar';
 import DataGrid from './components/DataGrid';
 import AuditLog from './components/AuditLog';
 import UserManagement from './components/UserManagement';
@@ -27,7 +32,7 @@ import UserActivityReport from './components/UserActivityReport';
 import PageHeatmapReport from './components/PageHeatmapReport';
 import HomePage from './components/HomePage';
 import TipsModal from './components/TipsModal';
-import { api } from './api/client';
+import { api, refreshToken } from './api/client';
 import { selectStyles } from './components/SelectStyles';
 import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
 import ProjectHealthModal, { calculateHealthScore } from './components/ProjectHealthModal';
@@ -36,6 +41,7 @@ import Lottie from 'lottie-react';
 import progressChartAnimation from './assets/progress-chart.json';
 import bellNotificationAnimation from './assets/bell-notification.json';
 import { trackPage, startPageLoadTimer } from './hooks/usePageTracking';
+import { getTimeUntilExpiry, isTokenExpiringSoon, formatTimeUntilExpiry, storeTokenExpiry } from './utils/tokenUtils';
 import './App.css';
 
 function App() {
@@ -52,6 +58,7 @@ function App() {
   const [projectData, setProjectData] = useState([]);
   const [projectMetrics, setProjectMetrics] = useState([]);
   const [selectedMetric, setSelectedMetric] = useState('');
+  const [selectedProjectTab, setSelectedProjectTab] = useState('overview');
   const [showDataGrid, setShowDataGrid] = useState(false);
   const [showAddMetric, setShowAddMetric] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
@@ -77,6 +84,9 @@ function App() {
   const [timeTravelTimestamp, setTimeTravelTimestamp] = useState(null);
   const [projectLinks, setProjectLinks] = useState([]);
   const [projectRecoveryPlans, setProjectRecoveryPlans] = useState([]);
+  const [projectFeedbackCount, setProjectFeedbackCount] = useState(0);
+  const [projectMilestonesCount, setProjectMilestonesCount] = useState(0);
+  const [projectMilestones, setProjectMilestones] = useState([]);
   const [showLinksEditor, setShowLinksEditor] = useState(false);
   const [showImportData, setShowImportData] = useState(false);
   const [showPortfolioManager, setShowPortfolioManager] = useState(false);
@@ -109,6 +119,89 @@ function App() {
       return false;
     }
   });
+  const [tokenExpiryWarning, setTokenExpiryWarning] = useState(null); // Time until expiry (for display)
+  const [showTokenWarning, setShowTokenWarning] = useState(false); // Show warning modal
+
+  // Token refresh and expiry monitoring
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    // Store token expiry on mount
+    storeTokenExpiry(token);
+
+    // Check token expiry and set up refresh timer
+    const checkAndScheduleRefresh = () => {
+      const timeUntilExpiry = getTimeUntilExpiry(token);
+
+      if (!timeUntilExpiry) {
+        // Token already expired, try to refresh
+        refreshToken().catch(console.error);
+        return;
+      }
+
+      // Refresh token 1 hour before expiry (or half the time until expiry if less than 2 hours)
+      const refreshThreshold = Math.min(60 * 60 * 1000, timeUntilExpiry / 2);
+      const refreshTime = timeUntilExpiry - refreshThreshold;
+
+      if (refreshTime > 0) {
+        console.log(`Token will be refreshed in ${formatTimeUntilExpiry(refreshTime)}`);
+        const refreshTimer = setTimeout(() => {
+          console.log('Proactively refreshing token...');
+          refreshToken()
+            .then(() => console.log('Token refreshed proactively'))
+            .catch(err => console.error('Failed to refresh token proactively:', err));
+        }, refreshTime);
+
+        return () => clearTimeout(refreshTimer);
+      } else {
+        // Token expires very soon, refresh immediately
+        refreshToken().catch(console.error);
+      }
+    };
+
+    checkAndScheduleRefresh();
+
+    // Check every 5 minutes if token is expiring soon (show warning)
+    const warningInterval = setInterval(() => {
+      const currentToken = localStorage.getItem('token');
+      if (!currentToken) {
+        setShowTokenWarning(false);
+        setTokenExpiryWarning(null);
+        return;
+      }
+
+      const timeUntil = getTimeUntilExpiry(currentToken);
+
+      // Show warning if less than 1 hour remaining
+      if (timeUntil && timeUntil < 60 * 60 * 1000 && timeUntil > 0) {
+        setTokenExpiryWarning(formatTimeUntilExpiry(timeUntil));
+        setShowTokenWarning(true);
+      } else {
+        setShowTokenWarning(false);
+        setTokenExpiryWarning(null);
+      }
+    }, 5 * 60 * 1000); // Check every 5 minutes
+
+    // Also listen for logout events from axios interceptor
+    const handleLogout = () => {
+      setIsAuthenticated(false);
+      setCurrentUser(null);
+      setLoginTime(null);
+      setShowTokenWarning(false);
+      setTokenExpiryWarning(null);
+    };
+
+    window.addEventListener('auth:logout', handleLogout);
+
+    return () => {
+      clearInterval(warningInterval);
+      window.removeEventListener('auth:logout', handleLogout);
+    };
+  }, [isAuthenticated]);
+
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -250,6 +343,8 @@ function App() {
       loadProjectMetrics();
       loadProjectLinks();
       loadProjectRecoveryPlans();
+      loadProjectFeedbackCount();
+      loadProjectMilestonesCount();
 
       // Track page view for analytics
       const project = projects.find(p => p.id === parseInt(selectedProject));
@@ -354,6 +449,29 @@ function App() {
     } catch (err) {
       console.error('Failed to load recovery plans:', err);
       setProjectRecoveryPlans([]);
+    }
+  };
+
+  const loadProjectFeedbackCount = async () => {
+    try {
+      const response = await api.get(`/feedback?project_id=${selectedProject}`);
+      setProjectFeedbackCount(response.data?.length || 0);
+    } catch (err) {
+      console.error('Failed to load feedback count:', err);
+      setProjectFeedbackCount(0);
+    }
+  };
+
+  const loadProjectMilestonesCount = async () => {
+    try {
+      const response = await api.get(`/milestones?project_id=${selectedProject}`);
+      const milestones = response.data || [];
+      setProjectMilestonesCount(milestones.length);
+      setProjectMilestones(milestones);
+    } catch (err) {
+      console.error('Failed to load milestones count:', err);
+      setProjectMilestonesCount(0);
+      setProjectMilestones([]);
     }
   };
 
@@ -712,6 +830,8 @@ function App() {
           description: currentProject.description,
           initiative_manager: currentProject.initiative_manager,
           secondary_pm: currentProject.secondary_pm,
+          start_date: currentProject.start_date,
+          end_date: currentProject.end_date,
           portfolio_id: editPortfolioValue
         });
 
@@ -953,6 +1073,129 @@ function App() {
     }, {});
   }, [projects]);
 
+  // Check if any metric needs a recovery plan (red/amber without active plan)
+  // Uses the exact same RAG calculation logic as HomePage's at-risk metrics
+  const needsRecoveryPlan = useMemo(() => {
+    // Check if there are any red/amber metrics without active recovery plans
+    const hasActivePlan = projectRecoveryPlans.some(plan => plan.status === 'active');
+
+    // If there's already an active plan, no indicator needed
+    if (hasActivePlan) return false;
+
+    // Helper to calculate RAG for a period (same logic as HomePage)
+    const calculateRAGForPeriod = (period, metricInfo) => {
+      const complete = parseFloat(period.complete) || 0;
+      const expected = parseFloat(period.expected) || 0;
+      if (expected === 0) return { ragStatus: 'grey', complete, expected };
+
+      const variance = complete - expected;
+      const variancePercent = Math.abs((variance / expected) * 100);
+      const redTolerance = metricInfo?.red_tolerance || 20;
+      const amberTolerance = metricInfo?.amber_tolerance || 10;
+
+      let ragStatus = 'green';
+      if (variance < 0) {
+        if (variancePercent > redTolerance) {
+          ragStatus = 'red';
+        } else if (variancePercent > amberTolerance) {
+          ragStatus = 'amber';
+        }
+      }
+      return { ragStatus, complete, expected };
+    };
+
+    // Check each metric
+    const metricsToCheck = new Set(projectData.map(d => d.metric));
+
+    for (const metricName of metricsToCheck) {
+      const metricInfo = projectMetrics.find(m => m.name === metricName);
+      if (!metricInfo) continue;
+
+      // Get all periods for this metric, sorted by reporting_date
+      const metricData = projectData
+        .filter(d => d.metric === metricName)
+        .sort((a, b) => new Date(a.reporting_date) - new Date(b.reporting_date));
+
+      if (metricData.length === 0) continue;
+
+      // Find current period
+      const now = new Date();
+      let currentPeriodIndex = -1;
+
+      for (let i = metricData.length - 1; i >= 0; i--) {
+        const periodDate = new Date(metricData[i].reporting_date);
+        if (periodDate <= now) {
+          currentPeriodIndex = i;
+          break;
+        }
+      }
+
+      if (currentPeriodIndex < 0) continue;
+
+      const currentPeriod = metricData[currentPeriodIndex];
+
+      // Check if complete value has been entered
+      // Note: complete defaults to 0 in database, so we treat 0 as "no value" for periods that haven't ended
+      const hasCompleteValue = currentPeriod.complete !== null &&
+                               currentPeriod.complete !== undefined &&
+                               currentPeriod.complete !== '' &&
+                               currentPeriod.complete !== 0;
+
+      // Check if period has ended (using same logic as HomePage)
+      const hasPeriodEnded = (reportingDate, frequency) => {
+        const startDate = new Date(reportingDate);
+        startDate.setHours(0, 0, 0, 0);
+        let periodEnd;
+        switch (frequency) {
+          case 'weekly':
+            periodEnd = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+            break;
+          case 'fortnightly':
+            periodEnd = new Date(startDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+            break;
+          case 'monthly':
+            periodEnd = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+            break;
+          case 'quarterly':
+            periodEnd = new Date(startDate.getFullYear(), startDate.getMonth() + 3, 1);
+            break;
+          default:
+            periodEnd = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+        }
+        return now >= periodEnd;
+      };
+
+      const frequency = currentPeriod.frequency || 'monthly';
+      const periodHasEnded = hasPeriodEnded(currentPeriod.reporting_date, frequency);
+
+      let ragResult;
+
+      if (hasCompleteValue) {
+        // Current period has a value, use it
+        ragResult = calculateRAGForPeriod(currentPeriod, metricInfo);
+      } else if (periodHasEnded) {
+        // Period ended with no value = calculate based on 0 complete (will be red)
+        ragResult = calculateRAGForPeriod(currentPeriod, metricInfo);
+      } else if (currentPeriodIndex > 0) {
+        // Period hasn't ended, no value - carry forward previous period's status
+        const previousPeriod = metricData[currentPeriodIndex - 1];
+        ragResult = calculateRAGForPeriod(previousPeriod, metricInfo);
+      } else {
+        // No previous period, no current value, period not ended = skip (grey)
+        continue;
+      }
+
+      const { ragStatus } = ragResult;
+
+      // If we find any red or amber metric, recovery plan is needed
+      if (ragStatus === 'red' || ragStatus === 'amber') {
+        return true;
+      }
+    }
+
+    return false;
+  }, [projectData, projectMetrics, projectRecoveryPlans]);
+
   // Get metrics list from projectMetrics state
   const metrics = projectMetrics.map(m => m.name);
 
@@ -1183,9 +1426,6 @@ function App() {
                     </button>
                     <button onMouseDown={() => { setShowUserManagement(true); setShowAdminDropdown(false); }}>
                       Manage Users
-                    </button>
-                    <button onMouseDown={() => { setShowUserActivity(true); setShowAdminDropdown(false); }}>
-                      User Activity Report
                     </button>
                     <button onMouseDown={() => { handleComposeChaser(); setShowAdminDropdown(false); }}>
                       Compose Chaser
@@ -1650,7 +1890,17 @@ function App() {
               </div>
             </div>
 
-            {(metrics.length === 0 || (selectedMetric && projectData.filter(item => item.metric === selectedMetric).length === 0)) && (
+            <ProjectTabs
+              selectedTab={selectedProjectTab}
+              onTabChange={setSelectedProjectTab}
+              feedbackCount={projectFeedbackCount}
+              recoveryPlanCount={projectRecoveryPlans.length}
+              milestonesCount={projectMilestonesCount}
+              needsRecoveryPlan={needsRecoveryPlan}
+              currentUser={currentUser}
+            />
+
+            {selectedProjectTab === 'overview' && (metrics.length === 0 || (selectedMetric && projectData.filter(item => item.metric === selectedMetric).length === 0)) && (
               <div className="empty-state" style={{ marginTop: '40px' }}>
                 <svg
                   className="empty-state-icon"
@@ -1694,7 +1944,7 @@ function App() {
               </div>
             )}
 
-            {metrics.length > 0 && !(selectedMetric && projectData.filter(item => item.metric === selectedMetric).length === 0) && (
+            {selectedProjectTab === 'overview' && metrics.length > 0 && !(selectedMetric && projectData.filter(item => item.metric === selectedMetric).length === 0) && (
               <MetricTabs
                 metrics={metrics}
                 projectData={projectData}
@@ -1710,7 +1960,7 @@ function App() {
               />
             )}
 
-            {selectedMetric && projectData.filter(item => item.metric === selectedMetric).length > 0 && (
+            {selectedProjectTab === 'overview' && selectedMetric && projectData.filter(item => item.metric === selectedMetric).length > 0 && (
               <div className="metrics-container">
                 <MetricChart
                   key={selectedMetric}
@@ -1736,6 +1986,37 @@ function App() {
                   }}
                   isAdmin={isAdmin()}
                   currentUser={currentUser}
+                />
+              </div>
+            )}
+
+            {selectedProjectTab === 'milestones' && (
+              <div style={{ marginTop: '20px' }}>
+                <Milestones
+                  projectId={selectedProject}
+                  currentUser={currentUser}
+                  onMilestonesChange={loadProjectMilestonesCount}
+                />
+              </div>
+            )}
+
+            {selectedProjectTab === 'feedback' && (
+              <div style={{ marginTop: '20px' }}>
+                <Feedback
+                  currentUser={currentUser}
+                  projectId={selectedProject}
+                  onFeedbackChange={loadProjectFeedbackCount}
+                />
+              </div>
+            )}
+
+            {selectedProjectTab === 'recovery' && (
+              <div style={{ marginTop: '20px' }}>
+                <RecoveryPlans
+                  currentUser={currentUser}
+                  projectId={selectedProject}
+                  canEdit={canEdit()}
+                  onRecoveryPlansChange={loadProjectRecoveryPlans}
                 />
               </div>
             )}
@@ -2119,6 +2400,26 @@ function App() {
           window.history.replaceState({}, '', url);
         }}
       />
+
+      {/* Token Expiry Warning Toast */}
+      {showTokenWarning && tokenExpiryWarning && (
+        <div className="token-expiry-toast">
+          <div className="token-expiry-content">
+            <strong>⚠️ Session expiring soon</strong>
+            <p>Your session will expire in {tokenExpiryWarning}.</p>
+            <p style={{ fontSize: '12px', marginTop: '4px' }}>
+              Save your work. Token will auto-refresh when active.
+            </p>
+          </div>
+          <button
+            className="token-expiry-close"
+            onClick={() => setShowTokenWarning(false)}
+            title="Dismiss warning"
+          >
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 }

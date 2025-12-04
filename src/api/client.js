@@ -1,10 +1,15 @@
 import axios from 'axios';
+import { storeTokenExpiry, clearTokenExpiry } from '../utils/tokenUtils';
 
 const API_BASE = 'http://localhost:3001/api';
 
 const client = axios.create({
   baseURL: API_BASE,
 });
+
+// Flag to prevent multiple simultaneous refresh attempts
+let isRefreshing = false;
+let refreshPromise = null;
 
 // Add token to all requests
 client.interceptors.request.use((config) => {
@@ -15,28 +20,115 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle auth errors
+// Handle auth errors with token refresh retry
 client.interceptors.response.use(
   (response) => response,
-  (error) => {
-    // Don't redirect on login failures - let the login component handle it
-    const isLoginRequest = error.config?.url?.includes('/auth/login');
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Don't retry on login or refresh failures
+    const isLoginRequest = originalRequest?.url?.includes('/auth/login');
+    const isRefreshRequest = originalRequest?.url?.includes('/auth/refresh');
 
     // Check if user is currently logged in (has a token)
     const hasToken = !!localStorage.getItem('token');
 
-    // Only logout and redirect on 401 if:
-    // 1. It's not a login request
-    // 2. The user WAS logged in (had a token that expired/became invalid)
-    // If user never had a token, they're just viewing public data - don't redirect
-    if (!isLoginRequest && error.response?.status === 401 && hasToken) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/';
+    // If 401 error and user was logged in, try to refresh token
+    if (error.response?.status === 401 && hasToken && !isLoginRequest && !isRefreshRequest && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        // If already refreshing, wait for that promise
+        if (isRefreshing && refreshPromise) {
+          await refreshPromise;
+          // Token should be updated now, retry the original request
+          return client(originalRequest);
+        }
+
+        // Start refresh process
+        isRefreshing = true;
+        refreshPromise = refreshToken();
+
+        const newToken = await refreshPromise;
+
+        if (newToken) {
+          // Update the original request with new token
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          // Retry the original request
+          return client(originalRequest);
+        }
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+        // Refresh failed, logout user
+        handleLogout();
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+        refreshPromise = null;
+      }
     }
+
+    // If we get here and it's a 401 with a token, logout
+    if (error.response?.status === 401 && hasToken && !isLoginRequest) {
+      handleLogout();
+    }
+
     return Promise.reject(error);
   }
 );
+
+/**
+ * Attempt to refresh the authentication token
+ * @returns {Promise<string|null>} - New token or null if refresh failed
+ */
+async function refreshToken() {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+
+    const response = await axios.post(
+      `${API_BASE}/auth/refresh`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    const { token: newToken, user } = response.data;
+
+    // Update localStorage with new token and user data
+    localStorage.setItem('token', newToken);
+    localStorage.setItem('user', JSON.stringify(user));
+    storeTokenExpiry(newToken);
+
+    console.log('Token refreshed successfully');
+    return newToken;
+  } catch (err) {
+    console.error('Failed to refresh token:', err);
+    return null;
+  }
+}
+
+/**
+ * Handle logout - clear storage and redirect
+ */
+function handleLogout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('loginTime');
+  clearTokenExpiry();
+
+  // Dispatch custom event so App can update state
+  window.dispatchEvent(new CustomEvent('auth:logout'));
+
+  // Redirect to home
+  window.location.href = '/';
+}
+
+// Export refresh function for proactive use
+export { refreshToken };
 
 export const api = {
   // Generic methods

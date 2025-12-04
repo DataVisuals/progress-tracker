@@ -132,7 +132,6 @@ const HomePage = ({
     const stored = localStorage.getItem('healthRankingView');
     return stored === 'top' ? 'top' : 'bottom';
   }); // 'top' or 'bottom' for health rankings panel
-  const [hideInactiveProjects, setHideInactiveProjects] = useState(true); // Filter inactive (grey) projects by default
   const [healthModalProject, setHealthModalProject] = useState(null); // Project to show in health modal
   const [minimizedPanels, setMinimizedPanels] = useState(() => {
     // Load minimized panels from localStorage
@@ -147,6 +146,8 @@ const HomePage = ({
     return [];
   });
   const [expandedDockPanel, setExpandedDockPanel] = useState(null); // Panel ID currently expanded from dock
+  const [allMilestones, setAllMilestones] = useState({}); // Milestones grouped by project ID
+  const [hideInactiveProjects, setHideInactiveProjects] = useState(false); // Filter for active projects only
   const hoverTimeoutRef = useRef(null); // Timeout for hover delay
 
   // Check if current user is admin
@@ -172,6 +173,35 @@ const HomePage = ({
       }
     }
   }, [Object.keys(projects).length, Object.keys(projectsData).length, selectedSpace, portfolios]); // Re-run when counts change or space/portfolios change
+
+  // Load milestones for all projects
+  useEffect(() => {
+    const loadAllMilestones = async () => {
+      if (Object.keys(projects).length === 0) return;
+
+      try {
+        const projectIds = Object.keys(projects);
+        const milestonePromises = projectIds.map(id =>
+          api.get(`/milestones?project_id=${id}`)
+            .then(res => ({ projectId: id, milestones: res.data || [] }))
+            .catch(() => ({ projectId: id, milestones: [] }))
+        );
+
+        const results = await Promise.all(milestonePromises);
+        const milestonesById = {};
+        results.forEach(({ projectId, milestones }) => {
+          if (milestones.length > 0) {
+            milestonesById[projectId] = milestones;
+          }
+        });
+        setAllMilestones(milestonesById);
+      } catch (err) {
+        console.error('Failed to load milestones:', err);
+      }
+    };
+
+    loadAllMilestones();
+  }, [Object.keys(projects).length]); // Re-load when projects change
 
   // Refetch project views when viewsDays changes
   useEffect(() => {
@@ -977,33 +1007,6 @@ const HomePage = ({
     filteredMetrics = filteredMetrics.filter(m => m.portfolioId === parseInt(portfolioFilter));
   }
 
-  // Helper function to check if a color is grey/gray (inactive)
-  const isGreyColor = (color) => {
-    if (!color) return false;
-    const greyColors = ['#808080', '#888888', '#888', '#6b7280', '#9ca3af', '#gray', '#grey'];
-    const lowerColor = color.toLowerCase();
-    // Check exact matches
-    if (greyColors.includes(lowerColor)) return true;
-    // Check if it's a grey hex (R, G, B values are similar)
-    if (lowerColor.startsWith('#') && (lowerColor.length === 4 || lowerColor.length === 7)) {
-      let r, g, b;
-      if (lowerColor.length === 4) {
-        r = parseInt(lowerColor[1] + lowerColor[1], 16);
-        g = parseInt(lowerColor[2] + lowerColor[2], 16);
-        b = parseInt(lowerColor[3] + lowerColor[3], 16);
-      } else {
-        r = parseInt(lowerColor.slice(1, 3), 16);
-        g = parseInt(lowerColor.slice(3, 5), 16);
-        b = parseInt(lowerColor.slice(5, 7), 16);
-      }
-      // Check if values are close to each other (grey) and in the middle range
-      const maxDiff = Math.max(r, g, b) - Math.min(r, g, b);
-      const avg = (r + g + b) / 3;
-      return maxDiff < 30 && avg > 80 && avg < 180; // Grey-ish range
-    }
-    return false;
-  };
-
   // Calculate project health rankings
   const projectHealthRankings = useMemo(() => {
     if (!projects || !projectsData || Object.keys(projectsData).length === 0) {
@@ -1050,21 +1053,19 @@ const HomePage = ({
         project.link_count || 0
       );
 
-      const portfolioColor = portfolios.find(p => p.id === project.portfolio_id)?.color || '#6b7280';
+      const portfolio = portfolios.find(p => p.id === project.portfolio_id);
+      const portfolioColor = portfolio?.color || '#6b7280';
 
       return {
         ...project,
         healthScore,
-        portfolioName: portfolios.find(p => p.id === project.portfolio_id)?.name || 'No Portfolio',
-        portfolioColor,
-        isInactive: isGreyColor(portfolioColor)
+        portfolioName: portfolio?.name || 'No Portfolio',
+        portfolioColor
       };
     });
 
-    // Filter out inactive projects if the filter is enabled
-    const filteredProjects = hideInactiveProjects
-      ? projectsWithHealth.filter(p => !p.isInactive)
-      : projectsWithHealth;
+    // All projects are active - no filtering needed
+    const filteredProjects = projectsWithHealth;
 
     // Sort by health score
     const sorted = [...filteredProjects].sort((a, b) => b.healthScore - a.healthScore);
@@ -1085,7 +1086,7 @@ const HomePage = ({
     const allReversed = [...sorted].reverse();
 
     return { top, bottom, allSorted, allReversed };
-  }, [projects, projectsData, portfolios, selectedSpace, hasSpaceIds, recoveryPlans, hideInactiveProjects, dashboardConfig.layout]);
+  }, [projects, projectsData, portfolios, selectedSpace, hasSpaceIds, recoveryPlans, dashboardConfig.layout]);
 
   // Calculate space-filtered at-risk metrics for stats
   const spaceFilteredAtRisk = selectedSpace !== 'all' && hasSpaceIds
@@ -1209,8 +1210,6 @@ const HomePage = ({
             projectHealthRankings={projectHealthRankings}
             healthRankingView={healthRankingView}
             setHealthRankingView={setHealthRankingView}
-            hideInactiveProjects={hideInactiveProjects}
-            setHideInactiveProjects={setHideInactiveProjects}
             onNavigateToProject={onNavigateToProject}
             onShowHealthModal={setHealthModalProject}
           />
@@ -1226,6 +1225,7 @@ const HomePage = ({
             projects={projectsArray}
             portfolios={portfolios}
             selectedSpace={selectedSpace}
+            milestones={allMilestones}
             onNavigateToProject={onNavigateToProject}
           />
         );
@@ -1392,7 +1392,7 @@ const HomePage = ({
                   })()}
                   <h2>{PANEL_CONFIG[expandedDockPanel]?.name}</h2>
                   {/* Space indicator for space-aware panels */}
-                  {['heatmap', 'metrics', 'commentary', 'inconsistencies', 'projectHealth'].includes(expandedDockPanel) && (
+                  {['heatmap', 'metrics', 'commentary', 'inconsistencies', 'projectHealth', 'timeline'].includes(expandedDockPanel) && (
                     <span className="space-filter-indicator">
                       <MdFilterList className="filter-icon" />
                       {selectedSpace === 'all'

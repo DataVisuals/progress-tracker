@@ -56,6 +56,12 @@ const ClarityPanel = ({
       setError(null);
     } catch (err) {
       console.error('Failed to load clarity data:', err);
+      console.error('Error details:', {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        message: err.message
+      });
       setError(err.response?.data?.error || 'Failed to load data');
     } finally {
       setLoading(false);

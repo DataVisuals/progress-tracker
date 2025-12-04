@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { MdDateRange, MdArrowForward } from 'react-icons/md';
+import { MdDateRange, MdCheckCircle } from 'react-icons/md';
 import './ProjectTimelinePanel.css';
 
 const ProjectTimelinePanel = ({
@@ -9,9 +9,11 @@ const ProjectTimelinePanel = ({
   projects,
   portfolios,
   selectedSpace,
+  milestones,
   onNavigateToProject
 }) => {
   const [hoveredProject, setHoveredProject] = useState(null);
+  const [hoveredMilestone, setHoveredMilestone] = useState(null);
 
   // Get projects with end dates, filtered by space
   const timelineData = useMemo(() => {
@@ -26,7 +28,7 @@ const ProjectTimelinePanel = ({
         .filter(p => p.space_id === parseInt(selectedSpace, 10))
         .map(p => p.id);
       filteredProjects = filteredProjects.filter(p =>
-        !p.portfolio_id || spacePortfolioIds.includes(p.portfolio_id)
+        p.portfolio_id && spacePortfolioIds.includes(p.portfolio_id)
       );
     }
 
@@ -130,6 +132,26 @@ const ProjectTimelinePanel = ({
   const timeMarkers = getTimeMarkers();
   const nowPosition = timelineData.range ? getPosition(timelineData.range.now) : 0;
 
+  // Format time remaining
+  const formatTimeRemaining = (days) => {
+    if (days < 0) return `${Math.abs(days)}d overdue`;
+    if (days === 0) return 'Today';
+    if (days === 1) return '1 day';
+    if (days < 7) return `${days} days`;
+    if (days < 30) return `${Math.floor(days / 7)}w`;
+    if (days < 365) return `${Math.floor(days / 30)}mo`;
+    return `${Math.floor(days / 365)}y`;
+  };
+
+  // Get milestone status
+  const getMilestoneStatus = (milestone) => {
+    if (milestone.completed) return 'completed';
+    const today = new Date();
+    const targetDate = new Date(milestone.target_date);
+    if (targetDate < today) return 'overdue';
+    return 'upcoming';
+  };
+
   // Render timeline content
   const renderTimeline = (isFullscreen = false) => {
     if (timelineData.projects.length === 0) {
@@ -142,46 +164,25 @@ const ProjectTimelinePanel = ({
 
     return (
       <div className={`timeline-container ${isFullscreen ? 'fullscreen' : ''}`}>
-        {/* Timeline header with time markers */}
-        <div className="timeline-header">
-          <div className="timeline-axis">
-            {timeMarkers.map((marker, idx) => (
-              <div
-                key={idx}
-                className="timeline-month-marker"
-                style={{ left: `${marker.position}%` }}
-              >
-                <span className="month-label">{marker.label}</span>
-                <div className="month-tick" />
-              </div>
-            ))}
-            {/* Today marker - positioned below the axis */}
-            <div
-              className="timeline-today-marker"
-              style={{ left: `${nowPosition}%` }}
-              title="Today"
-            >
-              <div className="today-line" />
-            </div>
-          </div>
-        </div>
-
-        {/* Project rows */}
+        {/* Project rows with tubemap design */}
         <div className="timeline-projects">
-          {timelineData.projects.map((project, idx) => {
+          {timelineData.projects.map((project) => {
             const endPosition = getPosition(project.endDate);
             const startPosition = project.startDate ? getPosition(project.startDate) : Math.max(0, endPosition - 10);
             const daysRemaining = getDaysRemaining(project.endDate);
             const statusColor = getStatusColor(daysRemaining, project);
-            const isHovered = hoveredProject === project.id;
             const isPast = daysRemaining < 0;
+
+            // Get project milestones
+            const projectMilestones = (milestones && milestones[project.id]) || [];
+            const sortedMilestones = [...projectMilestones].sort((a, b) =>
+              new Date(a.target_date) - new Date(b.target_date)
+            );
 
             return (
               <div
                 key={project.id}
-                className={`timeline-project-row ${isHovered ? 'hovered' : ''} ${isPast ? 'past' : ''}`}
-                onMouseEnter={() => setHoveredProject(project.id)}
-                onMouseLeave={() => setHoveredProject(null)}
+                className={`timeline-project-row tubemap ${isPast ? 'past' : ''}`}
                 onClick={() => onNavigateToProject(project.id)}
               >
                 {/* Project name label */}
@@ -196,60 +197,105 @@ const ProjectTimelinePanel = ({
                   </span>
                 </div>
 
-                {/* Timeline bar area */}
-                <div className="timeline-bar-area">
-                  {/* Project bar - connects start to end */}
+                {/* Tubemap track */}
+                <div className="tubemap-track">
+                  {/* Timeline line */}
                   <div
-                    className={`timeline-bar ${project.startDate ? 'has-start' : 'no-start'}`}
+                    className="tubemap-line"
                     style={{
                       left: `${startPosition}%`,
                       width: `${Math.max(1, endPosition - startPosition)}%`,
-                      backgroundColor: statusColor,
-                      opacity: isPast ? 0.5 : 1
+                      background: `linear-gradient(to right, ${statusColor}, ${statusColor})`
                     }}
                   />
 
-                  {/* Hover tooltip - show above for bottom entries, below for top entries */}
-                  {isHovered && (
-                    <div
-                      className={`timeline-tooltip ${idx >= timelineData.projects.length - 3 ? 'tooltip-above' : 'tooltip-below'}`}
-                      style={{ left: `${endPosition}%` }}
-                    >
-                      <div className="tooltip-content">
+                  {/* Start terminus */}
+                  <div
+                    className="tubemap-terminus start"
+                    style={{ left: `${startPosition}%` }}
+                  >
+                    <div className="terminus-circle" style={{ background: statusColor }} />
+                  </div>
+
+                  {/* Milestones */}
+                  {sortedMilestones.map((milestone) => {
+                    const milestoneDate = new Date(milestone.target_date);
+                    const milestonePosition = getPosition(milestoneDate);
+                    const status = getMilestoneStatus(milestone);
+
+                    // Only show milestone if it's within project bounds
+                    if (milestonePosition < startPosition || milestonePosition > endPosition) return null;
+
+                    return (
+                      <div
+                        key={milestone.id}
+                        className={`tubemap-stop ${status}`}
+                        style={{ left: `${milestonePosition}%` }}
+                        onMouseEnter={(e) => {
+                          e.stopPropagation();
+                          setHoveredMilestone(milestone.id);
+                        }}
+                        onMouseLeave={(e) => {
+                          e.stopPropagation();
+                          setHoveredMilestone(null);
+                        }}
+                      >
+                        <div className="stop-marker">
+                          {milestone.completed ? (
+                            <MdCheckCircle className="stop-icon" />
+                          ) : (
+                            <div className="stop-dot" />
+                          )}
+                        </div>
+                        {hoveredMilestone === milestone.id && (
+                          <div className="milestone-tooltip">
+                            <strong>{milestone.title}</strong>
+                            <span>{formatDate(milestoneDate)}</span>
+                            {milestone.completed && <span className="completed-badge">✓ Complete</span>}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* End terminus */}
+                  <div
+                    className="tubemap-terminus end"
+                    style={{ left: `${endPosition}%` }}
+                    onMouseEnter={() => setHoveredProject(project.id)}
+                    onMouseLeave={() => setHoveredProject(null)}
+                  >
+                    <div className="terminus-circle" style={{ background: statusColor }} />
+                    {hoveredProject === project.id && (
+                      <div className="project-tooltip">
                         <strong>{project.name}</strong>
                         {project.startDate && (
                           <span className="tooltip-date">Start: {formatDate(project.startDate)}</span>
                         )}
                         <span className="tooltip-date">End: {formatDate(project.endDate)}</span>
-                        <span className={`tooltip-days ${daysRemaining < 0 ? 'past' : daysRemaining <= 14 ? 'critical' : daysRemaining <= 30 ? 'soon' : ''}`}>
-                          {daysRemaining < 0
-                            ? `${Math.abs(daysRemaining)} days ago`
-                            : daysRemaining === 0
-                              ? 'Today'
-                              : `${daysRemaining} days remaining`}
-                        </span>
                         {project.initiative_manager && (
                           <span className="tooltip-pm">PM: {project.initiative_manager}</span>
                         )}
                       </div>
+                    )}
+                  </div>
+
+                  {/* Today marker */}
+                  {nowPosition >= startPosition && nowPosition <= endPosition && (
+                    <div className="tubemap-today" style={{ left: `${nowPosition}%` }}>
+                      <div className="today-line" />
                     </div>
                   )}
                 </div>
 
-                {/* Days to completion badge */}
-                <div
-                  className="timeline-days-badge"
-                  style={{ color: statusColor }}
-                  title="Days to completion"
-                >
-                  {daysRemaining < 0
-                    ? 'Done'
-                    : daysRemaining === 0
-                      ? 'Today'
-                      : `in ${daysRemaining}d`}
+                {/* Time remaining badge */}
+                <div className="project-countdown-badge">
+                  {daysRemaining >= 0 ? (
+                    <span className="countdown-positive">{formatTimeRemaining(daysRemaining)}</span>
+                  ) : (
+                    <span className="countdown-negative">{formatTimeRemaining(daysRemaining)}</span>
+                  )}
                 </div>
-
-                <MdArrowForward className="timeline-arrow" />
               </div>
             );
           })}

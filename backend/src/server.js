@@ -224,7 +224,7 @@ function createApp(dbPath) {
       // Login successful
       logger.auth.loginSuccess(user, req.ip);
   
-      const token = jwt.sign({ userId: user.id, email: user.email, role: user.role, name: user.name, isSystemAdmin: user.is_system_admin === 1 }, JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ userId: user.id, email: user.email, role: user.role, name: user.name, isSystemAdmin: user.is_system_admin === 1 }, JWT_SECRET, { expiresIn: '30d' });
       res.json({ token, user: { id: user.id, userId: user.id, email: user.email, name: user.name, role: user.role, isSystemAdmin: user.is_system_admin === 1, default_space_id: user.default_space_id } });
     } catch (err) {
       logger.error('AUTH', 'Login error', { error: err.message, stack: err.stack });
@@ -307,14 +307,80 @@ function createApp(dbPath) {
     try {
       // Log the logout event
       logger.auth.logout(req.user.userId, req.user.email);
-  
+
       res.json({ success: true, message: 'Logged out successfully' });
     } catch (err) {
       logger.exception('AUTH', 'Error during logout', err, { userId: req.user?.userId });
       res.status(500).json({ error: err.message });
     }
   });
-  
+
+  // Token refresh endpoint - allows refreshing expired tokens within grace period
+  app.post('/api/auth/refresh', async (req, res) => {
+    try {
+      const token = req.headers.authorization?.split(' ')[1];
+
+      if (!token) {
+        return res.status(401).json({ error: 'No token provided' });
+      }
+
+      // Decode token without verification to check expiry
+      const decoded = jwt.decode(token);
+
+      if (!decoded || !decoded.userId) {
+        return res.status(401).json({ error: 'Invalid token format' });
+      }
+
+      // Check if token is within grace period (30 days after expiry)
+      const now = Math.floor(Date.now() / 1000);
+      const gracePeriod = 30 * 24 * 60 * 60; // 30 days in seconds
+
+      if (decoded.exp && (now - decoded.exp) > gracePeriod) {
+        logger.auth.tokenRefreshFailed(decoded.userId, 'Token expired beyond grace period');
+        return res.status(401).json({ error: 'Token expired beyond grace period. Please log in again.' });
+      }
+
+      // Verify user still exists and is active
+      const user = await dbGet('SELECT * FROM users WHERE id = ?', [decoded.userId]);
+
+      if (!user) {
+        logger.auth.tokenRefreshFailed(decoded.userId, 'User not found');
+        return res.status(401).json({ error: 'User not found. Please log in again.' });
+      }
+
+      // Issue new token with same payload but fresh expiry
+      const newToken = jwt.sign(
+        {
+          userId: user.id,
+          email: user.email,
+          role: user.role,
+          name: user.name,
+          isSystemAdmin: user.is_system_admin === 1
+        },
+        JWT_SECRET,
+        { expiresIn: '30d' }
+      );
+
+      logger.auth.tokenRefreshSuccess(user.id, user.email);
+
+      res.json({
+        token: newToken,
+        user: {
+          id: user.id,
+          userId: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          isSystemAdmin: user.is_system_admin === 1,
+          default_space_id: user.default_space_id
+        }
+      });
+    } catch (err) {
+      logger.error('AUTH', 'Token refresh error', { error: err.message, stack: err.stack });
+      res.status(500).json({ error: 'Failed to refresh token' });
+    }
+  });
+
   app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
     try {
       const { currentPassword, newPassword } = req.body;
@@ -1807,6 +1873,163 @@ function createApp(dbPath) {
       res.json(updatedFeedback);
     } catch (err) {
       console.error('Edit response error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ===== MILESTONES =====
+
+  // Get milestones for a project
+  app.get('/api/milestones', async (req, res) => {
+    try {
+      const { project_id } = req.query;
+
+      if (!project_id) {
+        return res.status(400).json({ error: 'project_id is required' });
+      }
+
+      const milestones = await dbAll(
+        `SELECT * FROM milestones
+         WHERE project_id = ?
+         ORDER BY target_date ASC, display_order ASC`,
+        [project_id]
+      );
+
+      res.json(milestones);
+    } catch (err) {
+      console.error('Get milestones error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Create a new milestone
+  app.post('/api/milestones', authenticateToken, async (req, res) => {
+    try {
+      const { project_id, title, description, target_date, display_order } = req.body;
+
+      if (!title || !title.trim()) {
+        return res.status(400).json({ error: 'Title is required' });
+      }
+
+      if (!project_id) {
+        return res.status(400).json({ error: 'project_id is required' });
+      }
+
+      if (!target_date) {
+        return res.status(400).json({ error: 'target_date is required' });
+      }
+
+      const result = await dbRun(
+        `INSERT INTO milestones (project_id, title, description, target_date, display_order, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+        [project_id, title.trim(), description || null, target_date, display_order || 0]
+      );
+
+      const milestone = await dbGet('SELECT * FROM milestones WHERE id = ?', [result.lastID]);
+
+      // Log to audit trail
+      await dbRun(
+        `INSERT INTO audit_log (user_id, user_email, action, table_name, record_id, new_values, description, created_at)
+         VALUES (?, ?, 'CREATE', 'milestones', ?, ?, ?, datetime('now'))`,
+        [
+          req.user.userId,
+          req.user.email,
+          result.lastID,
+          JSON.stringify(milestone),
+          `Created milestone: ${title}`
+        ]
+      );
+
+      res.json(milestone);
+    } catch (err) {
+      console.error('Create milestone error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Update a milestone
+  app.put('/api/milestones/:id', authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { title, description, target_date, completed, completed_date, display_order } = req.body;
+
+      const oldMilestone = await dbGet('SELECT * FROM milestones WHERE id = ?', [id]);
+      if (!oldMilestone) {
+        return res.status(404).json({ error: 'Milestone not found' });
+      }
+
+      await dbRun(
+        `UPDATE milestones
+         SET title = ?,
+             description = ?,
+             target_date = ?,
+             completed = ?,
+             completed_date = ?,
+             display_order = ?,
+             updated_at = datetime('now')
+         WHERE id = ?`,
+        [
+          title !== undefined ? title : oldMilestone.title,
+          description !== undefined ? description : oldMilestone.description,
+          target_date !== undefined ? target_date : oldMilestone.target_date,
+          completed !== undefined ? completed : oldMilestone.completed,
+          completed_date !== undefined ? completed_date : oldMilestone.completed_date,
+          display_order !== undefined ? display_order : oldMilestone.display_order,
+          id
+        ]
+      );
+
+      const milestone = await dbGet('SELECT * FROM milestones WHERE id = ?', [id]);
+
+      // Log to audit trail
+      await dbRun(
+        `INSERT INTO audit_log (user_id, user_email, action, table_name, record_id, old_values, new_values, description, created_at)
+         VALUES (?, ?, 'UPDATE', 'milestones', ?, ?, ?, ?, datetime('now'))`,
+        [
+          req.user.userId,
+          req.user.email,
+          id,
+          JSON.stringify(oldMilestone),
+          JSON.stringify(milestone),
+          `Updated milestone: ${milestone.title}`
+        ]
+      );
+
+      res.json(milestone);
+    } catch (err) {
+      console.error('Update milestone error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Delete a milestone
+  app.delete('/api/milestones/:id', authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const milestone = await dbGet('SELECT * FROM milestones WHERE id = ?', [id]);
+      if (!milestone) {
+        return res.status(404).json({ error: 'Milestone not found' });
+      }
+
+      await dbRun('DELETE FROM milestones WHERE id = ?', [id]);
+
+      // Log to audit trail
+      await dbRun(
+        `INSERT INTO audit_log (user_id, user_email, action, table_name, record_id, old_values, description, created_at)
+         VALUES (?, ?, 'DELETE', 'milestones', ?, ?, ?, datetime('now'))`,
+        [
+          req.user.userId,
+          req.user.email,
+          id,
+          JSON.stringify(milestone),
+          `Deleted milestone: ${milestone.title}`
+        ]
+      );
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error('Delete milestone error:', err);
       res.status(500).json({ error: err.message });
     }
   });

@@ -1,0 +1,98 @@
+/* Project-level tabs (top tier) */
+.project-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px 0;
+  background: linear-gradient(to bottom, #ffffff, #f8fafc);
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 0;
+  justify-content: flex-start;
+}
+
+.project-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.project-tab:hover {
+  background: rgba(0, 174, 239, 0.1);
+  color: #00aeef;
+}
+
+.project-tab.active {
+  background: #ffffff;
+  color: #003c71;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.project-tab svg {
+  font-size: 18px;
+}
+
+.project-tab-label {
+  white-space: nowrap;
+}
+
+.project-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: #ef4444;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 10px;
+  line-height: 1;
+}
+
+.project-tab.active .project-tab-badge {
+  background: #dc2626;
+}
+
+.project-tab.needs-action {
+  animation: pulse-attention 2s ease-in-out infinite;
+}
+
+@keyframes pulse-attention {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(239, 68, 68, 0);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+  }
+}
+
+/* Dark mode support */
+.dark-mode .project-tabs {
+  background: linear-gradient(to bottom, #1e293b, #0f172a);
+  border-bottom-color: #334155;
+}
+
+.dark-mode .project-tab {
+  color: #94a3b8;
+}
+
+.dark-mode .project-tab:hover {
+  background: rgba(0, 174, 239, 0.2);
+  color: #00aeef;
+}
+
+.dark-mode .project-tab.active {
+  background: #0f172a;
+  color: #00aeef;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3);
+}

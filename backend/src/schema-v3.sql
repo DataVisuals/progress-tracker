@@ -117,13 +117,28 @@ CREATE TABLE IF NOT EXISTS project_permissions (
   UNIQUE(project_id, user_id)
 );
 
+-- Milestones (project timeline milestones)
+CREATE TABLE IF NOT EXISTS milestones (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  target_date DATE NOT NULL,
+  completed INTEGER DEFAULT 0,
+  completed_date DATE,
+  display_order INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+
 -- Audit Log (tracks all database operations)
 CREATE TABLE IF NOT EXISTS audit_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER,
   user_email TEXT,
   action TEXT NOT NULL, -- 'CREATE', 'UPDATE', 'DELETE'
-  table_name TEXT NOT NULL, -- 'projects', 'metrics', 'metric_periods', 'comments', 'craids', 'portfolios'
+  table_name TEXT NOT NULL, -- 'projects', 'metrics', 'metric_periods', 'comments', 'craids', 'portfolios', 'milestones'
   record_id INTEGER,
   old_values TEXT, -- JSON of old values (for UPDATE/DELETE)
   new_values TEXT, -- JSON of new values (for CREATE/UPDATE)
@@ -143,6 +158,7 @@ CREATE INDEX IF NOT EXISTS idx_craids_period ON craids(period_id);
 CREATE INDEX IF NOT EXISTS idx_project_links_project ON project_links(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_permissions_project ON project_permissions(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_permissions_user ON project_permissions(user_id);
+CREATE INDEX IF NOT EXISTS idx_milestones_project ON milestones(project_id);
 CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_log_table ON audit_log(table_name);
 CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at);

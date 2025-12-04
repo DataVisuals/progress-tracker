@@ -186,6 +186,14 @@ const logger = {
 
     logout: (userId, email) => {
       log('info', 'AUTH', `User logged out: ${email}`, { userId, email });
+    },
+
+    tokenRefreshSuccess: (userId, email) => {
+      log('info', 'AUTH', `Token refreshed successfully for user: ${email}`, { userId, email });
+    },
+
+    tokenRefreshFailed: (userId, reason) => {
+      log('warn', 'AUTH', `Token refresh failed for user ${userId}: ${reason}`, { userId, reason });
     }
   },
 

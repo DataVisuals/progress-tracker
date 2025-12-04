@@ -1,4 +1,4 @@
-/* Project Timeline Panel Styles */
+/* Project Timeline Panel Styles - Tubemap Design */
 
 .timeline-quadrant .quadrant-header {
   display: flex;
@@ -18,62 +18,6 @@
   padding: 8px 0;
 }
 
-/* Timeline Header with Month Markers */
-.timeline-header {
-  position: relative;
-  height: 32px;
-  margin-bottom: 8px;
-  padding-left: 220px;
-  padding-right: 60px;
-}
-
-.timeline-axis {
-  position: relative;
-  height: 100%;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.timeline-month-marker {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.timeline-month-marker .month-label {
-  font-size: 10px;
-  color: #6b7280;
-  white-space: nowrap;
-  padding: 0 2px;
-}
-
-.timeline-month-marker .month-tick {
-  width: 1px;
-  height: 8px;
-  background: #d1d5db;
-  margin-top: 2px;
-}
-
-/* Today Marker */
-.timeline-today-marker {
-  position: absolute;
-  top: 100%;
-  bottom: 0;
-  transform: translateX(-50%);
-  z-index: 5;
-}
-
-.timeline-today-marker .today-line {
-  position: absolute;
-  top: 0;
-  bottom: -200vh;
-  width: 2px;
-  background: #00aeef;
-  opacity: 0.5;
-}
-
 /* Timeline Projects List */
 .timeline-projects {
   flex: 1;
@@ -90,13 +34,12 @@
   border-bottom: 1px solid #f3f4f6;
 }
 
-.timeline-project-row:hover,
-.timeline-project-row.hovered {
+.timeline-project-row:hover {
   background-color: #f8fafc;
 }
 
 .timeline-project-row.past {
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 /* Project Label */
@@ -127,79 +70,172 @@
   text-overflow: ellipsis;
 }
 
-/* Timeline Bar Area */
-.timeline-bar-area {
+/* Tubemap Track */
+.tubemap-track {
   flex: 1;
   position: relative;
-  height: 20px;
-  margin-right: 8px;
+  height: 24px;
+  overflow: visible;
 }
 
-.timeline-quadrant .timeline-bar {
+.tubemap-line {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  height: 12px;
-  border-radius: 6px;
-  transition: opacity 0.15s, height 0.15s, filter 0.15s;
-  min-width: 8px;
-  max-width: none;
+  height: 4px;
+  border-radius: 2px;
+  z-index: 1;
 }
 
-.timeline-quadrant .timeline-bar.has-start {
-  border-radius: 6px;
-}
-
-.timeline-quadrant .timeline-bar.no-start {
-  border-radius: 3px 6px 6px 3px;
-  opacity: 0.7;
-}
-
-.timeline-quadrant .timeline-project-row:hover .timeline-bar {
-  height: 14px;
-  filter: brightness(1.1);
-}
-
-/* Days to Completion Badge */
-.timeline-days-badge {
-  width: 56px;
-  flex-shrink: 0;
-  font-size: 11px;
-  font-weight: 600;
-  text-align: right;
-  padding-right: 4px;
-}
-
-.timeline-arrow {
-  color: #9ca3af;
-  font-size: 14px;
-  flex-shrink: 0;
-  margin-right: 4px;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.timeline-project-row:hover .timeline-arrow {
-  opacity: 1;
-}
-
-/* Tooltip */
-.timeline-tooltip {
+/* Terminus Circles */
+.tubemap-terminus {
   position: absolute;
-  transform: translateX(-50%);
-  z-index: 100;
-  pointer-events: none;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 3;
+  cursor: pointer;
 }
 
-.timeline-tooltip.tooltip-below {
+.tubemap-terminus.start {
+  transform: translate(0, -50%);
+}
+
+.tubemap-terminus.end {
+  transform: translate(-100%, -50%);
+}
+
+.terminus-circle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.tubemap-terminus:hover .terminus-circle {
+  transform: scale(1.2);
+}
+
+/* Project Countdown Badge (right side) */
+.project-countdown-badge {
+  width: 70px;
+  min-width: 70px;
+  flex-shrink: 0;
+  text-align: right;
+  padding-right: 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.countdown-positive {
+  color: #10b981;
+}
+
+.countdown-negative {
+  color: #ef4444;
+}
+
+/* Tubemap Milestone Stops */
+.tubemap-stop {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tubemap-stop:hover {
+  transform: translate(-50%, -50%) scale(1.15);
+  z-index: 10;
+}
+
+.stop-marker {
+  width: 10px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.stop-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid #00aeef;
+  box-shadow: 0 1px 3px rgba(0, 174, 239, 0.4);
+  transition: all 0.2s ease;
+}
+
+.tubemap-stop.completed .stop-dot {
+  background: #10b981;
+  border-color: #10b981;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+}
+
+.tubemap-stop.overdue .stop-dot {
+  border-color: #ef4444;
+  animation: pulse-stop 2s ease-in-out infinite;
+}
+
+@keyframes pulse-stop {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+
+.stop-icon {
+  font-size: 11px;
+  color: #10b981;
+  filter: drop-shadow(0 1px 2px rgba(16, 185, 129, 0.3));
+}
+
+/* Milestone Tooltip */
+.tubemap-stop .milestone-tooltip {
+  position: absolute;
   top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  z-index: 150;
 }
 
-.timeline-tooltip.tooltip-above {
-  bottom: calc(100% + 8px);
+.tubemap-stop .milestone-tooltip strong {
+  font-size: 11px;
+  margin-bottom: 2px;
 }
 
-.timeline-tooltip .tooltip-content {
+.tubemap-stop .milestone-tooltip .completed-badge {
+  color: #10b981;
+  font-weight: 600;
+  font-size: 10px;
+}
+
+/* Project Tooltip (on end terminus) */
+.tubemap-terminus .project-tooltip {
+  position: absolute;
+  top: calc(100% + 24px);
+  left: 50%;
+  transform: translateX(-50%);
   background: #1f2937;
   color: white;
   padding: 8px 12px;
@@ -210,91 +246,42 @@
   flex-direction: column;
   gap: 2px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  z-index: 150;
 }
 
-.timeline-tooltip .tooltip-content strong {
+.tubemap-terminus .project-tooltip strong {
   font-size: 12px;
   margin-bottom: 2px;
 }
 
-.timeline-tooltip .tooltip-date {
+.tubemap-terminus .project-tooltip .tooltip-date {
   color: #9ca3af;
 }
 
-.timeline-tooltip .tooltip-days {
-  font-weight: 600;
-}
-
-.timeline-tooltip .tooltip-days.critical {
-  color: #fca5a5;
-}
-
-.timeline-tooltip .tooltip-days.soon {
-  color: #fcd34d;
-}
-
-.timeline-tooltip .tooltip-days.past {
-  color: #9ca3af;
-}
-
-.timeline-tooltip .tooltip-pm {
+.tubemap-terminus .project-tooltip .tooltip-pm {
   color: #9ca3af;
   font-size: 10px;
   margin-top: 2px;
 }
 
-/* Fullscreen Timeline */
-.fullscreen-timeline .timeline-header {
-  padding-left: 250px;
-  padding-right: 80px;
+/* Today Marker */
+.tubemap-today {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 4;
+  pointer-events: none;
 }
 
-.fullscreen-timeline .timeline-project-label {
-  width: 250px;
-  min-width: 250px;
-}
-
-.fullscreen-timeline .timeline-project-label .project-name {
-  font-size: 13px;
-}
-
-.fullscreen-timeline .timeline-days-badge {
-  width: 60px;
-  font-size: 12px;
-}
-
-/* Dark Mode */
-:root.dark-mode .timeline-axis {
-  border-bottom-color: #374151;
-}
-
-:root.dark-mode .timeline-month-marker .month-label {
-  color: #9ca3af;
-}
-
-:root.dark-mode .timeline-month-marker .month-tick {
-  background: #4b5563;
-}
-
-:root.dark-mode .timeline-project-row {
-  border-bottom-color: #374151;
-}
-
-:root.dark-mode .timeline-project-row:hover,
-:root.dark-mode .timeline-project-row.hovered {
-  background-color: #374151;
-}
-
-:root.dark-mode .timeline-project-label .project-name {
-  color: #f9fafb;
-}
-
-:root.dark-mode .timeline-tooltip .tooltip-content {
-  background: #374151;
-}
-
-:root.dark-mode .timeline-arrow {
-  color: #6b7280;
+.tubemap-today .today-line {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: #f59e0b;
+  opacity: 0.6;
 }
 
 /* Empty State */
@@ -305,4 +292,43 @@
   height: 100%;
   color: #9ca3af;
   font-size: 13px;
+}
+
+/* Fullscreen Timeline */
+.fullscreen-timeline .timeline-project-label {
+  width: 250px;
+  min-width: 250px;
+}
+
+.fullscreen-timeline .timeline-project-label .project-name {
+  font-size: 13px;
+}
+
+/* Dark Mode */
+:root.dark-mode .timeline-project-row {
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .timeline-project-row:hover {
+  background-color: #374151;
+}
+
+:root.dark-mode .timeline-project-label .project-name {
+  color: #f9fafb;
+}
+
+:root.dark-mode .tubemap-stop .milestone-tooltip {
+  background: #374151;
+}
+
+:root.dark-mode .tubemap-terminus .project-tooltip {
+  background: #374151;
+}
+
+:root.dark-mode .terminus-countdown {
+  background: #1e293b;
+}
+
+:root.dark-mode .stop-dot {
+  background: #1e293b;
 }

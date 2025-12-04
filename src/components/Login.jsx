@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../api/client';
+import { storeTokenExpiry } from '../utils/tokenUtils';
 import './Login.css';
 
 const Login = ({ onLogin }) => {
@@ -20,6 +21,7 @@ const Login = ({ onLogin }) => {
 
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      storeTokenExpiry(token);
 
       setShowModal(false);
       onLogin(user); // Pass user data directly to callback

@@ -249,4 +249,65 @@ describe('Authentication API Tests', () => {
       expect(response.status).toBe(400);
     });
   });
+
+  describe('POST /api/auth/refresh', () => {
+    let authToken;
+
+    beforeAll(async () => {
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: testUser.email,
+          password: testUser.password
+        });
+      authToken = loginResponse.body.token;
+    });
+
+    test('should refresh a valid token', async () => {
+      // Wait 1 second to ensure new token has different timestamp
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const response = await request(app)
+        .post('/api/auth/refresh')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('token');
+      expect(response.body).toHaveProperty('user');
+      expect(response.body.user.email).toBe(testUser.email);
+
+      // Token should be different (or at least valid)
+      expect(response.body.token).toBeTruthy();
+      expect(typeof response.body.token).toBe('string');
+    });
+
+    test('should reject refresh without token', async () => {
+      const response = await request(app)
+        .post('/api/auth/refresh');
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toContain('No token provided');
+    });
+
+    test('should reject refresh with invalid token format', async () => {
+      const response = await request(app)
+        .post('/api/auth/refresh')
+        .set('Authorization', 'Bearer invalid_token_format');
+
+      expect(response.status).toBe(401);
+    });
+
+    test('should refresh and return updated user data', async () => {
+      const response = await request(app)
+        .post('/api/auth/refresh')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.user).toHaveProperty('id');
+      expect(response.body.user).toHaveProperty('email');
+      expect(response.body.user).toHaveProperty('name');
+      expect(response.body.user).toHaveProperty('role');
+      expect(response.body.user).not.toHaveProperty('password_hash');
+    });
+  });
 });
