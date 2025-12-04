@@ -6954,6 +6954,36 @@ function createApp(dbPath) {
       // Indexes already exist, that's fine
     }
 
+    // Migration: Create milestones table
+    try {
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS milestones (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          project_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT,
+          target_date DATE NOT NULL,
+          completed INTEGER DEFAULT 0,
+          completed_date DATE,
+          display_order INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        )
+      `);
+      console.log('✅ Created milestones table');
+    } catch (err) {
+      // Table already exists, that's fine
+    }
+
+    // Migration: Create index for milestones
+    try {
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_milestones_project ON milestones(project_id)`);
+      console.log('✅ Created index for milestones');
+    } catch (err) {
+      // Index already exists, that's fine
+    }
+
     // Migration: Add performance indexes for common queries
     try {
       await dbRun(`CREATE INDEX IF NOT EXISTS idx_projects_portfolio ON projects(portfolio_id)`);
