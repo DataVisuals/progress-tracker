@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Build timestamp - updated automatically before each commit to gh
-const BUILD_TIMESTAMP = '2025-12-04 08:55:33';
+const BUILD_TIMESTAMP = '2025-12-04 08:56:58';
 import Select from 'react-select';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';
@@ -1279,7 +1279,7 @@ function App() {
                       <div className="user-modal-login-time">
                         Logged in: {loginTime ? loginTime.toLocaleString() : 'Unknown'}
                       </div>
-                      <div className="user-modal-version">{BUILD_TIMESTAMP}</div>
+                      <div className="user-modal-version">Submitted: {BUILD_TIMESTAMP}</div>
                     </div>
                     <div className="user-modal-links">
                       <button
