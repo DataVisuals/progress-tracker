@@ -1140,7 +1140,10 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
         let formattedDate;
         const frequency = metricMetadata?.frequency || 'monthly';
 
-        if (frequency === 'weekly' || frequency === 'fortnightly') {
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+          formattedDate = item.name || 'Invalid Date';
+        } else if (frequency === 'weekly' || frequency === 'fortnightly') {
           // For weekly/fortnightly: show "DD MMM" format
           const day = String(date.getDate()).padStart(2, '0');
           const month = monthNames[date.getMonth()];
@@ -1377,7 +1380,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
 
       {/* Chart and Legend Container */}
       <div className="chart-and-legend-container">
-        <div ref={chartContainerRef} style={{ position: 'relative', flex: 1 }}>
+        <div ref={chartContainerRef} style={{ position: 'relative' }}>
             <ResponsiveContainer width="100%" height={compactMode ? 180 : 260}>
               <ComposedChart
                 data={chartData}
@@ -1527,7 +1530,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               title="Healthy"
             >
               <div className="legend-indicator" style={{ backgroundColor: RAG_COLORS.green }}></div>
-              {!compactMode && <span className="legend-text">Green: Healthy</span>}
+              <span className="legend-text">{compactMode ? '' : 'Green: Healthy'}</span>
             </div>
             <div
               className={`legend-item ${highlightedSeries === 'amber' ? 'active' : ''}`}
@@ -1715,7 +1718,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                               <span className="comment-meta-sidebar">
                                 {comment.created_by_name && !comment.is_system && comment.created_by_name}
                                 {comment.is_system && 'System'}
-                                {!comment.is_system && allowDataEdits && (
+                                {allowDataEdits && (isAdmin || !comment.is_system) && (
                                   <>
                                     <button onClick={() => handleEditComment(comment)} title="Edit">✎</button>
                                     <button onClick={() => handleDeleteComment(comment.id, comment.period_id)} title="Delete">×</button>
@@ -1825,10 +1828,23 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               {paginatedChartData.map((item, index) => {
                 // Format date for table header
                 const date = new Date(item.name);
-                const day = String(date.getDate()).padStart(2, '0');
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = date.getFullYear();
-                const formattedDate = `${day}/${month}/${year}`;
+                let formattedDate;
+
+                // Check if date is valid
+                if (isNaN(date.getTime())) {
+                  // Log the problematic data for debugging
+                  console.error('🔴 Invalid date in Latest Progress table:');
+                  console.error('  - item.name:', item.name, '(type:', typeof item.name, ')');
+                  console.error('  - item.id:', item.id);
+                  console.error('  - Full item:', item);
+                  // Display the original value so user can see what's wrong
+                  formattedDate = String(item.name || 'No Date');
+                } else {
+                  const day = String(date.getDate()).padStart(2, '0');
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const year = date.getFullYear();
+                  formattedDate = `${day}/${month}/${year}`;
+                }
 
                 return (
                   <th
@@ -1850,10 +1866,11 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                 const variancePercent = item.expected > 0 ? Math.abs((variance / item.expected) * 100) : 0;
                 const cutoffDate = timeTravelTimestamp ? new Date(timeTravelTimestamp) : new Date();
                 const periodDate = new Date(item.name);
-                const isPastOrCurrent = periodDate <= cutoffDate;
+                const isValidDate = !isNaN(periodDate.getTime());
+                const isPastOrCurrent = isValidDate ? periodDate <= cutoffDate : false;
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
-                const isFuture = periodDate > today;
+                const isFuture = isValidDate ? periodDate > today : false;
                 const isEditing = editingCell?.periodId === item.id && editingCell?.field === 'complete';
 
                 let statusClass = '';

@@ -183,6 +183,10 @@
   cursor: pointer;
   transition: all 0.15s;
   border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .portfolio-option-item:last-child {
@@ -193,6 +197,47 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.portfolio-review-btn {
+  background: none;
+  border: none;
+  color: #00aeef;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  opacity: 0;
+  flex-shrink: 0;
+}
+
+.portfolio-option-item:hover .portfolio-review-btn {
+  opacity: 1;
+}
+
+.portfolio-review-btn:hover {
+  background: rgba(0, 174, 239, 0.1);
+  color: #0095d1;
+}
+
+.portfolio-option-item.selected .portfolio-review-btn {
+  color: white;
+  opacity: 0.8;
+}
+
+.portfolio-option-item.selected:hover .portfolio-review-btn {
+  opacity: 1;
+}
+
+.portfolio-option-item.selected .portfolio-review-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
 }
 
 .portfolio-color-dot-large {
@@ -285,4 +330,22 @@
 
 :root.dark-mode .all-projects-icon {
   color: #9ca3af;
+}
+
+:root.dark-mode .portfolio-review-btn {
+  color: #00aeef;
+}
+
+:root.dark-mode .portfolio-review-btn:hover {
+  background: rgba(0, 174, 239, 0.2);
+  color: #60d1f6;
+}
+
+:root.dark-mode .portfolio-option-item.selected .portfolio-review-btn {
+  color: white;
+}
+
+:root.dark-mode .portfolio-option-item.selected .portfolio-review-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
 }

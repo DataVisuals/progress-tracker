@@ -1267,6 +1267,77 @@
   overflow-y: auto;
 }
 
+/* Portfolio Selector Dialog */
+.portfolio-selector-dialog {
+  max-width: 500px;
+  padding: 24px;
+}
+
+.portfolio-selector-title {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.portfolio-selector-subtitle {
+  margin: 0 0 24px 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.portfolio-selector-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.portfolio-select-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  text-align: left;
+}
+
+.portfolio-select-btn:hover {
+  border-color: #00aeef;
+  background: #eff6ff;
+}
+
+.portfolio-select-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.portfolio-selector-cancel {
+  margin-top: 24px;
+  padding: 10px 20px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.portfolio-selector-cancel:hover {
+  background: #e5e7eb;
+}
+
 /* Grid View Modal */
 .grid-view-modal {
   max-width: 98vw;
@@ -1850,6 +1921,36 @@
   color: var(--text-primary);
 }
 
+/* Portfolio Selector Dark Mode */
+:root.dark-mode .portfolio-selector-title {
+  color: var(--text-primary);
+}
+
+:root.dark-mode .portfolio-selector-subtitle {
+  color: var(--text-secondary);
+}
+
+:root.dark-mode .portfolio-select-btn {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+:root.dark-mode .portfolio-select-btn:hover {
+  border-color: #00aeef;
+  background: #1e3a5f;
+}
+
+:root.dark-mode .portfolio-selector-cancel {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+:root.dark-mode .portfolio-selector-cancel:hover {
+  background: var(--bg-hover);
+}
+
 :root.dark-mode .modal-header h2 {
   color: var(--text-primary);
 }
@@ -2236,4 +2337,71 @@
 :root.dark-mode .token-expiry-toast {
   background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(245, 158, 11, 0.4);
+}
+
+/* Project Commentary Light Mode */
+.commentary-container h3 {
+  color: #1f2937;
+}
+
+.empty-commentary {
+  color: #9ca3af;
+}
+
+.comment-text {
+  color: #374151;
+}
+
+.comment-meta {
+  color: #9ca3af;
+}
+
+.comment-author {
+  color: #9ca3af;
+}
+
+/* Project Commentary Dark Mode */
+:root.dark-mode .commentary-container {
+  background: var(--bg-secondary) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+}
+
+:root.dark-mode .commentary-container h3 {
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--border-color) !important;
+}
+
+:root.dark-mode .commentary-container .comment-textarea {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+:root.dark-mode .commentary-item {
+  border-bottom-color: var(--border-color) !important;
+}
+
+:root.dark-mode .commentary-item.latest-comment {
+  background: rgba(0, 174, 239, 0.1) !important;
+  border-left-color: #00aeef !important;
+}
+
+:root.dark-mode .empty-commentary {
+  color: #9ca3af !important;
+}
+
+:root.dark-mode .comment-text {
+  color: var(--text-primary) !important;
+}
+
+:root.dark-mode .comment-meta {
+  color: #9ca3af !important;
+}
+
+:root.dark-mode .comment-author {
+  color: #9ca3af !important;
+}
+
+:root.dark-mode .commentary-container button {
+  transition: all 0.2s;
 }

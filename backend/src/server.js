@@ -3538,7 +3538,134 @@ function createApp(dbPath) {
       res.status(500).json({ error: err.message });
     }
   });
-  
+
+  // ===== PROJECT COMMENTS =====
+
+  // Get project comments
+  app.get('/api/projects/:projectId/comments', async (req, res) => {
+    try {
+      const comments = await dbAll(`
+        SELECT pc.*, u.name as creator_name
+        FROM project_comments pc
+        LEFT JOIN users u ON pc.created_by = u.id
+        WHERE pc.project_id = ?
+        ORDER BY pc.created_at DESC
+      `, [req.params.projectId]);
+
+      res.json(comments);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Add project comment
+  app.post('/api/projects/:projectId/comments', authenticateToken, async (req, res) => {
+    try {
+      const { comment_text } = req.body;
+
+      if (!comment_text || !comment_text.trim()) {
+        return res.status(400).json({ error: 'Comment text is required' });
+      }
+
+      // Check if user can edit this project
+      if (!(await canEditProject(req.user.userId, req.params.projectId))) {
+        return res.status(403).json({ error: 'You do not have permission to add comments to this project' });
+      }
+
+      const result = await dbRun(`
+        INSERT INTO project_comments (project_id, comment_text, created_by, created_at, updated_at)
+        VALUES (?, ?, ?, datetime('now'), datetime('now'))
+      `, [req.params.projectId, comment_text, req.user.userId]);
+
+      const newComment = await dbGet(`
+        SELECT pc.*, u.name as creator_name
+        FROM project_comments pc
+        LEFT JOIN users u ON pc.created_by = u.id
+        WHERE pc.id = ?
+      `, [result.lastID]);
+
+      await logAudit(req.user, 'INSERT', 'project_comments', result.lastID,
+        null,
+        newComment,
+        `Added project comment to project ID ${req.params.projectId}`,
+        req.ip
+      );
+
+      res.json(newComment);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Update project comment
+  app.put('/api/projects/:projectId/comments/:id', authenticateToken, async (req, res) => {
+    try {
+      const { comment_text } = req.body;
+
+      const existingComment = await dbGet('SELECT * FROM project_comments WHERE id = ?', [req.params.id]);
+      if (!existingComment) {
+        return res.status(404).json({ error: 'Comment not found' });
+      }
+
+      // Check if user can edit this project
+      if (!(await canEditProject(req.user.userId, req.params.projectId))) {
+        return res.status(403).json({ error: 'You do not have permission to edit this comment' });
+      }
+
+      await dbRun(`
+        UPDATE project_comments
+        SET comment_text = ?, updated_at = datetime('now')
+        WHERE id = ?
+      `, [comment_text, req.params.id]);
+
+      const updated = await dbGet(`
+        SELECT pc.*, u.name as creator_name
+        FROM project_comments pc
+        LEFT JOIN users u ON pc.created_by = u.id
+        WHERE pc.id = ?
+      `, [req.params.id]);
+
+      await logAudit(req.user, 'UPDATE', 'project_comments', req.params.id,
+        existingComment,
+        updated,
+        `Updated project comment ${req.params.id}`,
+        req.ip
+      );
+
+      res.json(updated);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Delete project comment
+  app.delete('/api/projects/:projectId/comments/:id', authenticateToken, async (req, res) => {
+    try {
+      const comment = await dbGet('SELECT * FROM project_comments WHERE id = ?', [req.params.id]);
+      if (!comment) {
+        return res.status(404).json({ error: 'Comment not found' });
+      }
+
+      // Check if user can edit this project
+      if (!(await canEditProject(req.user.userId, req.params.projectId))) {
+        return res.status(403).json({ error: 'You do not have permission to delete this comment' });
+      }
+
+      await dbRun('DELETE FROM project_comments WHERE id = ?', [req.params.id]);
+
+      await logAudit(req.user, 'DELETE', 'project_comments', req.params.id,
+        comment,
+        null,
+        `Deleted project comment ${req.params.id}`,
+        req.ip
+      );
+
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== CRAIDs (Comments, Risks, Actions, Issues, Dependencies) =====
   app.get('/api/projects/:projectId/craids', async (req, res) => {
     try {
@@ -5292,11 +5419,11 @@ function createApp(dbPath) {
       // Build space filter
       const spaceFilter = space_id ? `AND po.space_id = ${parseInt(space_id)}` : '';
 
-      // Get project view counts only
+      // Get project view counts only (INNER JOIN to exclude deleted projects)
       const projectViews = await dbAll(`
         SELECT pv.path, COUNT(*) as views
         FROM page_views pv
-        LEFT JOIN projects p ON pv.path = 'Project: ' || p.name
+        INNER JOIN projects p ON pv.path = 'Project: ' || p.name
         LEFT JOIN portfolios po ON p.portfolio_id = po.id
         WHERE pv.created_at >= ? AND pv.path LIKE 'Project:%' ${spaceFilter}
         GROUP BY pv.path

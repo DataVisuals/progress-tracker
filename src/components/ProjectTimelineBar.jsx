@@ -74,15 +74,19 @@ const ProjectTimelineBar = ({ milestones }) => {
 
   return (
     <div className="project-timeline-bar">
+      <div className="timeline-header">
+        <span className="timeline-start-date">{formatDate(firstMilestoneDate)}</span>
+        <span className="timeline-end-date">{formatDate(lastMilestoneDate)}</span>
+      </div>
       <div className="timeline-track">
         {/* Timeline line */}
         <div className="timeline-line" />
 
         {/* Start marker */}
         <div className="timeline-terminus start">
-          <div className="terminus-circle" />
-          <div className="terminus-label">Start</div>
-          <div className="terminus-date">{formatShortDate(firstMilestoneDate)}</div>
+          <div className="terminus-circle">
+            <div className="terminus-label">Start</div>
+          </div>
         </div>
 
         {/* Milestones */}
@@ -118,9 +122,9 @@ const ProjectTimelineBar = ({ milestones }) => {
 
         {/* End marker with time to completion */}
         <div className="timeline-terminus end">
-          <div className="terminus-circle" />
-          <div className="terminus-label">End</div>
-          <div className="terminus-date">{formatShortDate(lastMilestoneDate)}</div>
+          <div className="terminus-circle">
+            <div className="terminus-label">End</div>
+          </div>
           <div className="terminus-countdown">
             {daysToCompletion >= 0 ? (
               <span className="countdown-positive">{formatTimeRemaining(daysToCompletion)}</span>

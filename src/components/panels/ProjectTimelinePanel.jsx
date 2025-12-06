@@ -10,6 +10,7 @@ const ProjectTimelinePanel = ({
   portfolios,
   selectedSpace,
   milestones,
+  projectHealthRankings,
   onNavigateToProject
 }) => {
   const [hoveredProject, setHoveredProject] = useState(null);
@@ -65,45 +66,27 @@ const ProjectTimelinePanel = ({
     return Math.max(0, Math.min(100, (dateMs / totalMs) * 100));
   };
 
-  // Generate time markers for the timeline with adaptive granularity
+  // Generate time markers for the timeline - show all months
   const getTimeMarkers = () => {
     if (!timelineData.range) return [];
     const { min, max } = timelineData.range;
     const markers = [];
 
-    // Calculate span in months
-    const spanMs = max.getTime() - min.getTime();
-    const spanMonths = spanMs / (1000 * 60 * 60 * 24 * 30);
-
-    // Determine step size based on span
-    let stepMonths = 1;
-    if (spanMonths > 36) stepMonths = 6; // > 3 years: every 6 months
-    else if (spanMonths > 18) stepMonths = 3; // > 1.5 years: quarterly
-    else if (spanMonths > 12) stepMonths = 2; // > 1 year: every 2 months
-
     const current = new Date(min);
     current.setDate(1); // Start from first of month
 
-    // Align to step boundary
-    if (stepMonths > 1) {
-      const monthNum = current.getMonth();
-      const alignedMonth = Math.ceil(monthNum / stepMonths) * stepMonths;
-      current.setMonth(alignedMonth);
-    }
-
     while (current <= max) {
       const position = getPosition(current);
-      // Only add marker if it's not too close to edges (avoid clipping)
-      if (position >= 3 && position <= 97) {
+      // Only add marker if it's not too close to edges (avoid clipping and intrusion)
+      // Need 5% on left to account for centered labels extending left
+      if (position >= 5 && position <= 97) {
         markers.push({
           date: new Date(current),
           position,
-          label: stepMonths >= 6
-            ? current.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
-            : current.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })
+          label: current.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })
         });
       }
-      current.setMonth(current.getMonth() + stepMonths);
+      current.setMonth(current.getMonth() + 1);
     }
     return markers;
   };
@@ -121,9 +104,23 @@ const ProjectTimelinePanel = ({
     return diffDays;
   };
 
-  // Get status color based on days remaining
+  // Get status color based on project health score
   const getStatusColor = (daysRemaining, project) => {
+    // For past projects, use grey
     if (daysRemaining < 0) return '#6b7280'; // Past - grey
+
+    // Get health score for this project from projectHealthRankings
+    const projectWithHealth = projectHealthRankings?.allSorted?.find(p => p.id === project.id);
+    const healthScore = projectWithHealth?.healthScore ?? null;
+
+    // If health score is available, use RAG colors based on health
+    if (healthScore !== null && healthScore !== undefined) {
+      if (healthScore >= 80) return '#539668'; // Green - healthy
+      if (healthScore >= 60) return '#f5ad5b'; // Amber - at risk
+      return '#D0704d'; // Red - critical
+    }
+
+    // Fallback to time-based status if no health score
     if (daysRemaining <= 14) return '#D0704d'; // Critical - red
     if (daysRemaining <= 30) return '#f5ad5b'; // Soon - amber
     return project.portfolio_color || '#539668'; // On track - portfolio color or green
@@ -170,16 +167,18 @@ const ProjectTimelinePanel = ({
           <div className="timeline-axis-sticky">
             <div className="timeline-axis">
               <div className="timeline-axis-label-spacer" />
-              <div className="timeline-axis-track">
-                {timeMarkers.map((marker, idx) => (
-                  <div
-                    key={idx}
-                    className="timeline-axis-marker"
-                    style={{ left: `${marker.position}%` }}
-                  >
-                    <span className="timeline-axis-label">{marker.label}</span>
-                  </div>
-                ))}
+              <div className="timeline-axis-track-wrapper">
+                <div className="timeline-axis-track">
+                  {timeMarkers.map((marker, idx) => (
+                    <div
+                      key={idx}
+                      className="timeline-axis-marker"
+                      style={{ left: `${marker.position}%` }}
+                    >
+                      <span className="timeline-axis-label">{marker.label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="timeline-axis-countdown-spacer" />
             </div>
@@ -210,13 +209,14 @@ const ProjectTimelinePanel = ({
                   className="timeline-project-label"
                   onMouseEnter={() => setHoveredProject(project.id)}
                   onMouseLeave={() => setHoveredProject(null)}
+                  title=""
                 >
                   <span
                     className="portfolio-dot"
                     style={{ backgroundColor: project.portfolio_color || '#6b7280' }}
                     title={project.portfolio_name || 'No Portfolio'}
                   />
-                  <span className="project-name">
+                  <span className="project-name" title="">
                     {project.name}
                   </span>
                   {hoveredProject === project.id && (
@@ -314,13 +314,6 @@ const ProjectTimelinePanel = ({
                       </div>
                     )}
                   </div>
-
-                  {/* Today marker */}
-                  {nowPosition >= startPosition && nowPosition <= endPosition && (
-                    <div className="tubemap-today" style={{ left: `${nowPosition}%` }}>
-                      <div className="today-line" />
-                    </div>
-                  )}
                 </div>
 
                 {/* Time remaining badge */}
@@ -334,6 +327,12 @@ const ProjectTimelinePanel = ({
               </div>
             );
           })}
+          {/* Today marker - single continuous line across all projects */}
+          {timelineData.range && (
+            <div className="timeline-today-marker" style={{ left: `calc(250px + (100% - 250px - 60px) * ${getPosition(timelineData.range.now) / 100})` }}>
+              <div className="today-line-continuous" />
+            </div>
+          )}
         </div>
         </div>
       </div>

@@ -32,6 +32,7 @@ import UserActivityReport from './components/UserActivityReport';
 import PageHeatmapReport from './components/PageHeatmapReport';
 import HomePage from './components/HomePage';
 import TipsModal from './components/TipsModal';
+import PortfolioReviewModal from './components/PortfolioReviewModal';
 import { api, refreshToken } from './api/client';
 import { selectStyles } from './components/SelectStyles';
 import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
@@ -87,6 +88,11 @@ function App() {
   const [projectFeedbackCount, setProjectFeedbackCount] = useState(0);
   const [projectMilestonesCount, setProjectMilestonesCount] = useState(0);
   const [projectMilestones, setProjectMilestones] = useState([]);
+  const [projectComments, setProjectComments] = useState([]);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editCommentValue, setEditCommentValue] = useState('');
+  const [addingComment, setAddingComment] = useState(false);
+  const [newCommentValue, setNewCommentValue] = useState('');
   const [showLinksEditor, setShowLinksEditor] = useState(false);
   const [showImportData, setShowImportData] = useState(false);
   const [showPortfolioManager, setShowPortfolioManager] = useState(false);
@@ -107,6 +113,9 @@ function App() {
   const [showUserModal, setShowUserModal] = useState(false);
   const [showTipsModal, setShowTipsModal] = useState(false);
   const [selectedTipsCategory, setSelectedTipsCategory] = useState(null);
+  const [showPortfolioReview, setShowPortfolioReview] = useState(false);
+  const [portfolioReviewId, setPortfolioReviewId] = useState(null);
+  const [showPortfolioSelector, setShowPortfolioSelector] = useState(false);
   const [loginTime, setLoginTime] = useState(null);
   const [darkMode, setDarkMode] = useState(() => {
     try {
@@ -348,6 +357,7 @@ function App() {
       loadProjectRecoveryPlans();
       loadProjectFeedbackCount();
       loadProjectMilestonesCount();
+      loadProjectComments();
 
       // Track page view for analytics
       const project = projects.find(p => p.id === parseInt(selectedProject));
@@ -475,6 +485,16 @@ function App() {
       console.error('Failed to load milestones count:', err);
       setProjectMilestonesCount(0);
       setProjectMilestones([]);
+    }
+  };
+
+  const loadProjectComments = async () => {
+    try {
+      const response = await api.get(`/projects/${selectedProject}/comments`);
+      setProjectComments(response.data || []);
+    } catch (err) {
+      console.error('Failed to load project comments:', err);
+      setProjectComments([]);
     }
   };
 
@@ -780,6 +800,75 @@ function App() {
       }
     }
     setEditingProjectDesc(false);
+  };
+
+  const handleAddComment = async () => {
+    if (!newCommentValue.trim()) {
+      setAddingComment(false);
+      setNewCommentValue('');
+      return;
+    }
+
+    try {
+      await api.post(`/projects/${selectedProject}/comments`, {
+        comment_text: newCommentValue
+      });
+      setAddingComment(false);
+      setNewCommentValue('');
+      await loadProjectComments();
+    } catch (err) {
+      console.error('Failed to add project comment:', err);
+      alert('Failed to add comment');
+    }
+  };
+
+  const handleEditComment = (comment) => {
+    setEditingCommentId(comment.id);
+    setEditCommentValue(comment.comment_text);
+  };
+
+  const handleSaveComment = async (commentId) => {
+    if (!editCommentValue.trim()) {
+      setEditingCommentId(null);
+      setEditCommentValue('');
+      return;
+    }
+
+    try {
+      await api.put(`/projects/${selectedProject}/comments/${commentId}`, {
+        comment_text: editCommentValue
+      });
+      setEditingCommentId(null);
+      setEditCommentValue('');
+      await loadProjectComments();
+    } catch (err) {
+      console.error('Failed to update project comment:', err);
+      alert('Failed to update comment');
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) {
+      return;
+    }
+
+    try {
+      await api.delete(`/projects/${selectedProject}/comments/${commentId}`);
+      await loadProjectComments();
+    } catch (err) {
+      console.error('Failed to delete project comment:', err);
+      alert('Failed to delete comment');
+    }
+  };
+
+  const handleCancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditCommentValue('');
+  };
+
+  const handleCancelAddComment = () => {
+    setAddingComment(false);
+    setNewCommentValue('');
   };
 
   const handleSaveProjectDates = async () => {
@@ -1280,6 +1369,21 @@ function App() {
     }
   };
 
+  const handlePortfolioReview = () => {
+    if (portfolios.length === 0) {
+      alert('No portfolios available. Please create a portfolio first.');
+      return;
+    }
+    // Show portfolio selection dialog
+    setShowPortfolioSelector(true);
+  };
+
+  const handlePortfolioSelect = (portfolioId) => {
+    setPortfolioReviewId(portfolioId);
+    setShowPortfolioSelector(false);
+    setShowPortfolioReview(true);
+  };
+
   // Copy current URL to clipboard
   const handleShareLink = async () => {
     try {
@@ -1353,6 +1457,7 @@ function App() {
               selectedPortfolio={selectedPortfolio}
               onPortfolioChange={setSelectedPortfolio}
               onManagePortfolios={isAdmin() ? () => setShowPortfolioManager(true) : null}
+              onPortfolioReview={handlePortfolioSelect}
             />
             <ProjectSelector
               key={`project-${projects.length}`} // Force re-render when projects list changes
@@ -1899,6 +2004,7 @@ function App() {
               feedbackCount={projectFeedbackCount}
               recoveryPlanCount={projectRecoveryPlans.length}
               milestonesCount={projectMilestonesCount}
+              commentaryCount={projectComments.length}
               needsRecoveryPlan={needsRecoveryPlan}
               currentUser={currentUser}
             />
@@ -2021,6 +2127,210 @@ function App() {
                   canEdit={canEdit()}
                   onRecoveryPlansChange={loadProjectRecoveryPlans}
                 />
+              </div>
+            )}
+
+            {selectedProjectTab === 'commentary' && (
+              <div style={{ marginTop: '20px' }}>
+                <div className="commentary-container" style={{
+                  background: 'white',
+                  borderRadius: '8px',
+                  padding: '20px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '16px',
+                    paddingBottom: '12px',
+                    borderBottom: '2px solid #e5e7eb'
+                  }}>
+                    <h3 style={{
+                      margin: 0,
+                      fontSize: '18px',
+                      fontWeight: '600'
+                    }}>
+                      Project Commentary
+                    </h3>
+                    {canEdit() && !addingComment && (
+                      <button
+                        onClick={() => setAddingComment(true)}
+                        className="btn-primary"
+                        style={{
+                          padding: '8px 16px',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          borderRadius: '6px'
+                        }}
+                      >
+                        + Add Comment
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Add new comment form */}
+                  {addingComment && (
+                    <div className="commentary-item-add" style={{ marginBottom: '16px' }}>
+                      <textarea
+                        value={newCommentValue}
+                        onChange={(e) => setNewCommentValue(e.target.value)}
+                        placeholder="Add your commentary here..."
+                        className="comment-textarea"
+                        style={{
+                          width: '100%',
+                          minHeight: '100px',
+                          padding: '12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          fontFamily: 'inherit',
+                          resize: 'vertical',
+                          marginBottom: '8px',
+                          lineHeight: '1.5'
+                        }}
+                        autoFocus
+                      />
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={handleCancelAddComment}
+                          className="btn-secondary"
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: '13px'
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleAddComment}
+                          className="btn-primary"
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: '13px'
+                          }}
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Display comments */}
+                  <div className="commentary-list">
+                    {projectComments.length === 0 && !addingComment && (
+                      <div className="empty-commentary" style={{
+                        padding: '40px 20px',
+                        textAlign: 'center',
+                        fontSize: '14px'
+                      }}>
+                        {canEdit()
+                          ? 'No commentary yet. Click "Add Comment" to get started.'
+                          : 'No commentary available.'}
+                      </div>
+                    )}
+                    {projectComments.map((comment, index) => (
+                      <div
+                        key={comment.id}
+                        className={`commentary-item ${index === 0 ? 'latest-comment' : ''}`}
+                        style={{
+                          padding: '12px',
+                          marginBottom: '0',
+                          borderBottom: index === projectComments.length - 1 ? 'none' : '1px solid #f0f0f0',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '8px'
+                        }}
+                      >
+                        {editingCommentId === comment.id ? (
+                          <div className="commentary-item-edit">
+                            <textarea
+                              value={editCommentValue}
+                              onChange={(e) => setEditCommentValue(e.target.value)}
+                              className="comment-textarea"
+                              style={{
+                                width: '100%',
+                                minHeight: '80px',
+                                padding: '12px',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '6px',
+                                fontSize: '14px',
+                                fontFamily: 'inherit',
+                                resize: 'vertical',
+                                marginBottom: '8px',
+                                lineHeight: '1.5'
+                              }}
+                              autoFocus
+                            />
+                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                              <button
+                                onClick={handleCancelEditComment}
+                                className="btn-secondary"
+                                style={{
+                                  padding: '6px 12px',
+                                  fontSize: '13px'
+                                }}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => handleSaveComment(comment.id)}
+                                className="btn-primary"
+                                style={{
+                                  padding: '6px 12px',
+                                  fontSize: '13px'
+                                }}
+                              >
+                                Save
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="comment-text" style={{
+                              fontSize: '14px',
+                              lineHeight: '1.6',
+                              whiteSpace: 'pre-wrap',
+                              wordWrap: 'break-word'
+                            }}>
+                              {comment.comment_text}
+                            </div>
+                            <div className="comment-meta" style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              fontSize: '12px',
+                              marginTop: '4px'
+                            }}>
+                              <div className="comment-author">
+                                <span>{new Date(comment.created_at).toLocaleDateString()}</span>
+                                {comment.creator_name && <span> • {comment.creator_name}</span>}
+                              </div>
+                              {canEdit() && (
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  <button
+                                    onClick={() => handleEditComment(comment)}
+                                    className="edit-comment-btn"
+                                    title="Edit comment"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteComment(comment.id)}
+                                    className="delete-comment-btn"
+                                    title="Delete comment"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -2403,6 +2713,52 @@ function App() {
           window.history.replaceState({}, '', url);
         }}
       />
+
+      {/* Portfolio Selector Dialog */}
+      {showPortfolioSelector && (
+        <div className="modal-overlay">
+          <div className="modal-content portfolio-selector-dialog">
+            <h2 className="portfolio-selector-title">Select Portfolio to Review</h2>
+            <p className="portfolio-selector-subtitle">Choose a portfolio to generate a comprehensive review presentation.</p>
+            <div className="portfolio-selector-list">
+              {portfolios.map(portfolio => (
+                <button
+                  key={portfolio.id}
+                  className="portfolio-select-btn"
+                  onClick={() => handlePortfolioSelect(portfolio.id)}
+                >
+                  <span
+                    className="portfolio-select-dot"
+                    style={{ background: portfolio.color || '#6b7280' }}
+                  />
+                  <span>{portfolio.name}</span>
+                </button>
+              ))}
+            </div>
+            <button
+              className="portfolio-selector-cancel"
+              onClick={() => setShowPortfolioSelector(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Portfolio Review Modal */}
+      {showPortfolioReview && portfolioReviewId && (
+        <PortfolioReviewModal
+          portfolioId={portfolioReviewId}
+          portfolioName={portfolios.find(p => p.id === portfolioReviewId)?.name || 'Portfolio'}
+          projects={projects}
+          portfolios={portfolios}
+          darkMode={darkMode}
+          onClose={() => {
+            setShowPortfolioReview(false);
+            setPortfolioReviewId(null);
+          }}
+        />
+      )}
 
       {/* Token Expiry Warning Toast */}
       {showTokenWarning && tokenExpiryWarning && (

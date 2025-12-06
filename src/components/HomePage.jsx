@@ -54,13 +54,11 @@ import { PANEL_CONFIG, LAYOUT_CONFIG, DEFAULT_DASHBOARD_CONFIG } from './homePag
 import ProjectHealthModal, { calculateHealthScore } from './ProjectHealthModal';
 import CommentaryPanel from './panels/CommentaryPanel';
 import InconsistenciesPanel from './panels/InconsistenciesPanel';
-import DatabasePanel from './panels/DatabasePanel';
 import ActiveUsersPanel from './panels/ActiveUsersPanel';
 import MetricsAtRiskPanel from './panels/MetricsAtRiskPanel';
 import AttentionPanel from './panels/AttentionPanel';
 import ProjectHealthPanel from './panels/ProjectHealthPanel';
 import ProjectTimelinePanel from './panels/ProjectTimelinePanel';
-import ClarityPanel from './panels/ClarityPanel';
 import AuditPanel from './panels/AuditPanel';
 import HeatmapPanel from './panels/HeatmapPanel';
 import PerformancePanel from './panels/PerformancePanel';
@@ -1226,17 +1224,8 @@ const HomePage = ({
             portfolios={portfolios}
             selectedSpace={selectedSpace}
             milestones={allMilestones}
+            projectHealthRankings={projectHealthRankings}
             onNavigateToProject={onNavigateToProject}
-          />
-        );
-
-      case 'clarity':
-        return (
-          <ClarityPanel
-            key={panelId}
-            panelId={panelId}
-            index={index}
-            forDock={forDock}
           />
         );
 
@@ -1254,19 +1243,6 @@ const HomePage = ({
             setAuditHoveredDateIdx={setAuditHoveredDateIdx}
             auditSelectedDateIdx={auditSelectedDateIdx}
             setAuditSelectedDateIdx={setAuditSelectedDateIdx}
-          />
-        );
-
-      case 'database':
-        return (
-          <DatabasePanel
-            key={panelId}
-            panelId={panelId}
-            index={index}
-            isAdmin={isAdmin}
-            databaseStats={databaseStats}
-            darkMode={darkMode}
-            forDock={forDock}
           />
         );
 
@@ -1298,6 +1274,8 @@ const HomePage = ({
             onNavigateToProject={onNavigateToProject}
             projects={projects}
             getDisplayLimit={getDisplayLimit}
+            isAdmin={isAdmin}
+            databaseStats={databaseStats}
           />
         );
 

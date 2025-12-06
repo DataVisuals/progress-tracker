@@ -6,20 +6,36 @@
   margin-bottom: 32px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
   overflow: visible;
+  width: 100%;
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 10px;
+}
+
+.timeline-start-date,
+.timeline-end-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: #003c71;
 }
 
 .timeline-track {
   position: relative;
   height: 220px;
-  padding: 0 30px;
+  padding: 0 10px;
   overflow: visible;
 }
 
 .timeline-line {
   position: absolute;
   top: 90px;
-  left: 80px;
-  right: 80px;
+  left: 85px !important;
+  right: 85px !important;
   height: 3px;
   background: linear-gradient(to right, #00aeef, #003c71);
   border-radius: 1.5px;
@@ -30,50 +46,40 @@
   position: absolute;
   top: 90px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   transform: translateY(-50%);
   z-index: 3;
 }
 
 .timeline-terminus.start {
-  left: 40px;
+  left: 30px;
 }
 
 .timeline-terminus.end {
-  right: 40px;
+  right: 30px;
 }
 
 .terminus-circle {
-  width: 20px;
-  height: 20px;
+  width: 55px;
+  height: 55px;
   border-radius: 50%;
   background: #003c71;
   box-shadow: 0 2px 6px rgba(0, 60, 113, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .terminus-label {
-  position: absolute;
-  top: 100%;
-  margin-top: 10px;
+  position: static;
   font-size: 10px;
   font-weight: 700;
-  color: #003c71;
+  color: white;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   opacity: 1;
   white-space: nowrap;
-}
-
-.terminus-date {
-  position: absolute;
-  top: 100%;
-  margin-top: 28px;
-  font-size: 10px;
-  color: #64748b;
-  font-weight: 600;
-  white-space: nowrap;
-  opacity: 1;
 }
 
 .terminus-countdown {
@@ -118,8 +124,8 @@
 }
 
 .stop-marker {
-  width: 32px;
-  height: 32px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -128,19 +134,19 @@
 }
 
 .stop-dot {
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: white;
-  border: 5px solid #00aeef;
-  box-shadow: 0 3px 10px rgba(0, 174, 239, 0.5);
+  border: 3px solid #00aeef;
+  box-shadow: 0 2px 6px rgba(0, 174, 239, 0.4);
   transition: all 0.2s ease;
 }
 
 .timeline-stop.completed .stop-dot {
   background: #10b981;
   border-color: #10b981;
-  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.5);
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.4);
 }
 
 .timeline-stop.overdue .stop-dot {
@@ -158,11 +164,11 @@
 }
 
 .stop-icon {
-  font-size: 30px;
+  font-size: 12px;
   color: #10b981;
   background: white;
   border-radius: 50%;
-  filter: drop-shadow(0 3px 8px rgba(16, 185, 129, 0.5));
+  filter: drop-shadow(0 1px 2px rgba(16, 185, 129, 0.4));
 }
 
 /* Alternating labels - always visible */
@@ -247,22 +253,22 @@
   align-items: center;
   justify-content: flex-start;
   transform: translateX(-50%);
-  z-index: 4;
+  z-index: 0;
   pointer-events: none;
 }
 
 .today-line {
   position: absolute;
-  top: 0;
+  top: 18px;
   width: 3px;
-  height: 100%;
+  height: calc(100% - 18px);
   background: #f59e0b;
-  opacity: 0.7;
+  opacity: 0.3;
 }
 
 .today-label {
   position: absolute;
-  top: 2px;
+  top: 0;
   font-size: 8px;
   font-weight: 700;
   color: white;
@@ -282,6 +288,11 @@
   border-color: #334155;
 }
 
+:root.dark-mode .timeline-start-date,
+:root.dark-mode .timeline-end-date {
+  color: #00aeef;
+}
+
 :root.dark-mode .timeline-line {
   background: linear-gradient(to right, #00aeef, #0284c7);
 }
@@ -292,14 +303,13 @@
 }
 
 :root.dark-mode .terminus-label {
-  color: #00aeef;
+  color: white;
 }
 
 :root.dark-mode .terminus-date {
   color: #94a3b8;
 }
 
-:root.dark-mode .terminus-label,
 :root.dark-mode .terminus-date,
 :root.dark-mode .terminus-countdown {
   background: #1e293b;

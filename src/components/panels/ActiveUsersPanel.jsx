@@ -1,6 +1,9 @@
-import React from 'react';
-import { MdPeople, MdWarning } from 'react-icons/md';
+import React, { useState, useEffect, useMemo } from 'react';
+import { MdPeople, MdWarning, MdAutoAwesome } from 'react-icons/md';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
+import { calculateClarityScore } from '../../utils/clarityScore';
+import { api as apiClient } from '../../api/client';
+import './ClarityPanel.css';
 
 const formatTimestamp = (timestamp) => {
   const date = new Date(timestamp);
@@ -17,6 +20,34 @@ const formatTimestamp = (timestamp) => {
   return date.toLocaleDateString();
 };
 
+const GemIcon = ({ size = 16, className = '' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={`gem-icon ${className}`}
+  >
+    <path d="M12 2L4 8L12 10L20 8L12 2Z" opacity="0.9" />
+    <path d="M4 8L12 10L12 22L4 8Z" opacity="0.7" />
+    <path d="M20 8L12 10L12 22L20 8Z" opacity="0.5" />
+    <path
+      d="M12 2L4 8L12 22L20 8L12 2Z"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1"
+      strokeOpacity="0.3"
+    />
+    <path d="M12 10L4 8L20 8L12 10Z" fill="white" opacity="0.2" />
+  </svg>
+);
+
+const getScoreClass = (score) => {
+  if (score >= 4) return 'clarity-good';
+  if (score >= 3) return 'clarity-average';
+  return 'clarity-poor';
+};
+
 const ActiveUsersPanel = ({
   panelId,
   index,
@@ -29,6 +60,70 @@ const ActiveUsersPanel = ({
   setUserActivity,
   api
 }) => {
+  const [comments, setComments] = useState([]);
+  const [clarityLoading, setClarityLoading] = useState(true);
+  const [clarityError, setClarityError] = useState(null);
+  const [highlightedUser, setHighlightedUser] = useState(null);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    loadComments();
+  }, [isAdmin]);
+
+  const loadComments = async () => {
+    try {
+      setClarityLoading(true);
+      const response = await apiClient.getCommentsByUser();
+      setComments(response.data);
+      setClarityError(null);
+    } catch (err) {
+      console.error('Failed to load clarity data:', err);
+      setClarityError(err.response?.data?.error || 'Failed to load data');
+    } finally {
+      setClarityLoading(false);
+    }
+  };
+
+  // Calculate average clarity score per user
+  const userRankings = useMemo(() => {
+    if (!comments || comments.length === 0) return [];
+
+    const userComments = {};
+    comments.forEach(comment => {
+      if (!comment.created_by) return;
+      if (!userComments[comment.created_by]) {
+        userComments[comment.created_by] = {
+          userId: comment.created_by,
+          userName: comment.user_name || 'Unknown',
+          userEmail: comment.user_email,
+          comments: [],
+          totalScore: 0,
+          commentCount: 0
+        };
+      }
+      const { score } = calculateClarityScore(comment.comment_text, 'comment');
+      userComments[comment.created_by].comments.push({
+        text: comment.comment_text,
+        score
+      });
+      userComments[comment.created_by].totalScore += score;
+      userComments[comment.created_by].commentCount++;
+    });
+
+    const rankings = Object.values(userComments)
+      .filter(u => u.commentCount >= 1)
+      .map(u => ({
+        ...u,
+        avgScore: Math.round((u.totalScore / u.commentCount) * 10) / 10
+      }))
+      .sort((a, b) => b.avgScore - a.avgScore);
+
+    return rankings;
+  }, [comments]);
+
+  const top5 = userRankings.slice(0, 5);
+  const bottom5 = [...userRankings].reverse().slice(0, 5);
+
   if (!isAdmin) return null;
 
   // Color palette for activity types
@@ -221,7 +316,7 @@ const ActiveUsersPanel = ({
           {userActivity && !userActivity.error && getTimelineChartData().length > 0 && (
             <div className="timeline-section">
               <h3>Activity Timeline</h3>
-              <ResponsiveContainer width="100%" height={180}>
+              <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={getTimelineChartData()} margin={{ top: 5, right: 20, left: 10, bottom: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" angle={-45} textAnchor="end" height={50} tick={{ fontSize: 9 }} />
@@ -247,12 +342,95 @@ const ActiveUsersPanel = ({
                       );
                     }}
                   />
-                  <Legend wrapperStyle={{ fontSize: '9px', paddingLeft: '80px', paddingTop: '12px' }} align="left" />
+                  <Legend
+                    wrapperStyle={{ fontSize: '9px', paddingLeft: '80px', paddingTop: '12px', cursor: 'pointer' }}
+                    align="left"
+                    onClick={(e) => {
+                      if (e && e.dataKey) {
+                        setHighlightedUser(highlightedUser === e.dataKey ? null : e.dataKey);
+                      }
+                    }}
+                  />
                   {getTimelineUsers().map((user, idx) => (
-                    <Bar key={user} dataKey={user} stackId="timeline" fill={user === 'Others' ? '#9ca3af' : userColors[idx % userColors.length]} />
+                    <Bar
+                      key={user}
+                      dataKey={user}
+                      stackId="timeline"
+                      fill={user === 'Others' ? '#9ca3af' : userColors[idx % userColors.length]}
+                      opacity={highlightedUser ? (highlightedUser === user ? 1 : 0.2) : 1}
+                    />
                   ))}
                 </BarChart>
               </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        {/* Clarity Rankings at bottom */}
+        <div className="users-bottom-section">
+          <div className="section-header">
+            <h3>Clarity Rankings</h3>
+          </div>
+          {clarityLoading ? (
+            <div className="loading-state">Loading clarity data...</div>
+          ) : clarityError ? (
+            <div className="clarity-error">{clarityError}</div>
+          ) : userRankings.length === 0 ? (
+            <div className="empty-state compact"><p>No comment data available</p></div>
+          ) : (
+            <div className="clarity-rankings-container fullscreen">
+              <div className="clarity-column">
+                <div className="clarity-column-header top">
+                  <span className="clarity-header-title">Top 10 Clearest Writers</span>
+                  <div className="clarity-avg-badge top">
+                    <GemIcon size={14} />
+                    <span>Avg: {(top5.length > 0 ? Math.round((top5.reduce((sum, u) => sum + u.avgScore, 0) / top5.length) * 10) / 10 : 0).toFixed(1)}</span>
+                  </div>
+                </div>
+                <div className="clarity-list">
+                  {userRankings.slice(0, 10).map((user, idx) => (
+                    <div key={user.userId} className="clarity-ranking-item top">
+                      <span className="clarity-rank">{idx + 1}</span>
+                      <div className={`clarity-crystal ${getScoreClass(user.avgScore)}`}>
+                        <GemIcon size={20} />
+                      </div>
+                      <div className="clarity-user-info">
+                        <span className="clarity-user-name">{user.userName}</span>
+                        <span className="clarity-comment-count">{user.commentCount} comment{user.commentCount !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div className={`clarity-score-value ${getScoreClass(user.avgScore)}`}>
+                        {user.avgScore.toFixed(1)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="clarity-column">
+                <div className="clarity-column-header bottom">
+                  <span className="clarity-header-title">Bottom 10 - Needs Improvement</span>
+                  <div className="clarity-avg-badge bottom">
+                    <GemIcon size={14} />
+                    <span>Avg: {(bottom5.length > 0 ? Math.round((bottom5.reduce((sum, u) => sum + u.avgScore, 0) / bottom5.length) * 10) / 10 : 0).toFixed(1)}</span>
+                  </div>
+                </div>
+                <div className="clarity-list">
+                  {[...userRankings].reverse().slice(0, 10).map((user, idx) => (
+                    <div key={user.userId} className="clarity-ranking-item bottom">
+                      <span className="clarity-rank">{userRankings.length - idx}</span>
+                      <div className={`clarity-crystal ${getScoreClass(user.avgScore)}`}>
+                        <GemIcon size={20} />
+                      </div>
+                      <div className="clarity-user-info">
+                        <span className="clarity-user-name">{user.userName}</span>
+                        <span className="clarity-comment-count">{user.commentCount} comment{user.commentCount !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div className={`clarity-score-value ${getScoreClass(user.avgScore)}`}>
+                        {user.avgScore.toFixed(1)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -265,7 +443,7 @@ const ActiveUsersPanel = ({
     <div key={panelId} className={`home-quadrant active-users-quadrant panel-${index + 1}`}>
       <div className="quadrant-header">
         <MdPeople className="quadrant-icon" />
-        <h2>Active Users</h2>
+        <h2>Users</h2>
         <span className="quadrant-subtitle">Last 30 minutes</span>
       </div>
       <div className="quadrant-content">
@@ -297,6 +475,54 @@ const ActiveUsersPanel = ({
             ))}
           </div>
         )}
+
+        {/* Clarity Rankings */}
+        <div className="clarity-section">
+          <div className="clarity-section-header">
+            <MdAutoAwesome className="clarity-icon" />
+            <h3>Clarity Rankings</h3>
+          </div>
+          {clarityLoading ? (
+            <div className="clarity-loading-small">Loading...</div>
+          ) : clarityError ? (
+            <div className="clarity-error-small">{clarityError}</div>
+          ) : userRankings.length === 0 ? (
+            <div className="clarity-empty-small">No comment data</div>
+          ) : (
+            <div className="clarity-compact-rankings">
+              <div className="clarity-compact-column">
+                <div className="clarity-compact-header top">Top 5</div>
+                {top5.map((user, idx) => (
+                  <div key={user.userId} className="clarity-compact-item">
+                    <span className="clarity-compact-rank">{idx + 1}</span>
+                    <div className={`clarity-compact-gem ${getScoreClass(user.avgScore)}`}>
+                      <GemIcon size={14} />
+                    </div>
+                    <span className="clarity-compact-name">{user.userName}</span>
+                    <span className={`clarity-compact-score ${getScoreClass(user.avgScore)}`}>
+                      {user.avgScore.toFixed(1)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="clarity-compact-column">
+                <div className="clarity-compact-header bottom">Bottom 5</div>
+                {bottom5.map((user, idx) => (
+                  <div key={user.userId} className="clarity-compact-item">
+                    <span className="clarity-compact-rank">{userRankings.length - idx}</span>
+                    <div className={`clarity-compact-gem ${getScoreClass(user.avgScore)}`}>
+                      <GemIcon size={14} />
+                    </div>
+                    <span className="clarity-compact-name">{user.userName}</span>
+                    <span className={`clarity-compact-score ${getScoreClass(user.avgScore)}`}>
+                      {user.avgScore.toFixed(1)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

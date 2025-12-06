@@ -8,8 +8,7 @@ import {
   MdHistory,
   MdPeople,
   MdSpeed,
-  MdDateRange,
-  MdAutoAwesome
+  MdDateRange
 } from 'react-icons/md';
 import { FaDatabase } from 'react-icons/fa';
 
@@ -22,11 +21,9 @@ export const PANEL_CONFIG = {
   attention: { id: 'attention', name: 'My Projects Needing Attention', icon: MdBuild, adminOnly: false },
   projectHealth: { id: 'projectHealth', name: 'Project Health Rankings', icon: MdFavorite, adminOnly: false },
   timeline: { id: 'timeline', name: 'Project Timeline', icon: MdDateRange, adminOnly: false },
-  clarity: { id: 'clarity', name: 'Clarity Rankings', icon: MdAutoAwesome, adminOnly: true },
   audit: { id: 'audit', name: 'Audit Log', icon: MdHistory, adminOnly: true },
-  database: { id: 'database', name: 'Database Stats', icon: FaDatabase, adminOnly: true },
-  activeUsers: { id: 'activeUsers', name: 'Active Users', icon: MdPeople, adminOnly: true },
-  performance: { id: 'performance', name: 'Page Performance', icon: MdSpeed, adminOnly: true }
+  activeUsers: { id: 'activeUsers', name: 'User Insights', icon: MdPeople, adminOnly: true },
+  performance: { id: 'performance', name: 'Performance', icon: MdSpeed, adminOnly: true }
 };
 
 // Layout configurations

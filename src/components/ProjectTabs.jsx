@@ -1,5 +1,5 @@
 import React from 'react';
-import { MdGridView, MdFeedback, MdWarning, MdFlag } from 'react-icons/md';
+import { MdGridView, MdFeedback, MdWarning, MdFlag, MdComment } from 'react-icons/md';
 import './ProjectTabs.css';
 
 const ProjectTabs = ({
@@ -8,6 +8,7 @@ const ProjectTabs = ({
   feedbackCount = 0,
   recoveryPlanCount = 0,
   milestonesCount = 0,
+  commentaryCount = 0,
   needsRecoveryPlan = false,
   currentUser
 }) => {
@@ -18,10 +19,14 @@ const ProjectTabs = ({
       icon: <MdGridView />
     },
     {
+      id: 'commentary',
+      label: 'Commentary',
+      icon: <MdComment />
+    },
+    {
       id: 'milestones',
       label: 'Milestones',
-      icon: <MdFlag />,
-      badge: milestonesCount > 0 ? milestonesCount : null
+      icon: <MdFlag />
     },
     {
       id: 'feedback',

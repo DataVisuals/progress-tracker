@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { MdAssessment } from 'react-icons/md';
 import './PortfolioSelector.css';
 
 export default function PortfolioSelector({
   portfolios,
   selectedPortfolio,
   onPortfolioChange,
-  onManagePortfolios
+  onManagePortfolios,
+  onPortfolioReview
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -34,6 +36,14 @@ export default function PortfolioSelector({
   const handleManageClick = () => {
     if (onManagePortfolios) {
       onManagePortfolios();
+    }
+    setIsOpen(false);
+  };
+
+  const handleReviewClick = (portfolioId, e) => {
+    e.stopPropagation();
+    if (onPortfolioReview) {
+      onPortfolioReview(portfolioId);
     }
     setIsOpen(false);
   };
@@ -139,6 +149,15 @@ export default function PortfolioSelector({
                     />
                     <span className="option-name">{portfolio.name}</span>
                   </div>
+                  {onPortfolioReview && (
+                    <button
+                      className="portfolio-review-btn"
+                      onClick={(e) => handleReviewClick(portfolio.id, e)}
+                      title="Portfolio Review"
+                    >
+                      <MdAssessment />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

@@ -40,6 +40,39 @@ const getDateTime = (daysOffset, hoursOffset = 0) => {
   return date.toISOString();
 };
 
+// Helper to generate period dates based on frequency
+const generatePeriodDates = (startDate, endDate, frequency) => {
+  const dates = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  let current = new Date(start);
+
+  while (current <= end) {
+    dates.push(current.toISOString().split('T')[0]);
+
+    // Increment based on frequency
+    switch (frequency) {
+      case 'weekly':
+        current.setDate(current.getDate() + 7);
+        break;
+      case 'fortnightly':
+        current.setDate(current.getDate() + 14);
+        break;
+      case 'monthly':
+        current.setMonth(current.getMonth() + 1);
+        break;
+      case 'quarterly':
+        current.setMonth(current.getMonth() + 3);
+        break;
+      default:
+        current.setMonth(current.getMonth() + 1); // Default to monthly
+    }
+  }
+
+  return dates;
+};
+
 async function seedIllustrativeExamples() {
   console.log('📦 Seeding Illustrative Examples Portfolio...');
 
@@ -170,18 +203,25 @@ async function seedIllustrativeExamples() {
 
       const metricId = metricResult.lastInsertRowid;
 
-      // Add metric periods
-      metric.data.forEach(period => {
+      // Add metric periods with commentary
+      metric.data.forEach((period, idx) => {
         const expected = metric.finalTarget * ((120 + period.offset) / 180);
+        const commentary = idx === metric.data.length - 1
+          ? `<p>Latest update: ${metric.name} is tracking ${period.complete >= expected ? 'ahead of' : 'behind'} schedule. ${period.complete >= expected ? 'Great progress!' : 'Action needed to catch up.'}</p>`
+          : idx === metric.data.length - 2
+          ? `<p>Progress update: ${metric.name} ${period.complete >= expected ? 'continues strong performance' : 'needs attention'}.</p>`
+          : null;
+
         database.prepare(`
-          INSERT INTO metric_periods (metric_id, reporting_date, expected, target, complete)
-          VALUES (?, ?, ?, ?, ?)
+          INSERT INTO metric_periods (metric_id, reporting_date, expected, target, complete, commentary)
+          VALUES (?, ?, ?, ?, ?, ?)
         `).run(
           metricId,
           getDate(period.offset),
           expected,
           metric.finalTarget,
-          period.complete
+          period.complete,
+          commentary
         );
       });
     });
@@ -271,12 +311,15 @@ async function seedIllustrativeExamples() {
 
       const metricId = metricResult.lastInsertRowid;
 
-      metric.data.forEach(period => {
+      metric.data.forEach((period, idx) => {
         const expected = metric.finalTarget * ((90 + period.offset) / 180);
+        const commentary = idx === metric.data.length - 1
+          ? `<p>Latest: ${metric.name} ${period.complete >= expected ? 'performing well' : 'requires attention'}.</p>`
+          : null;
         database.prepare(`
-          INSERT INTO metric_periods (metric_id, reporting_date, expected, target, complete)
-          VALUES (?, ?, ?, ?, ?)
-        `).run(metricId, getDate(period.offset), expected, metric.finalTarget, period.complete);
+          INSERT INTO metric_periods (metric_id, reporting_date, expected, target, complete, commentary)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(metricId, getDate(period.offset), expected, metric.finalTarget, period.complete, commentary);
       });
     });
 
@@ -337,12 +380,15 @@ async function seedIllustrativeExamples() {
       { offset: 0, complete: 62 }
     ];
 
-    onboardingData.forEach(period => {
+    onboardingData.forEach((period, idx) => {
       const expected = 85 * ((45 + period.offset) / 90);
+      const commentary = idx === onboardingData.length - 1
+        ? `<p>Onboarding completion ${period.complete >= expected ? 'exceeding' : 'below'} target. ${period.complete >= expected ? 'Excellent adoption rate!' : 'Consider improving user experience.'}</p>`
+        : null;
       database.prepare(`
-        INSERT INTO metric_periods (metric_id, reporting_date, expected, target, complete)
-        VALUES (?, ?, ?, ?, ?)
-      `).run(onboardingMetricId, getDate(period.offset), expected, 85, period.complete);
+        INSERT INTO metric_periods (metric_id, reporting_date, expected, target, complete, commentary)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(onboardingMetricId, getDate(period.offset), expected, 85, period.complete, commentary);
     });
 
     // Project 4: Jira Migration
@@ -378,6 +424,8 @@ async function seedIllustrativeExamples() {
     });
 
     // Jira Metric
+    const jiraStartDate = getDate(-30);
+    const jiraEndDate = getDate(30);
     const jiraMetric = database.prepare(`
       INSERT INTO metrics (project_id, name, description, owner_id, start_date, end_date, frequency, progression_type, final_target)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -386,27 +434,33 @@ async function seedIllustrativeExamples() {
       '[Example] Projects Migrated',
       'Number of Jira projects successfully migrated to cloud',
       userId,
-      getDate(-30),
-      getDate(30),
+      jiraStartDate,
+      jiraEndDate,
       'weekly',
       'linear',
       150
     );
 
     const jiraMetricId = jiraMetric.lastInsertRowid;
-    const jiraData = [
-      { offset: -30, complete: 0 },
-      { offset: -20, complete: 25 },
-      { offset: -10, complete: 58 },
-      { offset: 0, complete: 89 }
-    ];
+    const jiraPeriodDates = generatePeriodDates(jiraStartDate, jiraEndDate, 'weekly');
+    const totalPeriods = jiraPeriodDates.length;
 
-    jiraData.forEach(period => {
-      const expected = 150 * ((30 + period.offset) / 60);
+    jiraPeriodDates.forEach((periodDate, index) => {
+      // Linear progression from 0 to 150
+      const progress = index / (totalPeriods - 1); // 0 to 1
+      const expected = 150 * progress;
+      // Actual complete varies slightly from expected for realism
+      const variance = (Math.random() - 0.5) * 20; // +/- 10
+      const complete = Math.max(0, Math.min(150, expected + variance));
+
+      const commentary = index === totalPeriods - 1
+        ? `<p>Jira migration ${Math.round(complete) >= Math.round(expected) ? 'on track' : 'slightly behind'}. Team training ${Math.round(complete) >= Math.round(expected) ? 'proceeding well' : 'needs focus'}.</p>`
+        : null;
+
       database.prepare(`
-        INSERT INTO metric_periods (metric_id, reporting_date, expected, target, complete)
-        VALUES (?, ?, ?, ?, ?)
-      `).run(jiraMetricId, getDate(period.offset), expected, 150, period.complete);
+        INSERT INTO metric_periods (metric_id, reporting_date, expected, target, complete, commentary)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(jiraMetricId, periodDate, Math.round(expected), 150, Math.round(complete), commentary);
     });
 
     // Project 5: Tech Debt & Obsolescence Tracking
@@ -486,12 +540,15 @@ async function seedIllustrativeExamples() {
 
       const metricId = metricResult.lastInsertRowid;
 
-      metric.data.forEach(period => {
+      metric.data.forEach((period, idx) => {
         const expected = metric.finalTarget * ((60 + period.offset) / 180);
+        const commentary = idx === metric.data.length - 1
+          ? `<p>${metric.name} status: ${period.complete >= expected ? 'Good progress on tech debt remediation' : 'Tech debt accumulating, action needed'}.</p>`
+          : null;
         database.prepare(`
-          INSERT INTO metric_periods (metric_id, reporting_date, expected, target, complete)
-          VALUES (?, ?, ?, ?, ?)
-        `).run(metricId, getDate(period.offset), expected, metric.finalTarget, period.complete);
+          INSERT INTO metric_periods (metric_id, reporting_date, expected, target, complete, commentary)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(metricId, getDate(period.offset), expected, metric.finalTarget, period.complete, commentary);
       });
     });
 
@@ -535,6 +592,29 @@ async function seedIllustrativeExamples() {
         userId,
         userId,
         getDateTime(-5)
+      );
+
+      // Add project comments
+      database.prepare(`
+        INSERT INTO project_comments (project_id, comment_text, created_by, created_at, creator_name)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(
+        project.id,
+        `<p><strong>Latest Update:</strong> ${project.name} project is progressing well. Team collaboration has been excellent and stakeholders are engaged.</p><p>Key achievements this period include successful milestone completion and positive feedback from early users.</p>`,
+        userId,
+        getDateTime(-2),
+        'Admin User'
+      );
+
+      database.prepare(`
+        INSERT INTO project_comments (project_id, comment_text, created_by, created_at, creator_name)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(
+        project.id,
+        `<p>Previous update: Initial planning phase completed. Resources allocated and timeline confirmed with all stakeholders.</p>`,
+        userId,
+        getDateTime(-14),
+        'Admin User'
       );
 
       // Add project links

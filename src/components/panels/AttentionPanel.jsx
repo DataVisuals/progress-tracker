@@ -60,14 +60,15 @@ const AttentionPanel = ({
                   ) : (
                     userInconsistencies.map((issue, idx) => {
                       let issueTitle = '';
+                      let pmName = issue.pm_name || 'Unknown PM';
                       if (issue.type === 'missing_recovery_plan' && issue.metric_name) {
-                        issueTitle = `${issue.metric_name} is ${issue.rag_status?.toUpperCase()} - no recovery plan`;
+                        issueTitle = `Recovery plan needed`;
                       } else if (issue.type === 'missing_metric_description' && issue.metric_name) {
-                        issueTitle = `${issue.metric_name} - missing description`;
+                        issueTitle = `Metric description needed`;
                       } else if (issue.type === 'missing_project_description') {
-                        issueTitle = `Missing project description`;
+                        issueTitle = `Project description needed`;
                       } else if (issue.type === 'missing_documentation') {
-                        issueTitle = `No documentation links`;
+                        issueTitle = `Documentation links needed`;
                       } else {
                         issueTitle = issue.details;
                       }
@@ -77,8 +78,14 @@ const AttentionPanel = ({
                             {issue.type === 'missing_recovery_plan' ? <span className={`metric-rag-marker ${issue.rag_status}`} /> : <MdWarning className="attention-icon" />}
                           </div>
                           <div className="attention-details">
-                            <div className="attention-title">{issueTitle}</div>
-                            <div className="attention-project">{issue.project_name}</div>
+                            <div className="attention-title">
+                              {issueTitle}
+                              {issue.metric_name && <span className="attention-metric-name"> · {issue.metric_name}</span>}
+                            </div>
+                            <div className="attention-project">
+                              {issue.project_name}
+                              <span className="attention-pm"> · PM: {pmName}</span>
+                            </div>
                           </div>
                           <MdArrowForward className="attention-arrow" />
                         </div>
@@ -159,14 +166,15 @@ const AttentionPanel = ({
           <div className="attention-list">
             {userInconsistencies.map((issue, idx) => {
               let issueTitle = '';
+              let pmName = issue.pm_name || 'Unknown PM';
               if (issue.type === 'missing_recovery_plan' && issue.metric_name) {
-                issueTitle = `${issue.metric_name} is ${issue.rag_status?.toUpperCase()} but has no recovery plan`;
+                issueTitle = `Recovery plan needed`;
               } else if (issue.type === 'missing_metric_description' && issue.metric_name) {
-                issueTitle = `${issue.metric_name} is missing a description`;
+                issueTitle = `Metric description needed`;
               } else if (issue.type === 'missing_project_description') {
-                issueTitle = `${issue.project_name} is missing a description`;
+                issueTitle = `Project description needed`;
               } else if (issue.type === 'missing_documentation') {
-                issueTitle = `${issue.project_name} has no documentation links`;
+                issueTitle = `Documentation links needed`;
               } else {
                 issueTitle = issue.details;
               }
@@ -176,8 +184,15 @@ const AttentionPanel = ({
                     {issue.type === 'missing_recovery_plan' ? <span className={`metric-rag-marker ${issue.rag_status}`} /> : <MdWarning className="attention-icon" />}
                   </div>
                   <div className="attention-details">
-                    <div className="attention-title">{issueTitle}</div>
-                    <div className="attention-project">{issue.project_name}{issue.first_detected && <span className="attention-age"> · {formatTimestamp(issue.first_detected)}</span>}</div>
+                    <div className="attention-title">
+                      {issueTitle}
+                      {issue.metric_name && <span className="attention-metric-name"> · {issue.metric_name}</span>}
+                    </div>
+                    <div className="attention-project">
+                      {issue.project_name}
+                      <span className="attention-pm"> · PM: {pmName}</span>
+                      {issue.first_detected && <span className="attention-age"> · {formatTimestamp(issue.first_detected)}</span>}
+                    </div>
                   </div>
                   <MdArrowForward className="attention-arrow" />
                 </div>

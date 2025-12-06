@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@iflow-mcp/chrome-devtools-mcp", "--headless=false"],
+      "env": {}
+    }
+  }
+}
