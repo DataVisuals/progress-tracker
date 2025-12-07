@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { MdDateRange, MdCheckCircle } from 'react-icons/md';
 import './ProjectTimelinePanel.css';
 
@@ -15,6 +15,7 @@ const ProjectTimelinePanel = ({
 }) => {
   const [hoveredProject, setHoveredProject] = useState(null);
   const [hoveredMilestone, setHoveredMilestone] = useState(null);
+  const scrollWrapperRef = useRef(null);
 
   // Get projects with end dates, filtered by space
   const timelineData = useMemo(() => {
@@ -90,6 +91,18 @@ const ProjectTimelinePanel = ({
     const dateMs = date.getTime() - min.getTime();
     return Math.max(0, Math.min(100, (dateMs / totalMs) * 100));
   };
+
+  // Scroll to today's position on mount
+  useEffect(() => {
+    if (scrollWrapperRef.current && timelineData.range) {
+      const todayPosition = getPosition(timelineData.range.now);
+      const scrollWidth = scrollWrapperRef.current.scrollWidth;
+      const containerWidth = scrollWrapperRef.current.clientWidth;
+      // Scroll to center today's position
+      const scrollLeft = (scrollWidth * todayPosition / 100) - (containerWidth / 2);
+      scrollWrapperRef.current.scrollLeft = Math.max(0, scrollLeft);
+    }
+  }, [timelineData.range]);
 
   // Generate time markers for the timeline - show months with spacing to avoid overlap
   const getTimeMarkers = () => {
@@ -193,7 +206,7 @@ const ProjectTimelinePanel = ({
     return (
       <div className={`timeline-container ${isFullscreen ? 'fullscreen' : ''}`}>
         {/* Scrollable content wrapper */}
-        <div className="timeline-scroll-wrapper">
+        <div className="timeline-scroll-wrapper" ref={scrollWrapperRef}>
           {/* Time axis header - sticky */}
           <div className="timeline-axis-sticky">
             <div className="timeline-axis">
