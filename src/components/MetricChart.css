@@ -2151,7 +2151,7 @@
 }
 
 :root.dark-mode .custom-legend {
-  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  background: #111827;
   border-color: #374151;
 }
 
