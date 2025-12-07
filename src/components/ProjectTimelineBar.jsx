@@ -2,7 +2,7 @@ import React from 'react';
 import { MdCheckCircle, MdFlag } from 'react-icons/md';
 import './ProjectTimelineBar.css';
 
-const ProjectTimelineBar = ({ milestones }) => {
+const ProjectTimelineBar = ({ milestones, startDate, endDate }) => {
   const [hoveredElement, setHoveredElement] = React.useState(null);
 
   const formatDate = (dateString) => {
@@ -50,16 +50,23 @@ const ProjectTimelineBar = ({ milestones }) => {
     new Date(a.target_date) - new Date(b.target_date)
   );
 
-  // Use first and last milestone dates as timeline bounds with some padding
-  const firstMilestoneDate = new Date(sortedMilestones[0].target_date);
-  const lastMilestoneDate = new Date(sortedMilestones[sortedMilestones.length - 1].target_date);
+  // Use project dates if provided, otherwise fall back to milestone dates with padding
+  let firstDate, lastDate;
 
-  // Add 5% padding on each side for visual breathing room
-  const rawSpan = lastMilestoneDate - firstMilestoneDate;
-  const padding = rawSpan * 0.05;
+  if (startDate && endDate) {
+    // Use project dates as timeline bounds
+    firstDate = new Date(startDate);
+    lastDate = new Date(endDate);
+  } else {
+    // Fall back to milestone dates with padding for visual breathing room
+    const firstMilestoneDate = new Date(sortedMilestones[0].target_date);
+    const lastMilestoneDate = new Date(sortedMilestones[sortedMilestones.length - 1].target_date);
+    const rawSpan = lastMilestoneDate - firstMilestoneDate;
+    const padding = rawSpan * 0.05;
+    firstDate = new Date(firstMilestoneDate.getTime() - padding);
+    lastDate = new Date(lastMilestoneDate.getTime() + padding);
+  }
 
-  const firstDate = new Date(firstMilestoneDate.getTime() - padding);
-  const lastDate = new Date(lastMilestoneDate.getTime() + padding);
   const totalSpan = lastDate - firstDate;
   const today = new Date();
 
@@ -72,7 +79,7 @@ const ProjectTimelineBar = ({ milestones }) => {
   }
 
   // Calculate days to completion
-  const daysToCompletion = getDaysRemaining(lastMilestoneDate);
+  const daysToCompletion = getDaysRemaining(lastDate);
 
   const hasManyMilestones = sortedMilestones.length > 5;
 
@@ -83,8 +90,8 @@ const ProjectTimelineBar = ({ milestones }) => {
   return (
     <div className="project-timeline-bar">
       <div className="timeline-header">
-        <span className="timeline-start-date">{formatDate(firstMilestoneDate)}</span>
-        <span className="timeline-end-date">{formatDate(lastMilestoneDate)}</span>
+        <span className="timeline-start-date">{formatDate(firstDate)}</span>
+        <span className="timeline-end-date">{formatDate(lastDate)}</span>
       </div>
       <div className={`timeline-track ${hasManyMilestones ? 'many-milestones' : ''}`}>
         {/* Timeline line */}
@@ -102,7 +109,7 @@ const ProjectTimelineBar = ({ milestones }) => {
           {hoveredElement === 'start' && (
             <div className="terminus-tooltip">
               <strong>Project Start</strong>
-              <span>{formatDate(firstMilestoneDate)}</span>
+              <span>{formatDate(firstDate)}</span>
             </div>
           )}
         </div>
@@ -158,7 +165,7 @@ const ProjectTimelineBar = ({ milestones }) => {
           {hoveredElement === 'end' && (
             <div className="terminus-tooltip">
               <strong>Project End</strong>
-              <span>{formatDate(lastMilestoneDate)}</span>
+              <span>{formatDate(lastDate)}</span>
               <span className="tooltip-countdown">
                 {daysToCompletion >= 0 ? `${formatTimeRemaining(daysToCompletion)} remaining` : `${formatTimeRemaining(daysToCompletion)}`}
               </span>

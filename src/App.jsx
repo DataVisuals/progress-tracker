@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Build timestamp - updated automatically before each commit to gh
-const BUILD_TIMESTAMP = '2025-12-07 20:04:22';
+const BUILD_TIMESTAMP = '2025-12-07 20:18:39';
 import Select from 'react-select';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';
@@ -2139,6 +2139,8 @@ function App() {
                   projectId={selectedProject}
                   currentUser={currentUser}
                   onMilestonesChange={loadProjectMilestonesCount}
+                  startDate={currentProject?.start_date}
+                  endDate={currentProject?.end_date}
                 />
               </div>
             )}

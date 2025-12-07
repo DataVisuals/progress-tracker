@@ -4,7 +4,7 @@ import { api } from '../api/client';
 import ProjectTimelineBar from './ProjectTimelineBar';
 import './Milestones.css';
 
-const Milestones = ({ projectId, currentUser, onMilestonesChange }) => {
+const Milestones = ({ projectId, currentUser, onMilestonesChange, startDate, endDate }) => {
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -190,7 +190,11 @@ const Milestones = ({ projectId, currentUser, onMilestonesChange }) => {
       ) : (
         <>
           {/* Horizontal Timeline View */}
-          <ProjectTimelineBar milestones={milestones} />
+          <ProjectTimelineBar
+            milestones={milestones}
+            startDate={startDate}
+            endDate={endDate}
+          />
 
           {/* Compact Milestone List */}
           <div className="milestones-list">
