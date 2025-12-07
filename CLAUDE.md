@@ -1,3 +1,4 @@
 - launch in the sim each time we test iphone features
 - Let me know when you add dependencies
 - Always use ./restart.sh to start and stop
+- update the user hover timestamp before every gh commit

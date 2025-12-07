@@ -42,10 +42,35 @@ const ProjectTimelinePanel = ({
       startDate: p.start_date ? new Date(p.start_date) : null
     })).sort((a, b) => a.endDate - b.endDate);
 
-    // Calculate timeline range
+    // Calculate timeline range - include milestone dates
     const now = new Date();
-    const minDate = new Date(Math.min(now, ...projectsWithDates.map(p => p.startDate || p.endDate)));
-    const maxDate = new Date(Math.max(...projectsWithDates.map(p => p.endDate)));
+
+    // Collect all milestone dates for the filtered projects
+    const milestoneDates = [];
+    if (milestones && typeof milestones === 'object') {
+      const projectIds = new Set(projectsWithDates.map(p => p.id));
+      // milestones is an object with project IDs as keys
+      Object.entries(milestones).forEach(([projectId, projectMilestones]) => {
+        if (projectIds.has(parseInt(projectId, 10)) && Array.isArray(projectMilestones)) {
+          projectMilestones.forEach(m => {
+            if (m.target_date) {
+              milestoneDates.push(new Date(m.target_date));
+            }
+          });
+        }
+      });
+    }
+
+    // Calculate min/max considering project dates AND milestone dates
+    const allDates = [
+      now,
+      ...projectsWithDates.map(p => p.startDate).filter(d => d !== null),
+      ...projectsWithDates.map(p => p.endDate).filter(d => d !== null),
+      ...milestoneDates
+    ];
+
+    const minDate = new Date(Math.min(...allDates.filter(d => d instanceof Date && !isNaN(d))));
+    const maxDate = new Date(Math.max(...allDates.filter(d => d instanceof Date && !isNaN(d))));
 
     // Add padding to range (1 month before, 2 months after)
     minDate.setMonth(minDate.getMonth() - 1);
@@ -55,7 +80,7 @@ const ProjectTimelinePanel = ({
       projects: projectsWithDates,
       range: { min: minDate, max: maxDate, now }
     };
-  }, [projects, portfolios, selectedSpace]);
+  }, [projects, portfolios, selectedSpace, milestones]);
 
   // Calculate position on timeline (0-100%)
   const getPosition = (date) => {
@@ -77,9 +102,9 @@ const ProjectTimelinePanel = ({
 
     while (current <= max) {
       const position = getPosition(current);
-      // Only add marker if it's not too close to edges (avoid clipping and intrusion)
-      // Need 5% on left to account for centered labels extending left
-      if (position >= 5 && position <= 97) {
+      // Show all markers within reasonable bounds to ensure milestone dates are labeled
+      // Allow markers from 0% to 100% to show full timeline coverage
+      if (position >= 0 && position <= 100) {
         markers.push({
           date: new Date(current),
           position,
@@ -248,8 +273,21 @@ const ProjectTimelinePanel = ({
                   <div
                     className="tubemap-terminus start"
                     style={{ left: `${startPosition}%` }}
+                    onMouseEnter={() => setHoveredProject(project.id)}
+                    onMouseLeave={() => setHoveredProject(null)}
                   >
                     <div className="terminus-circle" style={{ background: statusColor }} />
+                    {hoveredProject === project.id && (
+                      <div className="project-tooltip start-tooltip">
+                        <strong>{project.name}</strong>
+                        {project.startDate && (
+                          <span className="tooltip-date">Start: {formatDate(project.startDate)}</span>
+                        )}
+                        {project.initiative_manager && (
+                          <span className="tooltip-pm">PM: {project.initiative_manager}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Milestones */}
@@ -314,6 +352,16 @@ const ProjectTimelinePanel = ({
                       </div>
                     )}
                   </div>
+
+                  {/* Today marker - inside track for correct positioning */}
+                  {timelineData.range && (
+                    <div
+                      className="timeline-today-marker-row"
+                      style={{ left: `${nowPosition}%` }}
+                    >
+                      <div className="today-line-segment" />
+                    </div>
+                  )}
                 </div>
 
                 {/* Time remaining badge */}
@@ -327,12 +375,6 @@ const ProjectTimelinePanel = ({
               </div>
             );
           })}
-          {/* Today marker - single continuous line across all projects */}
-          {timelineData.range && (
-            <div className="timeline-today-marker" style={{ left: `calc(250px + (100% - 250px - 60px) * ${getPosition(timelineData.range.now) / 100})` }}>
-              <div className="today-line-continuous" />
-            </div>
-          )}
         </div>
         </div>
       </div>

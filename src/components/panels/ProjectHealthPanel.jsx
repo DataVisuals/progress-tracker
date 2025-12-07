@@ -55,7 +55,10 @@ const ProjectHealthPanel = ({
             transform="rotate(-90 18 18)"
           />
         </svg>
-        <span className="health-gauge-value">{Math.round(project.healthScore)}<span className="percent-sign">%</span></span>
+        <span className="health-gauge-value" style={{ color: getHealthColor(project.healthScore) }}>
+          {Math.round(project.healthScore)}
+          {forDock && <span className="percent-sign">%</span>}
+        </span>
       </div>
       <div className="health-project-info">
         <span

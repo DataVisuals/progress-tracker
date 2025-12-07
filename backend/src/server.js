@@ -2743,6 +2743,49 @@ function createApp(dbPath) {
     }
   });
 
+  // Get ALL project dependencies (for dependency graph visualization)
+  app.get('/api/dependencies/all', async (req, res) => {
+    try {
+      const dependencies = await dbAll(`
+        SELECT
+          pd.id,
+          pd.project_id,
+          pd.depends_on_project_id,
+          p1.name as project_name,
+          p1.portfolio_id as project_portfolio_id,
+          pf1.name as project_portfolio_name,
+          pf1.color as project_portfolio_color,
+          p2.name as depends_on_name,
+          p2.portfolio_id as depends_on_portfolio_id,
+          pf2.name as depends_on_portfolio_name,
+          pf2.color as depends_on_portfolio_color
+        FROM project_dependencies pd
+        JOIN projects p1 ON pd.project_id = p1.id
+        JOIN projects p2 ON pd.depends_on_project_id = p2.id
+        LEFT JOIN portfolios pf1 ON p1.portfolio_id = pf1.id
+        LEFT JOIN portfolios pf2 ON p2.portfolio_id = pf2.id
+        ORDER BY p1.name, p2.name
+      `);
+
+      // Also get all projects to include ones without dependencies
+      const allProjects = await dbAll(`
+        SELECT
+          p.id,
+          p.name,
+          p.portfolio_id,
+          pf.name as portfolio_name,
+          pf.color as portfolio_color
+        FROM projects p
+        LEFT JOIN portfolios pf ON p.portfolio_id = pf.id
+        ORDER BY p.name
+      `);
+
+      res.json({ dependencies, projects: allProjects });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== METRICS =====
   // (Route moved below to include ORDER BY display_order and owner_name join)
 
@@ -2834,7 +2877,7 @@ function createApp(dbPath) {
       }
   
       // Extract all editable fields from request body
-      const { name, description, amber_tolerance, red_tolerance, final_target, progression_type, metric_type, start_date, end_date, recalculate_expected } = req.body;
+      const { name, description, amber_tolerance, red_tolerance, final_target, progression_type, metric_type, start_date, end_date, recalculate_expected, show_in_portfolio_review } = req.body;
 
       // Build update query for provided fields
       const updates = [];
@@ -2896,7 +2939,13 @@ function createApp(dbPath) {
         oldValues.end_date = metric.end_date;
         newValues.end_date = end_date;
       }
-  
+      if (show_in_portfolio_review !== undefined) {
+        updates.push('show_in_portfolio_review = ?');
+        values.push(show_in_portfolio_review ? 1 : 0);
+        oldValues.show_in_portfolio_review = metric.show_in_portfolio_review;
+        newValues.show_in_portfolio_review = show_in_portfolio_review ? 1 : 0;
+      }
+
       if (updates.length === 0) {
         return res.status(400).json({ error: 'No fields to update' });
       }
@@ -6741,6 +6790,29 @@ function createApp(dbPath) {
       // Column already exists, that's fine
     }
 
+    // Migration: Add show_in_portfolio_review column to metrics table
+    try {
+      await dbRun(`ALTER TABLE metrics ADD COLUMN show_in_portfolio_review INTEGER DEFAULT 1`);
+      console.log('✅ Added show_in_portfolio_review column to metrics table');
+
+      // Set first 5 metrics per project to show in portfolio review
+      await dbRun(`
+        UPDATE metrics
+        SET show_in_portfolio_review = CASE
+          WHEN (
+            SELECT COUNT(*)
+            FROM metrics m2
+            WHERE m2.project_id = metrics.project_id
+            AND (m2.display_order < metrics.display_order OR (m2.display_order = metrics.display_order AND m2.id < metrics.id))
+          ) < 5 THEN 1
+          ELSE 0
+        END
+      `);
+      console.log('✅ Set first 5 metrics per project to show in portfolio review');
+    } catch (err) {
+      // Column already exists, that's fine
+    }
+
     // Migration: Add commentary column to metric_periods table
     try {
       await dbRun(`ALTER TABLE metric_periods ADD COLUMN commentary TEXT`);
@@ -7109,6 +7181,104 @@ function createApp(dbPath) {
       console.log('✅ Created index for milestones');
     } catch (err) {
       // Index already exists, that's fine
+    }
+
+    // Migration: Create project_comments table
+    try {
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS project_comments (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          project_id INTEGER NOT NULL,
+          comment_text TEXT NOT NULL,
+          created_by INTEGER,
+          creator_name TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+          FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+        )
+      `);
+      console.log('✅ Created project_comments table');
+    } catch (err) {
+      // Table already exists, that's fine
+    }
+
+    // Migration: Create index for project_comments
+    try {
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_project_comments_project ON project_comments(project_id)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_project_comments_created ON project_comments(created_at DESC)`);
+      console.log('✅ Created indexes for project_comments');
+    } catch (err) {
+      // Indexes already exist, that's fine
+    }
+
+    // Migration: Add creator_name column to project_comments if missing
+    try {
+      // Check if column exists
+      const tableInfo = await dbAll(`PRAGMA table_info(project_comments)`);
+      const hasCreatorName = tableInfo.some(col => col.name === 'creator_name');
+
+      if (!hasCreatorName) {
+        await dbRun(`ALTER TABLE project_comments ADD COLUMN creator_name TEXT`);
+        console.log('✅ Added creator_name column to project_comments');
+      }
+    } catch (err) {
+      // Column already exists or other error
+    }
+
+    // Migration: Populate project_comments for Illustrative Examples projects
+    try {
+      // Get all Illustrative Examples projects that don't have comments
+      const illustrativeProjects = await dbAll(`
+        SELECT p.id, p.name
+        FROM projects p
+        INNER JOIN portfolios port ON p.portfolio_id = port.id
+        WHERE port.name = 'Illustrative Examples'
+        AND NOT EXISTS (
+          SELECT 1 FROM project_comments pc WHERE pc.project_id = p.id
+        )
+      `);
+
+      if (illustrativeProjects.length > 0) {
+        // Get admin user
+        const admin = await dbGet('SELECT id FROM users WHERE email = ?', ['admin@example.com']);
+        const adminId = admin?.id || 1;
+
+        // Helper to get date strings relative to today
+        const getDateTime = (daysOffset) => {
+          const date = new Date();
+          date.setDate(date.getDate() + daysOffset);
+          return date.toISOString();
+        };
+
+        for (const project of illustrativeProjects) {
+          // Add 2 comments per project
+          await dbRun(`
+            INSERT INTO project_comments (project_id, comment_text, created_by, creator_name, created_at)
+            VALUES (?, ?, ?, ?, ?)
+          `, [
+            project.id,
+            `<p><strong>Latest Update:</strong> ${project.name} project is progressing well. Team collaboration has been excellent and stakeholders are engaged.</p><p>Key achievements this period include successful milestone completion and positive feedback from early users.</p>`,
+            adminId,
+            'Admin User',
+            getDateTime(-2)
+          ]);
+
+          await dbRun(`
+            INSERT INTO project_comments (project_id, comment_text, created_by, creator_name, created_at)
+            VALUES (?, ?, ?, ?, ?)
+          `, [
+            project.id,
+            `<p>Previous update: Initial planning phase completed. Resources allocated and timeline confirmed with all stakeholders.</p>`,
+            adminId,
+            'Admin User',
+            getDateTime(-14)
+          ]);
+        }
+        console.log(`✅ Added project comments for ${illustrativeProjects.length} Illustrative Examples projects`);
+      }
+    } catch (err) {
+      console.log('ℹ️  Project comments migration skipped or failed:', err.message);
     }
 
     // Migration: Add performance indexes for common queries

@@ -186,63 +186,57 @@ const DashboardConfigModal = ({
 
           {/* Panel Selection */}
           <div className="config-section">
-            <h3>Panels ({requiredPanelCount} slots)</h3>
-            <div className="panel-slots">
+            <h3>Panel Configuration</h3>
+            <div className="panel-slots-grid">
               {Array.from({ length: requiredPanelCount }).map((_, index) => {
                 const selectedPanelId = selectedPanels[index];
                 const selectedPanelConfig = selectedPanelId ? panelConfig[selectedPanelId] : null;
 
                 return (
-                  <div key={index} className={`panel-slot ${index === requiredPanelCount - 1 && selectedLayout === '2x2-1x1' ? 'full-width' : ''}`}>
+                  <div key={index} className={`panel-slot-wrapper ${index === requiredPanelCount - 1 && selectedLayout === '2x2-1x1' ? 'full-width' : ''}`}>
                     <div className="slot-header">
-                      <span className="slot-number">Panel {index + 1}</span>
+                      <MdDragIndicator className="drag-icon" />
+                      <span className="slot-number">Slot {index + 1}</span>
                       {selectedLayout === '2x2-1x1' && index === 4 && (
                         <span className="slot-hint">Full Width</span>
                       )}
                     </div>
-                    <select
-                      value={selectedPanelId || ''}
-                      onChange={(e) => handlePanelSelect(index, e.target.value)}
-                      className="panel-select"
-                    >
-                      <option value="">Select a panel...</option>
-                      {availablePanels.map((panel) => {
-                        const isUsedElsewhere = selectedPanels.includes(panel.id) && selectedPanels[index] !== panel.id;
-                        return (
-                          <option key={panel.id} value={panel.id}>
-                            {panel.name}{panel.adminOnly ? ' (Admin)' : ''}{isUsedElsewhere ? ' *' : ''}
-                          </option>
-                        );
-                      })}
-                    </select>
+
+                    {/* Current selection */}
                     {selectedPanelConfig && (
-                      <div className="panel-preview">
-                        {React.createElement(selectedPanelConfig.icon, { className: 'panel-preview-icon' })}
-                        <span>{selectedPanelConfig.name}</span>
-                        {selectedPanelConfig.adminOnly && <MdLock className="admin-lock" title="Admin Only" />}
+                      <div className="current-selection">
+                        <div className="selected-panel-card">
+                          {React.createElement(selectedPanelConfig.icon, { className: 'selected-panel-icon' })}
+                          <div className="selected-panel-info">
+                            <span className="selected-panel-name">{selectedPanelConfig.name}</span>
+                            {selectedPanelConfig.adminOnly && <MdLock className="admin-indicator" />}
+                          </div>
+                        </div>
                       </div>
                     )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
 
-          {/* Available Panels Reference */}
-          <div className="config-section panels-reference">
-            <h3>Available Panels</h3>
-            <div className="panels-grid">
-              {availablePanels.map((panel) => {
-                const isSelected = selectedPanels.includes(panel.id);
-                return (
-                  <div
-                    key={panel.id}
-                    className={`panel-chip ${isSelected ? 'selected' : ''} ${panel.adminOnly ? 'admin-only' : ''}`}
-                  >
-                    {React.createElement(panel.icon, { className: 'chip-icon' })}
-                    <span>{panel.name}</span>
-                    {panel.adminOnly && <MdLock className="admin-lock" title="Admin Only" />}
-                    {isSelected && <MdCheck className="selected-check" />}
+                    {/* Available panels grid */}
+                    <div className="panel-thumbnails">
+                      {availablePanels.map((panel) => {
+                        const isSelected = selectedPanels[index] === panel.id;
+                        const isUsedElsewhere = selectedPanels.includes(panel.id) && selectedPanels[index] !== panel.id;
+
+                        return (
+                          <div
+                            key={panel.id}
+                            className={`panel-thumbnail ${isSelected ? 'selected' : ''} ${isUsedElsewhere ? 'used-elsewhere' : ''}`}
+                            onClick={() => handlePanelSelect(index, panel.id)}
+                            title={`${panel.name}${panel.adminOnly ? ' (Admin Only)' : ''}${isUsedElsewhere ? ' - Used in another slot' : ''}`}
+                          >
+                            {React.createElement(panel.icon, { className: 'thumbnail-icon' })}
+                            <span className="thumbnail-label">{panel.name}</span>
+                            {panel.adminOnly && <MdLock className="thumbnail-lock" />}
+                            {isSelected && <MdCheck className="thumbnail-check" />}
+                            {isUsedElsewhere && <span className="used-indicator">•</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}

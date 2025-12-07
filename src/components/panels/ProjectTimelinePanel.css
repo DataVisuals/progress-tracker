@@ -25,6 +25,7 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 
 /* Sticky axis header */
@@ -40,8 +41,8 @@
 /* Time Axis Header */
 .timeline-axis {
   display: flex;
-  align-items: center;
-  height: 24px;
+  align-items: flex-end;
+  height: 32px;
   padding: 0 0 4px 0;
   border-bottom: 1px solid #e2e8f0;
   margin-bottom: 4px;
@@ -64,11 +65,11 @@
 .timeline-axis-track-wrapper {
   flex: 1;
   position: relative;
-  height: 16px;
+  height: 24px;
   min-width: 2400px;
   margin-left: 0;
   padding-left: 250px;
-  overflow: hidden;
+  overflow: visible;
   z-index: 1;
 }
 
@@ -80,7 +81,7 @@
 
 .timeline-axis-marker {
   position: absolute;
-  top: 0;
+  top: -4px;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
@@ -213,12 +214,13 @@
 /* Tubemap Track */
 .tubemap-track {
   flex: 1;
-  min-width: 2400px;
+  min-width: 2090px;
   position: relative;
   height: 20px;
-  overflow: hidden;
-  margin-left: 0;
-  padding-left: 250px;
+  overflow-x: hidden;
+  overflow-y: visible;
+  margin-left: 250px;
+  margin-right: 60px;
 }
 
 .tubemap-line {
@@ -297,12 +299,12 @@
 
 .tubemap-stop:hover {
   transform: translate(-50%, -50%) scale(1.2);
-  z-index: 10;
+  z-index: 300;
 }
 
 .stop-marker {
-  width: 12px;
-  height: 12px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -363,7 +365,7 @@
   gap: 1px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   pointer-events: none;
-  z-index: 150;
+  z-index: 250;
 }
 
 .tubemap-stop .milestone-tooltip strong {
@@ -377,7 +379,7 @@
   font-size: 9px;
 }
 
-/* Project Tooltip (on end terminus) */
+/* Project Tooltip (on terminus) */
 .tubemap-terminus .project-tooltip {
   position: absolute;
   top: calc(100% + 24px);
@@ -397,6 +399,11 @@
   z-index: 150;
 }
 
+.tubemap-terminus.start .project-tooltip {
+  left: 0;
+  transform: translateX(0);
+}
+
 .tubemap-terminus .project-tooltip strong {
   font-size: 12px;
   margin-bottom: 2px;
@@ -412,26 +419,21 @@
   margin-top: 2px;
 }
 
-/* Today Marker - Continuous line across all projects */
-.timeline-projects {
-  position: relative;
-}
-
-.timeline-today-marker {
+/* Today Marker - One per row to create continuous effect */
+.timeline-today-marker-row {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.today-line-continuous {
-  position: absolute;
-  top: 0;
+  top: -50%;
+  bottom: -50%;
   width: 2px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.today-line-segment {
+  width: 100%;
   height: 100%;
   background: #f59e0b;
-  opacity: 0.4;
+  opacity: 0.3;
 }
 
 /* Empty State */

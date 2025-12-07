@@ -726,8 +726,8 @@
 
 .health-score-gauge {
   position: relative;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
 }
 
@@ -758,9 +758,9 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
-  color: #111827;
+  /* Color set inline based on health score */
 }
 
 .health-gauge-value .percent-sign {
@@ -2347,9 +2347,7 @@
   stroke: #4b5563;
 }
 
-:root.dark-mode .health-gauge-value {
-  color: #f9fafb;
-}
+/* Health gauge value color is set inline based on health score */
 
 :root.dark-mode .health-pm-name {
   color: #9ca3af;
@@ -5265,11 +5263,13 @@ html.dark-mode .quadrant-content {
 
 /* Vertical divider between regular and admin panels */
 .dock-divider {
-  width: 1px;
+  width: 2px;
+  min-width: 2px;
   height: 28px;
   background: #d1d5db;
   margin: 6px 8px;
   flex-shrink: 0;
+  -webkit-flex-shrink: 0;
 }
 
 /* Icon-only tab buttons */
@@ -6517,4 +6517,59 @@ html.dark-mode .quadrant-content {
 
 :root.dark-mode .expanded-panel-content .commentary-footer {
   border-top-color: #374151;
+}
+
+/* Dependency Graph Panel */
+.dependency-graph-quadrant .graph-controls {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.graph-control-btn {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 16px;
+  color: #374151;
+}
+
+.graph-control-btn:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.dependency-graph-quadrant svg text {
+  font-family: inherit;
+}
+
+.dependency-graph-quadrant .node-selected circle {
+  filter: drop-shadow(0 0 4px rgba(0, 174, 239, 0.6));
+}
+
+/* Dark Mode - Dependency Graph */
+:root.dark-mode .graph-control-btn {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:root.dark-mode .graph-control-btn:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+:root.dark-mode .dependency-graph-quadrant svg text {
+  fill: #e5e7eb;
+}
+
+:root.dark-mode .dependency-graph-quadrant .legend-box {
+  background: rgba(31, 41, 59, 0.9) !important;
+  color: #e5e7eb !important;
 }

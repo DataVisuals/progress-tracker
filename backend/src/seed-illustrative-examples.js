@@ -73,6 +73,96 @@ const generatePeriodDates = (startDate, endDate, frequency) => {
   return dates;
 };
 
+function createAnalyticsDashboardProject(database, portfolioId, userId) {
+  // Project: Multi-Metric Dashboard Project (10 metrics to test portfolio review limits)
+  const dashboardProject = database.prepare(`
+    INSERT INTO projects (name, description, initiative_manager, portfolio_id, start_date, end_date, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    '[Example] Enterprise Analytics Dashboard',
+    'Demonstration project with 10 metrics to test Portfolio Review limits (maximum 5 shown). Example comprehensive KPI tracking across multiple business dimensions.',
+    'Admin User',
+    portfolioId,
+    getDate(-60),
+    getDate(120),
+    getDateTime(-60)
+  );
+  const dashboardId = dashboardProject.lastInsertRowid;
+
+  // Dashboard Milestones
+  const dashboardMilestones = [
+    { title: 'Requirements Gathering', date: -50, completed: 1, completedDate: -48 },
+    { title: 'Data Pipeline Setup', date: -30, completed: 1, completedDate: -28 },
+    { title: 'Dashboard Design', date: -10, completed: 1, completedDate: -8 },
+    { title: 'Beta Launch', date: 30, completed: 0 },
+    { title: 'Production Release', date: 90, completed: 0 }
+  ];
+
+  dashboardMilestones.forEach((m, idx) => {
+    database.prepare(`
+      INSERT INTO milestones (project_id, title, target_date, completed, completed_date, display_order)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(dashboardId, m.title, getDate(m.date), m.completed, m.completedDate ? getDate(m.completedDate) : null, idx);
+  });
+
+  // 10 Metrics - 5 shown in portfolio review, 5 hidden
+  const dashboardMetrics = [
+    { name: '[Example] User Engagement Score', finalTarget: 85, showInPortfolio: 1 },
+    { name: '[Example] Dashboard Load Time (ms)', finalTarget: 500, showInPortfolio: 1 },
+    { name: '[Example] Data Accuracy %', finalTarget: 98, showInPortfolio: 1 },
+    { name: '[Example] API Response Time (ms)', finalTarget: 200, showInPortfolio: 1 },
+    { name: '[Example] User Satisfaction %', finalTarget: 90, showInPortfolio: 1 },
+    { name: '[Example] Cache Hit Rate %', finalTarget: 95, showInPortfolio: 0 },
+    { name: '[Example] Error Rate %', finalTarget: 1, showInPortfolio: 0 },
+    { name: '[Example] Concurrent Users', finalTarget: 1000, showInPortfolio: 0 },
+    { name: '[Example] Data Refresh Frequency', finalTarget: 24, showInPortfolio: 0 },
+    { name: '[Example] Cost per Query ($)', finalTarget: 0.02, showInPortfolio: 0 }
+  ];
+
+  dashboardMetrics.forEach((metric, idx) => {
+    const metricResult = database.prepare(`
+      INSERT INTO metrics (
+        project_id, name, owner_id, start_date, end_date, frequency,
+        progression_type, final_target, display_order, show_in_portfolio_review
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      dashboardId,
+      metric.name,
+      userId,
+      getDate(-60),
+      getDate(120),
+      'monthly',
+      'linear',
+      metric.finalTarget,
+      idx,
+      metric.showInPortfolio
+    );
+
+    const metricId = metricResult.lastInsertRowid;
+
+    // Add 6 months of data for each metric
+    const periods = [-60, -45, -30, -15, 0, 15];
+    periods.forEach((offset, periodIdx) => {
+      const progress = (periodIdx + 1) / periods.length;
+      const complete = metric.finalTarget * progress * (0.8 + Math.random() * 0.2);
+      const expected = metric.finalTarget * progress;
+
+      database.prepare(`
+        INSERT INTO metric_periods (metric_id, reporting_date, expected, target, complete, commentary)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        metricId,
+        getDate(offset),
+        expected,
+        metric.finalTarget,
+        complete,
+        null
+      );
+    });
+  });
+}
+
 async function seedIllustrativeExamples() {
   console.log('📦 Seeding Illustrative Examples Portfolio...');
 
@@ -82,7 +172,29 @@ async function seedIllustrativeExamples() {
     // Check if portfolio already exists
     const existingPortfolio = database.prepare('SELECT id FROM portfolios WHERE name = ?').get('Illustrative Examples');
     if (existingPortfolio) {
-      console.log('ℹ️  Illustrative Examples portfolio already exists, skipping seed');
+      console.log('ℹ️  Illustrative Examples portfolio already exists, checking for missing projects...');
+
+      // Ensure all Example projects are assigned to this portfolio
+      database.prepare(`
+        UPDATE projects
+        SET portfolio_id = ?
+        WHERE name LIKE '[Example]%' AND portfolio_id IS NULL
+      `).run(existingPortfolio.id);
+
+        // Check if Analytics Dashboard project exists
+      const dashboardExists = database.prepare('SELECT id FROM projects WHERE name = ?').get('[Example] Enterprise Analytics Dashboard');
+
+      if (!dashboardExists) {
+        console.log('📊 Creating Enterprise Analytics Dashboard project with 10 metrics...');
+        const userId = database.prepare('SELECT id FROM users WHERE role = ? LIMIT 1').get('admin')?.id || 1;
+        const portfolioId = existingPortfolio.id;
+
+        createAnalyticsDashboardProject(database, portfolioId, userId);
+
+        console.log('✅ Enterprise Analytics Dashboard created with 10 metrics');
+      } else {
+        console.log('✅ All example projects exist and are assigned to portfolio');
+      }
       return;
     }
 
@@ -145,7 +257,7 @@ async function seedIllustrativeExamples() {
       );
     });
 
-    // Infrastructure Metrics
+    // Infrastructure Metrics - Extended to demonstrate 10 metrics
     const infraMetrics = [
       {
         name: '[Example] Datacenters Migrated',
@@ -181,6 +293,90 @@ async function seedIllustrativeExamples() {
           { offset: -60, complete: 62 },
           { offset: -30, complete: 68 }, // Slowing down
           { offset: 0, complete: 71 } // Well behind target
+        ]
+      },
+      {
+        name: '[Example] Security Patches Applied',
+        description: 'Percentage of critical security patches deployed across infrastructure',
+        finalTarget: 100,
+        data: [
+          { offset: -120, complete: 45 },
+          { offset: -90, complete: 68 },
+          { offset: -60, complete: 82 },
+          { offset: -30, complete: 91 },
+          { offset: 0, complete: 96 }
+        ]
+      },
+      {
+        name: '[Example] Staff Training Completion %',
+        description: 'Percentage of technical staff completing new infrastructure training',
+        finalTarget: 95,
+        data: [
+          { offset: -120, complete: 10 },
+          { offset: -90, complete: 32 },
+          { offset: -60, complete: 58 },
+          { offset: -30, complete: 74 },
+          { offset: 0, complete: 88 }
+        ]
+      },
+      {
+        name: '[Example] Cost Savings Realized ($M)',
+        description: 'Cumulative cost savings from infrastructure optimization in millions',
+        finalTarget: 4.5,
+        data: [
+          { offset: -120, complete: 0 },
+          { offset: -90, complete: 0.4 },
+          { offset: -60, complete: 1.2 },
+          { offset: -30, complete: 2.1 },
+          { offset: 0, complete: 3.2 }
+        ]
+      },
+      {
+        name: '[Example] Performance Benchmarks Met',
+        description: 'Number of performance benchmarks achieved out of 25 total targets',
+        finalTarget: 25,
+        data: [
+          { offset: -120, complete: 3 },
+          { offset: -90, complete: 8 },
+          { offset: -60, complete: 14 },
+          { offset: -30, complete: 18 },
+          { offset: 0, complete: 22 }
+        ]
+      },
+      {
+        name: '[Example] Vendor SLA Compliance %',
+        description: 'Percentage of vendor deliverables meeting SLA requirements',
+        finalTarget: 98,
+        data: [
+          { offset: -120, complete: 78 },
+          { offset: -90, complete: 85 },
+          { offset: -60, complete: 91 },
+          { offset: -30, complete: 94 },
+          { offset: 0, complete: 96 }
+        ]
+      },
+      {
+        name: '[Example] Backup & Recovery Tests Passed',
+        description: 'Number of disaster recovery tests successfully completed out of 20',
+        finalTarget: 20,
+        data: [
+          { offset: -120, complete: 0 },
+          { offset: -90, complete: 4 },
+          { offset: -60, complete: 9 },
+          { offset: -30, complete: 13 },
+          { offset: 0, complete: 16 }
+        ]
+      },
+      {
+        name: '[Example] Documentation Completeness %',
+        description: 'Percentage of infrastructure components with complete technical documentation',
+        finalTarget: 100,
+        data: [
+          { offset: -120, complete: 25 },
+          { offset: -90, complete: 42 },
+          { offset: -60, complete: 61 },
+          { offset: -30, complete: 75 },
+          { offset: 0, complete: 84 }
         ]
       }
     ];
@@ -594,13 +790,43 @@ async function seedIllustrativeExamples() {
         getDateTime(-5)
       );
 
-      // Add project comments
+      // Add project comments - varied and project-specific
+      const commentTemplates = {
+        'Infrastructure': {
+          latest: `Latest Update: Global Infrastructure Rollout continues to make solid progress across all regions. Phase 2 EMEA deployment completed ahead of schedule last week with all 3 datacenters successfully migrated. Network uptime has experienced some degradation (currently 98.9%) due to unexpected issues during the APAC Phase 3 deployment which is now underway. The team has identified root causes and implemented corrective measures. Security patches are being applied at 96% completion rate which is strong. Staff training is tracking at 88% with final cohorts scheduled for next month. Cost savings have reached $3.2M against a target of $4.5M - well positioned to meet year-end goals. Performance benchmarks show 22 of 25 targets now met. Key risks remain around resource availability during the critical Phase 3 completion period, but mitigation plans are in place and backup resources have been identified.`,
+          previous: `Previous update from two weeks ago: Phase 2 deployment was in final stages with minor network configuration issues being resolved. Vendor SLA compliance had improved to 94% following escalations. Documentation effort was ramping up to support the growing infrastructure footprint. Overall project health was good with stakeholder confidence remaining high despite some metric concerns flagged in monthly review.`
+        },
+        'ML': {
+          latest: `Latest Update: Customer Churn Prediction Model project is experiencing challenges that require immediate attention and senior leadership engagement. Model accuracy has plateaued at 91.2% against our 95% target, and the data science team has exhausted standard optimization techniques. More concerning is the training data quality score which has declined from 93% to 79% over the past 6 weeks due to upstream data pipeline degradation. This is directly impacting model performance and preventing us from moving forward with A/B test deployment which is now 5 days overdue. The bias and fairness review milestone is also overdue by 10 days pending resolution of data quality issues. We've escalated to the Data Engineering team and initiated daily standups to address pipeline issues. A recovery plan is being developed with three scenarios: fix existing pipeline (2-week effort), implement temporary workaround (1 week), or pivot to alternative data sources (4 weeks). Stakeholder communication has been increased to weekly updates given the criticality and visibility of this initiative.`,
+          previous: `Previous update: Model training v1 was completed successfully and validation results were promising at 89% accuracy. The team was optimistic about reaching the 95% target through hyperparameter tuning and feature engineering enhancements. Data quality metrics were strong at 93% and pipeline was operating normally. Next phase focused on bias review and A/B test preparation.`
+        },
+        'Onboarding': {
+          latest: `Latest Update: User Onboarding Revamp is proceeding well with strong progress across all workstreams. The new onboarding flow design has been finalized and approved by all stakeholders following three rounds of user testing with excellent feedback. Development is 70% complete and tracking to schedule. The team completed the integration with authentication services last week and testing has begun. User acceptance metrics from early internal pilots show 88% satisfaction and 92% task completion rates, both exceeding our targets. Tutorial completion tracking is also performing well at 86%. Time-to-first-value has been reduced from 45 minutes to 18 minutes in pilot testing, representing a significant improvement. However, support ticket reduction is only at 35% against our 60% target, suggesting we may need to enhance help content and in-app guidance before general release. The dependency on Jira migration is being actively managed with weekly sync meetings between project teams.`,
+          previous: `Previous update: Requirements gathering completed with input from Customer Success, Sales, and Product teams. Wireframes developed and initial user research conducted with 25 participants across 5 customer segments. Key pain points identified in current onboarding flow and prioritized for redesign. Technical architecture review completed and integration points with existing systems documented.`
+        },
+        'Jira': {
+          latest: `Latest Update: Enterprise Jira Migration project has reached a critical phase with go-live scheduled in 3 weeks. Data migration testing has been completed for all 8 business units with 95% accuracy achieved, meeting our threshold for production cutover. User training rollout is progressing well at 82% completion with final sessions scheduled for next week. The team is currently focused on custom workflow migration which has proven more complex than initially estimated - we've completed 23 of 35 custom workflows with the remaining 12 requiring significant rework to align with Jira best practices. Integration testing with downstream systems (Confluence, Slack, GitHub) is 88% complete. Performance testing under load has identified some database tuning requirements which are being addressed. Change management and communications are ramping up with exec sponsor videos, FAQ documents, and dedicated support channels being prepared. Risk mitigation includes a detailed rollback plan and parallel running period of 2 weeks post-migration.`,
+          previous: `Previous update: Migration strategy finalized following architecture review and vendor consultation. Pilot migration completed successfully for IT department (250 users, 1500 projects) with valuable lessons learned. Custom workflow analysis identified 35 unique workflows requiring migration. Data quality assessment showed 95% of historical data can be migrated with full fidelity. Training curriculum developed and train-the-trainer sessions completed.`
+        },
+        'Tech Debt': {
+          latest: `Latest Update: Technology Debt & Obsolescence Tracking initiative continues to drive meaningful improvements across our engineering organization. We've successfully retired 28 legacy systems against our target of 40, with strong momentum in Q4. Code quality scores have improved from 72 to 84 through systematic refactoring efforts and improved development practices. Security vulnerabilities are being addressed at an excellent pace with 91% remediation rate. The team has completed technical debt assessments for all 15 critical systems and developed remediation roadmaps. Interestingly, our team satisfaction scores have increased to 78% as engineers appreciate the focus on technical excellence and the reduction in maintenance burden. Documentation coverage has reached 81% with remaining gaps primarily in legacy components scheduled for retirement. Key focus areas for next period include accelerating the deprecation of the remaining 12 legacy systems, continuing the code quality improvement trend, and ensuring we maintain security vulnerability remediation above 90%. The initiative has strong executive support and is being positioned as a key enabler for our modernization strategy.`,
+          previous: `Previous update: Initial technical debt inventory completed across all engineering teams. Assessment framework established and applied to 50+ systems. Priority matrix developed based on business impact, risk, and effort. Quick wins identified and 8 legacy systems retired in first month. Engineering team workshops conducted to build awareness and establish best practices for preventing future technical debt accumulation.`
+        }
+      };
+
+      const projectType = project.name.includes('Infrastructure') ? 'Infrastructure' :
+                          project.name.includes('Churn') ? 'ML' :
+                          project.name.includes('Onboarding') ? 'Onboarding' :
+                          project.name.includes('Jira') ? 'Jira' : 'Tech Debt';
+
+      const comments = commentTemplates[projectType];
+
       database.prepare(`
         INSERT INTO project_comments (project_id, comment_text, created_by, created_at, creator_name)
         VALUES (?, ?, ?, ?, ?)
       `).run(
         project.id,
-        `<p><strong>Latest Update:</strong> ${project.name} project is progressing well. Team collaboration has been excellent and stakeholders are engaged.</p><p>Key achievements this period include successful milestone completion and positive feedback from early users.</p>`,
+        comments.latest,
         userId,
         getDateTime(-2),
         'Admin User'
@@ -611,7 +837,7 @@ async function seedIllustrativeExamples() {
         VALUES (?, ?, ?, ?, ?)
       `).run(
         project.id,
-        `<p>Previous update: Initial planning phase completed. Resources allocated and timeline confirmed with all stakeholders.</p>`,
+        comments.previous,
         userId,
         getDateTime(-14),
         'Admin User'
@@ -631,33 +857,73 @@ async function seedIllustrativeExamples() {
 
     // Add feedback entries
     database.prepare(`
-      INSERT INTO feedback (user_id, project_id, feedback_text, sentiment, created_at)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO feedback (user_id, project_id, title, text, category, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
     `).run(
       userId,
       infraId,
+      'Positive Progress Update',
       '[Example Feedback] Infrastructure rollout is proceeding well. Phase 2 completion ahead of schedule demonstrates strong team execution.',
-      'positive',
+      'general',
       getDateTime(-7)
     );
 
     database.prepare(`
-      INSERT INTO feedback (user_id, project_id, feedback_text, sentiment, created_at)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO feedback (user_id, project_id, title, text, category, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
     `).run(
       userId,
       mlId,
+      'Dependency Concern',
       '[Example Feedback] A/B test deployment is delayed due to infrastructure dependencies. Recommend priority escalation.',
-      'concern',
+      'general',
       getDateTime(-2)
     );
 
-    console.log('✅ Created 5 illustrative example projects');
-    console.log('✅ Added 37 milestones (completed, upcoming, and overdue)');
-    console.log('✅ Populated 9 metrics with historical data (including adverse trends)');
+    // Create project dependencies for graph visualization
+    console.log('🔗 Creating project dependencies...');
+
+    // ML Platform depends on Infrastructure (needs stable infrastructure)
+    database.prepare(`
+      INSERT INTO project_dependencies (project_id, depends_on_project_id, created_by)
+      VALUES (?, ?, ?)
+    `).run(mlId, infraId, userId);
+
+    // Onboarding Portal depends on Jira Migration (needs Jira working)
+    database.prepare(`
+      INSERT INTO project_dependencies (project_id, depends_on_project_id, created_by)
+      VALUES (?, ?, ?)
+    `).run(onboardingId, jiraId, userId);
+
+    // Onboarding Portal also depends on Infrastructure (hosting)
+    database.prepare(`
+      INSERT INTO project_dependencies (project_id, depends_on_project_id, created_by)
+      VALUES (?, ?, ?)
+    `).run(onboardingId, infraId, userId);
+
+    // Tech Debt depends on Infrastructure (needs stable base to refactor)
+    database.prepare(`
+      INSERT INTO project_dependencies (project_id, depends_on_project_id, created_by)
+      VALUES (?, ?, ?)
+    `).run(techDebtId, infraId, userId);
+
+    // Jira Migration depends on Infrastructure (needs infrastructure ready)
+    database.prepare(`
+      INSERT INTO project_dependencies (project_id, depends_on_project_id, created_by)
+      VALUES (?, ?, ?)
+    `).run(jiraId, infraId, userId);
+
+    // Project 6: Multi-Metric Dashboard Project (10 metrics to test portfolio review limits)
+    createAnalyticsDashboardProject(database, portfolioId, userId);
+
+    console.log('✅ Created 6 illustrative example projects');
+    console.log('✅ Added 42 milestones (completed, upcoming, and overdue)');
+    console.log('✅ Populated 19 metrics with historical data (including adverse trends)');
     console.log('✅ Added CRAIDs, links, and feedback examples');
+    console.log('✅ Created 5 project dependencies (Infrastructure is a key dependency)');
     console.log('📊 Adverse metrics: Network Uptime declining, Migration Issues behind, Data Quality degrading');
     console.log('⚠️  Overdue milestones: 4 overdue across ML and Jira projects');
+    console.log('🎯 Portfolio Review Test: Enterprise Analytics Dashboard has 10 metrics (5 shown, 5 hidden)');
     console.log('\n📚 Illustrative Examples Portfolio ready for demonstration!');
     console.log('ℹ️  All data is clearly marked with [Example] or [Demo] prefixes\n');
 

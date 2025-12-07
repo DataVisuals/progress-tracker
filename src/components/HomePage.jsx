@@ -1431,8 +1431,10 @@ const HomePage = ({
                 );
               })}
 
-              {/* Divider between regular and admin panels */}
-              <div className="dock-divider" />
+              {/* Divider between regular and admin panels - only show if both types exist */}
+              {allPanels.some(p => !p.adminOnly) && allPanels.some(p => p.adminOnly) && (
+                <div className="dock-divider" />
+              )}
 
               {/* Admin panels */}
               {allPanels.filter(p => p.adminOnly).map((panel) => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Build timestamp - updated automatically before each commit to gh
-const BUILD_TIMESTAMP = '2025-12-06 17:16:38';
+const BUILD_TIMESTAMP = '2025-12-07 19:21:59';
 import Select from 'react-select';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';
@@ -1124,6 +1124,34 @@ function App() {
     }
   };
 
+  const handleShowInPortfolioReviewChange = async (showInReview) => {
+    try {
+      // Find the metric ID from the currently selected metric
+      const metric = projectMetrics.find(m => m.name === selectedMetric);
+      if (!metric) return;
+
+      // If enabling, check if we already have 5 metrics shown in portfolio review
+      if (showInReview) {
+        const currentlyShownCount = projectMetrics.filter(m => m.show_in_portfolio_review).length;
+        if (currentlyShownCount >= 5) {
+          alert('Maximum of 5 metrics can be shown in Portfolio Review. Please disable another metric first.');
+          return;
+        }
+      }
+
+      await api.updateMetric(metric.id, {
+        show_in_portfolio_review: showInReview
+      });
+
+      // Reload metrics to reflect the change
+      await loadProjectMetrics();
+    } catch (err) {
+      console.error('Failed to update show in portfolio review:', err);
+      alert('Failed to update show in portfolio review: ' + (err.response?.data?.error || err.message));
+      throw err;
+    }
+  };
+
   const handleMetricDatesChange = async (newStartDate, newEndDate) => {
     try {
       // Find the metric ID from the currently selected metric
@@ -1720,7 +1748,7 @@ function App() {
                               transform="rotate(-90 18 18)"
                             />
                           </svg>
-                          <span className="health-gauge-value" style={{ color: getScoreColor(healthScore) }}>{Math.round(healthScore)}<span className="percent-sign">%</span></span>
+                          <span className="health-gauge-value" style={{ color: getScoreColor(healthScore) }}>{Math.round(healthScore)}</span>
                         </button>
                       );
                     })()}
@@ -2095,6 +2123,8 @@ function App() {
                   }}
                   isAdmin={isAdmin()}
                   currentUser={currentUser}
+                  showInPortfolioReview={projectMetrics.find(m => m.name === selectedMetric)?.show_in_portfolio_review ?? true}
+                  onShowInPortfolioReviewChange={handleShowInPortfolioReviewChange}
                 />
               </div>
             )}

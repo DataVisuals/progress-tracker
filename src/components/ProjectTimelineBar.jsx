@@ -3,6 +3,8 @@ import { MdCheckCircle, MdFlag } from 'react-icons/md';
 import './ProjectTimelineBar.css';
 
 const ProjectTimelineBar = ({ milestones }) => {
+  const [hoveredElement, setHoveredElement] = React.useState(null);
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -72,21 +74,37 @@ const ProjectTimelineBar = ({ milestones }) => {
   // Calculate days to completion
   const daysToCompletion = getDaysRemaining(lastMilestoneDate);
 
+  const hasManyMilestones = sortedMilestones.length > 5;
+
+  // Find the next upcoming milestone from today
+  const nextMilestone = sortedMilestones.find(m => !m.completed && new Date(m.target_date) >= today);
+  const nextMilestoneId = nextMilestone?.id;
+
   return (
     <div className="project-timeline-bar">
       <div className="timeline-header">
         <span className="timeline-start-date">{formatDate(firstMilestoneDate)}</span>
         <span className="timeline-end-date">{formatDate(lastMilestoneDate)}</span>
       </div>
-      <div className="timeline-track">
+      <div className={`timeline-track ${hasManyMilestones ? 'many-milestones' : ''}`}>
         {/* Timeline line */}
         <div className="timeline-line" />
 
         {/* Start marker */}
-        <div className="timeline-terminus start">
+        <div
+          className="timeline-terminus start"
+          onMouseEnter={() => setHoveredElement('start')}
+          onMouseLeave={() => setHoveredElement(null)}
+        >
           <div className="terminus-circle">
             <div className="terminus-label">Start</div>
           </div>
+          {hoveredElement === 'start' && (
+            <div className="terminus-tooltip">
+              <strong>Project Start</strong>
+              <span>{formatDate(firstMilestoneDate)}</span>
+            </div>
+          )}
         </div>
 
         {/* Milestones */}
@@ -99,11 +117,12 @@ const ProjectTimelineBar = ({ milestones }) => {
           position = Math.max(8, Math.min(92, position));
 
           const isAbove = index % 2 === 0; // Alternate above and below
+          const isNextMilestone = milestone.id === nextMilestoneId;
 
           return (
             <div
               key={milestone.id}
-              className={`timeline-stop ${status} ${isAbove ? 'above' : 'below'}`}
+              className={`timeline-stop ${status} ${isAbove ? 'above' : 'below'} ${isNextMilestone ? 'next-milestone' : ''}`}
               style={{ left: `${position}%` }}
               title={`${milestone.title} - ${formatDate(milestone.target_date)}`}
             >
@@ -121,7 +140,11 @@ const ProjectTimelineBar = ({ milestones }) => {
         })}
 
         {/* End marker with time to completion */}
-        <div className="timeline-terminus end">
+        <div
+          className="timeline-terminus end"
+          onMouseEnter={() => setHoveredElement('end')}
+          onMouseLeave={() => setHoveredElement(null)}
+        >
           <div className="terminus-circle">
             <div className="terminus-label">End</div>
           </div>
@@ -132,6 +155,15 @@ const ProjectTimelineBar = ({ milestones }) => {
               <span className="countdown-negative">{formatTimeRemaining(daysToCompletion)}</span>
             )}
           </div>
+          {hoveredElement === 'end' && (
+            <div className="terminus-tooltip">
+              <strong>Project End</strong>
+              <span>{formatDate(lastMilestoneDate)}</span>
+              <span className="tooltip-countdown">
+                {daysToCompletion >= 0 ? `${formatTimeRemaining(daysToCompletion)} remaining` : `${formatTimeRemaining(daysToCompletion)}`}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Current date indicator */}

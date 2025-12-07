@@ -213,6 +213,7 @@ export const api = {
   getProjectDependencies: (projectId) => client.get(`/projects/${projectId}/dependencies`),
   addProjectDependency: (projectId, dependsOnProjectId) => client.post(`/projects/${projectId}/dependencies`, { depends_on_project_id: dependsOnProjectId }),
   removeProjectDependency: (projectId, dependencyId) => client.delete(`/projects/${projectId}/dependencies/${dependencyId}`),
+  getAllDependencies: () => client.get('/dependencies/all'),
 
   // Feedback
   getFeedback: (params) => {

@@ -42,6 +42,7 @@ const PortfolioReviewModal = ({
   const [projectsComments, setProjectsComments] = useState({});
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [expandedComments, setExpandedComments] = useState({});
   const slideRef = useRef(null);
 
   // Filter projects for this portfolio
@@ -55,7 +56,10 @@ const PortfolioReviewModal = ({
   // Fetch data for all projects in the portfolio
   useEffect(() => {
     const fetchAllProjectData = async () => {
-      if (portfolioProjects.length === 0) return;
+      if (portfolioProjects.length === 0) {
+        setLoading(false);
+        return;
+      }
 
       setLoading(true);
       const data = {};
@@ -350,8 +354,31 @@ const PortfolioReviewModal = ({
     if (projectsWithDates.length === 0) return null;
 
     const now = new Date();
-    const minDate = new Date(Math.min(now, ...projectsWithDates.map(p => p.startDate || p.endDate)));
-    const maxDate = new Date(Math.max(...projectsWithDates.map(p => p.endDate)));
+
+    // Collect all milestone dates to determine the full timeline range
+    const milestoneDates = [];
+    portfolioProjects.forEach(project => {
+      const milestones = projectsMilestones[project.id] || [];
+      milestones.forEach(m => {
+        if (m.target_date) {
+          milestoneDates.push(new Date(m.target_date));
+        }
+      });
+    });
+
+    // Calculate min/max considering project dates AND milestone dates
+    const allDates = [
+      now,
+      ...projectsWithDates.map(p => p.startDate).filter(d => d !== null),
+      ...projectsWithDates.map(p => p.endDate).filter(d => d !== null),
+      ...milestoneDates
+    ];
+
+    const validDates = allDates.filter(d => d instanceof Date && !isNaN(d));
+    if (validDates.length === 0) return null;
+
+    const minDate = new Date(Math.min(...validDates));
+    const maxDate = new Date(Math.max(...validDates));
 
     minDate.setMonth(minDate.getMonth() - 1);
     maxDate.setMonth(maxDate.getMonth() + 2);
@@ -360,7 +387,7 @@ const PortfolioReviewModal = ({
       projects: projectsWithDates,
       range: { min: minDate, max: maxDate, now }
     };
-  }, [portfolioProjects]);
+  }, [portfolioProjects, projectsMilestones]);
 
   const getTimelinePosition = (date) => {
     if (!timelineData?.range) return 0;
@@ -784,7 +811,7 @@ const PortfolioReviewModal = ({
                               />
                             </svg>
                             <span className="health-gauge-value" style={{ color: getHealthColor(healthScore) }}>
-                              {Math.round(healthScore)}<span className="percent-sign">%</span>
+                              {Math.round(healthScore)}
                             </span>
                           </div>
                           <span className="timeline-row-name" title={project.name}>{project.name}</span>
@@ -1005,29 +1032,11 @@ const PortfolioReviewModal = ({
         )}
 
         {/* Project Content - No tabs, just show everything */}
-        <div className="project-content-section" style={{ marginTop: '8px' }}>
-          {/* Commentary Section - Only show if there are comments */}
-          {projectComments.length > 0 && (
-            <div className="commentary-section" style={{ margin: '0 16px 8px 16px' }}>
-              <h3 style={{ fontSize: '12px', marginBottom: '6px' }}>Commentary</h3>
-              <div className="commentary-list">
-                {projectComments.map((comment) => (
-                  <div key={comment.id} className="commentary-item" style={{ marginBottom: '6px', padding: '8px' }}>
-                    <div className="commentary-content ql-editor" dangerouslySetInnerHTML={{ __html: comment.comment_text }} />
-                    <div className="commentary-meta" style={{ fontSize: '10px', marginTop: '4px' }}>
-                      <span className="commentary-date">{new Date(comment.created_at).toLocaleDateString()}</span>
-                      {comment.creator_name && <span className="commentary-author">— {comment.creator_name}</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
+        <div className="project-content-section" style={{ marginTop: '0' }}>
           {/* Metrics Grid */}
           <div className="metrics-section" style={{ margin: '0 16px' }}>
             <div className="grid-view-container" style={{ gap: '8px', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-              {projectMetrics.map((metric) => {
+              {projectMetrics.filter(m => m.show_in_portfolio_review !== 0).map((metric) => {
                 const metricData = projectData.filter(d => d.metric_id === metric.id);
                 if (metricData.length === 0) return null;
 
@@ -1059,7 +1068,87 @@ const PortfolioReviewModal = ({
                 );
               })}
             </div>
+            {/* Show note if there are excluded metrics */}
+            {isExporting && projectMetrics.filter(m => m.show_in_portfolio_review === 0).length > 0 && (
+              <div style={{
+                marginTop: '8px',
+                padding: '8px 12px',
+                background: darkMode ? '#1e293b' : '#f8fafc',
+                borderRadius: '4px',
+                fontSize: '10px',
+                color: darkMode ? '#94a3b8' : '#6b7280',
+                fontStyle: 'italic',
+                textAlign: 'center',
+                border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0'
+              }}>
+                Note: {projectMetrics.filter(m => m.show_in_portfolio_review === 0).length} additional metric{projectMetrics.filter(m => m.show_in_portfolio_review === 0).length > 1 ? 's are' : ' is'} not shown (limited to metrics marked for Portfolio Review)
+              </div>
+            )}
           </div>
+
+          {/* Commentary Section - Single box with Time User Comment per line */}
+          {projectComments.length > 0 && (
+            <div className="commentary-section" style={{
+              margin: '16px 16px 8px 16px',
+              borderTop: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+              paddingTop: '12px'
+            }}>
+              <h3 style={{
+                fontSize: '11px',
+                marginBottom: '8px',
+                fontWeight: '600',
+                color: darkMode ? '#94a3b8' : '#64748b'
+              }}>Commentary</h3>
+              <div className="commentary-box" style={{
+                padding: '8px 10px',
+                background: darkMode ? '#1e293b' : '#f8fafc',
+                borderRadius: '4px',
+                fontSize: '12px',
+                lineHeight: '1.6',
+                color: darkMode ? '#e2e8f0' : '#334155',
+                border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0'
+              }}>
+                {/* Show only the latest comment, or all if expanded */}
+                {(isExporting || !expandedComments[project.id] ? projectComments.slice(0, 1) : projectComments).map((comment, index) => {
+                  const formatTime = (dateString) => {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                  };
+                  const stripHtml = (html) => {
+                    return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                  };
+                  return (
+                    <div key={comment.id} style={{ marginBottom: index < projectComments.length - 1 ? '4px' : '0' }}>
+                      <span style={{ color: darkMode ? '#94a3b8' : '#64748b', fontWeight: '600' }}>{formatTime(comment.created_at)}</span>
+                      {' '}
+                      <span style={{ color: darkMode ? '#94a3b8' : '#64748b', fontWeight: '600' }}>{comment.creator_name || 'Unknown'}</span>
+                      {' '}
+                      <span>{stripHtml(comment.comment_text)}</span>
+                    </div>
+                  );
+                })}
+                {/* Show expand/collapse button if there are more than 1 comment and not exporting */}
+                {projectComments.length > 1 && !isExporting && (
+                  <button
+                    onClick={() => setExpandedComments(prev => ({ ...prev, [project.id]: !prev[project.id] }))}
+                    style={{
+                      marginTop: '6px',
+                      padding: '2px 0',
+                      fontSize: '9px',
+                      color: '#00aeef',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      textDecoration: 'underline'
+                    }}
+                  >
+                    {expandedComments[project.id] ? `Hide ${projectComments.length - 1} earlier comment${projectComments.length - 1 > 1 ? 's' : ''}` : `Show ${projectComments.length - 1} earlier comment${projectComments.length - 1 > 1 ? 's' : ''}`}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

@@ -245,7 +245,7 @@ const isHtmlEmpty = (html) => {
   return textContent === '';
 };
 
-const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange, onTargetChange, onProgressionChange, onDescriptionChange, onDatesChange, currentUser, compactMode = false }) => {
+const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange, onTargetChange, onProgressionChange, onDescriptionChange, onDatesChange, currentUser, compactMode = false, showInPortfolioReview = true, onShowInPortfolioReviewChange }) => {
   // canEditData is for commentary/data changes (blocked during time travel)
   // If not provided, default to canEdit for backwards compatibility
   const allowDataEdits = canEditData !== undefined ? canEditData : canEdit;
@@ -1375,6 +1375,20 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               )}
             </div>
           )}
+          {/* Portfolio Review Toggle */}
+          {canEdit && onShowInPortfolioReviewChange && (
+            <div className="metric-property" style={{ marginLeft: 'auto' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: '#6b7280' }}>
+                <input
+                  type="checkbox"
+                  checked={showInPortfolioReview}
+                  onChange={(e) => onShowInPortfolioReviewChange(e.target.checked)}
+                  style={{ cursor: 'pointer' }}
+                />
+                <span>Show in Portfolio Review</span>
+              </label>
+            </div>
+          )}
         </div>
       )}
 
@@ -1384,7 +1398,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             <ResponsiveContainer width="100%" height={compactMode ? 180 : 260}>
               <ComposedChart
                 data={chartData}
-                margin={{ top: 10, right: 20, left: 20, bottom: 5 }}
+                margin={compactMode ? { top: 10, right: 10, left: 10, bottom: 5 } : { top: 10, right: 20, left: 20, bottom: 5 }}
               >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
@@ -1445,7 +1459,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               return <Cell key={`cell-${index}`} fill={barColor} fillOpacity={opacity} />;
             })}
             <LabelList
-              content={({ x, y, width, index }) => {
+              content={({ x, width, index }) => {
                 const item = chartData[index];
                 if (!item) return null;
 
@@ -1456,10 +1470,10 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                 return (
                   <text
                     x={x + width / 2}
-                    y={y - 10}
+                    y={compactMode ? 5 : 5}
                     fill={RAG_COLORS.red}
                     textAnchor="middle"
-                    fontSize="20"
+                    fontSize={compactMode ? "14" : "20"}
                   >
                     ▼
                   </text>
@@ -1523,15 +1537,17 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           {!compactMode && <div className="legend-title">Legend</div>}
 
           <div className="legend-items">
-            <div
-              className={`legend-item ${highlightedSeries === 'green' ? 'active' : ''}`}
-              onMouseEnter={() => setHighlightedSeries('green')}
-              onMouseLeave={() => setHighlightedSeries(null)}
-              title="Healthy"
-            >
-              <div className="legend-indicator" style={{ backgroundColor: RAG_COLORS.green }}></div>
-              <span className="legend-text">{compactMode ? '' : 'Green: Healthy'}</span>
-            </div>
+            {!compactMode && (
+              <div
+                className={`legend-item ${highlightedSeries === 'green' ? 'active' : ''}`}
+                onMouseEnter={() => setHighlightedSeries('green')}
+                onMouseLeave={() => setHighlightedSeries(null)}
+                title="Healthy"
+              >
+                <div className="legend-indicator" style={{ backgroundColor: RAG_COLORS.green }}></div>
+                <span className="legend-text">Green: Healthy</span>
+              </div>
+            )}
             <div
               className={`legend-item ${highlightedSeries === 'amber' ? 'active' : ''}`}
               onMouseEnter={() => setHighlightedSeries('amber')}
