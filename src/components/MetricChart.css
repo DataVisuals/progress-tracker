@@ -686,6 +686,19 @@
   z-index: 99999 !important;
 }
 
+/* Recharts legend styling */
+:root.dark-mode .recharts-legend-wrapper {
+  background-color: transparent !important;
+}
+
+:root.dark-mode .recharts-default-legend {
+  background-color: transparent !important;
+}
+
+:root.dark-mode .recharts-legend-item-text {
+  color: #d1d5db !important;
+}
+
 .tooltip-header {
   background: linear-gradient(135deg, #00aeef 0%, #003c71 100%);
   color: white;
