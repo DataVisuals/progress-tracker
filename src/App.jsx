@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Build timestamp - updated automatically before each commit to gh
-const BUILD_TIMESTAMP = '2025-12-07 19:21:59';
+const BUILD_TIMESTAMP = '2025-12-07 19:37:30';
 import Select from 'react-select';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';
@@ -1130,17 +1130,19 @@ function App() {
       const metric = projectMetrics.find(m => m.name === selectedMetric);
       if (!metric) return;
 
-      // If enabling, check if we already have 5 metrics shown in portfolio review
+      // If enabling, check if we already have 5 OTHER metrics shown in portfolio review
       if (showInReview) {
-        const currentlyShownCount = projectMetrics.filter(m => m.show_in_portfolio_review).length;
-        if (currentlyShownCount >= 5) {
+        const otherShownCount = projectMetrics.filter(m =>
+          m.id !== metric.id && m.show_in_portfolio_review
+        ).length;
+        if (otherShownCount >= 5) {
           alert('Maximum of 5 metrics can be shown in Portfolio Review. Please disable another metric first.');
           return;
         }
       }
 
       await api.updateMetric(metric.id, {
-        show_in_portfolio_review: showInReview
+        show_in_portfolio_review: showInReview ? 1 : 0
       });
 
       // Reload metrics to reflect the change
