@@ -740,6 +740,15 @@
   min-height: 0;
 }
 
+/* Timeline Slide - Dedicated Page */
+.timeline-slide-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 8px;
+  overflow-y: auto;
+}
+
 .summary-timeline-section h3 {
   margin: 0;
   font-size: 16px;

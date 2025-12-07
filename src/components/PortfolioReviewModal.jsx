@@ -216,8 +216,8 @@ const PortfolioReviewModal = ({
     return stats;
   }, [portfolioProjects, projectsData, projectsMetrics, projectsLinks, projectsRecoveryPlans]);
 
-  // Create slides: summary + one per project
-  const totalSlides = 1 + portfolioProjects.length;
+  // Create slides: summary + timeline + one per project
+  const totalSlides = 2 + portfolioProjects.length;
 
   const handlePrevSlide = useCallback(() => {
     setCurrentSlide(prev => Math.max(0, prev - 1));
@@ -255,7 +255,7 @@ const PortfolioReviewModal = ({
         format: 'a4'
       });
 
-      const totalSlides = portfolioProjects.length + 1; // +1 for summary slide
+      const totalSlides = portfolioProjects.length + 2; // +1 for summary slide, +1 for timeline slide
       const originalSlide = currentSlide;
 
       // Capture each slide
@@ -730,159 +730,7 @@ const PortfolioReviewModal = ({
             </div>
           </div>
 
-          {/* Middle Row: Horizontal Timeline */}
-          {timelineData && (
-            <div className="summary-timeline-section">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <h3 style={{ margin: 0 }}>Project Timelines</h3>
-                <div className="timeline-legend">
-                  <span className="timeline-legend-item">
-                    <span className="timeline-legend-bar" style={{ background: '#D0704d' }}></span>
-                    ≤14 days
-                  </span>
-                  <span className="timeline-legend-item">
-                    <span className="timeline-legend-bar" style={{ background: '#f5ad5b' }}></span>
-                    15-30 days
-                  </span>
-                  <span className="timeline-legend-item">
-                    <span className="timeline-legend-bar" style={{ background: '#8b5cf6' }}></span>
-                    &gt;30 days
-                  </span>
-                  <span className="timeline-legend-item">
-                    <span className="timeline-legend-bar" style={{ background: '#6b7280' }}></span>
-                    Overdue
-                  </span>
-                </div>
-              </div>
-              <div className="horizontal-timeline-container">
-                {/* Time axis - month labels above the timeline */}
-                <div className="horizontal-timeline-axis">
-                  <div className="timeline-axis-labels">
-                    {timeMarkers.map((marker, idx) => (
-                      <div
-                        key={idx}
-                        className="timeline-axis-marker"
-                        style={{ left: `${marker.position}%` }}
-                      >
-                        <span className="timeline-axis-label">{marker.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Project bars */}
-                <div className="horizontal-timeline-projects">
-                  {timelineData.projects.map((project) => {
-                    const endPosition = getTimelinePosition(project.endDate);
-                    const startPosition = project.startDate
-                      ? getTimelinePosition(project.startDate)
-                      : Math.max(0, endPosition - 10);
-
-                    const projectMilestones = projectsMilestones[project.id] || [];
-                    const daysRemaining = Math.ceil((project.endDate - new Date()) / (1000 * 60 * 60 * 24));
-                    const statusColor = daysRemaining < 0 ? '#6b7280' : daysRemaining <= 14 ? '#D0704d' : daysRemaining <= 30 ? '#f5ad5b' : project.portfolio_color || '#539668';
-
-                    // Get health score for this project
-                    const projectHealthScore = portfolioSummary.projectHealthScores.find(p => p.projectId === project.id);
-                    const healthScore = projectHealthScore ? projectHealthScore.score : 0;
-
-                    return (
-                      <div key={project.id} className="horizontal-timeline-row">
-                        <div className="timeline-row-label">
-                          {/* Health Gauge */}
-                          <div className="health-score-gauge timeline-health-gauge">
-                            <svg viewBox="0 0 36 36" className="health-gauge-svg">
-                              <circle
-                                className="health-gauge-bg"
-                                cx="18"
-                                cy="18"
-                                r="15.5"
-                                fill="none"
-                                stroke="#e5e7eb"
-                                strokeWidth="3"
-                              />
-                              <circle
-                                className="health-gauge-progress"
-                                cx="18"
-                                cy="18"
-                                r="15.5"
-                                fill="none"
-                                strokeWidth="3"
-                                stroke={getHealthColor(healthScore)}
-                                strokeDasharray={`${(healthScore / 100) * 97.4} 97.4`}
-                                strokeLinecap="round"
-                                transform="rotate(-90 18 18)"
-                              />
-                            </svg>
-                            <span className="health-gauge-value" style={{ color: getHealthColor(healthScore) }}>
-                              {Math.round(healthScore)}
-                            </span>
-                          </div>
-                          <span className="timeline-row-name" title={project.name}>{project.name}</span>
-                        </div>
-                        <div className="timeline-row-track">
-                          {/* Project line */}
-                          <div
-                            className="timeline-row-line"
-                            style={{
-                              left: `${startPosition}%`,
-                              width: `${Math.max(1, endPosition - startPosition)}%`,
-                              background: statusColor
-                            }}
-                          />
-                          {/* Start marker */}
-                          <div
-                            className="timeline-row-marker start"
-                            style={{
-                              left: `${startPosition}%`,
-                              background: statusColor
-                            }}
-                          />
-                          {/* Milestones */}
-                          {projectMilestones.map((milestone) => {
-                            const milestoneDate = new Date(milestone.target_date);
-                            const milestonePosition = getTimelinePosition(milestoneDate);
-                            if (milestonePosition < startPosition || milestonePosition > endPosition) return null;
-
-                            return (
-                              <div
-                                key={milestone.id}
-                                className={`timeline-row-milestone ${milestone.completed ? 'completed' : ''}`}
-                                style={{ left: `${milestonePosition}%` }}
-                              />
-                            );
-                          })}
-                          {/* End marker */}
-                          <div
-                            className="timeline-row-marker end"
-                            style={{
-                              left: `${endPosition}%`,
-                              background: statusColor
-                            }}
-                          />
-                        </div>
-                        <div className="timeline-row-countdown">
-                          {daysRemaining >= 0 ? (
-                            <span className="countdown-positive">{daysRemaining}d</span>
-                          ) : (
-                            <span className="countdown-negative">{Math.abs(daysRemaining)}d</span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Today marker */}
-                  <div
-                    className="timeline-today-line"
-                    style={{ left: `${nowPosition}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Bottom Row: Suggested Actions */}
+          {/* Suggested Actions */}
           {suggestedActions.length > 0 && (
             <div className="suggested-actions-section">
               <h3>Suggested Actions</h3>
@@ -931,6 +779,170 @@ const PortfolioReviewModal = ({
               </div>
             </div>
           )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderTimelineSlide = () => {
+    if (!portfolioSummary || !timelineData) return null;
+
+    const timeMarkers = getTimeMarkers();
+    const nowPosition = timelineData?.range ? getTimelinePosition(timelineData.range.now) : 0;
+
+    return (
+      <div className="portfolio-review-slide timeline-slide">
+        <div className="summary-header" style={{ borderBottom: 'none' }}>
+          <h2>Project Timelines - {portfolioName}</h2>
+        </div>
+
+        <div className="timeline-slide-content">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div className="timeline-legend">
+              <span className="timeline-legend-item">
+                <span className="timeline-legend-bar" style={{ background: '#D0704d' }}></span>
+                ≤14 days
+              </span>
+              <span className="timeline-legend-item">
+                <span className="timeline-legend-bar" style={{ background: '#f5ad5b' }}></span>
+                15-30 days
+              </span>
+              <span className="timeline-legend-item">
+                <span className="timeline-legend-bar" style={{ background: '#8b5cf6' }}></span>
+                &gt;30 days
+              </span>
+              <span className="timeline-legend-item">
+                <span className="timeline-legend-bar" style={{ background: '#6b7280' }}></span>
+                Overdue
+              </span>
+            </div>
+          </div>
+
+          <div className="horizontal-timeline-container">
+            {/* Time axis - month labels above the timeline */}
+            <div className="horizontal-timeline-axis">
+              <div className="timeline-axis-labels">
+                {timeMarkers.map((marker, idx) => (
+                  <div
+                    key={idx}
+                    className="timeline-axis-marker"
+                    style={{ left: `${marker.position}%` }}
+                  >
+                    <span className="timeline-axis-label">{marker.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Project bars */}
+            <div className="horizontal-timeline-projects">
+              {timelineData.projects.map((project) => {
+                const endPosition = getTimelinePosition(project.endDate);
+                const startPosition = project.startDate
+                  ? getTimelinePosition(project.startDate)
+                  : Math.max(0, endPosition - 10);
+
+                const projectMilestones = projectsMilestones[project.id] || [];
+                const daysRemaining = Math.ceil((project.endDate - new Date()) / (1000 * 60 * 60 * 24));
+                const statusColor = daysRemaining < 0 ? '#6b7280' : daysRemaining <= 14 ? '#D0704d' : daysRemaining <= 30 ? '#f5ad5b' : project.portfolio_color || '#539668';
+
+                // Get health score for this project
+                const projectHealthScore = portfolioSummary.projectHealthScores.find(p => p.projectId === project.id);
+                const healthScore = projectHealthScore ? projectHealthScore.score : 0;
+
+                return (
+                  <div key={project.id} className="horizontal-timeline-row">
+                    <div className="timeline-row-label">
+                      {/* Health Gauge */}
+                      <div className="health-score-gauge timeline-health-gauge">
+                        <svg viewBox="0 0 36 36" className="health-gauge-svg">
+                          <circle
+                            className="health-gauge-bg"
+                            cx="18"
+                            cy="18"
+                            r="15.5"
+                            fill="none"
+                            stroke="#e5e7eb"
+                            strokeWidth="3"
+                          />
+                          <circle
+                            className="health-gauge-progress"
+                            cx="18"
+                            cy="18"
+                            r="15.5"
+                            fill="none"
+                            strokeWidth="3"
+                            stroke={getHealthColor(healthScore)}
+                            strokeDasharray={`${(healthScore / 100) * 97.4} 97.4`}
+                            strokeLinecap="round"
+                            transform="rotate(-90 18 18)"
+                          />
+                        </svg>
+                        <span className="health-gauge-value" style={{ color: getHealthColor(healthScore) }}>
+                          {Math.round(healthScore)}
+                        </span>
+                      </div>
+                      <span className="timeline-row-name" title={project.name}>{project.name}</span>
+                    </div>
+                    <div className="timeline-row-track">
+                      {/* Project line */}
+                      <div
+                        className="timeline-row-line"
+                        style={{
+                          left: `${startPosition}%`,
+                          width: `${Math.max(1, endPosition - startPosition)}%`,
+                          background: statusColor
+                        }}
+                      />
+                      {/* Start marker */}
+                      <div
+                        className="timeline-row-marker start"
+                        style={{
+                          left: `${startPosition}%`,
+                          background: statusColor
+                        }}
+                      />
+                      {/* Milestones */}
+                      {projectMilestones.map((milestone) => {
+                        const milestoneDate = new Date(milestone.target_date);
+                        const milestonePosition = getTimelinePosition(milestoneDate);
+                        if (milestonePosition < startPosition || milestonePosition > endPosition) return null;
+
+                        return (
+                          <div
+                            key={milestone.id}
+                            className={`timeline-row-milestone ${milestone.completed ? 'completed' : ''}`}
+                            style={{ left: `${milestonePosition}%` }}
+                          />
+                        );
+                      })}
+                      {/* End marker */}
+                      <div
+                        className="timeline-row-marker end"
+                        style={{
+                          left: `${endPosition}%`,
+                          background: statusColor
+                        }}
+                      />
+                    </div>
+                    <div className="timeline-row-countdown">
+                      {daysRemaining >= 0 ? (
+                        <span className="countdown-positive">{daysRemaining}d</span>
+                      ) : (
+                        <span className="countdown-negative">{Math.abs(daysRemaining)}d</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Today marker */}
+              <div
+                className="timeline-today-line"
+                style={{ left: `${nowPosition}%` }}
+              />
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -1202,7 +1214,7 @@ const PortfolioReviewModal = ({
         </div>
 
         <div className="modal-body" ref={slideRef}>
-          {currentSlide === 0 ? renderSummarySlide() : renderProjectSlide(currentSlide - 1)}
+          {currentSlide === 0 ? renderSummarySlide() : currentSlide === 1 ? renderTimelineSlide() : renderProjectSlide(currentSlide - 2)}
         </div>
 
         <div className="modal-footer" style={{ border: 'none', borderTop: 'none', borderBottom: 'none', background: 'transparent', boxShadow: 'none' }}>
