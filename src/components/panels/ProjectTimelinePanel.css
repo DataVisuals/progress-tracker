@@ -26,6 +26,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  position: relative;
+  z-index: 0;
 }
 
 /* Sticky axis header */
@@ -119,7 +121,7 @@
 /* Timeline Projects List */
 .timeline-projects {
   flex: 1;
-  padding: 2px 0;
+  padding: 8px 0 2px 0;
   min-width: fit-content;
 }
 
@@ -137,7 +139,7 @@
 
 .timeline-project-row:hover {
   background-color: #f8fafc;
-  z-index: 200;
+  z-index: 10;
 }
 
 .timeline-project-row.past {
@@ -299,7 +301,7 @@
 
 .tubemap-stop:hover {
   transform: translate(-50%, -50%) scale(1.2);
-  z-index: 300;
+  z-index: 10;
 }
 
 .stop-marker {
