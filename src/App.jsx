@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Build timestamp - updated automatically before each commit to gh
-const BUILD_TIMESTAMP = '2025-12-07 20:28:00';
+const BUILD_TIMESTAMP = '2025-12-07 20:29:27';
 import Select from 'react-select';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';

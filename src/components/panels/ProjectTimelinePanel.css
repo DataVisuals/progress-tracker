@@ -425,7 +425,7 @@
   height: 100%;
   width: 2px;
   pointer-events: none;
-  z-index: 5;
+  z-index: 0;
 }
 
 .today-line-segment {
