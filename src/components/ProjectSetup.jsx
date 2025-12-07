@@ -9,20 +9,6 @@ import './FormInputs.css';
 import './ProjectSetup.css';
 
 const ProjectSetup = ({ onComplete, onCancel }) => {
-  // Calculate default dates: start = first of next month, end = 6 months later
-  const getDefaultDates = () => {
-    const today = new Date();
-    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-    const sixMonthsLater = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 6, 0); // Last day of month 6 months later
-
-    return {
-      start: nextMonth.toISOString().split('T')[0],
-      end: sixMonthsLater.toISOString().split('T')[0]
-    };
-  };
-
-  const defaultDates = getDefaultDates();
-
   const [projectName, setProjectName] = useState('');
   const [projectManager, setProjectManager] = useState(null);
   const [secondaryPM, setSecondaryPM] = useState(null);
@@ -30,11 +16,37 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
   const [portfolioId, setPortfolioId] = useState(null);
   const [users, setUsers] = useState([]);
   const [portfolios, setPortfolios] = useState([]);
-  const [projectStartDate, setProjectStartDate] = useState(defaultDates.start);
-  const [projectEndDate, setProjectEndDate] = useState(defaultDates.end);
-  const [metrics, setMetrics] = useState([
-    { name: '', description: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0, startDate: defaultDates.start, endDate: defaultDates.end, frequency: 'monthly' }
-  ]);
+
+  // Calculate default dates: start = first of next month, end = 6 months later
+  const [projectStartDate, setProjectStartDate] = useState(() => {
+    const today = new Date();
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    return nextMonth.toISOString().split('T')[0];
+  });
+
+  const [projectEndDate, setProjectEndDate] = useState(() => {
+    const today = new Date();
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const sixMonthsLater = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 6, 0);
+    return sixMonthsLater.toISOString().split('T')[0];
+  });
+
+  const [metrics, setMetrics] = useState(() => {
+    const today = new Date();
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const sixMonthsLater = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 6, 0);
+    return [{
+      name: '',
+      description: '',
+      target: '',
+      progression: 'linear',
+      amberTolerance: 5.0,
+      redTolerance: 10.0,
+      startDate: nextMonth.toISOString().split('T')[0],
+      endDate: sixMonthsLater.toISOString().split('T')[0],
+      frequency: 'monthly'
+    }];
+  });
   const [links, setLinks] = useState([
     { label: '', url: '' }
   ]);
@@ -59,7 +71,20 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
   };
 
   const addMetric = () => {
-    setMetrics([...metrics, { name: '', description: '', target: '', progression: 'linear', amberTolerance: 5.0, redTolerance: 10.0, startDate: defaultDates.start, endDate: defaultDates.end, frequency: 'monthly' }]);
+    const today = new Date();
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const sixMonthsLater = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 6, 0);
+    setMetrics([...metrics, {
+      name: '',
+      description: '',
+      target: '',
+      progression: 'linear',
+      amberTolerance: 5.0,
+      redTolerance: 10.0,
+      startDate: nextMonth.toISOString().split('T')[0],
+      endDate: sixMonthsLater.toISOString().split('T')[0],
+      frequency: 'monthly'
+    }]);
   };
 
   const removeMetric = (index) => {
