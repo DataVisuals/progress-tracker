@@ -429,37 +429,41 @@ const PortfolioReviewModal = ({
     if (portfolioSummary.criticalProjects > 0) {
       const criticalProjects = portfolioProjects
         .filter(p => {
-          const health = calculateHealthScores(p, projectsData[p.id] || [], projectsMetrics[p.id] || [], projectsLinks[p.id] || []);
-          return health.overallScore < 50;
+          const health = calculateHealthScores(p, projectsData[p.id] || [], projectsMetrics[p.id] || [], projectsRecoveryPlans[p.id] || [], projectsLinks[p.id] || []);
+          return health.overall < 50;
         })
         .slice(0, 3);
 
       const projectList = criticalProjects.map(p => `${p.name} (PM: ${p.initiative_manager || 'Unassigned'})`).join(', ');
 
-      actions.push({
-        priority: 'high',
-        action: `need to be reviewed`,
-        details: projectList,
-        reason: 'Health scores below 50%'
-      });
+      if (projectList) {
+        actions.push({
+          priority: 'high',
+          action: `need to be reviewed`,
+          details: projectList,
+          reason: 'Health scores below 50%'
+        });
+      }
     }
 
     if (portfolioSummary.atRiskProjects > 0) {
       const atRiskProjects = portfolioProjects
         .filter(p => {
-          const health = calculateHealthScores(p, projectsData[p.id] || [], projectsMetrics[p.id] || [], projectsLinks[p.id] || []);
-          return health.overallScore >= 50 && health.overallScore < 75;
+          const health = calculateHealthScores(p, projectsData[p.id] || [], projectsMetrics[p.id] || [], projectsRecoveryPlans[p.id] || [], projectsLinks[p.id] || []);
+          return health.overall >= 50 && health.overall < 75;
         })
         .slice(0, 3);
 
       const projectList = atRiskProjects.map(p => `${p.name} (PM: ${p.initiative_manager || 'Unassigned'})`).join(', ');
 
-      actions.push({
-        priority: 'medium',
-        action: `need to be monitored`,
-        details: projectList,
-        reason: 'Health scores 50-75%'
-      });
+      if (projectList) {
+        actions.push({
+          priority: 'medium',
+          action: `need to be monitored`,
+          details: projectList,
+          reason: 'Health scores 50-75%'
+        });
+      }
     }
 
     // Check health breakdown dimensions
