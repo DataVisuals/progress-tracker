@@ -2865,7 +2865,7 @@ html.dark-mode .quadrant-content {
 
 .commentary-project {
   font-weight: 600;
-  color: #003c71;
+  color: #374151;
   font-size: 10px;
 }
 
@@ -2877,7 +2877,7 @@ html.dark-mode .quadrant-content {
 
 .commentary-period {
   font-weight: 500;
-  color: #6b7280;
+  color: #374151;
   font-size: 10px;
 }
 
@@ -3790,7 +3790,7 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .commentary-project {
-  color: #e0f2fe;
+  color: #d1d5db;
 }
 
 :root.dark-mode .commentary-metric {
@@ -3798,7 +3798,7 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .commentary-period {
-  color: #9ca3af;
+  color: #d1d5db;
 }
 
 :root.dark-mode .commentary-author {
