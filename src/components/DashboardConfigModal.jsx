@@ -19,9 +19,9 @@ const DashboardConfigModal = ({
   const currentLayoutConfig = layoutConfig[selectedLayout];
   const requiredPanelCount = currentLayoutConfig?.panelCount || 4;
 
-  // Get available panels (filter admin-only panels if not admin)
+  // Get available panels (filter admin-only and dock-only panels)
   const availablePanels = Object.values(panelConfig).filter(
-    panel => !panel.adminOnly || isAdmin
+    panel => !panel.dockOnly && (!panel.adminOnly || isAdmin)
   );
 
   // Handle layout selection

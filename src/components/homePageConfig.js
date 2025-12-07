@@ -20,7 +20,7 @@ export const PANEL_CONFIG = {
   inconsistencies: { id: 'inconsistencies', name: 'Inconsistencies', icon: MdBugReport, adminOnly: false },
   attention: { id: 'attention', name: 'My Projects Needing Attention', icon: MdBuild, adminOnly: false },
   projectHealth: { id: 'projectHealth', name: 'Project Health Rankings', icon: MdFavorite, adminOnly: false },
-  timeline: { id: 'timeline', name: 'Project Timeline', icon: MdDateRange, adminOnly: false },
+  timeline: { id: 'timeline', name: 'Project Timeline', icon: MdDateRange, adminOnly: false, dockOnly: true },
   audit: { id: 'audit', name: 'Audit Log', icon: MdHistory, adminOnly: true },
   activeUsers: { id: 'activeUsers', name: 'User Insights', icon: MdPeople, adminOnly: true },
   performance: { id: 'performance', name: 'Performance', icon: MdSpeed, adminOnly: true }

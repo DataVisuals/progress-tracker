@@ -112,7 +112,15 @@ const HomePage = ({
     const stored = localStorage.getItem('homePageDashboardConfig');
     if (stored) {
       try {
-        return JSON.parse(stored);
+        const config = JSON.parse(stored);
+        // Filter out dock-only panels (like 'timeline') from quadrant view
+        if (config.panels && Array.isArray(config.panels)) {
+          config.panels = config.panels.filter(panelId => {
+            const panelInfo = PANEL_CONFIG[panelId];
+            return panelInfo && !panelInfo.dockOnly;
+          });
+        }
+        return config;
       } catch (e) {
         return DEFAULT_DASHBOARD_CONFIG;
       }
@@ -1104,6 +1112,12 @@ const HomePage = ({
   const renderPanel = (panelId, index, forDock = false) => {
     // Skip minimized panels unless rendering for dock
     if (!forDock && minimizedPanels.includes(panelId)) {
+      return null;
+    }
+
+    // Skip dock-only panels when rendering in quadrant view
+    const panelInfo = PANEL_CONFIG[panelId];
+    if (!forDock && panelInfo?.dockOnly) {
       return null;
     }
 
