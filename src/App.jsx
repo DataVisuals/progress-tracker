@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Build timestamp - updated automatically before each commit to gh
-const BUILD_TIMESTAMP = '2025-12-07 19:37:30';
+const BUILD_TIMESTAMP = '2025-12-07 19:47:53';
 import Select from 'react-select';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';
@@ -1517,9 +1517,11 @@ function App() {
                         <button onMouseDown={() => { setShowNewProject(true); setShowProjectDropdown(false); }}>
                           New Project
                         </button>
+                        {/* Import Data feature temporarily disabled
                         <button onMouseDown={() => { setShowImportData(true); setShowProjectDropdown(false); }}>
                           Import Data
                         </button>
+                        */}
                       </>
                     )}
                     <button onMouseDown={() => { setShowReportSelector(true); setShowProjectDropdown(false); }}>

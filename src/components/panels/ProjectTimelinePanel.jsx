@@ -91,21 +91,20 @@ const ProjectTimelinePanel = ({
     return Math.max(0, Math.min(100, (dateMs / totalMs) * 100));
   };
 
-  // Generate time markers for the timeline - show all months
+  // Generate time markers for the timeline - show months with spacing to avoid overlap
   const getTimeMarkers = () => {
     if (!timelineData.range) return [];
     const { min, max } = timelineData.range;
-    const markers = [];
+    const allMarkers = [];
 
     const current = new Date(min);
     current.setDate(1); // Start from first of month
 
+    // Collect all possible markers
     while (current <= max) {
       const position = getPosition(current);
-      // Show all markers within reasonable bounds to ensure milestone dates are labeled
-      // Allow markers from 0% to 100% to show full timeline coverage
       if (position >= 0 && position <= 100) {
-        markers.push({
+        allMarkers.push({
           date: new Date(current),
           position,
           label: current.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })
@@ -113,7 +112,14 @@ const ProjectTimelinePanel = ({
       }
       current.setMonth(current.getMonth() + 1);
     }
-    return markers;
+
+    // If too many markers, show every 2nd or 3rd month to prevent overlap
+    const totalMonths = allMarkers.length;
+    let step = 1;
+    if (totalMonths > 18) step = 3;
+    else if (totalMonths > 12) step = 2;
+
+    return allMarkers.filter((_, idx) => idx % step === 0);
   };
 
   // Format date for display
