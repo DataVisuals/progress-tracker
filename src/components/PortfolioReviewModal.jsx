@@ -400,14 +400,15 @@ const PortfolioReviewModal = ({
   const getTimeMarkers = () => {
     if (!timelineData?.range) return [];
     const { min, max } = timelineData.range;
-    const markers = [];
+    const allMarkers = [];
     const current = new Date(min);
     current.setDate(1);
 
+    // Collect all possible markers
     while (current <= max) {
       const position = getTimelinePosition(current);
       if (position >= 5 && position <= 97) {
-        markers.push({
+        allMarkers.push({
           date: new Date(current),
           position,
           label: current.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })
@@ -415,7 +416,14 @@ const PortfolioReviewModal = ({
       }
       current.setMonth(current.getMonth() + 1);
     }
-    return markers;
+
+    // If too many markers, show every 2nd or 3rd month to prevent overlap
+    const totalMonths = allMarkers.length;
+    let step = 1;
+    if (totalMonths > 18) step = 3;
+    else if (totalMonths > 12) step = 2;
+
+    return allMarkers.filter((_, idx) => idx % step === 0);
   };
 
   // Generate suggested actions based on portfolio health
