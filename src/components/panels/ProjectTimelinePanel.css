@@ -36,15 +36,15 @@
   background: white;
   flex-shrink: 0;
   overflow: visible;
-  padding-bottom: 8px;
+  padding-bottom: 12px;
 }
 
 /* Time Axis Header */
 .timeline-axis {
   display: flex;
   align-items: flex-end;
-  height: 40px;
-  padding: 8px 0 4px 0;
+  height: 48px;
+  padding: 12px 0 4px 0;
   border-bottom: 1px solid #e2e8f0;
   margin-bottom: 0;
   flex-shrink: 0;
