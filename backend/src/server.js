@@ -30,8 +30,8 @@ function createApp(dbPath) {
   // Initialize database with provided path
   const { db, dbRun, dbGet, dbAll } = initializeDatabase(dbPath);
 
-  // Initialize cache with default TTL of 60 seconds
-  const cache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
+  // Initialize cache with default TTL of 5 minutes
+  const cache = new NodeCache({ stdTTL: 300, checkperiod: 120 });
 
   // Cache key generators
   const cacheKeys = {
@@ -1023,8 +1023,8 @@ function createApp(dbPath) {
         greenProjects
       };
 
-      // Cache for 120 seconds
-      cache.set(cacheKey, result, 120);
+      // Cache for 10 minutes
+      cache.set(cacheKey, result, 600);
       logger.debug(`Cache miss for portfolio report: ${id}, cached result`);
 
       res.json(result);
@@ -5953,8 +5953,8 @@ function createApp(dbPath) {
         period: days
       };
 
-      // Cache for 300 seconds (5 minutes)
-      cache.set(cacheKey, result, 300);
+      // Cache for 15 minutes
+      cache.set(cacheKey, result, 900);
       logger.debug(`Cache miss for analytics performance: ${days} days, cached result`);
 
       res.json(result);
