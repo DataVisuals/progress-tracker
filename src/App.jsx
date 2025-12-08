@@ -43,6 +43,7 @@ import progressChartAnimation from './assets/progress-chart.json';
 import bellNotificationAnimation from './assets/bell-notification.json';
 import { trackPage, startPageLoadTimer } from './hooks/usePageTracking';
 import { getTimeUntilExpiry, isTokenExpiringSoon, formatTimeUntilExpiry, storeTokenExpiry } from './utils/tokenUtils';
+import { useProjectData, useProjectMetrics, useInvalidateProjectQueries } from './hooks/useProjectQueries';
 import './App.css';
 
 function App() {
@@ -130,6 +131,28 @@ function App() {
   });
   const [tokenExpiryWarning, setTokenExpiryWarning] = useState(null); // Time until expiry (for display)
   const [showTokenWarning, setShowTokenWarning] = useState(false); // Show warning modal
+
+  // React Query hooks for cached data fetching
+  const { data: cachedProjectData, refetch: refetchProjectData } = useProjectData(selectedProject, {
+    enabled: !!selectedProject && isAuthenticated,
+  });
+  const { data: cachedProjectMetrics, refetch: refetchProjectMetrics } = useProjectMetrics(selectedProject, {
+    enabled: !!selectedProject && isAuthenticated,
+  });
+  const { invalidateProject } = useInvalidateProjectQueries();
+
+  // Sync React Query data to local state
+  useEffect(() => {
+    if (cachedProjectData) {
+      setProjectData(cachedProjectData);
+    }
+  }, [cachedProjectData]);
+
+  useEffect(() => {
+    if (cachedProjectMetrics) {
+      setProjectMetrics(cachedProjectMetrics);
+    }
+  }, [cachedProjectMetrics]);
 
   // Token refresh and expiry monitoring
   useEffect(() => {
@@ -349,10 +372,10 @@ function App() {
   }, [selectedPortfolio]);
 
   // Load project data when project selected
+  // Note: projectData and projectMetrics are now handled by React Query hooks automatically
   useEffect(() => {
     if (selectedProject) {
-      loadProjectData();
-      loadProjectMetrics();
+      // These are still manually loaded (not cached via React Query)
       loadProjectLinks();
       loadProjectRecoveryPlans();
       loadProjectFeedbackCount();
@@ -425,11 +448,16 @@ function App() {
 
   const loadProjectData = async (timestamp = null) => {
     try {
-      const response = timestamp
-        ? await api.getProjectDataTimeTravel(selectedProject, timestamp)
-        : await api.getProjectData(selectedProject);
-      console.log('loadProjectData received', response.data.length, 'periods:', response.data);
-      setProjectData(response.data);
+      if (timestamp) {
+        // Time travel mode - fetch directly (not cached)
+        const response = await api.getProjectDataTimeTravel(selectedProject, timestamp);
+        console.log('loadProjectData (time travel) received', response.data.length, 'periods');
+        setProjectData(response.data);
+      } else {
+        // Normal mode - use React Query cache with refetch
+        console.log('loadProjectData: triggering refetch via React Query');
+        await refetchProjectData();
+      }
     } catch (err) {
       console.error('Failed to load project data:', err);
     }
@@ -437,8 +465,9 @@ function App() {
 
   const loadProjectMetrics = async () => {
     try {
-      const response = await api.getProjectMetrics(selectedProject);
-      setProjectMetrics(response.data);
+      // Use React Query cache with refetch
+      console.log('loadProjectMetrics: triggering refetch via React Query');
+      await refetchProjectMetrics();
     } catch (err) {
       console.error('Failed to load project metrics:', err);
       setProjectMetrics([]);

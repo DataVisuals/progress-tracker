@@ -14,6 +14,7 @@
     "console:watch": "./watch-console.sh"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.12",
     "axios": "^1.12.2",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
