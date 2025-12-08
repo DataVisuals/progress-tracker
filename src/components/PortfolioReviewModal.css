@@ -794,7 +794,7 @@
   position: relative;
   margin-bottom: 4px;
   flex-shrink: 0;
-  margin-left: 220px;
+  margin-left: 328px;
   margin-right: 58px;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -872,7 +872,7 @@
 /* Each project row */
 .horizontal-timeline-row {
   display: grid;
-  grid-template-columns: 250px 1fr 50px;
+  grid-template-columns: 320px 1fr 50px;
   gap: 8px;
   align-items: center;
   min-height: 24px;
@@ -1008,6 +1008,10 @@
   opacity: 0.4;
   pointer-events: none;
   z-index: 0;
+  /* Position is calculated using CSS calc to align with track area */
+  /* Track starts at: 320px (label) + 8px (gap) = 328px */
+  /* Track ends at: 100% - 50px (countdown) - 8px (gap) = 100% - 58px */
+  /* left: calc(328px + var(--position) * (100% - 386px)) */
 }
 
 /* Summary Slide - Old styles (kept for compatibility) */

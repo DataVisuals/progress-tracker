@@ -944,10 +944,10 @@ const PortfolioReviewModal = ({
                 );
               })}
 
-              {/* Today marker */}
+              {/* Today marker - positioned relative to track area */}
               <div
                 className="timeline-today-line"
-                style={{ left: `${nowPosition}%` }}
+                style={{ left: `calc(328px + ${nowPosition / 100} * (100% - 386px))` }}
               />
             </div>
           </div>
