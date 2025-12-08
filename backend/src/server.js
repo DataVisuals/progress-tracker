@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const NodeCache = require('node-cache');
 
 // Promisify crypto functions
 const scrypt = promisify(crypto.scrypt);
@@ -28,6 +29,28 @@ const logger = require('./logger');
 function createApp(dbPath) {
   // Initialize database with provided path
   const { db, dbRun, dbGet, dbAll } = initializeDatabase(dbPath);
+
+  // Initialize cache with default TTL of 60 seconds
+  const cache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
+
+  // Cache key generators
+  const cacheKeys = {
+    projectData: (projectId) => `project_data_${projectId}`,
+    portfolioReport: (portfolioId) => `portfolio_report_${portfolioId}`,
+    analyticsPerformance: (days) => `analytics_performance_${days}`
+  };
+
+  // Cache invalidation helper - invalidates all related caches when data changes
+  function invalidateProjectCache(projectId) {
+    cache.del(cacheKeys.projectData(projectId));
+    // Also invalidate portfolio reports that might include this project
+    cache.keys().forEach(key => {
+      if (key.startsWith('portfolio_report_')) {
+        cache.del(key);
+      }
+    });
+    logger.debug(`Cache invalidated for project ${projectId}`);
+  }
 
   // Define permission functions with access to this database instance
   const ROLES = {
@@ -761,6 +784,14 @@ function createApp(dbPath) {
   app.get('/api/portfolios/:id/report', async (req, res) => {
     try {
       const { id } = req.params;
+      const cacheKey = cacheKeys.portfolioReport(id);
+
+      // Check cache first
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        logger.debug(`Cache hit for portfolio report: ${id}`);
+        return res.json(cached);
+      }
 
       // Get portfolio info
       const portfolio = await dbGet('SELECT * FROM portfolios WHERE id = ?', [id]);
@@ -984,13 +1015,19 @@ function createApp(dbPath) {
         totalMetrics: projectsWithMetrics.reduce((sum, p) => sum + p.metrics.length, 0)
       };
 
-      res.json({
+      const result = {
         portfolio,
         summary,
         redProjects,
         amberProjects,
         greenProjects
-      });
+      };
+
+      // Cache for 120 seconds
+      cache.set(cacheKey, result, 120);
+      logger.debug(`Cache miss for portfolio report: ${id}, cached result`);
+
+      res.json(result);
     } catch (err) {
       console.error('Portfolio report error:', err);
       res.status(500).json({ error: err.message });
@@ -2855,14 +2892,17 @@ function createApp(dbPath) {
       );
 
       logger.asset.create(req.user, 'metric', { name, description, owner_id: finalOwnerId, start_date, end_date, frequency, final_target }, req.params.projectId);
-  
+
+      // Invalidate cache for this project
+      invalidateProjectCache(req.params.projectId);
+
       res.json({ id: result.lastID });
     } catch (err) {
       logger.exception('METRIC', 'Error creating metric', err, { projectId: req.params.projectId, requestBody: req.body });
       res.status(500).json({ error: err.message });
     }
   });
-  
+
   app.put('/api/metrics/:id', authenticateToken, async (req, res) => {
     try {
       // Get the project_id for this metric
@@ -3020,12 +3060,15 @@ function createApp(dbPath) {
         req.ip
       );
 
+      // Invalidate cache for this project
+      invalidateProjectCache(metric.project_id);
+
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
   });
-  
+
   app.delete('/api/metrics/:id', authenticateToken, async (req, res) => {
     try {
       // Get the project_id for this metric
@@ -3047,7 +3090,10 @@ function createApp(dbPath) {
         `Deleted metric "${metric.name}" from project ID ${metric.project_id}`,
         req.ip
       );
-  
+
+      // Invalidate cache for this project
+      invalidateProjectCache(metric.project_id);
+
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -3118,6 +3164,16 @@ function createApp(dbPath) {
   // ===== PROJECT DATA (for grid view) =====
   app.get('/api/projects/:projectId/data', async (req, res) => {
     try {
+      const projectId = req.params.projectId;
+      const cacheKey = cacheKeys.projectData(projectId);
+
+      // Check cache first
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        logger.debug(`Cache hit for project data: ${projectId}`);
+        return res.json(cached);
+      }
+
       const data = await dbAll(`
         SELECT
           mp.id,
@@ -3147,8 +3203,12 @@ function createApp(dbPath) {
         LEFT JOIN users u ON m.owner_id = u.id
         WHERE m.project_id = ?
         ORDER BY mp.reporting_date
-      `, [req.params.projectId]);
-  
+      `, [projectId]);
+
+      // Cache for 60 seconds (default TTL)
+      cache.set(cacheKey, data);
+      logger.debug(`Cache miss for project data: ${projectId}, cached result`);
+
       res.json(data);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -3190,13 +3250,16 @@ function createApp(dbPath) {
         `Created period for metric "${metric.name}" on ${reporting_date}`,
         req.ip
       );
-  
+
+      // Invalidate cache for this project
+      invalidateProjectCache(metric.project_id);
+
       res.json({ id: result.lastID, success: true });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
   });
-  
+
   app.put('/api/metric-periods/:id', authenticateToken, async (req, res) => {
     try {
       // Get the project_id for this period and old values
@@ -3274,36 +3337,39 @@ function createApp(dbPath) {
           description,
           req.ip
         );
+
+        // Invalidate cache for this project
+        invalidateProjectCache(periodData.project_id);
       }
-  
+
       res.json({ success: true, isHistoricEdit });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
   });
-  
+
   app.patch('/api/metric-periods/:id', authenticateToken, async (req, res) => {
     try {
       // Get the project_id for this period
-      const periodData = await dbGet(`
+      const patchPeriodData = await dbGet(`
         SELECT mp.*, m.project_id, m.name as metric_name
         FROM metric_periods mp
         JOIN metrics m ON mp.metric_id = m.id
         WHERE mp.id = ?
       `, [req.params.id]);
-      if (!periodData) {
+      if (!patchPeriodData) {
         return res.status(404).json({ error: 'Period not found' });
       }
-  
+
       // Check if user can edit this project
-      if (!(await canEditProject(req.user.userId, periodData.project_id))) {
+      if (!(await canEditProject(req.user.userId, patchPeriodData.project_id))) {
         return res.status(403).json({ error: 'You do not have permission to edit this data' });
       }
-  
+
       const { complete, commentary } = req.body;
 
       // Check if this is a historic edit of completion values (period end date has passed)
-      const periodEndDate = new Date(periodData.reporting_date);
+      const periodEndDate = new Date(patchPeriodData.reporting_date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const isHistoricEdit = periodEndDate < today && complete !== undefined;
@@ -3324,11 +3390,11 @@ function createApp(dbPath) {
 
         // Mark historic edits clearly in audit log
         const description = isHistoricEdit
-          ? `⚠️ HISTORIC EDIT: Updated complete value for metric "${periodData.metric_name}" on ${periodData.reporting_date} (period ended ${periodData.reporting_date})`
-          : `Updated complete value for metric "${periodData.metric_name}" on ${periodData.reporting_date}`;
+          ? `⚠️ HISTORIC EDIT: Updated complete value for metric "${patchPeriodData.metric_name}" on ${patchPeriodData.reporting_date} (period ended ${patchPeriodData.reporting_date})`
+          : `Updated complete value for metric "${patchPeriodData.metric_name}" on ${patchPeriodData.reporting_date}`;
 
         await logAudit(req.user, 'UPDATE', 'metric_periods', req.params.id,
-          { complete: periodData.complete },
+          { complete: patchPeriodData.complete },
           { complete },
           description,
           req.ip
@@ -3340,16 +3406,19 @@ function createApp(dbPath) {
         await dbRun('UPDATE metric_periods SET commentary = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [commentary, req.params.id]);
 
         // Get project name for description
-        const project = await dbGet('SELECT p.name FROM projects p JOIN metrics m ON p.id = m.project_id WHERE m.id = ?', [periodData.metric_id]);
+        const project = await dbGet('SELECT p.name FROM projects p JOIN metrics m ON p.id = m.project_id WHERE m.id = ?', [patchPeriodData.metric_id]);
         const projectName = project?.name || 'Unknown';
 
         await logAudit(req.user, 'UPDATE', 'metric_periods', req.params.id,
-          { commentary: periodData.commentary },
+          { commentary: patchPeriodData.commentary },
           { commentary },
-          `Updated metric period for Project: ${projectName}, Metric: ${periodData.metric_name}, Period: ${periodData.reporting_date}`,
+          `Updated metric period for Project: ${projectName}, Metric: ${patchPeriodData.metric_name}, Period: ${patchPeriodData.reporting_date}`,
           req.ip
         );
       }
+
+      // Invalidate cache for this project
+      invalidateProjectCache(patchPeriodData.project_id);
 
       res.json({ success: true, isHistoricEdit });
     } catch (err) {
@@ -3390,14 +3459,17 @@ function createApp(dbPath) {
         `Deleted period for metric "${periodData.metric_name}" on ${periodData.reporting_date}`,
         req.ip
       );
-  
+
+      // Invalidate cache for this project
+      invalidateProjectCache(periodData.project_id);
+
       res.json({ success: true });
     } catch (err) {
       console.error('Error deleting metric period:', err);
       res.status(500).json({ error: err.message });
     }
   });
-  
+
   // ===== COMMENTS (for periods) =====
 
   // Get all comments grouped by user for clarity scoring (admin only)
@@ -5783,6 +5855,15 @@ function createApp(dbPath) {
   app.get('/api/analytics/performance', optionalAuthenticateToken, async (req, res) => {
     try {
       const days = parseInt(req.query.days) || 30;
+      const cacheKey = cacheKeys.analyticsPerformance(days);
+
+      // Check cache first
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        logger.debug(`Cache hit for analytics performance: ${days} days`);
+        return res.json(cached);
+      }
+
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - days);
 
@@ -5842,7 +5923,7 @@ function createApp(dbPath) {
         LIMIT 10
       `, [daysAgo.toISOString()]);
 
-      res.json({
+      const result = {
         overallStats: {
           avgLoadTime: Math.round(overallStats.avg_load_time) || 0,
           minLoadTime: overallStats.min_load_time || 0,
@@ -5870,7 +5951,13 @@ function createApp(dbPath) {
           views: p.views
         })),
         period: days
-      });
+      };
+
+      // Cache for 300 seconds (5 minutes)
+      cache.set(cacheKey, result, 300);
+      logger.debug(`Cache miss for analytics performance: ${days} days, cached result`);
+
+      res.json(result);
     } catch (err) {
       console.error('Performance stats error:', err);
       res.status(500).json({ error: err.message });
