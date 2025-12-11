@@ -274,6 +274,15 @@ const PortfolioReviewModal = ({
           tooltip.style.display = 'none';
         });
 
+        // Temporarily expand slide to capture full content
+        const originalOverflow = slideRef.current.style.overflow;
+        const originalMaxHeight = slideRef.current.style.maxHeight;
+        slideRef.current.style.overflow = 'visible';
+        slideRef.current.style.maxHeight = 'none';
+
+        // Wait for layout to settle
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         // Capture the slide
         const canvas = await html2canvas(slideRef.current, {
           scale: 2,
@@ -282,6 +291,8 @@ const PortfolioReviewModal = ({
           backgroundColor: darkMode ? '#111827' : '#ffffff',
           width: slideRef.current.scrollWidth,
           height: slideRef.current.scrollHeight,
+          windowWidth: slideRef.current.scrollWidth,
+          windowHeight: slideRef.current.scrollHeight,
           ignoreElements: (element) => {
             // Ignore tooltips, popovers, and other overlay elements
             return element.classList.contains('recharts-tooltip-wrapper') ||
@@ -290,22 +301,48 @@ const PortfolioReviewModal = ({
           }
         });
 
+        // Restore slide styles
+        slideRef.current.style.overflow = originalOverflow;
+        slideRef.current.style.maxHeight = originalMaxHeight;
+
         // Restore tooltip visibility
         tooltips.forEach((tooltip, idx) => {
           tooltip.style.display = originalDisplays[idx];
         });
 
         const imgData = canvas.toDataURL('image/png');
-        const imgWidth = 11.69; // A4 landscape width in inches
-        const imgHeight = 8.27; // A4 landscape height in inches
+
+        // A4 landscape dimensions in inches
+        const pageWidth = 11.69;
+        const pageHeight = 8.27;
+
+        // Calculate aspect ratio preserving dimensions
+        const canvasAspect = canvas.width / canvas.height;
+        const pageAspect = pageWidth / pageHeight;
+
+        let imgWidth, imgHeight, offsetX, offsetY;
+
+        if (canvasAspect > pageAspect) {
+          // Canvas is wider - fit to width, top-align
+          imgWidth = pageWidth;
+          imgHeight = pageWidth / canvasAspect;
+          offsetX = 0;
+          offsetY = 0;
+        } else {
+          // Canvas is taller - fit to height, center horizontally
+          imgHeight = pageHeight;
+          imgWidth = pageHeight * canvasAspect;
+          offsetX = (pageWidth - imgWidth) / 2;
+          offsetY = 0;
+        }
 
         // Add page (not for first page, it's added automatically)
         if (i > 0) {
           pdf.addPage();
         }
 
-        // Add image to PDF
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        // Add image to PDF, centered on page
+        pdf.addImage(imgData, 'PNG', offsetX, offsetY, imgWidth, imgHeight);
       }
 
       // Save PDF
@@ -882,8 +919,8 @@ const PortfolioReviewModal = ({
                             strokeWidth="3"
                             stroke={getHealthColor(healthScore)}
                             strokeDasharray={`${(healthScore / 100) * 97.4} 97.4`}
+                            strokeDashoffset="24.35"
                             strokeLinecap="round"
-                            transform="rotate(-90 18 18)"
                           />
                         </svg>
                         <span className="health-gauge-value" style={{ color: getHealthColor(healthScore) }}>
@@ -1015,8 +1052,8 @@ const PortfolioReviewModal = ({
                 strokeWidth="3"
                 stroke={getHealthColor(healthScores.overall)}
                 strokeDasharray={`${(healthScores.overall / 100) * 97.4} 97.4`}
+                strokeDashoffset="24.35"
                 strokeLinecap="round"
-                transform="rotate(-90 18 18)"
               />
             </svg>
             <span className="health-gauge-value" style={{ color: getHealthColor(healthScores.overall) }}>
