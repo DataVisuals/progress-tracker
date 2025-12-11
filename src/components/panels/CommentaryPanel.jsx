@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import Select from 'react-select';
 import { MdComment } from 'react-icons/md';
 import { smallSelectStyles } from '../SelectStyles';
+import ClarityIndicator from '../ClarityIndicator';
 import 'react-quill/dist/quill.snow.css';
 
 const formatTimestamp = (timestamp) => {
@@ -17,6 +18,12 @@ const formatTimestamp = (timestamp) => {
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
   return date.toLocaleDateString();
+};
+
+// Strip HTML tags to get plain text for clarity scoring
+const stripHtml = (html) => {
+  if (!html) return '';
+  return html.replace(/<[^>]*>/g, '').trim();
 };
 
 const CommentaryPanel = ({
@@ -132,6 +139,7 @@ const CommentaryPanel = ({
                     <div className="commentary-footer" style={{ fontSize: '10px', marginTop: '2px', gap: '6px' }}>
                       {item.createdBy && <span className="commentary-author">{item.createdBy}</span>}
                       <span className="commentary-time">{formatTimestamp(item.timestamp)}</span>
+                      <ClarityIndicator text={stripHtml(item.commentary)} size="sm" compact />
                     </div>
                   </div>
 
@@ -164,9 +172,10 @@ const CommentaryPanel = ({
                           style={{ backgroundColor: '#fafafa', marginLeft: '4px', padding: '4px 8px' }}
                         >
                           <div className="commentary-text ql-editor" style={{ fontSize: '11px', lineHeight: '1.3', padding: '0', margin: '0' }} dangerouslySetInnerHTML={{ __html: reply.commentary }} />
-                          <div className="commentary-footer" style={{ fontSize: '9px', marginTop: '2px' }}>
+                          <div className="commentary-footer" style={{ fontSize: '9px', marginTop: '2px', gap: '6px' }}>
                             {reply.createdBy && <span className="commentary-author">{reply.createdBy}</span>}
                             <span className="commentary-time">{formatTimestamp(reply.timestamp)}</span>
+                            <ClarityIndicator text={stripHtml(reply.commentary)} size="sm" compact />
                           </div>
                         </div>
                       ))}

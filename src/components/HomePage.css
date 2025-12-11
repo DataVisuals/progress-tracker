@@ -6625,12 +6625,6 @@ html.dark-mode .quadrant-content {
 .update-nav-icon {
   font-size: 14px;
   color: #9ca3af;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.update-project-header:hover .update-nav-icon {
-  opacity: 1;
 }
 
 .update-metrics {

@@ -5,12 +5,6 @@
   position: relative;
   cursor: help;
   pointer-events: auto;
-  transition: color 0.3s ease, opacity 0.2s ease;
-  opacity: 0.4;
-}
-
-.clarity-indicator:hover {
-  opacity: 1;
 }
 
 /* Show on parent hover for compact mode in lists */

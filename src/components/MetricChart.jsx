@@ -1446,7 +1446,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                 </div>
               ) : (
                 <div className="metric-description-wrapper" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                  <ClarityIndicator text={sortedData[0]?.metric_description} size="sm" compact hoverReveal contentType="description" />
+                  <ClarityIndicator text={sortedData[0]?.metric_description} size="sm" compact contentType="description" />
                   <span
                     className={`metric-description-text ${canEdit && onDescriptionChange ? 'editable' : ''} ${sortedData[0]?.metric_description ? 'filled' : 'placeholder'}`}
                     onClick={handleDescriptionClick}
@@ -1817,7 +1817,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                                 <>
                                   <div className="comment-header-sidebar" style={{ gap: '4px', marginBottom: '1px' }}>
                                     <span className="comment-date-sidebar" style={{ fontSize: '10px' }}>{comment.reporting_date}</span>
-                                    <ClarityIndicator text={comment.comment_text} size="sm" compact hoverReveal />
+                                    <ClarityIndicator text={comment.comment_text} size="sm" compact />
                                     <span className="comment-meta-sidebar" style={{ fontSize: '10px' }}>
                                       {comment.created_by_name && !comment.is_system && comment.created_by_name}
                                       {comment.is_system && 'System'}
