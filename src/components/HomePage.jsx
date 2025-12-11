@@ -260,7 +260,8 @@ const HomePage = ({
             createdBy: comment.created_by_name,
             portfolioId: projectInfo ? projectInfo[1].portfolio_id : null,
             portfolioColor: projectInfo ? projectInfo[1].portfolio_color : null,
-            portfolioName: projectInfo ? projectInfo[1].portfolio_name : null
+            portfolioName: projectInfo ? projectInfo[1].portfolio_name : null,
+            parentCommentId: comment.parent_comment_id
           };
         });
 

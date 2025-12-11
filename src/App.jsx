@@ -94,6 +94,8 @@ function App() {
   const [editCommentValue, setEditCommentValue] = useState('');
   const [addingComment, setAddingComment] = useState(false);
   const [newCommentValue, setNewCommentValue] = useState('');
+  const [replyingToCommentId, setReplyingToCommentId] = useState(null);
+  const [expandedCommentThreads, setExpandedCommentThreads] = useState({});
   const [showLinksEditor, setShowLinksEditor] = useState(false);
   const [showImportData, setShowImportData] = useState(false);
   const [showPortfolioManager, setShowPortfolioManager] = useState(false);
@@ -831,24 +833,59 @@ function App() {
     setEditingProjectDesc(false);
   };
 
-  const handleAddComment = async () => {
+  const handleAddComment = async (parentCommentId = null) => {
     if (!newCommentValue.trim()) {
       setAddingComment(false);
+      setReplyingToCommentId(null);
       setNewCommentValue('');
       return;
     }
 
     try {
-      await api.post(`/projects/${selectedProject}/comments`, {
-        comment_text: newCommentValue
-      });
+      const payload = { comment_text: newCommentValue };
+      if (parentCommentId) {
+        payload.parent_comment_id = parentCommentId;
+      }
+      await api.post(`/projects/${selectedProject}/comments`, payload);
       setAddingComment(false);
+      setReplyingToCommentId(null);
       setNewCommentValue('');
       await loadProjectComments();
     } catch (err) {
       console.error('Failed to add project comment:', err);
       alert('Failed to add comment');
     }
+  };
+
+  const handleReplyToComment = (commentId) => {
+    setReplyingToCommentId(commentId);
+    setNewCommentValue('');
+    setAddingComment(false);
+  };
+
+  const handleCancelReply = () => {
+    setReplyingToCommentId(null);
+    setNewCommentValue('');
+  };
+
+  const toggleCommentThread = (commentId) => {
+    setExpandedCommentThreads(prev => ({
+      ...prev,
+      [commentId]: !prev[commentId]
+    }));
+  };
+
+  // Group comments: root comments and their replies
+  const getGroupedComments = (comments) => {
+    const rootComments = comments.filter(c => !c.parent_comment_id);
+    const repliesMap = {};
+    comments.filter(c => c.parent_comment_id).forEach(reply => {
+      if (!repliesMap[reply.parent_comment_id]) {
+        repliesMap[reply.parent_comment_id] = [];
+      }
+      repliesMap[reply.parent_comment_id].push(reply);
+    });
+    return { rootComments, repliesMap };
   };
 
   const handleEditComment = (comment) => {
@@ -2236,7 +2273,7 @@ function App() {
 
                   {/* Add new comment form */}
                   {addingComment && (
-                    <div className="commentary-item-add" style={{ marginBottom: '16px' }}>
+                    <div className="commentary-item-add" style={{ marginBottom: '8px', padding: '6px' }}>
                       <textarea
                         value={newCommentValue}
                         onChange={(e) => setNewCommentValue(e.target.value)}
@@ -2244,35 +2281,35 @@ function App() {
                         className="comment-textarea"
                         style={{
                           width: '100%',
-                          minHeight: '100px',
-                          padding: '12px',
+                          minHeight: '60px',
+                          padding: '8px',
                           border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '14px',
+                          borderRadius: '4px',
+                          fontSize: '12px',
                           fontFamily: 'inherit',
                           resize: 'vertical',
-                          marginBottom: '8px',
-                          lineHeight: '1.5'
+                          marginBottom: '4px',
+                          lineHeight: '1.4'
                         }}
                         autoFocus
                       />
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                         <button
                           onClick={handleCancelAddComment}
                           className="btn-secondary"
                           style={{
-                            padding: '6px 12px',
-                            fontSize: '13px'
+                            padding: '4px 8px',
+                            fontSize: '11px'
                           }}
                         >
                           Cancel
                         </button>
                         <button
-                          onClick={handleAddComment}
+                          onClick={() => handleAddComment()}
                           className="btn-primary"
                           style={{
-                            padding: '6px 12px',
-                            fontSize: '13px'
+                            padding: '4px 8px',
+                            fontSize: '11px'
                           }}
                         >
                           Save
@@ -2281,119 +2318,255 @@ function App() {
                     </div>
                   )}
 
-                  {/* Display comments */}
+                  {/* Display comments with threading support */}
                   <div className="commentary-list">
                     {projectComments.length === 0 && !addingComment && (
                       <div className="empty-commentary" style={{
-                        padding: '40px 20px',
+                        padding: '20px 12px',
                         textAlign: 'center',
-                        fontSize: '14px'
+                        fontSize: '12px',
+                        color: '#6b7280'
                       }}>
                         {canEdit()
                           ? 'No commentary yet. Click "Add Comment" to get started.'
                           : 'No commentary available.'}
                       </div>
                     )}
-                    {projectComments.map((comment, index) => (
-                      <div
-                        key={comment.id}
-                        className={`commentary-item ${index === 0 ? 'latest-comment' : ''}`}
-                        style={{
-                          padding: '12px',
-                          marginBottom: '0',
-                          borderBottom: index === projectComments.length - 1 ? 'none' : '1px solid #f0f0f0',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '8px'
-                        }}
-                      >
-                        {editingCommentId === comment.id ? (
-                          <div className="commentary-item-edit">
-                            <textarea
-                              value={editCommentValue}
-                              onChange={(e) => setEditCommentValue(e.target.value)}
-                              className="comment-textarea"
+                    {(() => {
+                      const { rootComments, repliesMap } = getGroupedComments(projectComments);
+                      return rootComments.map((comment, index) => {
+                        const replies = repliesMap[comment.id] || [];
+                        const isExpanded = expandedCommentThreads[comment.id];
+
+                        return (
+                          <div key={comment.id}>
+                            <div
+                              className={`commentary-item ${index === 0 ? 'latest-comment' : ''}`}
                               style={{
-                                width: '100%',
-                                minHeight: '80px',
-                                padding: '12px',
-                                border: '1px solid #d1d5db',
-                                borderRadius: '6px',
-                                fontSize: '14px',
-                                fontFamily: 'inherit',
-                                resize: 'vertical',
-                                marginBottom: '8px',
-                                lineHeight: '1.5'
+                                padding: '6px 8px',
+                                marginBottom: '0',
+                                borderBottom: '1px solid #f0f0f0',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '2px'
                               }}
-                              autoFocus
-                            />
-                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                              <button
-                                onClick={handleCancelEditComment}
-                                className="btn-secondary"
-                                style={{
-                                  padding: '6px 12px',
-                                  fontSize: '13px'
-                                }}
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                onClick={() => handleSaveComment(comment.id)}
-                                className="btn-primary"
-                                style={{
-                                  padding: '6px 12px',
-                                  fontSize: '13px'
-                                }}
-                              >
-                                Save
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="comment-text" style={{
-                              fontSize: '14px',
-                              lineHeight: '1.6',
-                              whiteSpace: 'pre-wrap',
-                              wordWrap: 'break-word'
-                            }}>
-                              {comment.comment_text}
-                            </div>
-                            <div className="comment-meta" style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              fontSize: '12px',
-                              marginTop: '4px'
-                            }}>
-                              <div className="comment-author">
-                                <span>{new Date(comment.created_at).toLocaleDateString()}</span>
-                                {comment.creator_name && <span> • {comment.creator_name}</span>}
-                              </div>
-                              {canEdit() && (
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                  <button
-                                    onClick={() => handleEditComment(comment)}
-                                    className="edit-comment-btn"
-                                    title="Edit comment"
-                                  >
-                                    ✏️
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteComment(comment.id)}
-                                    className="delete-comment-btn"
-                                    title="Delete comment"
-                                  >
-                                    ×
-                                  </button>
+                            >
+                              {editingCommentId === comment.id ? (
+                                <div className="commentary-item-edit">
+                                  <textarea
+                                    value={editCommentValue}
+                                    onChange={(e) => setEditCommentValue(e.target.value)}
+                                    className="comment-textarea"
+                                    style={{
+                                      width: '100%',
+                                      minHeight: '60px',
+                                      padding: '8px',
+                                      border: '1px solid #d1d5db',
+                                      borderRadius: '4px',
+                                      fontSize: '12px',
+                                      fontFamily: 'inherit',
+                                      resize: 'vertical',
+                                      marginBottom: '4px',
+                                      lineHeight: '1.4'
+                                    }}
+                                    autoFocus
+                                  />
+                                  <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                                    <button
+                                      onClick={handleCancelEditComment}
+                                      className="btn-secondary"
+                                      style={{ padding: '4px 8px', fontSize: '11px' }}
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      onClick={() => handleSaveComment(comment.id)}
+                                      className="btn-primary"
+                                      style={{ padding: '4px 8px', fontSize: '11px' }}
+                                    >
+                                      Save
+                                    </button>
+                                  </div>
                                 </div>
+                              ) : (
+                                <>
+                                  <div className="comment-text" style={{
+                                    fontSize: '12px',
+                                    lineHeight: '1.4',
+                                    whiteSpace: 'pre-wrap',
+                                    wordWrap: 'break-word'
+                                  }}>
+                                    {comment.comment_text}
+                                  </div>
+                                  <div className="comment-meta" style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    fontSize: '10px',
+                                    marginTop: '2px',
+                                    color: '#6b7280'
+                                  }}>
+                                    <div className="comment-author">
+                                      <span>{new Date(comment.created_at).toLocaleDateString()}</span>
+                                      {comment.creator_name && <span> • {comment.creator_name}</span>}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                      {canEdit() && (
+                                        <button
+                                          onClick={() => handleReplyToComment(comment.id)}
+                                          className="reply-comment-btn"
+                                          title="Reply to comment"
+                                          style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            fontSize: '10px',
+                                            color: '#6b7280',
+                                            padding: '1px 4px',
+                                            borderRadius: '3px'
+                                          }}
+                                        >
+                                          Reply
+                                        </button>
+                                      )}
+                                      {canEdit() && (
+                                        <>
+                                          <button onClick={() => handleEditComment(comment)} className="edit-comment-btn" title="Edit comment" style={{ fontSize: '10px' }}>✏️</button>
+                                          <button onClick={() => handleDeleteComment(comment.id)} className="delete-comment-btn" title="Delete comment" style={{ fontSize: '10px' }}>×</button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </>
                               )}
                             </div>
-                          </>
-                        )}
-                      </div>
-                    ))}
+
+                            {/* Show replies count and toggle */}
+                            {replies.length > 0 && (
+                              <div style={{ paddingLeft: '8px', borderBottom: '1px solid #f0f0f0' }}>
+                                <button
+                                  onClick={() => toggleCommentThread(comment.id)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '10px',
+                                    color: '#6b7280',
+                                    padding: '3px 0',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '3px'
+                                  }}
+                                >
+                                  <span style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', fontSize: '8px' }}>▶</span>
+                                  {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
+                                </button>
+
+                                {/* Collapsed replies */}
+                                {isExpanded && (
+                                  <div style={{ marginLeft: '8px', borderLeft: '2px solid #e5e7eb' }}>
+                                    {replies.map((reply) => (
+                                      <div
+                                        key={reply.id}
+                                        className="commentary-item reply-comment"
+                                        style={{
+                                          padding: '4px 8px',
+                                          backgroundColor: '#fafafa',
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          gap: '2px'
+                                        }}
+                                      >
+                                        {editingCommentId === reply.id ? (
+                                          <div className="commentary-item-edit">
+                                            <textarea
+                                              value={editCommentValue}
+                                              onChange={(e) => setEditCommentValue(e.target.value)}
+                                              className="comment-textarea"
+                                              style={{
+                                                width: '100%',
+                                                minHeight: '50px',
+                                                padding: '6px',
+                                                border: '1px solid #d1d5db',
+                                                borderRadius: '4px',
+                                                fontSize: '11px',
+                                                fontFamily: 'inherit',
+                                                resize: 'vertical',
+                                                marginBottom: '4px',
+                                                lineHeight: '1.4'
+                                              }}
+                                              autoFocus
+                                            />
+                                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                                              <button onClick={handleCancelEditComment} className="btn-secondary" style={{ padding: '3px 6px', fontSize: '10px' }}>Cancel</button>
+                                              <button onClick={() => handleSaveComment(reply.id)} className="btn-primary" style={{ padding: '3px 6px', fontSize: '10px' }}>Save</button>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <>
+                                            <div className="comment-text" style={{ fontSize: '11px', lineHeight: '1.4', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
+                                              {reply.comment_text}
+                                            </div>
+                                            <div className="comment-meta" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px', color: '#6b7280' }}>
+                                              <div className="comment-author">
+                                                <span>{new Date(reply.created_at).toLocaleDateString()}</span>
+                                                {reply.creator_name && <span> • {reply.creator_name}</span>}
+                                              </div>
+                                              {canEdit() && (
+                                                <div style={{ display: 'flex', gap: '4px' }}>
+                                                  <button onClick={() => handleEditComment(reply)} className="edit-comment-btn" title="Edit" style={{ fontSize: '9px' }}>✏️</button>
+                                                  <button onClick={() => handleDeleteComment(reply.id)} className="delete-comment-btn" title="Delete" style={{ fontSize: '9px' }}>×</button>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Reply form for this comment */}
+                            {replyingToCommentId === comment.id && (
+                              <div style={{
+                                padding: '6px',
+                                paddingLeft: '12px',
+                                backgroundColor: '#f9fafb',
+                                borderBottom: '1px solid #f0f0f0',
+                                borderLeft: '2px solid #00aeef',
+                                marginLeft: '8px'
+                              }}>
+                                <textarea
+                                  value={newCommentValue}
+                                  onChange={(e) => setNewCommentValue(e.target.value)}
+                                  placeholder="Write a reply..."
+                                  className="comment-textarea"
+                                  style={{
+                                    width: '100%',
+                                    minHeight: '50px',
+                                    padding: '6px',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '4px',
+                                    fontSize: '12px',
+                                    fontFamily: 'inherit',
+                                    resize: 'vertical',
+                                    marginBottom: '4px',
+                                    lineHeight: '1.4'
+                                  }}
+                                  autoFocus
+                                />
+                                <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                                  <button onClick={handleCancelReply} className="btn-secondary" style={{ padding: '4px 8px', fontSize: '11px' }}>Cancel</button>
+                                  <button onClick={() => handleAddComment(comment.id)} className="btn-primary" style={{ padding: '4px 8px', fontSize: '11px' }}>Reply</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               </div>

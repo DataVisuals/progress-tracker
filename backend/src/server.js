@@ -3278,8 +3278,8 @@ function createApp(dbPath) {
         return res.status(403).json({ error: 'You do not have permission to edit this data' });
       }
   
-      const { complete, expected, target } = req.body;
-  
+      const { complete, expected, target, reporting_date } = req.body;
+
       // Check if this is a historic edit of completion values (period end date has passed)
       const periodEndDate = new Date(periodData.reporting_date);
       const today = new Date();
@@ -3296,12 +3296,18 @@ function createApp(dbPath) {
           });
         }
       }
-  
+
       const updates = [];
       const params = [];
       const oldValues = {};
       const newValues = {};
-  
+
+      if (reporting_date !== undefined) {
+        updates.push('reporting_date = ?');
+        params.push(reporting_date);
+        oldValues.reporting_date = periodData.reporting_date;
+        newValues.reporting_date = reporting_date;
+      }
       if (complete !== undefined) {
         updates.push('complete = ?');
         params.push(complete);
@@ -3508,6 +3514,7 @@ function createApp(dbPath) {
           c.comment_text,
           c.created_at,
           c.period_id,
+          c.parent_comment_id,
           u.name as created_by_name,
           p.name as project_name,
           p.id as project_id,
@@ -3518,7 +3525,7 @@ function createApp(dbPath) {
         JOIN metric_periods mp ON c.period_id = mp.id
         JOIN metrics m ON mp.metric_id = m.id
         JOIN projects p ON m.project_id = p.id
-        ORDER BY COALESCE(c.updated_at, c.created_at) DESC
+        ORDER BY COALESCE(c.parent_comment_id, c.id) DESC, c.parent_comment_id IS NULL DESC, c.created_at ASC
         LIMIT ?
       `, [limit]);
       res.json(comments);
@@ -3534,7 +3541,7 @@ function createApp(dbPath) {
         FROM comments c
         LEFT JOIN users u ON c.created_by = u.id
         WHERE c.period_id = ?
-        ORDER BY c.created_at DESC
+        ORDER BY COALESCE(c.parent_comment_id, c.id) ASC, c.parent_comment_id IS NULL DESC, c.created_at ASC
       `, [req.params.periodId]);
       res.json(comments);
     } catch (err) {
@@ -3559,16 +3566,16 @@ function createApp(dbPath) {
       if (!(await canEditProject(req.user.userId, period.project_id))) {
         return res.status(403).json({ error: 'You do not have permission to add comments to this project' });
       }
-  
-      const { comment_text } = req.body;
+
+      const { comment_text, parent_comment_id } = req.body;
       const result = await dbRun(
-        'INSERT INTO comments (period_id, comment_text, created_by) VALUES (?, ?, ?)',
-        [req.params.periodId, comment_text, req.user.userId]
+        'INSERT INTO comments (period_id, comment_text, created_by, parent_comment_id) VALUES (?, ?, ?, ?)',
+        [req.params.periodId, comment_text, req.user.userId, parent_comment_id || null]
       );
-  
+
       await logAudit(req.user, 'CREATE', 'comments', result.lastID, null,
-        { period_id: req.params.periodId, comment_text },
-        `Added comment to period ID ${req.params.periodId}`,
+        { period_id: req.params.periodId, comment_text, parent_comment_id: parent_comment_id || null },
+        `Added ${parent_comment_id ? 'reply to comment ID ' + parent_comment_id : 'comment'} on period ID ${req.params.periodId}`,
         req.ip
       );
   
@@ -3662,7 +3669,7 @@ function createApp(dbPath) {
 
   // ===== PROJECT COMMENTS =====
 
-  // Get project comments
+  // Get project comments (threaded)
   app.get('/api/projects/:projectId/comments', async (req, res) => {
     try {
       const comments = await dbAll(`
@@ -3670,7 +3677,7 @@ function createApp(dbPath) {
         FROM project_comments pc
         LEFT JOIN users u ON pc.created_by = u.id
         WHERE pc.project_id = ?
-        ORDER BY pc.created_at DESC
+        ORDER BY COALESCE(pc.parent_comment_id, pc.id) ASC, pc.parent_comment_id IS NULL DESC, pc.created_at ASC
       `, [req.params.projectId]);
 
       res.json(comments);
@@ -3679,10 +3686,10 @@ function createApp(dbPath) {
     }
   });
 
-  // Add project comment
+  // Add project comment (supports threading via parent_comment_id)
   app.post('/api/projects/:projectId/comments', authenticateToken, async (req, res) => {
     try {
-      const { comment_text } = req.body;
+      const { comment_text, parent_comment_id } = req.body;
 
       if (!comment_text || !comment_text.trim()) {
         return res.status(400).json({ error: 'Comment text is required' });
@@ -3693,10 +3700,21 @@ function createApp(dbPath) {
         return res.status(403).json({ error: 'You do not have permission to add comments to this project' });
       }
 
+      // Validate parent_comment_id if provided
+      if (parent_comment_id) {
+        const parentComment = await dbGet(
+          'SELECT id FROM project_comments WHERE id = ? AND project_id = ?',
+          [parent_comment_id, req.params.projectId]
+        );
+        if (!parentComment) {
+          return res.status(400).json({ error: 'Parent comment not found' });
+        }
+      }
+
       const result = await dbRun(`
-        INSERT INTO project_comments (project_id, comment_text, created_by, created_at, updated_at)
-        VALUES (?, ?, ?, datetime('now'), datetime('now'))
-      `, [req.params.projectId, comment_text, req.user.userId]);
+        INSERT INTO project_comments (project_id, comment_text, created_by, parent_comment_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
+      `, [req.params.projectId, comment_text, req.user.userId, parent_comment_id || null]);
 
       const newComment = await dbGet(`
         SELECT pc.*, u.name as creator_name
@@ -3708,7 +3726,7 @@ function createApp(dbPath) {
       await logAudit(req.user, 'INSERT', 'project_comments', result.lastID,
         null,
         newComment,
-        `Added project comment to project ID ${req.params.projectId}`,
+        `Added ${parent_comment_id ? 'reply to comment ID ' + parent_comment_id : 'comment'} on project ID ${req.params.projectId}`,
         req.ip
       );
 
@@ -7426,6 +7444,31 @@ function createApp(dbPath) {
       console.log('✅ Created performance indexes');
     } catch (err) {
       // Indexes already exist, that's fine
+    }
+
+    // Migration: Add parent_comment_id for threaded comments (backward compatible - nullable)
+    try {
+      // Add to period-level comments table
+      const commentsInfo = await dbAll(`PRAGMA table_info(comments)`);
+      const commentsHasParent = commentsInfo.some(col => col.name === 'parent_comment_id');
+
+      if (!commentsHasParent) {
+        await dbRun(`ALTER TABLE comments ADD COLUMN parent_comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE`);
+        await dbRun(`CREATE INDEX IF NOT EXISTS idx_comments_parent ON comments(parent_comment_id)`);
+        console.log('✅ Added parent_comment_id column to comments table for threading');
+      }
+
+      // Add to project-level comments table
+      const projectCommentsInfo = await dbAll(`PRAGMA table_info(project_comments)`);
+      const projectCommentsHasParent = projectCommentsInfo.some(col => col.name === 'parent_comment_id');
+
+      if (!projectCommentsHasParent) {
+        await dbRun(`ALTER TABLE project_comments ADD COLUMN parent_comment_id INTEGER REFERENCES project_comments(id) ON DELETE CASCADE`);
+        await dbRun(`CREATE INDEX IF NOT EXISTS idx_project_comments_parent ON project_comments(parent_comment_id)`);
+        console.log('✅ Added parent_comment_id column to project_comments table for threading');
+      }
+    } catch (err) {
+      console.log('ℹ️  Thread columns migration skipped or failed:', err.message);
     }
 
     // Create default admin user if none exists

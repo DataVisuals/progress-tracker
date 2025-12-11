@@ -414,6 +414,9 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   const [comments, setComments] = useState({});
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editingCommentText, setEditingCommentText] = useState('');
+  const [replyingToCommentId, setReplyingToCommentId] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [expandedCommentThreads, setExpandedCommentThreads] = useState({});
   const [isDragging, setIsDragging] = useState(false);
   const [draggedPoint, setDraggedPoint] = useState(null);
   const [highlightedSeries, setHighlightedSeries] = useState(null);
@@ -740,7 +743,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     setNewCommentText('');
   };
 
-  const handleAddComment = async () => {
+  const handleAddComment = async (parentCommentId = null) => {
     if (!selectedDate || isHtmlEmpty(newCommentText)) {
       alert('Please select a date and enter a comment');
       return;
@@ -756,7 +759,11 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     console.log('Adding comment to period:', period.id, 'with text:', newCommentText);
 
     try {
-      const createResponse = await api.createComment(period.id, { comment_text: newCommentText });
+      const payload = { comment_text: newCommentText };
+      if (parentCommentId) {
+        payload.parent_comment_id = parentCommentId;
+      }
+      const createResponse = await api.createComment(period.id, payload);
       console.log('Comment created:', createResponse.data);
 
       // Reload comments for this period
@@ -776,6 +783,64 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       console.error('Error response:', err.response?.data);
       alert(`Failed to add comment: ${err.response?.data?.error || err.message}`);
     }
+  };
+
+  const handleReplyToComment = (comment) => {
+    setReplyingToCommentId(comment.id);
+    setReplyText('');
+  };
+
+  const handleCancelReply = () => {
+    setReplyingToCommentId(null);
+    setReplyText('');
+  };
+
+  const handleSubmitReply = async (parentComment) => {
+    if (isHtmlEmpty(replyText)) {
+      return;
+    }
+
+    try {
+      await api.createComment(parentComment.period_id, {
+        comment_text: replyText,
+        parent_comment_id: parentComment.id
+      });
+
+      // Reload comments for this period
+      const response = await api.getPeriodComments(parentComment.period_id);
+      setComments(prev => ({
+        ...prev,
+        [parentComment.period_id]: response.data
+      }));
+
+      setReplyingToCommentId(null);
+      setReplyText('');
+      // Auto-expand the thread after adding a reply
+      setExpandedCommentThreads(prev => ({ ...prev, [parentComment.id]: true }));
+    } catch (err) {
+      console.error('Failed to add reply:', err);
+      alert(`Failed to add reply: ${err.response?.data?.error || err.message}`);
+    }
+  };
+
+  const toggleCommentThread = (commentId) => {
+    setExpandedCommentThreads(prev => ({
+      ...prev,
+      [commentId]: !prev[commentId]
+    }));
+  };
+
+  // Group comments: root comments and their replies
+  const getGroupedComments = (commentsList) => {
+    const rootComments = commentsList.filter(c => !c.parent_comment_id);
+    const repliesMap = {};
+    commentsList.filter(c => c.parent_comment_id).forEach(reply => {
+      if (!repliesMap[reply.parent_comment_id]) {
+        repliesMap[reply.parent_comment_id] = [];
+      }
+      repliesMap[reply.parent_comment_id].push(reply);
+    });
+    return { rootComments, repliesMap };
   };
 
   const handleDeleteComment = async (commentId, periodId) => {
@@ -1697,56 +1762,153 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               ) : (
                 <div className="commentary-list-sidebar">
                   {allComments.length > 0 ? (
-                    allComments.map((comment, index) => (
-                      <div
-                        key={comment.id}
-                        className={`commentary-item-sidebar ${index === 0 ? 'latest' : ''} ${comment.is_system ? 'system' : ''}`}
-                      >
-                        {editingCommentId === comment.id ? (
-                          <div className="editing-comment-sidebar">
-                            <ReactQuill
-                              theme="snow"
-                              value={editingCommentText}
-                              onChange={setEditingCommentText}
-                              className="commentary-quill-sidebar"
-                              modules={{
-                                toolbar: [
-                                  ['bold', 'italic', 'underline'],
-                                  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                  ['link'],
-                                  ['clean']
-                                ]
-                              }}
-                            />
-                            <div className="commentary-actions-sidebar">
-                              <ClarityIndicator text={editingCommentText} size="sm" />
-                              <div className="action-buttons">
-                                <button className="save-btn-small" onClick={() => handleSaveComment(comment.id, comment.period_id)}>Save</button>
-                                <button className="cancel-btn-small" onClick={handleCancelEdit}>Cancel</button>
-                              </div>
+                    (() => {
+                      const { rootComments, repliesMap } = getGroupedComments(allComments);
+                      return rootComments.map((comment, index) => {
+                        const replies = repliesMap[comment.id] || [];
+                        const isExpanded = expandedCommentThreads[comment.id];
+
+                        return (
+                          <div key={comment.id}>
+                            <div className={`commentary-item-sidebar ${index === 0 ? 'latest' : ''} ${comment.is_system ? 'system' : ''}`} style={{ padding: '4px 6px' }}>
+                              {editingCommentId === comment.id ? (
+                                <div className="editing-comment-sidebar">
+                                  <ReactQuill
+                                    theme="snow"
+                                    value={editingCommentText}
+                                    onChange={setEditingCommentText}
+                                    className="commentary-quill-sidebar"
+                                    modules={{
+                                      toolbar: [
+                                        ['bold', 'italic', 'underline'],
+                                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                        ['link'],
+                                        ['clean']
+                                      ]
+                                    }}
+                                  />
+                                  <div className="commentary-actions-sidebar" style={{ marginTop: '2px' }}>
+                                    <ClarityIndicator text={editingCommentText} size="sm" />
+                                    <div className="action-buttons">
+                                      <button className="save-btn-small" onClick={() => handleSaveComment(comment.id, comment.period_id)}>Save</button>
+                                      <button className="cancel-btn-small" onClick={handleCancelEdit}>Cancel</button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="comment-header-sidebar" style={{ gap: '4px', marginBottom: '1px' }}>
+                                    <span className="comment-date-sidebar" style={{ fontSize: '10px' }}>{comment.reporting_date}</span>
+                                    <ClarityIndicator text={comment.comment_text} size="sm" compact hoverReveal />
+                                    <span className="comment-meta-sidebar" style={{ fontSize: '10px' }}>
+                                      {comment.created_by_name && !comment.is_system && comment.created_by_name}
+                                      {comment.is_system && 'System'}
+                                      {allowDataEdits && !comment.is_system && (
+                                        <button onClick={() => handleReplyToComment(comment)} title="Reply" style={{ marginRight: '2px', fontSize: '10px' }}>↩</button>
+                                      )}
+                                      {allowDataEdits && (isAdmin || !comment.is_system) && (
+                                        <>
+                                          <button onClick={() => handleEditComment(comment)} title="Edit" style={{ fontSize: '10px' }}>✎</button>
+                                          <button onClick={() => handleDeleteComment(comment.id, comment.period_id)} title="Delete" style={{ fontSize: '10px' }}>×</button>
+                                        </>
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div className="comment-text-sidebar ql-editor" style={{ fontSize: '11px', lineHeight: '1.3', padding: '0' }} dangerouslySetInnerHTML={{ __html: comment.comment_text }} />
+                                </>
+                              )}
                             </div>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="comment-header-sidebar">
-                              <span className="comment-date-sidebar">{comment.reporting_date}</span>
-                              <ClarityIndicator text={comment.comment_text} size="sm" compact hoverReveal />
-                              <span className="comment-meta-sidebar">
-                                {comment.created_by_name && !comment.is_system && comment.created_by_name}
-                                {comment.is_system && 'System'}
-                                {allowDataEdits && (isAdmin || !comment.is_system) && (
-                                  <>
-                                    <button onClick={() => handleEditComment(comment)} title="Edit">✎</button>
-                                    <button onClick={() => handleDeleteComment(comment.id, comment.period_id)} title="Delete">×</button>
-                                  </>
+
+                            {/* Show replies count and toggle */}
+                            {replies.length > 0 && (
+                              <div style={{ marginLeft: '6px', marginBottom: '2px' }}>
+                                <button
+                                  onClick={() => toggleCommentThread(comment.id)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '10px',
+                                    color: '#6b7280',
+                                    padding: '2px 0',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '3px'
+                                  }}
+                                >
+                                  <span style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', fontSize: '8px' }}>▶</span>
+                                  {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
+                                </button>
+
+                                {/* Collapsed replies */}
+                                {isExpanded && (
+                                  <div style={{ marginLeft: '6px', borderLeft: '2px solid #e5e7eb', paddingLeft: '6px' }}>
+                                    {replies.map((reply) => (
+                                      <div key={reply.id} className={`commentary-item-sidebar reply ${reply.is_system ? 'system' : ''}`} style={{ padding: '3px 6px', fontSize: '0.9em' }}>
+                                        {editingCommentId === reply.id ? (
+                                          <div className="editing-comment-sidebar">
+                                            <ReactQuill
+                                              theme="snow"
+                                              value={editingCommentText}
+                                              onChange={setEditingCommentText}
+                                              className="commentary-quill-sidebar"
+                                              modules={{ toolbar: [['bold', 'italic', 'underline'], ['clean']] }}
+                                            />
+                                            <div className="commentary-actions-sidebar" style={{ marginTop: '2px' }}>
+                                              <div className="action-buttons">
+                                                <button className="save-btn-small" onClick={() => handleSaveComment(reply.id, reply.period_id)}>Save</button>
+                                                <button className="cancel-btn-small" onClick={handleCancelEdit}>Cancel</button>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <>
+                                            <div className="comment-header-sidebar" style={{ gap: '3px', marginBottom: '1px' }}>
+                                              <span className="comment-date-sidebar" style={{ fontSize: '9px' }}>{reply.reporting_date}</span>
+                                              <span className="comment-meta-sidebar" style={{ fontSize: '9px' }}>
+                                                {reply.created_by_name && !reply.is_system && reply.created_by_name}
+                                                {reply.is_system && 'System'}
+                                                {allowDataEdits && (isAdmin || !reply.is_system) && (
+                                                  <>
+                                                    <button onClick={() => handleEditComment(reply)} title="Edit" style={{ fontSize: '9px' }}>✎</button>
+                                                    <button onClick={() => handleDeleteComment(reply.id, reply.period_id)} title="Delete" style={{ fontSize: '9px' }}>×</button>
+                                                  </>
+                                                )}
+                                              </span>
+                                            </div>
+                                            <div className="comment-text-sidebar ql-editor" style={{ fontSize: '10px', lineHeight: '1.3', padding: '0' }} dangerouslySetInnerHTML={{ __html: reply.comment_text }} />
+                                          </>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
                                 )}
-                              </span>
-                            </div>
-                            <div className="comment-text-sidebar ql-editor" dangerouslySetInnerHTML={{ __html: comment.comment_text }} />
-                          </>
-                        )}
-                      </div>
-                    ))
+                              </div>
+                            )}
+
+                            {/* Reply form */}
+                            {replyingToCommentId === comment.id && (
+                              <div className="reply-form-sidebar" style={{ marginLeft: '6px', marginTop: '2px', marginBottom: '4px', paddingLeft: '6px', borderLeft: '2px solid #00aeef' }}>
+                                <ReactQuill
+                                  theme="snow"
+                                  value={replyText}
+                                  onChange={setReplyText}
+                                  placeholder="Write a reply..."
+                                  className="commentary-quill-sidebar"
+                                  modules={{ toolbar: [['bold', 'italic', 'underline'], ['clean']] }}
+                                />
+                                <div className="commentary-actions-sidebar" style={{ marginTop: '2px' }}>
+                                  <div className="action-buttons">
+                                    <button className="save-btn-small" onClick={() => handleSubmitReply(comment)}>Reply</button>
+                                    <button className="cancel-btn-small" onClick={handleCancelReply}>Cancel</button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()
                   ) : (
                     <div className="no-comments-sidebar">No comments yet</div>
                   )}

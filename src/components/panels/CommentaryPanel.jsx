@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import Select from 'react-select';
 import { MdComment } from 'react-icons/md';
 import { smallSelectStyles } from '../SelectStyles';
@@ -51,6 +51,29 @@ const CommentaryPanel = ({
     ? recentCommentary
     : recentCommentary.filter(c => c.portfolioId === parseInt(commentaryPortfolioFilter));
 
+  // State for expanded comment threads
+  const [expandedThreads, setExpandedThreads] = useState({});
+
+  const toggleThread = (commentId) => {
+    setExpandedThreads(prev => ({
+      ...prev,
+      [commentId]: !prev[commentId]
+    }));
+  };
+
+  // Group comments: root comments and their replies
+  const { rootComments, repliesMap } = useMemo(() => {
+    const roots = filteredCommentary.filter(c => !c.parentCommentId);
+    const replies = {};
+    filteredCommentary.filter(c => c.parentCommentId).forEach(reply => {
+      if (!replies[reply.parentCommentId]) {
+        replies[reply.parentCommentId] = [];
+      }
+      replies[reply.parentCommentId].push(reply);
+    });
+    return { rootComments: roots, repliesMap: replies };
+  }, [filteredCommentary]);
+
   return (
     <div key={panelId} className={`home-quadrant commentary-quadrant panel-${index + 1}`}>
       <div className="quadrant-header">
@@ -87,31 +110,71 @@ const CommentaryPanel = ({
               : portfoliosInCommentary.find(p => p.id === parseInt(commentaryPortfolioFilter))?.name || 'selected portfolio'}</span>
           </div>
         ) : (
-          <div className="commentary-list">
-            {filteredCommentary.map((item, idx) => (
-              <div key={idx} className="commentary-item" onClick={() => onMetricClick(item.projectId, item.metricName)}>
-                <div className="commentary-header">
-                  <div className="commentary-context">
-                    {item.portfolioColor && <span className="commentary-portfolio-dot" style={{ backgroundColor: item.portfolioColor }} title={item.portfolioName || 'No Portfolio'} />}
-                    <span className="commentary-label">Project:</span>
-                    <span className="commentary-project">{item.projectName}</span>
+          <div className="commentary-list" style={{ gap: '2px' }}>
+            {rootComments.map((item, idx) => {
+              const replies = repliesMap[item.id] || [];
+              const isExpanded = expandedThreads[item.id];
+
+              return (
+                <div key={item.id || idx}>
+                  <div className="commentary-item" onClick={() => onMetricClick(item.projectId, item.metricName)} style={{ padding: '6px 8px' }}>
+                    <div className="commentary-header" style={{ gap: '4px', marginBottom: '2px', flexWrap: 'wrap' }}>
+                      <div className="commentary-context" style={{ fontSize: '11px' }}>
+                        {item.portfolioColor && <span className="commentary-portfolio-dot" style={{ backgroundColor: item.portfolioColor, width: '6px', height: '6px' }} title={item.portfolioName || 'No Portfolio'} />}
+                        <span className="commentary-project" style={{ fontWeight: 500 }}>{item.projectName}</span>
+                        <span style={{ color: '#9ca3af' }}>·</span>
+                        <span className="commentary-metric">{item.metricName}</span>
+                        <span style={{ color: '#9ca3af' }}>·</span>
+                        <span className="commentary-period" style={{ color: '#6b7280' }}>{item.periodName}</span>
+                      </div>
+                    </div>
+                    <div className="commentary-text ql-editor" style={{ fontSize: '12px', lineHeight: '1.4', padding: '0', margin: '0' }} dangerouslySetInnerHTML={{ __html: item.commentary }} />
+                    <div className="commentary-footer" style={{ fontSize: '10px', marginTop: '2px', gap: '6px' }}>
+                      {item.createdBy && <span className="commentary-author">{item.createdBy}</span>}
+                      <span className="commentary-time">{formatTimestamp(item.timestamp)}</span>
+                    </div>
                   </div>
-                  <div className="commentary-context">
-                    <span className="commentary-label">Metric:</span>
-                    <span className="commentary-metric">{item.metricName}</span>
-                  </div>
-                  <div className="commentary-context">
-                    <span className="commentary-label">Period:</span>
-                    <span className="commentary-period">{item.periodName}</span>
-                  </div>
+
+                  {/* Show replies toggle and collapsed replies */}
+                  {replies.length > 0 && (
+                    <div style={{ marginLeft: '8px', borderLeft: '2px solid #e5e7eb' }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleThread(item.id); }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '10px',
+                          color: '#6b7280',
+                          padding: '3px 6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px'
+                        }}
+                      >
+                        <span style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', fontSize: '8px' }}>▶</span>
+                        {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
+                      </button>
+
+                      {isExpanded && replies.map((reply, replyIdx) => (
+                        <div
+                          key={reply.id || replyIdx}
+                          className="commentary-item reply"
+                          onClick={() => onMetricClick(reply.projectId, reply.metricName)}
+                          style={{ backgroundColor: '#fafafa', marginLeft: '4px', padding: '4px 8px' }}
+                        >
+                          <div className="commentary-text ql-editor" style={{ fontSize: '11px', lineHeight: '1.3', padding: '0', margin: '0' }} dangerouslySetInnerHTML={{ __html: reply.commentary }} />
+                          <div className="commentary-footer" style={{ fontSize: '9px', marginTop: '2px' }}>
+                            {reply.createdBy && <span className="commentary-author">{reply.createdBy}</span>}
+                            <span className="commentary-time">{formatTimestamp(reply.timestamp)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="commentary-text ql-editor" dangerouslySetInnerHTML={{ __html: item.commentary }} />
-                <div className="commentary-footer">
-                  {item.createdBy && <span className="commentary-author">{item.createdBy}</span>}
-                  <span className="commentary-time">{formatTimestamp(item.timestamp)}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
