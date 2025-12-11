@@ -62,6 +62,7 @@ import ProjectTimelinePanel from './panels/ProjectTimelinePanel';
 import AuditPanel from './panels/AuditPanel';
 import HeatmapPanel from './panels/HeatmapPanel';
 import PerformancePanel from './panels/PerformancePanel';
+import RecentUpdatesPanel from './panels/RecentUpdatesPanel';
 import 'react-quill/dist/quill.snow.css';
 import './HomePage.css';
 import './MetricTabs.css';
@@ -1179,6 +1180,18 @@ const HomePage = ({
             selectedSpace={selectedSpace}
             spaces={spaces}
             onMetricClick={handleMetricClick}
+          />
+        );
+
+      case 'recentUpdates':
+        return (
+          <RecentUpdatesPanel
+            key={panelId}
+            panelId={panelId}
+            index={index}
+            darkMode={darkMode}
+            forDock={forDock}
+            onNavigateToProject={onNavigateToProject}
           />
         );
 

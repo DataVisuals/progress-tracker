@@ -245,7 +245,7 @@ const isHtmlEmpty = (html) => {
   return textContent === '';
 };
 
-const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange, onTargetChange, onProgressionChange, onDescriptionChange, onDatesChange, currentUser, compactMode = false, showInPortfolioReview = true, onShowInPortfolioReviewChange }) => {
+const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataChange, amberTolerance: initialAmberTolerance = 5.0, redTolerance: initialRedTolerance = 10.0, timeTravelTimestamp = null, projectId, onTimeTravelChange, onRevert, isAdmin, onToleranceChange, onTargetChange, onProgressionChange, onDescriptionChange, onDatesChange, currentUser, compactMode = false, showInPortfolioReview = true, onShowInPortfolioReviewChange, recentPeriodChanges = {} }) => {
   // canEditData is for commentary/data changes (blocked during time travel)
   // If not provided, default to canEdit for backwards compatibility
   const allowDataEdits = canEditData !== undefined ? canEditData : canEdit;
@@ -428,6 +428,22 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   const chartContainerRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [periodsPerPage] = useState(12); // Show 12 periods at a time
+
+  // Helper function to check if a value was recently updated (within last 2 hours)
+  const isRecentlyUpdated = (updatedAt) => {
+    if (!updatedAt) return false;
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const updateTime = new Date(updatedAt);
+    return updateTime > twoHoursAgo;
+  };
+
+  // Check if a specific field on a period was recently changed
+  const isPeriodFieldChanged = (periodId, fieldName) => {
+    if (!periodId || !recentPeriodChanges) return false;
+    const changes = recentPeriodChanges[periodId];
+    if (!changes || !changes.fields) return false;
+    return changes.fields.includes(fieldName);
+  };
 
   // Sort data by date always for consistency
   const sortedData = [...data].sort((a, b) => {
@@ -632,7 +648,8 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       final_target: item.final_target,
       scopeDelta: scopeDelta,
       scopeChange: scopeChange,
-      id: item.id
+      id: item.id,
+      updated_at: item.updated_at
     };
   });
 
@@ -1097,7 +1114,8 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
         reporting_date: item.reporting_date,
         period_id: item.id,
         is_system: true,
-        created_at: item.reporting_date // Use reporting date as created_at for sorting
+        created_at: item.updated_at || item.reporting_date, // Use updated_at for highlighting, fallback to reporting_date
+        updated_at: item.updated_at // Track when commentary was last updated
       });
     }
 
@@ -1754,7 +1772,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                   <div className="commentary-actions-sidebar">
                     <ClarityIndicator text={newCommentText} size="sm" />
                     <div className="action-buttons">
-                      <button className="save-btn-small" onClick={handleAddComment}>Add</button>
+                      <button className="save-btn-small" onClick={() => handleAddComment()}>Add</button>
                       <button className="cancel-btn-small" onClick={handleCancelAdd}>Cancel</button>
                     </div>
                   </div>
@@ -1770,7 +1788,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
 
                         return (
                           <div key={comment.id}>
-                            <div className={`commentary-item-sidebar ${index === 0 ? 'latest' : ''} ${comment.is_system ? 'system' : ''}`} style={{ padding: '4px 6px' }}>
+                            <div className={`commentary-item-sidebar ${index === 0 ? 'latest' : ''} ${comment.is_system ? 'system' : ''} ${isRecentlyUpdated(comment.created_at) ? 'recently-changed-cell' : ''}`} style={{ padding: '4px 6px' }}>
                               {editingCommentId === comment.id ? (
                                 <div className="editing-comment-sidebar">
                                   <ReactQuill
@@ -1844,7 +1862,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                                 {isExpanded && (
                                   <div style={{ marginLeft: '6px', borderLeft: '2px solid #e5e7eb', paddingLeft: '6px' }}>
                                     {replies.map((reply) => (
-                                      <div key={reply.id} className={`commentary-item-sidebar reply ${reply.is_system ? 'system' : ''}`} style={{ padding: '3px 6px', fontSize: '0.9em' }}>
+                                      <div key={reply.id} className={`commentary-item-sidebar reply ${reply.is_system ? 'system' : ''} ${isRecentlyUpdated(reply.created_at) ? 'recently-changed-cell' : ''}`} style={{ padding: '3px 6px', fontSize: '0.9em' }}>
                                         {editingCommentId === reply.id ? (
                                           <div className="editing-comment-sidebar">
                                             <ReactQuill
@@ -2064,12 +2082,14 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                   statusClass = 'status-green';
                 }
 
+                const completeFieldChanged = isPeriodFieldChanged(item.id, 'complete_value');
                 return (
                   <td
                     key={index}
-                    className={`number-cell ${statusClass} ${allowDataEdits && !isFuture ? 'editable-cell' : ''}`}
+                    className={`number-cell ${statusClass} ${allowDataEdits && !isFuture ? 'editable-cell' : ''} ${completeFieldChanged ? 'recently-changed-cell' : ''}`}
                     onClick={() => allowDataEdits && !isFuture && handleCellClick(item.id, 'complete', item.complete)}
                     style={allowDataEdits && !isFuture ? { cursor: 'pointer' } : {}}
+                    title={completeFieldChanged ? 'Recently updated' : ''}
                   >
                     {isEditing ? (
                       <input
@@ -2082,7 +2102,9 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                         style={{ width: '100%', textAlign: 'right' }}
                       />
                     ) : (
-                      formatNumber(item.complete)
+                      <span className={completeFieldChanged ? 'recently-changed-value' : ''}>
+                        {formatNumber(item.complete)}
+                      </span>
                     )}
                   </td>
                 );
@@ -2094,12 +2116,14 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               <td className="row-label">Expected</td>
               {paginatedChartData.map((item, index) => {
                 const isEditing = editingCell?.periodId === item.id && editingCell?.field === 'expected';
+                const expectedFieldChanged = isPeriodFieldChanged(item.id, 'expected');
                 return (
                   <td
                     key={index}
-                    className={`number-cell ${allowDataEdits ? 'editable-cell' : ''}`}
+                    className={`number-cell ${allowDataEdits ? 'editable-cell' : ''} ${expectedFieldChanged ? 'recently-changed-cell' : ''}`}
                     onClick={() => handleCellClick(item.id, 'expected', item.expected)}
                     style={allowDataEdits ? { cursor: 'pointer' } : {}}
+                    title={expectedFieldChanged ? 'Recently updated' : ''}
                   >
                     {isEditing ? (
                       <input
@@ -2112,7 +2136,9 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                         style={{ width: '100%', textAlign: 'right' }}
                       />
                     ) : (
-                      formatNumber(item.expected)
+                      <span className={expectedFieldChanged ? 'recently-changed-value' : ''}>
+                        {formatNumber(item.expected)}
+                      </span>
                     )}
                   </td>
                 );
@@ -2131,12 +2157,14 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               </td>
               {paginatedChartData.map((item, index) => {
                 const isEditing = editingCell?.periodId === item.id && editingCell?.field === 'final_target';
+                const targetFieldChanged = isPeriodFieldChanged(item.id, 'final_target');
                 return (
                   <td
                     key={index}
-                    className={`number-cell target-cell ${allowDataEdits ? 'editable-cell' : ''}`}
+                    className={`number-cell target-cell ${allowDataEdits ? 'editable-cell' : ''} ${targetFieldChanged ? 'recently-changed-cell' : ''}`}
                     onClick={() => allowDataEdits && handleCellClick(item.id, 'final_target', item.final_target)}
                     style={allowDataEdits ? { cursor: 'pointer' } : {}}
+                    title={targetFieldChanged ? 'Recently updated' : ''}
                   >
                     {isEditing ? (
                       <input
@@ -2156,7 +2184,9 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                         }}
                       />
                     ) : (
-                      formatNumber(item.final_target)
+                      <span className={targetFieldChanged ? 'recently-changed-value' : ''}>
+                        {formatNumber(item.final_target)}
+                      </span>
                     )}
                   </td>
                 );

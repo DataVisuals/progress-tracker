@@ -6573,3 +6573,212 @@ html.dark-mode .quadrant-content {
   background: rgba(31, 41, 59, 0.9) !important;
   color: #e5e7eb !important;
 }
+
+/* ===== Recent Updates Panel ===== */
+.recent-updates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recent-update-item {
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+}
+
+.recent-update-item:hover {
+  background: #f5f5f5;
+  border-color: #e5e5e5;
+}
+
+.recent-update-item.very-recent {
+  border-color: #f59e0b;
+}
+
+.update-project-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.update-project-header:hover .update-project-name {
+  color: #00aeef;
+}
+
+.update-project-name {
+  font-weight: 600;
+  font-size: 12px;
+  color: #374151;
+  flex: 1;
+  transition: color 0.15s;
+}
+
+.update-time {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.update-nav-icon {
+  font-size: 14px;
+  color: #9ca3af;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.update-project-header:hover .update-nav-icon {
+  opacity: 1;
+}
+
+.update-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 4px;
+  padding-left: 4px;
+  border-left: 2px solid #e5e7eb;
+}
+
+.update-metric-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  transition: background 0.15s;
+}
+
+.update-metric-item:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.update-metric-item.recently-changed {
+  text-decoration: underline wavy #f59e0b;
+}
+
+.update-action-icon {
+  font-size: 12px;
+}
+
+.update-action-icon.create {
+  color: #10b981;
+}
+
+.update-action-icon.update {
+  color: #3b82f6;
+}
+
+.update-action-icon.delete {
+  color: #ef4444;
+}
+
+.update-metric-name {
+  color: #4b5563;
+  flex: 1;
+}
+
+.update-metric-detail {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.update-more {
+  font-size: 10px;
+  color: #6b7280;
+  padding: 2px 4px;
+  font-style: italic;
+}
+
+.update-summary {
+  font-size: 10px;
+  color: #6b7280;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed #e5e7eb;
+}
+
+/* ===== Recently Changed Highlight ===== */
+/* Subtle squiggly underline for recently changed values */
+.recently-changed-value {
+  text-decoration: underline wavy #f59e0b;
+  text-decoration-skip-ink: none;
+  text-underline-offset: 2px;
+  padding-bottom: 3px;
+}
+
+/* For cells/containers */
+.recently-changed-cell {
+  text-decoration: underline wavy #f59e0b;
+  text-decoration-skip-ink: none;
+  text-underline-offset: 2px;
+  padding-bottom: 3px;
+}
+
+/* Don't apply underline to buttons/interactive elements inside */
+.recently-changed-cell button,
+.recently-changed-cell a,
+.recently-changed-value button,
+.recently-changed-value a {
+  text-decoration: none;
+}
+
+/* Row highlight for tables */
+tr.recently-changed-row {
+  text-decoration: underline wavy #f59e0b;
+}
+
+/* Dark mode - Recent Updates */
+:root.dark-mode .recent-update-item {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:root.dark-mode .recent-update-item:hover {
+  background: #283548;
+  border-color: #4b5563;
+}
+
+:root.dark-mode .recent-update-item.very-recent {
+  border-color: #fbbf24;
+}
+
+:root.dark-mode .update-project-name {
+  color: #e5e7eb;
+}
+
+:root.dark-mode .update-metrics {
+  border-left-color: #4b5563;
+}
+
+:root.dark-mode .update-metric-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:root.dark-mode .update-metric-item.recently-changed {
+  text-decoration: underline wavy #fbbf24;
+}
+
+:root.dark-mode .update-metric-name {
+  color: #d1d5db;
+}
+
+:root.dark-mode .update-summary {
+  border-top-color: #374151;
+}
+
+/* Dark mode - Recently Changed Highlight */
+:root.dark-mode .recently-changed-value {
+  text-decoration: underline wavy #fbbf24;
+}
+
+:root.dark-mode .recently-changed-cell {
+  text-decoration: underline wavy #fbbf24;
+}
+
+:root.dark-mode tr.recently-changed-row {
+  text-decoration: underline wavy #fbbf24;
+}

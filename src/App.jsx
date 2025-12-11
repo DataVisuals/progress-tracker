@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Build timestamp - updated automatically before each commit to gh
-const BUILD_TIMESTAMP = '2025-12-07 20:59:53';
+const BUILD_TIMESTAMP = '2025-12-11 12:52:02';
 import Select from 'react-select';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';
@@ -86,6 +86,8 @@ function App() {
   const [timeTravelTimestamp, setTimeTravelTimestamp] = useState(null);
   const [projectLinks, setProjectLinks] = useState([]);
   const [projectRecoveryPlans, setProjectRecoveryPlans] = useState([]);
+  const [recentProjectChanges, setRecentProjectChanges] = useState({}); // { recordId: { fields: [...], updated_at } }
+  const [recentPeriodChanges, setRecentPeriodChanges] = useState({}); // { recordId: { fields: [...], updated_at } }
   const [projectFeedbackCount, setProjectFeedbackCount] = useState(0);
   const [projectMilestonesCount, setProjectMilestonesCount] = useState(0);
   const [projectMilestones, setProjectMilestones] = useState([]);
@@ -383,6 +385,7 @@ function App() {
       loadProjectFeedbackCount();
       loadProjectMilestonesCount();
       loadProjectComments();
+      loadRecentProjectChanges();
 
       // Track page view for analytics
       const project = projects.find(p => p.id === parseInt(selectedProject));
@@ -398,6 +401,16 @@ function App() {
       setSelectedMetric(projectMetrics[0].name);
     }
   }, [projectMetrics]);
+
+  // Load recent period changes when project data changes
+  useEffect(() => {
+    if (projectData && projectData.length > 0) {
+      const periodIds = projectData.map(p => p.id);
+      loadRecentPeriodChanges(periodIds);
+    } else {
+      setRecentPeriodChanges({});
+    }
+  }, [projectData]);
 
   const loadSpaces = async (user = null) => {
     try {
@@ -483,6 +496,30 @@ function App() {
     } catch (err) {
       console.error('Failed to load project links:', err);
       setProjectLinks([]);
+    }
+  };
+
+  const loadRecentProjectChanges = async () => {
+    try {
+      const response = await api.getRecentChanges('projects', [selectedProject], 2);
+      setRecentProjectChanges(response.data || {});
+    } catch (err) {
+      console.error('Failed to load recent project changes:', err);
+      setRecentProjectChanges({});
+    }
+  };
+
+  const loadRecentPeriodChanges = async (periodIds) => {
+    if (!periodIds || periodIds.length === 0) {
+      setRecentPeriodChanges({});
+      return;
+    }
+    try {
+      const response = await api.getRecentChanges('metric_periods', periodIds, 2);
+      setRecentPeriodChanges(response.data || {});
+    } catch (err) {
+      console.error('Failed to load recent period changes:', err);
+      setRecentPeriodChanges({});
     }
   };
 
@@ -959,7 +996,7 @@ function App() {
         await loadProjects();
       } catch (err) {
         console.error('Failed to update project dates:', err);
-        alert('Failed to update project dates');
+        alert('Failed to update project dates: ' + (err.response?.data?.error || err.message));
       }
     }
     setEditingProjectDates(false);
@@ -1416,6 +1453,22 @@ function App() {
     return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
+  // Check if a timestamp is recent (within last 2 hours) - used for comments/links with created_at
+  const isRecentlyUpdated = (updatedAt) => {
+    if (!updatedAt) return false;
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const updateTime = new Date(updatedAt);
+    return updateTime > twoHoursAgo;
+  };
+
+  // Check if a specific field on the current project was recently changed
+  const isProjectFieldChanged = (fieldName) => {
+    if (!selectedProject || !recentProjectChanges) return false;
+    const changes = recentProjectChanges[selectedProject];
+    if (!changes || !changes.fields) return false;
+    return changes.fields.includes(fieldName);
+  };
+
   // Get metric tolerances from the selected metric's data
   const selectedMetricData = selectedMetric
     ? projectData.find(item => item.metric === selectedMetric)
@@ -1775,7 +1828,7 @@ function App() {
                       />
                     ) : (
                       <h2
-                        className={projectName.length > 40 ? 'long-title' : ''}
+                        className={`${projectName.length > 40 ? 'long-title' : ''} ${isProjectFieldChanged('name') ? 'recently-changed-value' : ''}`}
                         onDoubleClick={canEdit() ? handleProjectNameDoubleClick : undefined}
                         title={projectName.length > 40 ? projectName : (canEdit() ? "Double-click to rename" : undefined)}
                         style={{ cursor: canEdit() ? 'pointer' : 'default' }}
@@ -1878,11 +1931,11 @@ function App() {
                           setEditProjectEndDate(currentProject.end_date);
                           setEditingProjectDates(true);
                         } : undefined}
-                        title={canEdit() ? "Click to edit dates" : undefined}
+                        title={canEdit() ? "Click to edit dates" : ((isProjectFieldChanged('start_date') || isProjectFieldChanged('end_date')) ? "Recently updated" : undefined)}
                       >
-                        <span className="project-timeline-date">{formatDate(currentProject.start_date)}</span>
+                        <span className={`project-timeline-date ${isProjectFieldChanged('start_date') ? 'recently-changed-value' : ''}`}>{formatDate(currentProject.start_date)}</span>
                         <span className="project-timeline-separator">{'\u2192'}</span>
-                        <span className="project-timeline-date">{formatDate(currentProject.end_date)}</span>
+                        <span className={`project-timeline-date ${isProjectFieldChanged('end_date') ? 'recently-changed-value' : ''}`}>{formatDate(currentProject.end_date)}</span>
                         {projectDuration && (
                           <>
                             <span className="project-timeline-separator">•</span>
@@ -2000,13 +2053,13 @@ function App() {
                         >
                           {currentProject?.initiative_manager ? (
                             <>
-                              <span className="pm-info-inline">
+                              <span className={`pm-info-inline ${isProjectFieldChanged('initiative_manager') ? 'recently-changed-value' : ''}`}>
                                 {currentProject.initiative_manager}
                               </span>
                               {currentProject?.secondary_pm && (
                                 <>
                                   <span className="pm-separator">|</span>
-                                  <span className="pm-info-inline">
+                                  <span className={`pm-info-inline ${isProjectFieldChanged('secondary_pm') ? 'recently-changed-value' : ''}`}>
                                     {currentProject.secondary_pm}
                                   </span>
                                 </>
@@ -2027,7 +2080,7 @@ function App() {
                               href={link.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="project-link-btn"
+                              className={`project-link-btn ${isRecentlyUpdated(link.created_at) ? 'recently-changed-value' : ''}`}
                             >
                               {link.label}
                             </a>
@@ -2195,6 +2248,7 @@ function App() {
                   currentUser={currentUser}
                   showInPortfolioReview={projectMetrics.find(m => m.name === selectedMetric)?.show_in_portfolio_review ?? true}
                   onShowInPortfolioReviewChange={handleShowInPortfolioReviewChange}
+                  recentPeriodChanges={recentPeriodChanges}
                 />
               </div>
             )}
@@ -2341,7 +2395,7 @@ function App() {
                         return (
                           <div key={comment.id}>
                             <div
-                              className={`commentary-item ${index === 0 ? 'latest-comment' : ''}`}
+                              className={`commentary-item ${index === 0 ? 'latest-comment' : ''} ${isRecentlyUpdated(comment.created_at) ? 'recently-changed-cell' : ''}`}
                               style={{
                                 padding: '6px 8px',
                                 marginBottom: '0',
@@ -2468,7 +2522,7 @@ function App() {
                                     {replies.map((reply) => (
                                       <div
                                         key={reply.id}
-                                        className="commentary-item reply-comment"
+                                        className={`commentary-item reply-comment ${isRecentlyUpdated(reply.created_at) ? 'recently-changed-cell' : ''}`}
                                         style={{
                                           padding: '4px 8px',
                                           backgroundColor: '#fafafa',
@@ -2845,6 +2899,7 @@ function App() {
                         isAdmin={false}
                         currentUser={currentUser}
                         compactMode={true}
+                        recentPeriodChanges={{}}
                       />
                     </div>
                   );

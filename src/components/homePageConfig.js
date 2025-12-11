@@ -8,7 +8,8 @@ import {
   MdHistory,
   MdPeople,
   MdSpeed,
-  MdDateRange
+  MdDateRange,
+  MdUpdate
 } from 'react-icons/md';
 import { FaDatabase } from 'react-icons/fa';
 
@@ -17,6 +18,7 @@ export const PANEL_CONFIG = {
   heatmap: { id: 'heatmap', name: 'Most Viewed Projects', icon: MdVisibility, adminOnly: false },
   metrics: { id: 'metrics', name: 'Metrics at Risk', icon: MdPriorityHigh, adminOnly: false },
   commentary: { id: 'commentary', name: 'Recent Commentary', icon: MdComment, adminOnly: false },
+  recentUpdates: { id: 'recentUpdates', name: 'Recent Updates', icon: MdUpdate, adminOnly: false },
   inconsistencies: { id: 'inconsistencies', name: 'Inconsistencies', icon: MdBugReport, adminOnly: false },
   attention: { id: 'attention', name: 'My Projects Needing Attention', icon: MdBuild, adminOnly: false },
   projectHealth: { id: 'projectHealth', name: 'Project Health Rankings', icon: MdFavorite, adminOnly: false },

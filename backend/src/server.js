@@ -2409,18 +2409,22 @@ function createApp(dbPath) {
       if (!(await canEditProject(req.user.userId, req.params.id))) {
         return res.status(403).json({ error: 'You do not have permission to edit this project' });
       }
-  
+
       const { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id } = req.body;
       const oldProject = await dbGet('SELECT * FROM projects WHERE id = ?', [req.params.id]);
 
-      // Validate initiative managers are real users
-      if (initiative_manager && initiative_manager.trim()) {
+      if (!oldProject) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+
+      // Only validate initiative managers if they're being changed from the current value
+      if (initiative_manager && initiative_manager.trim() && initiative_manager !== oldProject.initiative_manager) {
         const user = await dbGet('SELECT id FROM users WHERE name = ?', [initiative_manager.trim()]);
         if (!user) {
           return res.status(400).json({ error: `Primary initiative manager "${initiative_manager}" is not a registered user` });
         }
       }
-      if (secondary_pm && secondary_pm.trim()) {
+      if (secondary_pm && secondary_pm.trim() && secondary_pm !== oldProject.secondary_pm) {
         const user = await dbGet('SELECT id FROM users WHERE name = ?', [secondary_pm.trim()]);
         if (!user) {
           return res.status(400).json({ error: `Secondary initiative manager "${secondary_pm}" is not a registered user` });
@@ -2428,7 +2432,7 @@ function createApp(dbPath) {
       }
 
       await dbRun(
-        'UPDATE projects SET name = ?, description = ?, initiative_manager = ?, secondary_pm = ?, start_date = ?, end_date = ?, portfolio_id = ? WHERE id = ?',
+        'UPDATE projects SET name = ?, description = ?, initiative_manager = ?, secondary_pm = ?, start_date = ?, end_date = ?, portfolio_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
         [name, description, initiative_manager || null, secondary_pm || null, start_date || null, end_date || null, portfolio_id || null, req.params.id]
       );
 
@@ -2444,10 +2448,11 @@ function createApp(dbPath) {
   
       res.json({ success: true });
     } catch (err) {
+      logger.error('PROJECT', `Failed to update project ${req.params.id}: ${err.message}`);
       res.status(500).json({ error: err.message });
     }
   });
-  
+
   app.delete('/api/projects/:id', authenticateToken, async (req, res) => {
     try {
       // Check if user can edit this project
@@ -4538,6 +4543,93 @@ function createApp(dbPath) {
 
       res.json(result);
     } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ===== RECENT FIELD CHANGES (for highlighting recently modified fields) =====
+  app.get('/api/recent-changes', authenticateToken, async (req, res) => {
+    try {
+      const { table_name, record_ids, hours = 2 } = req.query;
+
+      if (!table_name) {
+        return res.status(400).json({ error: 'table_name is required' });
+      }
+
+      // Parse record_ids - can be comma-separated or single value
+      let ids = [];
+      if (record_ids) {
+        ids = record_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      }
+
+      // Calculate cutoff time
+      const hoursAgo = new Date(Date.now() - parseInt(hours) * 60 * 60 * 1000);
+      const cutoffTime = hoursAgo.toISOString().replace('T', ' ').slice(0, 19);
+
+      // Build query
+      let query = `
+        SELECT record_id, old_values, new_values, created_at
+        FROM audit_log
+        WHERE table_name = ?
+          AND action = 'UPDATE'
+          AND created_at >= ?
+      `;
+      let params = [table_name, cutoffTime];
+
+      if (ids.length > 0) {
+        query += ` AND record_id IN (${ids.map(() => '?').join(',')})`;
+        params.push(...ids);
+      }
+
+      query += ' ORDER BY created_at DESC';
+
+      const changes = await dbAll(query, params);
+
+      // Process changes to determine which fields actually changed
+      const result = {};
+
+      for (const change of changes) {
+        const recordId = change.record_id;
+        if (!result[recordId]) {
+          result[recordId] = { fields: new Set(), updated_at: change.created_at };
+        }
+
+        try {
+          const oldVals = change.old_values ? JSON.parse(change.old_values) : {};
+          const newVals = change.new_values ? JSON.parse(change.new_values) : {};
+
+          // Find fields that actually changed
+          const allKeys = new Set([...Object.keys(oldVals), ...Object.keys(newVals)]);
+          for (const key of allKeys) {
+            // Skip internal fields
+            if (key === 'updated_at' || key === 'created_at') continue;
+
+            const oldVal = oldVals[key];
+            const newVal = newVals[key];
+
+            // Compare values (handle null/undefined)
+            if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+              result[recordId].fields.add(key);
+            }
+          }
+        } catch (e) {
+          // JSON parse error, skip this entry
+          console.error('Error parsing audit values:', e);
+        }
+      }
+
+      // Convert Sets to arrays for JSON serialization
+      const response = {};
+      for (const [recordId, data] of Object.entries(result)) {
+        response[recordId] = {
+          fields: Array.from(data.fields),
+          updated_at: data.updated_at
+        };
+      }
+
+      res.json(response);
+    } catch (err) {
+      console.error('Recent changes error:', err);
       res.status(500).json({ error: err.message });
     }
   });
@@ -7081,6 +7173,16 @@ function createApp(dbPath) {
     try {
       await dbRun(`ALTER TABLE projects ADD COLUMN secondary_pm TEXT`);
       console.log('✅ Added secondary_pm column to projects table');
+    } catch (err) {
+      // Column already exists, that's fine
+    }
+
+    // Migration: Add updated_at to projects table
+    try {
+      await dbRun(`ALTER TABLE projects ADD COLUMN updated_at DATETIME`);
+      // Set default value for existing rows
+      await dbRun(`UPDATE projects SET updated_at = created_at WHERE updated_at IS NULL`);
+      console.log('✅ Added updated_at column to projects table');
     } catch (err) {
       // Column already exists, that's fine
     }

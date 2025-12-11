@@ -2405,3 +2405,36 @@
   }
 }
 
+/* ===== Recently Changed Highlight ===== */
+/* Subtle squiggly underline for recently changed values */
+.recently-changed-value {
+  text-decoration: underline wavy #f59e0b !important;
+  text-decoration-skip-ink: none;
+  text-underline-offset: 2px;
+  padding-bottom: 3px;
+}
+
+.recently-changed-cell {
+  text-decoration: underline wavy #f59e0b !important;
+  text-decoration-skip-ink: none;
+  text-underline-offset: 2px;
+  padding-bottom: 3px;
+}
+
+/* Don't apply underline to buttons/interactive elements inside */
+.recently-changed-cell button,
+.recently-changed-cell a,
+.recently-changed-value button,
+.recently-changed-value a {
+  text-decoration: none !important;
+}
+
+/* Dark mode */
+:root.dark-mode .recently-changed-value {
+  text-decoration: underline wavy #fbbf24 !important;
+}
+
+:root.dark-mode .recently-changed-cell {
+  text-decoration: underline wavy #fbbf24 !important;
+}
+

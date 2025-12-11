@@ -190,6 +190,13 @@ export const api = {
     return client.get(`/audit${queryString ? `?${queryString}` : ''}`);
   },
   getAuditTimeline: (days = 14) => client.get(`/audit/timeline?days=${days}`),
+  getRecentChanges: (tableName, recordIds, hours = 2) => {
+    const params = new URLSearchParams({ table_name: tableName, hours });
+    if (recordIds && recordIds.length > 0) {
+      params.append('record_ids', recordIds.join(','));
+    }
+    return client.get(`/recent-changes?${params.toString()}`);
+  },
 
   // User Management
   getUsers: () => client.get('/users'),
