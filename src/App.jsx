@@ -1453,12 +1453,12 @@ function App() {
     return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
-  // Check if a timestamp is recent (within last 2 hours) - used for comments/links with created_at
+  // Check if a timestamp is recent (same day) - used for comments/links with created_at
   const isRecentlyUpdated = (updatedAt) => {
     if (!updatedAt) return false;
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const today = new Date();
     const updateTime = new Date(updatedAt);
-    return updateTime > twoHoursAgo;
+    return updateTime.toDateString() === today.toDateString();
   };
 
   // Check if a specific field on the current project was recently changed

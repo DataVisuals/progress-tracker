@@ -4550,7 +4550,7 @@ function createApp(dbPath) {
   // ===== RECENT FIELD CHANGES (for highlighting recently modified fields) =====
   app.get('/api/recent-changes', authenticateToken, async (req, res) => {
     try {
-      const { table_name, record_ids, hours = 2 } = req.query;
+      const { table_name, record_ids, hours = 24 } = req.query;
 
       if (!table_name) {
         return res.status(400).json({ error: 'table_name is required' });

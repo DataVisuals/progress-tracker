@@ -429,12 +429,12 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   const [currentPage, setCurrentPage] = useState(0);
   const [periodsPerPage] = useState(12); // Show 12 periods at a time
 
-  // Helper function to check if a value was recently updated (within last 2 hours)
+  // Helper function to check if a value was recently updated (same day)
   const isRecentlyUpdated = (updatedAt) => {
     if (!updatedAt) return false;
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const today = new Date();
     const updateTime = new Date(updatedAt);
-    return updateTime > twoHoursAgo;
+    return updateTime.toDateString() === today.toDateString();
   };
 
   // Check if a specific field on a period was recently changed

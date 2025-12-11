@@ -151,11 +151,11 @@ const RecentUpdatesPanel = ({
     }
   };
 
-  // Check if update is recent (within last 2 hours)
+  // Check if update is recent (same day)
   const isRecent = (date) => {
     if (!date) return false;
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-    return date > twoHoursAgo;
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
   };
 
   return (
