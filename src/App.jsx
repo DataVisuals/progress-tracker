@@ -31,6 +31,7 @@ import ImportData from './components/ImportData';
 import UserActivityReport from './components/UserActivityReport';
 import PageHeatmapReport from './components/PageHeatmapReport';
 import HomePage from './components/HomePage';
+import JumpToProject from './components/JumpToProject';
 import TipsModal from './components/TipsModal';
 import PortfolioReviewModal from './components/PortfolioReviewModal';
 import { api, refreshToken } from './api/client';
@@ -121,6 +122,7 @@ function App() {
   const [showPortfolioReview, setShowPortfolioReview] = useState(false);
   const [portfolioReviewId, setPortfolioReviewId] = useState(null);
   const [showPortfolioSelector, setShowPortfolioSelector] = useState(false);
+  const [showJumpToProject, setShowJumpToProject] = useState(false);
   const [loginTime, setLoginTime] = useState(null);
   const [darkMode, setDarkMode] = useState(() => {
     try {
@@ -237,6 +239,19 @@ function App() {
       window.removeEventListener('auth:logout', handleLogout);
     };
   }, [isAuthenticated]);
+
+  // Keyboard shortcut for Jump to Project (Cmd+K / Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowJumpToProject(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
@@ -610,6 +625,17 @@ function App() {
       setSelectedMetric('');
       updateURL(projectId.toString(), '');
     }
+  };
+
+  // Jump to project from quick search (ignores current filters)
+  const handleJumpToProject = (project) => {
+    // Reset filters so the project is visible
+    setSelectedSpace('all');
+    setSelectedPortfolio('all');
+    startPageLoadTimer();
+    setSelectedProject(project.id.toString());
+    setSelectedMetric('');
+    updateURL(project.id.toString(), '');
   };
 
   // Update URL without page reload
@@ -3005,6 +3031,15 @@ function App() {
           }
           window.history.replaceState({}, '', url);
         }}
+      />
+
+      {/* Jump to Project (Cmd+K / Ctrl+K) */}
+      <JumpToProject
+        isOpen={showJumpToProject}
+        onClose={() => setShowJumpToProject(false)}
+        portfolios={portfolios}
+        spaces={spaces}
+        onSelectProject={handleJumpToProject}
       />
 
       {/* Portfolio Selector Dialog */}
