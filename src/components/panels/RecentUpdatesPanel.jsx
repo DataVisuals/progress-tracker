@@ -43,16 +43,16 @@ const RecentUpdatesPanel = ({
       if (!groups[projectKey]) {
         groups[projectKey] = {
           projectName: update.project_name,
-          projectId: null, // Will be extracted from record_id for project table entries
+          projectId: update.project_id || null, // Use project_id from enriched audit entry
           metrics: {},
           latestUpdate: null,
           updateCount: 0
         };
       }
 
-      // Try to get project_id from the record
-      if (update.table_name === 'projects' && update.record_id) {
-        groups[projectKey].projectId = update.record_id;
+      // Update project_id if we have it (some entries may have it, some may not)
+      if (update.project_id && !groups[projectKey].projectId) {
+        groups[projectKey].projectId = update.project_id;
       }
 
       // Track latest update time
@@ -203,12 +203,12 @@ const RecentUpdatesPanel = ({
                         return (
                           <div
                             key={midx}
-                            className={`update-metric-item ${isMetricRecent ? 'recently-changed' : ''}`}
+                            className="update-metric-item"
                             onClick={() => handleMetricClick(group, metric.metricName)}
                             style={{ cursor: group.projectId ? 'pointer' : 'default' }}
                           >
                             {getActionIcon(latestAction?.action)}
-                            <span className="update-metric-name">{metric.metricName}</span>
+                            <span className={`update-metric-name ${isMetricRecent ? 'recently-changed' : ''}`}>{metric.metricName}</span>
                             <span className="update-metric-detail">
                               {metric.actions.length > 1
                                 ? `${metric.actions.length} changes`

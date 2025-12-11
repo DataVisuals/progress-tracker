@@ -4456,14 +4456,14 @@ function createApp(dbPath) {
         if (log.table_name === 'metric_periods' && log.record_id) {
           try {
             const context = await dbGet(`
-              SELECT m.name as metric_name, p.name as project_name
+              SELECT m.name as metric_name, p.name as project_name, p.id as project_id
               FROM metric_periods mp
               JOIN metrics m ON mp.metric_id = m.id
               JOIN projects p ON m.project_id = p.id
               WHERE mp.id = ?
             `, [log.record_id]);
             if (context) {
-              enrichedLog = { ...enrichedLog, metric_name: context.metric_name, project_name: context.project_name };
+              enrichedLog = { ...enrichedLog, metric_name: context.metric_name, project_name: context.project_name, project_id: context.project_id };
             }
           } catch (e) {
             // Period may have been deleted, ignore
@@ -4471,22 +4471,22 @@ function createApp(dbPath) {
         } else if (log.table_name === 'metrics' && log.record_id) {
           try {
             const context = await dbGet(`
-              SELECT m.name as metric_name, p.name as project_name
+              SELECT m.name as metric_name, p.name as project_name, p.id as project_id
               FROM metrics m
               JOIN projects p ON m.project_id = p.id
               WHERE m.id = ?
             `, [log.record_id]);
             if (context) {
-              enrichedLog = { ...enrichedLog, metric_name: context.metric_name, project_name: context.project_name };
+              enrichedLog = { ...enrichedLog, metric_name: context.metric_name, project_name: context.project_name, project_id: context.project_id };
             }
           } catch (e) {
             // Metric may have been deleted, ignore
           }
         } else if (log.table_name === 'projects' && log.record_id) {
           try {
-            const context = await dbGet(`SELECT name as project_name FROM projects WHERE id = ?`, [log.record_id]);
+            const context = await dbGet(`SELECT id as project_id, name as project_name FROM projects WHERE id = ?`, [log.record_id]);
             if (context) {
-              enrichedLog = { ...enrichedLog, project_name: context.project_name };
+              enrichedLog = { ...enrichedLog, project_name: context.project_name, project_id: context.project_id };
             }
           } catch (e) {
             // Project may have been deleted, ignore

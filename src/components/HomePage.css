@@ -6656,7 +6656,7 @@ html.dark-mode .quadrant-content {
   background: rgba(0, 0, 0, 0.03);
 }
 
-.update-metric-item.recently-changed {
+.update-metric-name.recently-changed {
   text-decoration: underline wavy #f59e0b;
 }
 
@@ -6758,7 +6758,7 @@ tr.recently-changed-row {
   background: rgba(255, 255, 255, 0.05);
 }
 
-:root.dark-mode .update-metric-item.recently-changed {
+:root.dark-mode .update-metric-name.recently-changed {
   text-decoration: underline wavy #fbbf24;
 }
 
