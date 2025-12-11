@@ -1788,7 +1788,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
 
                         return (
                           <div key={comment.id}>
-                            <div className={`commentary-item-sidebar ${index === 0 ? 'latest' : ''} ${comment.is_system ? 'system' : ''} ${isRecentlyUpdated(comment.created_at) ? 'recently-changed-cell' : ''}`} style={{ padding: '4px 6px' }}>
+                            <div className={`commentary-item-sidebar ${index === 0 ? 'latest' : ''} ${comment.is_system ? 'system' : ''} ${isRecentlyUpdated(comment.created_at) ? 'recently-changed-comment' : ''}`} style={{ padding: '4px 6px' }}>
                               {editingCommentId === comment.id ? (
                                 <div className="editing-comment-sidebar">
                                   <ReactQuill
@@ -1862,7 +1862,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                                 {isExpanded && (
                                   <div style={{ marginLeft: '6px', borderLeft: '2px solid #e5e7eb', paddingLeft: '6px' }}>
                                     {replies.map((reply) => (
-                                      <div key={reply.id} className={`commentary-item-sidebar reply ${reply.is_system ? 'system' : ''} ${isRecentlyUpdated(reply.created_at) ? 'recently-changed-cell' : ''}`} style={{ padding: '3px 6px', fontSize: '0.9em' }}>
+                                      <div key={reply.id} className={`commentary-item-sidebar reply ${reply.is_system ? 'system' : ''} ${isRecentlyUpdated(reply.created_at) ? 'recently-changed-comment' : ''}`} style={{ padding: '3px 6px', fontSize: '0.9em' }}>
                                         {editingCommentId === reply.id ? (
                                           <div className="editing-comment-sidebar">
                                             <ReactQuill

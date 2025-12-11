@@ -2429,6 +2429,13 @@
   text-decoration: none !important;
 }
 
+/* Comment-specific highlight uses left border instead of underline */
+.recently-changed-comment {
+  border-left: 3px solid #f59e0b !important;
+  padding-left: 6px !important;
+  margin-left: -3px;
+}
+
 /* Dark mode */
 :root.dark-mode .recently-changed-value {
   text-decoration: underline wavy #fbbf24 !important;
@@ -2436,5 +2443,9 @@
 
 :root.dark-mode .recently-changed-cell {
   text-decoration: underline wavy #fbbf24 !important;
+}
+
+:root.dark-mode .recently-changed-comment {
+  border-left-color: #fbbf24 !important;
 }
 

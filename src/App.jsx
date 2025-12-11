@@ -2395,7 +2395,7 @@ function App() {
                         return (
                           <div key={comment.id}>
                             <div
-                              className={`commentary-item ${index === 0 ? 'latest-comment' : ''} ${isRecentlyUpdated(comment.created_at) ? 'recently-changed-cell' : ''}`}
+                              className={`commentary-item ${index === 0 ? 'latest-comment' : ''} ${isRecentlyUpdated(comment.created_at) ? 'recently-changed-comment' : ''}`}
                               style={{
                                 padding: '6px 8px',
                                 marginBottom: '0',
@@ -2522,7 +2522,7 @@ function App() {
                                     {replies.map((reply) => (
                                       <div
                                         key={reply.id}
-                                        className={`commentary-item reply-comment ${isRecentlyUpdated(reply.created_at) ? 'recently-changed-cell' : ''}`}
+                                        className={`commentary-item reply-comment ${isRecentlyUpdated(reply.created_at) ? 'recently-changed-comment' : ''}`}
                                         style={{
                                           padding: '4px 8px',
                                           backgroundColor: '#fafafa',

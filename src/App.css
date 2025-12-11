@@ -716,6 +716,17 @@
   text-decoration: none;
 }
 
+/* Comment-specific highlight uses left border instead of underline */
+.recently-changed-comment {
+  border-left: 3px solid #f59e0b !important;
+  padding-left: 6px !important;
+  margin-left: -3px;
+}
+
+:root.dark-mode .recently-changed-comment {
+  border-left-color: #fbbf24 !important;
+}
+
 .add-dates-btn {
   padding: 3px 8px;
   font-size: 11px;
