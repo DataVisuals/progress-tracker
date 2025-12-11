@@ -4288,32 +4288,108 @@ function createApp(dbPath) {
       let query = '';
       const params = [];
 
-      // Special handling for project_id filter with metric_periods table
-      if (project_id && table_name === 'metric_periods') {
-        // Get all metric IDs for this project first
+      // Build record IDs for project-based filtering
+      let projectRecordIds = null;
+      if (project_id) {
+        // Get all metric IDs for this project
         const metrics = await dbAll('SELECT id FROM metrics WHERE project_id = ?', [parseInt(project_id)]);
         const metricIds = metrics.map(m => m.id);
 
-        if (metricIds.length === 0) {
-          return res.json([]);
-        }
-
         // Get all metric_period IDs for these metrics
-        const periods = await dbAll(
-          `SELECT id FROM metric_periods WHERE metric_id IN (${metricIds.map(() => '?').join(',')})`,
-          metricIds
-        );
-        const periodIds = periods.map(p => p.id);
+        let periodIds = [];
+        if (metricIds.length > 0) {
+          const periods = await dbAll(
+            `SELECT id FROM metric_periods WHERE metric_id IN (${metricIds.map(() => '?').join(',')})`,
+            metricIds
+          );
+          periodIds = periods.map(p => p.id);
+        }
 
-        if (periodIds.length === 0) {
+        // Get all comment IDs for periods of this project
+        let commentIds = [];
+        if (periodIds.length > 0) {
+          const comments = await dbAll(
+            `SELECT id FROM comments WHERE period_id IN (${periodIds.map(() => '?').join(',')})`,
+            periodIds
+          );
+          commentIds = comments.map(c => c.id);
+        }
+
+        // Get all project comment IDs for this project
+        const projectComments = await dbAll('SELECT id FROM project_comments WHERE project_id = ?', [parseInt(project_id)]);
+        const projectCommentIds = projectComments.map(c => c.id);
+
+        projectRecordIds = {
+          projects: [parseInt(project_id)],
+          metrics: metricIds,
+          metric_periods: periodIds,
+          comments: commentIds,
+          project_comments: projectCommentIds
+        };
+      }
+
+      // Build the query based on filters
+      if (project_id && !table_name) {
+        // Filter by project across all tables
+        const conditions = [];
+        const allParams = [];
+
+        // Projects table
+        if (projectRecordIds.projects.length > 0) {
+          conditions.push(`(table_name = 'projects' AND record_id IN (${projectRecordIds.projects.map(() => '?').join(',')}))`);
+          allParams.push(...projectRecordIds.projects);
+        }
+        // Metrics table
+        if (projectRecordIds.metrics.length > 0) {
+          conditions.push(`(table_name = 'metrics' AND record_id IN (${projectRecordIds.metrics.map(() => '?').join(',')}))`);
+          allParams.push(...projectRecordIds.metrics);
+        }
+        // Metric periods table
+        if (projectRecordIds.metric_periods.length > 0) {
+          conditions.push(`(table_name = 'metric_periods' AND record_id IN (${projectRecordIds.metric_periods.map(() => '?').join(',')}))`);
+          allParams.push(...projectRecordIds.metric_periods);
+        }
+        // Comments table
+        if (projectRecordIds.comments.length > 0) {
+          conditions.push(`(table_name = 'comments' AND record_id IN (${projectRecordIds.comments.map(() => '?').join(',')}))`);
+          allParams.push(...projectRecordIds.comments);
+        }
+        // Project comments table
+        if (projectRecordIds.project_comments.length > 0) {
+          conditions.push(`(table_name = 'project_comments' AND record_id IN (${projectRecordIds.project_comments.map(() => '?').join(',')}))`);
+          allParams.push(...projectRecordIds.project_comments);
+        }
+
+        if (conditions.length === 0) {
           return res.json([]);
         }
 
-        // Filter audit log by these period IDs
+        query = `SELECT *, created_at as timestamp FROM audit_log WHERE (${conditions.join(' OR ')})`;
+        params.push(...allParams);
+
+        if (user_id) {
+          query += ' AND user_id = ?';
+          params.push(parseInt(user_id));
+        }
+        if (action) {
+          query += ' AND action = ?';
+          params.push(action);
+        }
+        if (date) {
+          query += ' AND DATE(created_at) = ?';
+          params.push(date);
+        }
+      } else if (project_id && table_name) {
+        // Filter by project AND specific table
+        const recordIds = projectRecordIds[table_name] || [];
+        if (recordIds.length === 0) {
+          return res.json([]);
+        }
+
         query = `SELECT *, created_at as timestamp FROM audit_log
-                 WHERE table_name = 'metric_periods'
-                 AND record_id IN (${periodIds.map(() => '?').join(',')})`;
-        params.push(...periodIds);
+                 WHERE table_name = ?
+                 AND record_id IN (${recordIds.map(() => '?').join(',')})`;
+        params.push(table_name, ...recordIds);
 
         if (user_id) {
           query += ' AND user_id = ?';
@@ -4328,6 +4404,7 @@ function createApp(dbPath) {
           params.push(date);
         }
       } else {
+        // No project filter
         query = 'SELECT *, created_at as timestamp FROM audit_log WHERE 1=1';
 
         if (table_name) {
