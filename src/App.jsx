@@ -410,12 +410,16 @@ function App() {
     }
   }, [selectedProject, projects]);
 
-  // Auto-select first metric when metrics load
+  // Auto-select first metric when metrics load or project changes
   useEffect(() => {
-    if (projectMetrics.length > 0 && !selectedMetric) {
-      setSelectedMetric(projectMetrics[0].name);
+    if (projectMetrics.length > 0) {
+      // Select first metric if none selected OR current metric doesn't exist in this project
+      const metricExists = projectMetrics.some(m => m.name === selectedMetric);
+      if (!selectedMetric || !metricExists) {
+        setSelectedMetric(projectMetrics[0].name);
+      }
     }
-  }, [projectMetrics]);
+  }, [projectMetrics, selectedProject]);
 
   // Load recent period changes when project data changes
   useEffect(() => {
@@ -629,11 +633,12 @@ function App() {
 
   // Jump to project from quick search (ignores current filters)
   const handleJumpToProject = (project) => {
-    // Reset filters so the project is visible
+    // Reset filters so the project is visible (null = no filter = all projects)
     setSelectedSpace('all');
-    setSelectedPortfolio('all');
+    setSelectedPortfolio(null);
     startPageLoadTimer();
     setSelectedProject(project.id.toString());
+    // Clear metric so the auto-select useEffect picks the first one
     setSelectedMetric('');
     updateURL(project.id.toString(), '');
   };
