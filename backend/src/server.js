@@ -951,10 +951,11 @@ function createApp(dbPath) {
           // Check if final period's expected falls short of target (no plan to meet target)
           // This should make the metric red even if current variance is acceptable
           let missesTarget = false;
-          if (metric.final_target && metric.final_target > 0 && periods.length > 0) {
+          if (periods.length > 0) {
             const finalPeriod = periods[periods.length - 1];
             const finalExpected = finalPeriod.expected || 0;
-            if (finalExpected < metric.final_target) {
+            const finalTarget = finalPeriod.target || 0;
+            if (finalTarget > 0 && finalExpected < finalTarget) {
               ragStatus = 'red';
               missesTarget = true;
             }
@@ -1202,10 +1203,11 @@ function createApp(dbPath) {
           // Check if final period's expected falls short of target (no plan to meet target)
           // This should make the metric red even if current variance is acceptable
           let missesTarget = false;
-          if (metric.final_target && metric.final_target > 0 && periods.length > 0) {
+          if (periods.length > 0) {
             const finalPeriod = periods[periods.length - 1];
             const finalExpected = finalPeriod.expected || 0;
-            if (finalExpected < metric.final_target) {
+            const finalTarget = finalPeriod.target || 0;
+            if (finalTarget > 0 && finalExpected < finalTarget) {
               ragStatus = 'red';
               missesTarget = true;
             }
@@ -1488,10 +1490,11 @@ function createApp(dbPath) {
           // Check if final period's expected falls short of target (no plan to meet target)
           // This should make the metric red even if current variance is acceptable
           let missesTarget = false;
-          if (metric.final_target && metric.final_target > 0 && periods.length > 0) {
+          if (periods.length > 0) {
             const finalPeriod = periods[periods.length - 1];
             const finalExpected = finalPeriod.expected || 0;
-            if (finalExpected < metric.final_target) {
+            const finalTarget = finalPeriod.target || 0;
+            if (finalTarget > 0 && finalExpected < finalTarget) {
               ragStatus = 'red';
               missesTarget = true;
             }

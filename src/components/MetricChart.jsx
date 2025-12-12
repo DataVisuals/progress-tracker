@@ -503,23 +503,23 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     is_custom: isCustomCurve
   } : null;
 
-  // Check if the final period's expected falls short of the metric's final target
+  // Check if the final period's expected falls short of the period's target
   // This indicates no plan to meet the target, which should trigger a red status
   const finalPeriodMissesTarget = sortedData.length > 0 ? (() => {
     const finalPeriod = sortedData[sortedData.length - 1];
-    const metricFinalTarget = sortedData[0].metric_final_target;
+    const finalTarget = finalPeriod.final_target || 0; // Period-level target
     const finalExpected = finalPeriod.expected || 0;
 
     // If there's a target and the final expected is less than the target
-    if (metricFinalTarget && metricFinalTarget > 0 && finalExpected < metricFinalTarget) {
-      const shortfall = metricFinalTarget - finalExpected;
-      const shortfallPercent = (shortfall / metricFinalTarget) * 100;
+    if (finalTarget > 0 && finalExpected < finalTarget) {
+      const shortfall = finalTarget - finalExpected;
+      const shortfallPercent = (shortfall / finalTarget) * 100;
       return {
         misses: true,
         shortfall,
         shortfallPercent: shortfallPercent.toFixed(1),
         finalExpected,
-        metricFinalTarget
+        finalTarget
       };
     }
     return { misses: false };
@@ -1342,7 +1342,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             {finalPeriodMissesTarget.misses && (
               <span
                 className="target-miss-warning"
-                title={`No plan to meet target. Final expected: ${formatNumber(finalPeriodMissesTarget.finalExpected)}, Target: ${formatNumber(finalPeriodMissesTarget.metricFinalTarget)} (${finalPeriodMissesTarget.shortfallPercent}% shortfall)`}
+                title={`No plan to meet target. Final expected: ${formatNumber(finalPeriodMissesTarget.finalExpected)}, Target: ${formatNumber(finalPeriodMissesTarget.finalTarget)} (${finalPeriodMissesTarget.shortfallPercent}% shortfall)`}
                 style={{
                   marginLeft: '6px',
                   color: '#ef4444',
@@ -1679,7 +1679,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             >
               <span style={{ fontSize: '16px' }}>⚠️</span>
               <span>
-                <strong>No plan to meet target.</strong> Final expected ({formatNumber(finalPeriodMissesTarget.finalExpected)}) is {finalPeriodMissesTarget.shortfallPercent}% below the target ({formatNumber(finalPeriodMissesTarget.metricFinalTarget)}).
+                <strong>No plan to meet target.</strong> Final expected ({formatNumber(finalPeriodMissesTarget.finalExpected)}) is {finalPeriodMissesTarget.shortfallPercent}% below the target ({formatNumber(finalPeriodMissesTarget.finalTarget)}).
               </span>
             </div>
           )}
