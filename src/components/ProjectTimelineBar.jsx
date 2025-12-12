@@ -140,8 +140,13 @@ const ProjectTimelineBar = ({ milestones, startDate, endDate }) => {
                   <div className="stop-dot" />
                 )}
               </div>
-              <div className="stop-label">{milestone.title}</div>
-              <div className="stop-date">{formatShortDate(milestone.target_date)}</div>
+              {/* Only show label for next upcoming milestone to reduce clutter */}
+              {isNextMilestone && (
+                <>
+                  <div className="stop-label">{milestone.title}</div>
+                  <div className="stop-date">{formatShortDate(milestone.target_date)}</div>
+                </>
+              )}
             </div>
           );
         })}

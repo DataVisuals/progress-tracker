@@ -253,6 +253,35 @@ function App() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Arrow key navigation between metrics when in metric view
+  useEffect(() => {
+    if (!selectedProject || projectMetrics.length === 0) return;
+
+    const handleArrowKeys = (e) => {
+      // Don't interfere with input fields or textareas
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+        return;
+      }
+
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const currentIndex = projectMetrics.findIndex(m => m.name === selectedMetric);
+        let newIndex;
+
+        if (e.key === 'ArrowLeft') {
+          newIndex = currentIndex <= 0 ? projectMetrics.length - 1 : currentIndex - 1;
+        } else {
+          newIndex = currentIndex >= projectMetrics.length - 1 ? 0 : currentIndex + 1;
+        }
+
+        setSelectedMetric(projectMetrics[newIndex].name);
+      }
+    };
+
+    document.addEventListener('keydown', handleArrowKeys);
+    return () => document.removeEventListener('keydown', handleArrowKeys);
+  }, [selectedProject, projectMetrics, selectedMetric]);
+
   // Load user on mount and load projects regardless of auth
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -2164,7 +2193,7 @@ function App() {
                       </div>
                     ) : (
                       <div className="project-description-wrapper" style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', textAlign: 'right' }}>
-                        <ClarityIndicator text={currentProject?.description} size="sm" compact hoverReveal contentType="description" />
+                        <ClarityIndicator text={currentProject?.description} size="sm" compact contentType="description" />
                         <p
                           className={`project-description ${canEdit() ? 'editable' : ''} ${currentProject?.description ? 'filled' : 'empty'}`}
                           onClick={handleProjectDescClick}
