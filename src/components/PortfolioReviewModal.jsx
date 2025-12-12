@@ -1097,10 +1097,11 @@ const PortfolioReviewModal = ({
           {/* Metrics Grid - Limited to 5 charts for larger display and more comment space */}
           <div className="metrics-section" style={{ margin: '0 16px' }}>
             {(() => {
-              const selectedMetrics = projectMetrics.filter(m => m.show_in_portfolio_review !== 0);
+              // Filter out archived metrics and those not selected for portfolio review
+              const selectedMetrics = projectMetrics.filter(m => m.show_in_portfolio_review !== 0 && !m.is_archived);
               const displayMetrics = selectedMetrics.slice(0, 5);
               const hiddenCount = selectedMetrics.length - displayMetrics.length;
-              const unselectedCount = projectMetrics.filter(m => m.show_in_portfolio_review === 0).length;
+              const unselectedCount = projectMetrics.filter(m => m.show_in_portfolio_review === 0 && !m.is_archived).length;
 
               return (
                 <>
@@ -1249,7 +1250,18 @@ const PortfolioReviewModal = ({
                 color: darkMode ? '#e2e8f0' : '#334155',
                 border: darkMode ? '1px solid #44403c' : '1px solid #fde68a'
               }}>
-                {projectRecoveryPlans.filter(rp => rp.status === 'active').map((plan, index) => {
+                {(() => {
+                  // Sort recovery plans by the order of their metrics in the portfolio review
+                  const metricOrder = projectMetrics.map(m => m.id);
+                  const sortedPlans = projectRecoveryPlans
+                    .filter(rp => rp.status === 'active')
+                    .sort((a, b) => {
+                      const indexA = metricOrder.indexOf(a.metric_id);
+                      const indexB = metricOrder.indexOf(b.metric_id);
+                      // If metric not found, put at end
+                      return (indexA === -1 ? Infinity : indexA) - (indexB === -1 ? Infinity : indexB);
+                    });
+                  return sortedPlans.map((plan, index) => {
                   const metric = projectMetrics.find(m => m.id === plan.metric_id);
                   const formatDate = (dateString) => {
                     if (!dateString) return '';
@@ -1257,7 +1269,7 @@ const PortfolioReviewModal = ({
                     return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
                   };
                   return (
-                    <div key={plan.id} style={{ marginBottom: index < projectRecoveryPlans.filter(rp => rp.status === 'active').length - 1 ? '8px' : '0' }}>
+                    <div key={plan.id} style={{ marginBottom: index < sortedPlans.length - 1 ? '8px' : '0' }}>
                       <span style={{ color: darkMode ? '#f59e0b' : '#d97706', fontWeight: '600' }}>
                         {metric?.name || 'Unknown Metric'}
                       </span>
@@ -1269,7 +1281,8 @@ const PortfolioReviewModal = ({
                       <div style={{ marginTop: '2px' }}>{plan.plan_text}</div>
                     </div>
                   );
-                })}
+                });
+                })()}
               </div>
             </div>
           )}

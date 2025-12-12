@@ -396,3 +396,154 @@
 .metric-tab-wrapper[draggable="true"]:active {
   cursor: grabbing;
 }
+
+/* Archive option in dropdown */
+.metric-dropdown button.archive-option {
+  color: #6b7280;
+}
+
+.metric-dropdown button.archive-option:hover {
+  background-color: #f3f4f6;
+}
+
+:root.dark-mode .metric-dropdown button.archive-option {
+  color: #9ca3af;
+}
+
+:root.dark-mode .metric-dropdown button.archive-option:hover {
+  background-color: #374151;
+}
+
+/* Archived metrics toggle button */
+.metric-tab.archived-toggle-tab {
+  color: #6b7280;
+  background: transparent;
+  padding: 6px 10px;
+  font-size: 12px;
+  gap: 3px;
+}
+
+.metric-tab.archived-toggle-tab:hover {
+  color: #374151;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.archived-icon {
+  font-size: 14px;
+}
+
+.archived-count {
+  font-size: 11px;
+  background: #e5e7eb;
+  color: #6b7280;
+  padding: 1px 5px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+:root.dark-mode .metric-tab.archived-toggle-tab {
+  color: #9ca3af;
+}
+
+:root.dark-mode .metric-tab.archived-toggle-tab:hover {
+  color: #f9fafb;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:root.dark-mode .archived-count {
+  background: #4b5563;
+  color: #9ca3af;
+}
+
+/* Archived metrics row */
+.archived-metrics-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.archived-label {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-tab-wrapper.archived {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.metric-tab.archived {
+  background: transparent;
+  color: #9ca3af;
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px dashed #d1d5db;
+}
+
+.metric-tab.archived:hover {
+  color: #6b7280;
+  border-color: #9ca3af;
+}
+
+.metric-tab.archived.active {
+  background: white;
+  color: #6b7280;
+  border-style: solid;
+}
+
+.unarchive-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.unarchive-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+:root.dark-mode .archived-metrics-row {
+  background: #374151;
+}
+
+:root.dark-mode .archived-label {
+  color: #9ca3af;
+}
+
+:root.dark-mode .metric-tab.archived {
+  color: #6b7280;
+  border-color: #4b5563;
+}
+
+:root.dark-mode .metric-tab.archived:hover {
+  color: #9ca3af;
+  border-color: #6b7280;
+}
+
+:root.dark-mode .metric-tab.archived.active {
+  background: #1f2937;
+  color: #9ca3af;
+}
+
+:root.dark-mode .unarchive-btn {
+  color: #9ca3af;
+}
+
+:root.dark-mode .unarchive-btn:hover {
+  background: #4b5563;
+  color: #f9fafb;
+}

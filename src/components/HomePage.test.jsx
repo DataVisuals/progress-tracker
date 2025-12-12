@@ -19,49 +19,13 @@ vi.mock('lottie-react', () => ({
   default: () => <div>Lottie Animation</div>,
 }));
 
-// Mock react-icons
-vi.mock('react-icons/md', () => ({
-  MdComment: () => <div>CommentIcon</div>,
-  MdWarning: () => <div>WarningIcon</div>,
-  MdLightbulb: () => <div>LightbulbIcon</div>,
-  MdTrendingUp: () => <div>TrendingUpIcon</div>,
-  MdArrowForward: () => <div>ArrowIcon</div>,
-  MdErrorOutline: () => <div>ExclamationIcon</div>,
-  MdHome: () => <div>HomeIcon</div>,
-  MdTrackChanges: () => <div>TrackChangesIcon</div>,
-  MdTune: () => <div>TuneIcon</div>,
-  MdShowChart: () => <div>ShowChartIcon</div>,
-  MdTimeline: () => <div>TimelineIcon</div>,
-  MdFilterList: () => <div>FilterListIcon</div>,
-  MdFolderSpecial: () => <div>FolderSpecialIcon</div>,
-  MdCheckCircle: () => <div>CheckCircleIcon</div>,
-  MdHistory: () => <div>HistoryIcon</div>,
-  MdEdit: () => <div>EditIcon</div>,
-  MdLink: () => <div>LinkIcon</div>,
-  MdFileDownload: () => <div>FileDownloadIcon</div>,
-  MdAutorenew: () => <div>AutorenewIcon</div>,
-  MdViewWeek: () => <div>ViewWeekIcon</div>,
-  MdSpeed: () => <div>SpeedIcon</div>,
-  MdFlag: () => <div>FlagIcon</div>,
-  MdPeople: () => <div>PeopleIcon</div>,
-  MdCompareArrows: () => <div>CompareArrowsIcon</div>,
-  MdAssignment: () => <div>AssignmentIcon</div>,
-  MdDashboard: () => <div>DashboardIcon</div>,
-  MdEventNote: () => <div>EventNoteIcon</div>,
-  MdBuild: () => <div>BuildIcon</div>,
-  MdVisibility: () => <div>VisibilityIcon</div>,
-  MdNotifications: () => <div>NotificationsIcon</div>,
-  MdCalendarToday: () => <div>CalendarTodayIcon</div>,
-  MdFeedback: () => <div>FeedbackIcon</div>,
-  MdBugReport: () => <div>BugReportIcon</div>,
-  MdSettings: () => <div>SettingsIcon</div>,
-  MdPieChart: () => <div>PieChartIcon</div>,
-  MdAccessTime: () => <div>AccessTimeIcon</div>,
-  MdFavorite: () => <div>FavoriteIcon</div>,
-  MdRemove: () => <div>RemoveIcon</div>,
-  MdAdd: () => <div>AddIcon</div>,
-  MdClose: () => <div>CloseIcon</div>,
-}));
+// Mock react-icons/md - using importOriginal to get all icons
+vi.mock('react-icons/md', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+  };
+});
 
 // Mock FontAwesome icons
 vi.mock('react-icons/fa', () => ({
@@ -73,9 +37,11 @@ vi.mock('./DashboardConfigModal', () => ({
   default: () => <div>DashboardConfigModal</div>,
 }));
 
-// Mock trackPage
+// Mock usePageTracking
 vi.mock('../hooks/usePageTracking', () => ({
   trackPage: vi.fn(),
+  startPageLoadTimer: vi.fn(),
+  usePageTracking: vi.fn(() => null),
 }));
 
 // Mock calculateHealthScore

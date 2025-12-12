@@ -2964,7 +2964,7 @@ function createApp(dbPath) {
       }
   
       // Extract all editable fields from request body
-      const { name, description, amber_tolerance, red_tolerance, final_target, progression_type, metric_type, start_date, end_date, recalculate_expected, show_in_portfolio_review } = req.body;
+      const { name, description, amber_tolerance, red_tolerance, final_target, progression_type, metric_type, start_date, end_date, recalculate_expected, show_in_portfolio_review, is_archived } = req.body;
 
       // Build update query for provided fields
       const updates = [];
@@ -3031,6 +3031,12 @@ function createApp(dbPath) {
         values.push(show_in_portfolio_review ? 1 : 0);
         oldValues.show_in_portfolio_review = metric.show_in_portfolio_review;
         newValues.show_in_portfolio_review = show_in_portfolio_review ? 1 : 0;
+      }
+      if (is_archived !== undefined) {
+        updates.push('is_archived = ?');
+        values.push(is_archived ? 1 : 0);
+        oldValues.is_archived = metric.is_archived;
+        newValues.is_archived = is_archived ? 1 : 0;
       }
 
       if (updates.length === 0) {
@@ -3195,6 +3201,8 @@ function createApp(dbPath) {
           m.red_tolerance,
           m.metric_type,
           m.owner_id,
+          m.show_in_portfolio_review,
+          m.is_archived,
           u.name as owner_name
         FROM metrics m
         LEFT JOIN users u ON m.owner_id = u.id
@@ -7125,6 +7133,14 @@ function createApp(dbPath) {
         END
       `);
       console.log('✅ Set first 5 metrics per project to show in portfolio review');
+    } catch (err) {
+      // Column already exists, that's fine
+    }
+
+    // Migration: Add is_archived column to metrics table
+    try {
+      await dbRun(`ALTER TABLE metrics ADD COLUMN is_archived INTEGER DEFAULT 0`);
+      console.log('✅ Added is_archived column to metrics table');
     } catch (err) {
       // Column already exists, that's fine
     }

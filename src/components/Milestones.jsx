@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdCheck, MdClose, MdFlag, MdCheckCircle } from 'react-icons/md';
 import { api } from '../api/client';
 import ProjectTimelineBar from './ProjectTimelineBar';
+import ClarityIndicator from './ClarityIndicator';
 import './Milestones.css';
 
 const Milestones = ({ projectId, currentUser, onMilestonesChange, startDate, endDate }) => {
@@ -242,7 +243,10 @@ const Milestones = ({ projectId, currentUser, onMilestonesChange, startDate, end
                     </div>
                   </div>
                   {milestone.description && (
-                    <p className="milestone-description">{milestone.description}</p>
+                    <div className="milestone-description-wrapper">
+                      <p className="milestone-description">{milestone.description}</p>
+                      <ClarityIndicator text={milestone.description} size="sm" compact />
+                    </div>
                   )}
                 </div>
               );

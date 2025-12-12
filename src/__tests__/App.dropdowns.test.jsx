@@ -1,7 +1,48 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from '../App';
+
+// Create a fresh QueryClient for each test
+const createTestQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+    },
+  },
+});
+
+// Wrapper component for tests
+const TestWrapper = ({ children }) => {
+  const queryClient = createTestQueryClient();
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  );
+};
+
+// Helper to render with QueryClient
+const renderWithClient = (ui) => {
+  return render(ui, { wrapper: TestWrapper });
+};
+
+// Mock lottie-web to avoid canvas issues
+vi.mock('lottie-web', () => ({
+  default: {
+    loadAnimation: vi.fn(() => ({
+      destroy: vi.fn(),
+      play: vi.fn(),
+      stop: vi.fn(),
+    })),
+  },
+}));
+
+// Mock lottie-react
+vi.mock('lottie-react', () => ({
+  default: () => null,
+}));
 
 // Mock the API module
 vi.mock('../api/client', () => ({
@@ -17,19 +58,13 @@ vi.mock('../api/client', () => ({
     getUsers: vi.fn(),
     getPortfolios: vi.fn(),
     getAuditLog: vi.fn(),
-  }
+  },
+  refreshToken: vi.fn().mockResolvedValue({ token: 'mock-refreshed-token' }),
 }));
 
 import { api } from '../api/client';
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-};
-global.localStorage = localStorageMock;
+// localStorage is mocked in setupTests.js
 
 // Mock window.confirm
 global.confirm = vi.fn();
@@ -69,7 +104,7 @@ describe('App Dropdown Race Conditions', () => {
 
   describe('User Dropdown (Account Menu)', () => {
     it('should close dropdown when logout is clicked', async () => {
-      const { container } = render(<App />);
+      const { container } = renderWithClient(<App />);
 
       await waitFor(() => {
         expect(screen.queryByText('Account')).toBeInTheDocument();
@@ -101,7 +136,7 @@ describe('App Dropdown Race Conditions', () => {
     });
 
     it('should close dropdown when Change Password is clicked', async () => {
-      render(<App />);
+      renderWithClient(<App />);
 
       await waitFor(() => {
         expect(screen.queryByText('Account')).toBeInTheDocument();
@@ -135,7 +170,7 @@ describe('App Dropdown Race Conditions', () => {
 
   describe('Project Dropdown', () => {
     it('should close dropdown when New Project is clicked', async () => {
-      render(<App />);
+      renderWithClient(<App />);
 
       await waitFor(() => {
         expect(screen.queryByText('Project')).toBeInTheDocument();
@@ -168,8 +203,8 @@ describe('App Dropdown Race Conditions', () => {
       });
     });
 
-    it('should close dropdown when Import Data is clicked', async () => {
-      render(<App />);
+    it('should close dropdown when View Reports is clicked', async () => {
+      renderWithClient(<App />);
 
       await waitFor(() => {
         expect(screen.queryByText('Project')).toBeInTheDocument();
@@ -179,11 +214,11 @@ describe('App Dropdown Race Conditions', () => {
       await user.click(projectButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Import Data')).toBeInTheDocument();
+        expect(screen.getByText('View Reports')).toBeInTheDocument();
       });
 
-      const importButton = screen.getByText('Import Data');
-      await user.click(importButton);
+      const viewReportsButton = screen.getByText('View Reports');
+      await user.click(viewReportsButton);
 
       await act(async () => {
         await new Promise(resolve => setTimeout(resolve, 10));
@@ -191,10 +226,10 @@ describe('App Dropdown Race Conditions', () => {
 
       await waitFor(() => {
         const dropdownMenus = document.querySelectorAll('.dropdown-menu');
-        const hasVisibleImportData = Array.from(dropdownMenus).some(menu =>
-          menu.style.display !== 'none' && menu.textContent.includes('Import Data')
+        const hasVisibleViewReports = Array.from(dropdownMenus).some(menu =>
+          menu.style.display !== 'none' && menu.textContent.includes('View Reports')
         );
-        expect(hasVisibleImportData).toBe(false);
+        expect(hasVisibleViewReports).toBe(false);
       });
     });
 
@@ -202,7 +237,7 @@ describe('App Dropdown Race Conditions', () => {
       global.confirm.mockReturnValue(true);
       api.deleteProject.mockResolvedValue({ success: true });
 
-      const { container } = render(<App />);
+      const { container } = renderWithClient(<App />);
 
       // Wait for the app to load
       await waitFor(() => {
@@ -221,7 +256,7 @@ describe('App Dropdown Race Conditions', () => {
     it('should handle Delete Project with cancel - verifying dropdown closes', async () => {
       global.confirm.mockReturnValue(false);
 
-      const { container } = render(<App />);
+      const { container } = renderWithClient(<App />);
 
       // Wait for the app to load
       await waitFor(() => {
@@ -240,7 +275,7 @@ describe('App Dropdown Race Conditions', () => {
 
   describe('Admin Dropdown', () => {
     it('should close dropdown when Manage Portfolios is clicked', async () => {
-      render(<App />);
+      renderWithClient(<App />);
 
       await waitFor(() => {
         expect(screen.queryByText('Admin')).toBeInTheDocument();
@@ -270,7 +305,7 @@ describe('App Dropdown Race Conditions', () => {
     });
 
     it('should close dropdown when Manage Users is clicked', async () => {
-      render(<App />);
+      renderWithClient(<App />);
 
       await waitFor(() => {
         expect(screen.queryByText('Admin')).toBeInTheDocument();
@@ -299,8 +334,8 @@ describe('App Dropdown Race Conditions', () => {
       });
     });
 
-    it('should close dropdown when Audit Log is clicked', async () => {
-      render(<App />);
+    it('should close dropdown when Manage Spaces is clicked', async () => {
+      renderWithClient(<App />);
 
       await waitFor(() => {
         expect(screen.queryByText('Admin')).toBeInTheDocument();
@@ -310,11 +345,11 @@ describe('App Dropdown Race Conditions', () => {
       await user.click(adminButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Audit Log')).toBeInTheDocument();
+        expect(screen.getByText('Manage Spaces')).toBeInTheDocument();
       });
 
-      const auditLogButton = screen.getByText('Audit Log');
-      await user.click(auditLogButton);
+      const manageSpacesButton = screen.getByText('Manage Spaces');
+      await user.click(manageSpacesButton);
 
       await act(async () => {
         await new Promise(resolve => setTimeout(resolve, 10));
@@ -322,15 +357,15 @@ describe('App Dropdown Race Conditions', () => {
 
       await waitFor(() => {
         const dropdownMenus = document.querySelectorAll('.dropdown-menu');
-        const hasVisibleAuditLog = Array.from(dropdownMenus).some(menu =>
-          menu.style.display !== 'none' && menu.textContent.includes('Audit Log')
+        const hasVisibleManageSpaces = Array.from(dropdownMenus).some(menu =>
+          menu.style.display !== 'none' && menu.textContent.includes('Manage Spaces')
         );
-        expect(hasVisibleAuditLog).toBe(false);
+        expect(hasVisibleManageSpaces).toBe(false);
       });
     });
 
-    it('should close dropdown when Consistency Report is clicked', async () => {
-      render(<App />);
+    it('should close dropdown when Compose Chaser is clicked', async () => {
+      renderWithClient(<App />);
 
       await waitFor(() => {
         expect(screen.queryByText('Admin')).toBeInTheDocument();
@@ -340,11 +375,11 @@ describe('App Dropdown Race Conditions', () => {
       await user.click(adminButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Consistency Report')).toBeInTheDocument();
+        expect(screen.getByText('Compose Chaser')).toBeInTheDocument();
       });
 
-      const consistencyReportButton = screen.getByText('Consistency Report');
-      await user.click(consistencyReportButton);
+      const composeChaserButton = screen.getByText('Compose Chaser');
+      await user.click(composeChaserButton);
 
       await act(async () => {
         await new Promise(resolve => setTimeout(resolve, 10));
@@ -352,17 +387,17 @@ describe('App Dropdown Race Conditions', () => {
 
       await waitFor(() => {
         const dropdownMenus = document.querySelectorAll('.dropdown-menu');
-        const hasVisibleConsistencyReport = Array.from(dropdownMenus).some(menu =>
-          menu.style.display !== 'none' && menu.textContent.includes('Consistency Report')
+        const hasVisibleComposeChaser = Array.from(dropdownMenus).some(menu =>
+          menu.style.display !== 'none' && menu.textContent.includes('Compose Chaser')
         );
-        expect(hasVisibleConsistencyReport).toBe(false);
+        expect(hasVisibleComposeChaser).toBe(false);
       });
     });
   });
 
   describe('Race Condition Prevention', () => {
     it('should handle rapid clicks without errors', async () => {
-      render(<App />);
+      renderWithClient(<App />);
 
       await waitFor(() => {
         expect(screen.queryByText('Account')).toBeInTheDocument();
@@ -385,7 +420,7 @@ describe('App Dropdown Race Conditions', () => {
     });
 
     it('should maintain proper state when switching between dropdowns quickly', async () => {
-      render(<App />);
+      renderWithClient(<App />);
 
       await waitFor(() => {
         expect(screen.queryByText('Project')).toBeInTheDocument();

@@ -3,7 +3,7 @@ import { calculateClarityScore, getClarityDescription, getClarityMethodology } f
 import './ClarityIndicator.css';
 
 /**
- * Gem/Crystal icon - faceted gemstone design
+ * Diamond icon - wide brilliant-cut design
  */
 const GemIcon = ({ size = 16, className = '' }) => (
   <svg
@@ -13,22 +13,25 @@ const GemIcon = ({ size = 16, className = '' }) => (
     fill="currentColor"
     className={`gem-icon ${className}`}
   >
-    {/* Top facets */}
-    <path d="M12 2L4 8L12 10L20 8L12 2Z" opacity="0.9" />
-    {/* Left facet */}
-    <path d="M4 8L12 10L12 22L4 8Z" opacity="0.7" />
-    {/* Right facet */}
-    <path d="M20 8L12 10L12 22L20 8Z" opacity="0.5" />
+    {/* Crown - top triangle */}
+    <path d="M12 3L4 8H20L12 3Z" opacity="0.95" />
+    {/* Girdle - horizontal band */}
+    <path d="M4 8L6 10H18L20 8H4Z" opacity="0.8" />
+    {/* Pavilion facets */}
+    <path d="M6 10L12 21L9 10H6Z" opacity="0.7" />
+    <path d="M9 10L12 21L12 10H9Z" opacity="0.6" />
+    <path d="M12 10L12 21L15 10H12Z" opacity="0.5" />
+    <path d="M15 10L12 21L18 10H15Z" opacity="0.4" />
     {/* Outline */}
     <path
-      d="M12 2L4 8L12 22L20 8L12 2Z"
+      d="M12 3L4 8L6 10L12 21L18 10L20 8L12 3Z"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1"
-      strokeOpacity="0.3"
+      strokeWidth="0.75"
+      strokeOpacity="0.4"
     />
-    {/* Center highlight */}
-    <path d="M12 10L4 8L20 8L12 10Z" fill="white" opacity="0.2" />
+    {/* Sparkle highlight */}
+    <path d="M10 5.5L12 4L14 5.5L12 6.5L10 5.5Z" fill="white" opacity="0.35" />
   </svg>
 );
 

@@ -4,15 +4,9 @@ import '@testing-library/jest-dom';
 import SpaceSelector from '../SpaceSelector';
 import { vi } from 'vitest';
 
-// Mock fetch globally
-global.fetch = vi.fn();
-
 describe('SpaceSelector', () => {
   const mockOnSpaceChange = vi.fn();
-  const defaultProps = {
-    selectedSpace: null,
-    onSpaceChange: mockOnSpaceChange
-  };
+  const mockOnManageSpaces = vi.fn();
 
   const mockSpaces = [
     { id: 1, name: 'Engineering', description: 'Engineering team space' },
@@ -20,107 +14,50 @@ describe('SpaceSelector', () => {
     { id: 3, name: 'Sales', description: 'Sales team space' }
   ];
 
+  const defaultProps = {
+    spaces: mockSpaces,
+    selectedSpace: 'all',
+    onSpaceChange: mockOnSpaceChange,
+    onManageSpaces: mockOnManageSpaces
+  };
+
   beforeEach(() => {
-    fetch.mockClear();
     mockOnSpaceChange.mockClear();
+    mockOnManageSpaces.mockClear();
   });
 
   describe('Rendering', () => {
     it('should render the space selector component', () => {
       render(<SpaceSelector {...defaultProps} />);
-      expect(screen.getByText(/All Spaces/i)).toBeInTheDocument();
+      expect(screen.getByText('All Spaces')).toBeInTheDocument();
+      expect(screen.getByText('Space:')).toBeInTheDocument();
     });
 
     it('should display selected space when provided', () => {
-      const selectedSpace = { id: 1, name: 'Engineering' };
-      render(<SpaceSelector {...defaultProps} selectedSpace={selectedSpace} />);
+      render(<SpaceSelector {...defaultProps} selectedSpace={1} />);
       expect(screen.getByText('Engineering')).toBeInTheDocument();
     });
 
-    it('should show loading state initially', async () => {
-      fetch.mockImplementationOnce(() =>
-        new Promise(resolve => setTimeout(() => resolve({
-          ok: true,
-          json: () => Promise.resolve(mockSpaces)
-        }), 100))
-      );
-
-      render(<SpaceSelector {...defaultProps} />);
-
-      // Check for any loading indicator if present
-      await waitFor(() => {
-        expect(fetch).toHaveBeenCalledWith('/api/spaces');
-      });
-    });
-  });
-
-  describe('API Integration', () => {
-    it('should fetch spaces on mount', async () => {
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockSpaces)
-      });
-
-      render(<SpaceSelector {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(fetch).toHaveBeenCalledWith('/api/spaces');
-      });
+    it('should show placeholder when no selection', () => {
+      render(<SpaceSelector {...defaultProps} selectedSpace={null} />);
+      expect(screen.getByText('Select Space...')).toBeInTheDocument();
     });
 
-    it('should handle API error gracefully', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      fetch.mockRejectedValueOnce(new Error('API Error'));
-
-      render(<SpaceSelector {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(fetch).toHaveBeenCalledWith('/api/spaces');
-      });
-
-      // Component should still render
-      expect(screen.getByText(/All Spaces/i)).toBeInTheDocument();
-
-      consoleErrorSpy.mockRestore();
-    });
-
-    it('should handle empty spaces list', async () => {
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve([])
-      });
-
-      render(<SpaceSelector {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(fetch).toHaveBeenCalledWith('/api/spaces');
-      });
-
-      expect(screen.getByText(/All Spaces/i)).toBeInTheDocument();
+    it('should handle empty spaces list', () => {
+      render(<SpaceSelector {...defaultProps} spaces={[]} />);
+      expect(screen.getByText('All Spaces')).toBeInTheDocument();
     });
   });
 
   describe('Dropdown Interaction', () => {
-    beforeEach(async () => {
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockSpaces)
-      });
-    });
-
     it('should open dropdown when clicked', async () => {
       render(<SpaceSelector {...defaultProps} />);
 
-      await waitFor(() => {
-        expect(fetch).toHaveBeenCalled();
-      });
+      const trigger = screen.getByRole('button', { name: /All Spaces/i });
+      fireEvent.click(trigger);
 
-      const selector = screen.getByText(/All Spaces/i);
-      fireEvent.click(selector);
-
-      // Check if spaces are displayed
       await waitFor(() => {
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
         expect(screen.getByText('Engineering')).toBeInTheDocument();
         expect(screen.getByText('Marketing')).toBeInTheDocument();
         expect(screen.getByText('Sales')).toBeInTheDocument();
@@ -135,65 +72,46 @@ describe('SpaceSelector', () => {
         </div>
       );
 
-      await waitFor(() => {
-        expect(fetch).toHaveBeenCalled();
-      });
-
       // Open dropdown
-      const selector = screen.getByText(/All Spaces/i);
-      fireEvent.click(selector);
+      const trigger = screen.getByRole('button', { name: /All Spaces/i });
+      fireEvent.click(trigger);
 
       await waitFor(() => {
         expect(screen.getByText('Engineering')).toBeInTheDocument();
       });
 
-      // Click outside
-      fireEvent.click(screen.getByTestId('outside'));
+      // Click outside using mousedown (which the component listens to)
+      fireEvent.mouseDown(screen.getByTestId('outside'));
 
       await waitFor(() => {
-        expect(screen.queryByText('Engineering')).not.toBeVisible();
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
       });
     });
 
     it('should close dropdown on escape key', async () => {
       render(<SpaceSelector {...defaultProps} />);
 
-      await waitFor(() => {
-        expect(fetch).toHaveBeenCalled();
-      });
-
-      const selector = screen.getByText(/All Spaces/i);
-      fireEvent.click(selector);
+      const trigger = screen.getByRole('button', { name: /All Spaces/i });
+      fireEvent.click(trigger);
 
       await waitFor(() => {
         expect(screen.getByText('Engineering')).toBeInTheDocument();
       });
 
-      fireEvent.keyDown(document, { key: 'Escape' });
+      fireEvent.keyDown(trigger, { key: 'Escape' });
 
       await waitFor(() => {
-        expect(screen.queryByText('Engineering')).not.toBeVisible();
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
       });
     });
   });
 
   describe('Space Selection', () => {
-    beforeEach(async () => {
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockSpaces)
-      });
-    });
-
     it('should call onSpaceChange when selecting a space', async () => {
       render(<SpaceSelector {...defaultProps} />);
 
-      await waitFor(() => {
-        expect(fetch).toHaveBeenCalled();
-      });
-
-      const selector = screen.getByText(/All Spaces/i);
-      fireEvent.click(selector);
+      const trigger = screen.getByRole('button', { name: /All Spaces/i });
+      fireEvent.click(trigger);
 
       await waitFor(() => {
         expect(screen.getByText('Engineering')).toBeInTheDocument();
@@ -201,93 +119,93 @@ describe('SpaceSelector', () => {
 
       fireEvent.click(screen.getByText('Engineering'));
 
-      expect(mockOnSpaceChange).toHaveBeenCalledWith(mockSpaces[0]);
+      expect(mockOnSpaceChange).toHaveBeenCalledWith(1);
     });
 
-    it('should update display when space is selected', async () => {
+    it('should update display when space is selected', () => {
       const { rerender } = render(<SpaceSelector {...defaultProps} />);
 
-      await waitFor(() => {
-        expect(fetch).toHaveBeenCalled();
-      });
+      expect(screen.getByText('All Spaces')).toBeInTheDocument();
 
-      // Simulate selection
-      rerender(<SpaceSelector {...defaultProps} selectedSpace={mockSpaces[0]} />);
+      // Simulate parent updating selection
+      rerender(<SpaceSelector {...defaultProps} selectedSpace={1} />);
 
       expect(screen.getByText('Engineering')).toBeInTheDocument();
     });
 
     it('should allow selecting "All Spaces" option', async () => {
-      const { rerender } = render(
-        <SpaceSelector {...defaultProps} selectedSpace={mockSpaces[0]} />
-      );
+      render(<SpaceSelector {...defaultProps} selectedSpace={1} />);
+
+      const trigger = screen.getByRole('button', { name: /Engineering/i });
+      fireEvent.click(trigger);
 
       await waitFor(() => {
-        expect(fetch).toHaveBeenCalled();
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
       });
 
-      const selector = screen.getByText('Engineering');
-      fireEvent.click(selector);
-
-      // Look for All Spaces option
-      const allSpacesOption = screen.getByText(/All Spaces/i);
+      // Find All Spaces option in dropdown
+      const allSpacesOption = screen.getByRole('option', { name: /All Spaces/i });
       fireEvent.click(allSpacesOption);
 
-      expect(mockOnSpaceChange).toHaveBeenCalledWith(null);
+      expect(mockOnSpaceChange).toHaveBeenCalledWith('all');
+    });
+
+    it('should close dropdown after selection', async () => {
+      render(<SpaceSelector {...defaultProps} />);
+
+      const trigger = screen.getByRole('button', { name: /All Spaces/i });
+      fireEvent.click(trigger);
+
+      await waitFor(() => {
+        expect(screen.getByText('Engineering')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Engineering'));
+
+      await waitFor(() => {
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+      });
     });
   });
 
-  describe('Search Functionality', () => {
-    beforeEach(async () => {
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockSpaces)
+  describe('Manage Spaces', () => {
+    it('should show manage button when onManageSpaces is provided', async () => {
+      render(<SpaceSelector {...defaultProps} />);
+
+      const trigger = screen.getByRole('button', { name: /All Spaces/i });
+      fireEvent.click(trigger);
+
+      await waitFor(() => {
+        expect(screen.getByText('Manage')).toBeInTheDocument();
       });
     });
 
-    it('should filter spaces based on search input', async () => {
+    it('should call onManageSpaces when manage button is clicked', async () => {
       render(<SpaceSelector {...defaultProps} />);
 
+      const trigger = screen.getByRole('button', { name: /All Spaces/i });
+      fireEvent.click(trigger);
+
       await waitFor(() => {
-        expect(fetch).toHaveBeenCalled();
+        expect(screen.getByText('Manage')).toBeInTheDocument();
       });
 
-      const selector = screen.getByText(/All Spaces/i);
-      fireEvent.click(selector);
+      fireEvent.click(screen.getByText('Manage'));
 
-      // Find search input if present
-      const searchInput = screen.queryByPlaceholderText(/search/i);
-      if (searchInput) {
-        fireEvent.change(searchInput, { target: { value: 'Eng' } });
-
-        await waitFor(() => {
-          expect(screen.getByText('Engineering')).toBeInTheDocument();
-          expect(screen.queryByText('Marketing')).not.toBeInTheDocument();
-          expect(screen.queryByText('Sales')).not.toBeInTheDocument();
-        });
-      }
+      expect(mockOnManageSpaces).toHaveBeenCalled();
     });
 
-    it('should show no results message for non-matching search', async () => {
-      render(<SpaceSelector {...defaultProps} />);
+    it('should not show manage button when onManageSpaces is not provided', async () => {
+      render(<SpaceSelector {...defaultProps} onManageSpaces={undefined} />);
+
+      const trigger = screen.getByRole('button', { name: /All Spaces/i });
+      fireEvent.click(trigger);
 
       await waitFor(() => {
-        expect(fetch).toHaveBeenCalled();
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
       });
 
-      const selector = screen.getByText(/All Spaces/i);
-      fireEvent.click(selector);
-
-      const searchInput = screen.queryByPlaceholderText(/search/i);
-      if (searchInput) {
-        fireEvent.change(searchInput, { target: { value: 'NonExistent' } });
-
-        await waitFor(() => {
-          expect(screen.queryByText('Engineering')).not.toBeInTheDocument();
-          expect(screen.queryByText('Marketing')).not.toBeInTheDocument();
-          expect(screen.queryByText(/no spaces found/i)).toBeInTheDocument();
-        });
-      }
+      expect(screen.queryByText('Manage')).not.toBeInTheDocument();
     });
   });
 
@@ -295,88 +213,102 @@ describe('SpaceSelector', () => {
     it('should have proper ARIA attributes', () => {
       render(<SpaceSelector {...defaultProps} />);
 
-      const selector = screen.getByText(/All Spaces/i).closest('div');
-      expect(selector).toHaveAttribute('role');
+      const trigger = screen.getByRole('button');
+      expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
     });
 
-    it('should be keyboard navigable', async () => {
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockSpaces)
-      });
-
+    it('should update aria-expanded when opened', async () => {
       render(<SpaceSelector {...defaultProps} />);
 
-      await waitFor(() => {
-        expect(fetch).toHaveBeenCalled();
-      });
+      const trigger = screen.getByRole('button');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
-      const selector = screen.getByText(/All Spaces/i);
-
-      // Tab to selector
-      selector.focus();
-      expect(selector).toHaveFocus();
-
-      // Open with Enter key
-      fireEvent.keyDown(selector, { key: 'Enter' });
+      fireEvent.click(trigger);
 
       await waitFor(() => {
-        expect(screen.getByText('Engineering')).toBeInTheDocument();
+        expect(trigger).toHaveAttribute('aria-expanded', 'true');
       });
     });
 
-    it('should announce selected space to screen readers', async () => {
-      render(<SpaceSelector {...defaultProps} selectedSpace={mockSpaces[0]} />);
+    it('should be keyboard navigable - open with Enter', async () => {
+      render(<SpaceSelector {...defaultProps} />);
 
-      const selector = screen.getByText('Engineering');
-      expect(selector.closest('div')).toHaveAttribute('aria-label');
+      const trigger = screen.getByRole('button');
+      trigger.focus();
+
+      fireEvent.keyDown(trigger, { key: 'Enter' });
+
+      await waitFor(() => {
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
+      });
+    });
+
+    it('should be keyboard navigable - open with Space', async () => {
+      render(<SpaceSelector {...defaultProps} />);
+
+      const trigger = screen.getByRole('button');
+      trigger.focus();
+
+      fireEvent.keyDown(trigger, { key: ' ' });
+
+      await waitFor(() => {
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
+      });
+    });
+
+    it('should be keyboard navigable - open with ArrowDown', async () => {
+      render(<SpaceSelector {...defaultProps} />);
+
+      const trigger = screen.getByRole('button');
+      trigger.focus();
+
+      fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+
+      await waitFor(() => {
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
+      });
+    });
+
+    it('should mark selected option with aria-selected', async () => {
+      render(<SpaceSelector {...defaultProps} selectedSpace={1} />);
+
+      const trigger = screen.getByRole('button');
+      fireEvent.click(trigger);
+
+      await waitFor(() => {
+        const selectedOption = screen.getByRole('option', { name: 'Engineering' });
+        expect(selectedOption).toHaveAttribute('aria-selected', 'true');
+      });
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle rapid clicks gracefully', async () => {
-      fetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockSpaces)
-      });
-
+    it('should handle rapid clicks gracefully', () => {
       render(<SpaceSelector {...defaultProps} />);
 
-      await waitFor(() => {
-        expect(fetch).toHaveBeenCalled();
-      });
-
-      const selector = screen.getByText(/All Spaces/i);
+      const trigger = screen.getByRole('button');
 
       // Rapid clicks
-      fireEvent.click(selector);
-      fireEvent.click(selector);
-      fireEvent.click(selector);
+      fireEvent.click(trigger);
+      fireEvent.click(trigger);
+      fireEvent.click(trigger);
 
-      // Should not crash or behave unexpectedly
-      expect(screen.getByText(/All Spaces/i)).toBeInTheDocument();
+      // Should not crash - component should still be usable
+      expect(screen.getByText('Space:')).toBeInTheDocument();
     });
 
     it('should handle spaces with special characters', async () => {
       const specialSpaces = [
-        { id: 1, name: 'Space & Team', description: 'With ampersand' },
-        { id: 2, name: 'Space/Team', description: 'With slash' },
-        { id: 3, name: 'Space "Team"', description: 'With quotes' }
+        { id: 1, name: 'Space & Team' },
+        { id: 2, name: 'Space/Team' },
+        { id: 3, name: 'Space "Team"' }
       ];
 
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(specialSpaces)
-      });
+      render(<SpaceSelector {...defaultProps} spaces={specialSpaces} />);
 
-      render(<SpaceSelector {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(fetch).toHaveBeenCalled();
-      });
-
-      const selector = screen.getByText(/All Spaces/i);
-      fireEvent.click(selector);
+      const trigger = screen.getByRole('button');
+      fireEvent.click(trigger);
 
       await waitFor(() => {
         expect(screen.getByText('Space & Team')).toBeInTheDocument();
@@ -387,31 +319,39 @@ describe('SpaceSelector', () => {
 
     it('should handle very long space names', async () => {
       const longNameSpaces = [
-        {
-          id: 1,
-          name: 'This is a very long space name that should be handled properly by the component without breaking the layout',
-          description: 'Long name test'
-        }
+        { id: 1, name: 'This is a very long space name that should be handled properly' }
       ];
 
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(longNameSpaces)
-      });
+      render(<SpaceSelector {...defaultProps} spaces={longNameSpaces} />);
 
-      render(<SpaceSelector {...defaultProps} />);
+      const trigger = screen.getByRole('button');
+      fireEvent.click(trigger);
 
       await waitFor(() => {
-        expect(fetch).toHaveBeenCalled();
+        expect(screen.getByText(/This is a very long space name/)).toBeInTheDocument();
       });
+    });
 
-      const selector = screen.getByText(/All Spaces/i);
-      fireEvent.click(selector);
+    it('should handle unnamed spaces gracefully', async () => {
+      const unnamedSpaces = [
+        { id: 1, name: '' },
+        { id: 2, name: null }
+      ];
+
+      render(<SpaceSelector {...defaultProps} spaces={unnamedSpaces} />);
+
+      const trigger = screen.getByRole('button');
+      fireEvent.click(trigger);
 
       await waitFor(() => {
-        const longNameElement = screen.getByText(/This is a very long space name/);
-        expect(longNameElement).toBeInTheDocument();
+        expect(screen.getByText('Space 1')).toBeInTheDocument();
+        expect(screen.getByText('Space 2')).toBeInTheDocument();
       });
+    });
+
+    it('should handle selectedSpace as string number', () => {
+      render(<SpaceSelector {...defaultProps} selectedSpace="1" />);
+      expect(screen.getByText('Engineering')).toBeInTheDocument();
     });
   });
 });

@@ -793,7 +793,6 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       return;
     }
 
-    // Find the period for this date
     const period = sortedData.find(item => item.reporting_date === selectedDate);
     if (!period) {
       alert('Invalid date selected');
@@ -803,7 +802,9 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     console.log('Adding comment to period:', period.id, 'with text:', newCommentText);
 
     try {
-      const payload = { comment_text: newCommentText };
+      const payload = {
+        comment_text: newCommentText
+      };
       if (parentCommentId) {
         payload.parent_comment_id = parentCommentId;
       }

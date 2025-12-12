@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './ProjectSelector.css';
 
-const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
+const ProjectSelector = ({ projects = {}, selectedProject, onProjectChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
 
-  const projectEntries = Object.entries(projects);
+  const projectEntries = Object.entries(projects || {});
   const selectedProjectData = selectedProject ? projects[selectedProject] : null;
   const selectedProjectName = selectedProjectData?.name || '';
 
@@ -88,7 +88,13 @@ const ProjectSelector = ({ projects, selectedProject, onProjectChange }) => {
       <div className="custom-select-container">
         <div
           className={`custom-select-trigger ${isOpen ? 'open' : ''}`}
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            if (isOpen) {
+              setSearchTerm('');
+              setHighlightedIndex(-1);
+            }
+            setIsOpen(!isOpen);
+          }}
           onKeyDown={handleKeyDown}
           tabIndex={0}
           role="button"

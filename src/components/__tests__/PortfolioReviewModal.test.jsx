@@ -3,12 +3,28 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 import PortfolioReviewModal from '../PortfolioReviewModal';
 
-// Mock the API client
-vi.mock('../../api/client', () => ({
+// Mock lottie-web to avoid canvas issues
+vi.mock('lottie-web', () => ({
   default: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn()
+    loadAnimation: vi.fn(() => ({
+      destroy: vi.fn(),
+      play: vi.fn(),
+      stop: vi.fn(),
+    })),
+  },
+}));
+
+// Mock lottie-react
+vi.mock('lottie-react', () => ({
+  default: () => null,
+}));
+
+// Mock the API client (use named export 'api')
+vi.mock('../../api/client', () => ({
+  api: {
+    get: vi.fn().mockResolvedValue({ data: [] }),
+    post: vi.fn().mockResolvedValue({ data: {} }),
+    put: vi.fn().mockResolvedValue({ data: {} }),
   }
 }));
 

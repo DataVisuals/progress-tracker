@@ -316,8 +316,15 @@
   color: #ef4444;
 }
 
-.milestone-description {
+.milestone-description-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   margin: 6px 0 0 28px;
+}
+
+.milestone-description {
+  margin: 0;
   font-size: 12px;
   color: #64748b;
   line-height: 1.5;

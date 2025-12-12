@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MdGridView, MdDragIndicator } from 'react-icons/md';
 import './MetricTabs.css';
 
-const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMetricRename, onMetricDelete, canEdit, onAddMetric, onGridView, onMetricReorder, projectMetrics }) => {
+const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMetricRename, onMetricDelete, onMetricArchive, canEdit, onAddMetric, onGridView, onMetricReorder, projectMetrics, archivedMetrics = [], showArchived = false, onToggleShowArchived }) => {
   const [editingMetric, setEditingMetric] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [showDropdown, setShowDropdown] = useState(null);
@@ -199,6 +199,12 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
     setShowDropdown(null);
   };
 
+  const handleArchive = async (metricName, archive = true) => {
+    if (!onMetricArchive) return;
+    await onMetricArchive(metricName, archive);
+    setShowDropdown(null);
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -374,7 +380,49 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
             <MdGridView />
           </button>
         )}
+
+        {/* Archived metrics toggle */}
+        {archivedMetrics && archivedMetrics.length > 0 && (
+          <button
+            className="metric-tab archived-toggle-tab"
+            onClick={onToggleShowArchived}
+            title={showArchived ? 'Hide archived metrics' : `Show ${archivedMetrics.length} archived metric${archivedMetrics.length > 1 ? 's' : ''}`}
+          >
+            <span className="archived-icon">📦</span>
+            <span className="archived-count">{archivedMetrics.length}</span>
+          </button>
+        )}
       </div>
+
+      {/* Archived metrics row */}
+      {showArchived && archivedMetrics && archivedMetrics.length > 0 && (
+        <div className="archived-metrics-row">
+          <span className="archived-label">Archived:</span>
+          {archivedMetrics.map((metric) => (
+            <div key={metric} className="metric-tab-wrapper archived">
+              <button
+                className={`metric-tab archived ${selectedMetric === metric ? 'active' : ''}`}
+                onClick={() => onMetricChange(metric)}
+                title="Archived metric - click to view"
+              >
+                <span className="metric-tab-name">{metric}</span>
+              </button>
+              {canEdit && onMetricArchive && (
+                <button
+                  className="unarchive-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleArchive(metric, false);
+                  }}
+                  title="Restore this metric"
+                >
+                  ↩
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Fixed position dropdown portal */}
       {showDropdown && (
@@ -396,6 +444,18 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
             }}>
               Rename Metric
             </button>
+            {onMetricArchive && (
+              <button
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  handleArchive(showDropdown, true);
+                }}
+                className="archive-option"
+              >
+                Archive Metric
+              </button>
+            )}
             <button
               onMouseDown={(e) => {
                 e.stopPropagation();

@@ -111,6 +111,7 @@ function App() {
   const [showUserActivity, setShowUserActivity] = useState(false);
   const [showPageHeatmap, setShowPageHeatmap] = useState(false);
   const [showGridView, setShowGridView] = useState(false);
+  const [showArchivedMetrics, setShowArchivedMetrics] = useState(false);
   const [showTenReasons, setShowTenReasons] = useState(false);
   const [showProjectHealth, setShowProjectHealth] = useState(false);
   const [allProjectsData, setAllProjectsData] = useState({}); // For HomePage red metrics
@@ -1193,6 +1194,29 @@ function App() {
     }
   };
 
+  const handleMetricArchive = async (metricName, archive = true) => {
+    try {
+      const metric = projectMetrics.find(m => m.name === metricName);
+      if (!metric) return;
+
+      await api.updateMetric(metric.id, { is_archived: archive });
+
+      // Reload metrics list
+      await loadProjectMetrics();
+
+      // If archiving the currently selected metric, select another active one
+      if (archive && selectedMetric === metricName) {
+        const remainingActive = projectMetrics.filter(m => m.name !== metricName && !m.is_archived);
+        setSelectedMetric(remainingActive.length > 0 ? remainingActive[0].name : '');
+        // Collapse archived view since we're archiving
+        setShowArchivedMetrics(false);
+      }
+    } catch (err) {
+      console.error('Failed to archive metric:', err);
+      alert('Failed to archive metric: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
   const handleMetricReorder = async (metricIds) => {
     try {
       await api.reorderMetrics(selectedProject, metricIds);
@@ -1481,8 +1505,10 @@ function App() {
     return false;
   }, [projectData, projectMetrics, projectRecoveryPlans]);
 
-  // Get metrics list from projectMetrics state
-  const metrics = projectMetrics.map(m => m.name);
+  // Get metrics list from projectMetrics state, split into active and archived
+  const activeMetrics = projectMetrics.filter(m => !m.is_archived).map(m => m.name);
+  const archivedMetrics = projectMetrics.filter(m => m.is_archived).map(m => m.name);
+  const metrics = activeMetrics; // Default to active metrics for display
 
   const currentProject = selectedProject
     ? projects.find(p => p.id === parseInt(selectedProject))
@@ -2264,7 +2290,7 @@ function App() {
               </div>
             )}
 
-            {selectedProjectTab === 'overview' && metrics.length > 0 && !(selectedMetric && projectData.filter(item => item.metric === selectedMetric).length === 0) && (
+            {selectedProjectTab === 'overview' && (metrics.length > 0 || archivedMetrics.length > 0) && !(selectedMetric && projectData.filter(item => item.metric === selectedMetric).length === 0) && (
               <MetricTabs
                 metrics={metrics}
                 projectData={projectData}
@@ -2273,10 +2299,14 @@ function App() {
                 onMetricChange={handleMetricChange}
                 onMetricRename={handleMetricRename}
                 onMetricDelete={handleMetricDelete}
+                onMetricArchive={handleMetricArchive}
                 onMetricReorder={handleMetricReorder}
                 canEdit={canEdit()}
                 onAddMetric={() => setShowAddMetric(true)}
                 onGridView={() => setShowGridView(true)}
+                archivedMetrics={archivedMetrics}
+                showArchived={showArchivedMetrics}
+                onToggleShowArchived={() => setShowArchivedMetrics(prev => !prev)}
               />
             )}
 

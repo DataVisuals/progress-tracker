@@ -2,6 +2,33 @@ import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import MetricChart from '../MetricChart';
 
+// Mock lottie-web to avoid canvas issues
+vi.mock('lottie-web', () => ({
+  default: {
+    loadAnimation: vi.fn(() => ({
+      destroy: vi.fn(),
+      play: vi.fn(),
+      stop: vi.fn(),
+    })),
+  },
+}));
+
+// Mock lottie-react
+vi.mock('lottie-react', () => ({
+  default: () => null,
+}));
+
+// Mock the API client
+vi.mock('../../api/client', () => ({
+  api: {
+    updatePeriod: vi.fn(),
+    getPeriodComments: vi.fn().mockResolvedValue({ data: [] }),
+    get: vi.fn().mockResolvedValue({ data: [] }),
+    post: vi.fn().mockResolvedValue({ data: {} }),
+    put: vi.fn().mockResolvedValue({ data: {} }),
+  },
+}));
+
 // Mock ResizeObserver for Recharts
 beforeAll(() => {
   global.ResizeObserver = class ResizeObserver {

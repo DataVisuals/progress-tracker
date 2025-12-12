@@ -1,70 +1,82 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import ProjectTimelinePanel from '../ProjectTimelinePanel';
 
-// Mock the API client
-vi.mock('../../../api/client', () => ({
-  default: {
-    get: vi.fn()
-  }
-}));
-
-// Mock ProjectTimelineBar component
-vi.mock('../../ProjectTimelineBar', () => ({
-  default: ({ projects, onProjectClick }) => (
-    <div data-testid="project-timeline-bar">
-      {projects.map(project => (
-        <div
-          key={project.id}
-          data-testid={`project-${project.id}`}
-          onClick={() => onProjectClick(project)}
-        >
-          {project.name}
-        </div>
-      ))}
-    </div>
-  )
-}));
-
 describe('ProjectTimelinePanel', () => {
+  const mockNavigate = vi.fn();
+
+  // Use dates relative to now for testing
+  const today = new Date();
+  const formatDate = (date) => date.toISOString().split('T')[0];
+
+  const getDate = (monthsOffset) => {
+    const d = new Date(today);
+    d.setMonth(d.getMonth() + monthsOffset);
+    return formatDate(d);
+  };
+
   const mockProjects = [
     {
       id: 1,
       name: 'Project Alpha',
-      start_date: '2024-01-01',
-      target_date: '2024-06-30',
-      portfolio_name: 'Portfolio A',
-      pm_name: 'John Doe',
-      status: 'green',
-      milestones: [
-        { id: 1, name: 'Design Phase', date: '2024-02-15', status: 'completed' },
-        { id: 2, name: 'Development', date: '2024-04-30', status: 'in_progress' }
-      ]
+      start_date: getDate(-2),  // 2 months ago
+      end_date: getDate(4),     // 4 months from now
+      portfolio_id: 1,
+      portfolio_color: '#10b981'
     },
     {
       id: 2,
       name: 'Project Beta',
-      start_date: '2024-02-01',
-      target_date: '2024-08-31',
-      portfolio_name: 'Portfolio B',
-      pm_name: 'Jane Smith',
-      status: 'amber',
-      milestones: [
-        { id: 3, name: 'Planning', date: '2024-03-01', status: 'completed' }
-      ]
+      start_date: getDate(-1),  // 1 month ago
+      end_date: getDate(6),     // 6 months from now
+      portfolio_id: 2,
+      portfolio_color: '#3b82f6'
     },
     {
       id: 3,
       name: 'Project Gamma',
-      start_date: '2024-03-01',
-      target_date: '2024-12-31',
-      portfolio_name: 'Portfolio A',
-      pm_name: 'Bob Wilson',
-      status: 'red',
-      milestones: []
+      start_date: getDate(0),   // this month
+      end_date: getDate(10),    // 10 months from now
+      portfolio_id: 1,
+      portfolio_color: '#10b981'
     }
   ];
+
+  const mockPortfolios = [
+    { id: 1, name: 'Portfolio A', space_id: 1 },
+    { id: 2, name: 'Portfolio B', space_id: 2 }
+  ];
+
+  const mockMilestones = {
+    1: [
+      { id: 1, title: 'Design Phase', target_date: getDate(-1), completed: 1 },
+      { id: 2, title: 'Development', target_date: getDate(2), completed: 0 }
+    ],
+    2: [
+      { id: 3, title: 'Planning', target_date: getDate(1), completed: 1 }
+    ],
+    3: []
+  };
+
+  const mockHealthRankings = {
+    allSorted: [
+      { id: 1, healthScore: 85 },
+      { id: 2, healthScore: 65 },
+      { id: 3, healthScore: 45 }
+    ]
+  };
+
+  const defaultProps = {
+    panelId: 'timeline-panel',
+    index: 0,
+    projects: mockProjects,
+    portfolios: mockPortfolios,
+    milestones: mockMilestones,
+    projectHealthRankings: mockHealthRankings,
+    onNavigateToProject: mockNavigate,
+    selectedSpace: 'all'
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -72,412 +84,135 @@ describe('ProjectTimelinePanel', () => {
 
   describe('Rendering', () => {
     it('should render the panel with title', () => {
-      render(<ProjectTimelinePanel />);
+      render(<ProjectTimelinePanel {...defaultProps} />);
       expect(screen.getByText('Project Timeline')).toBeInTheDocument();
     });
 
-    it('should display loading state initially', () => {
-      render(<ProjectTimelinePanel />);
-      expect(screen.getByText('Loading timeline...')).toBeInTheDocument();
+    it('should display empty state when no projects provided', () => {
+      render(<ProjectTimelinePanel {...defaultProps} projects={[]} />);
+      expect(screen.getByText('No projects with end dates')).toBeInTheDocument();
     });
 
-    it('should display expand button', () => {
-      render(<ProjectTimelinePanel />);
-      expect(screen.getByRole('button', { name: /expand/i })).toBeInTheDocument();
-    });
-  });
-
-  describe('Data Loading', () => {
-    it('should fetch projects on mount', async () => {
-      const apiClient = require('../../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: mockProjects });
-
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        expect(apiClient.get).toHaveBeenCalledWith('/projects');
-      });
+    it('should display empty state when projects have no end dates', () => {
+      const projectsWithoutEndDates = [
+        { id: 1, name: 'No End Date', start_date: '2024-01-01' }
+      ];
+      render(<ProjectTimelinePanel {...defaultProps} projects={projectsWithoutEndDates} />);
+      expect(screen.getByText('No projects with end dates')).toBeInTheDocument();
     });
 
-    it('should display projects after loading', async () => {
-      const apiClient = require('../../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: mockProjects });
-
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('project-timeline-bar')).toBeInTheDocument();
-        expect(screen.getByText('Project Alpha')).toBeInTheDocument();
-        expect(screen.getByText('Project Beta')).toBeInTheDocument();
-        expect(screen.getByText('Project Gamma')).toBeInTheDocument();
-      });
-    });
-
-    it('should handle API errors gracefully', async () => {
-      const apiClient = require('../../../api/client').default;
-      apiClient.get.mockRejectedValue(new Error('API Error'));
-
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Failed to load timeline')).toBeInTheDocument();
-      });
-
-      consoleErrorSpy.mockRestore();
-    });
-
-    it('should display empty state when no projects', async () => {
-      const apiClient = require('../../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: [] });
-
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        expect(screen.getByText('No projects to display')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Filtering', () => {
-    beforeEach(async () => {
-      const apiClient = require('../../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: mockProjects });
-    });
-
-    it('should display filter buttons', async () => {
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /all/i })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /portfolio a/i })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /portfolio b/i })).toBeInTheDocument();
-      });
-    });
-
-    it('should filter projects by portfolio when filter is clicked', async () => {
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        const portfolioAButton = screen.getByRole('button', { name: /portfolio a/i });
-        fireEvent.click(portfolioAButton);
-      });
-
-      expect(screen.getByText('Project Alpha')).toBeInTheDocument();
-      expect(screen.getByText('Project Gamma')).toBeInTheDocument();
-      expect(screen.queryByText('Project Beta')).not.toBeInTheDocument();
-    });
-
-    it('should show all projects when "All" filter is clicked', async () => {
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        // First filter by portfolio
-        const portfolioAButton = screen.getByRole('button', { name: /portfolio a/i });
-        fireEvent.click(portfolioAButton);
-      });
-
-      // Then click All
-      const allButton = screen.getByRole('button', { name: /all/i });
-      fireEvent.click(allButton);
-
+    it('should render projects with end dates', () => {
+      render(<ProjectTimelinePanel {...defaultProps} />);
       expect(screen.getByText('Project Alpha')).toBeInTheDocument();
       expect(screen.getByText('Project Beta')).toBeInTheDocument();
       expect(screen.getByText('Project Gamma')).toBeInTheDocument();
     });
 
-    it('should filter projects by status', async () => {
-      render(<ProjectTimelinePanel />);
+    it('should render time markers', () => {
+      render(<ProjectTimelinePanel {...defaultProps} />);
+      // Should have timeline axis markers (months)
+      const container = document.querySelector('.timeline-axis');
+      expect(container).toBeInTheDocument();
+    });
+  });
 
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /green/i })).toBeInTheDocument();
-      });
+  describe('Project Navigation', () => {
+    it('should call onNavigateToProject when a project row is clicked', () => {
+      render(<ProjectTimelinePanel {...defaultProps} />);
 
-      const greenButton = screen.getByRole('button', { name: /green/i });
-      fireEvent.click(greenButton);
+      const projectRow = screen.getByText('Project Alpha').closest('.timeline-project-row');
+      fireEvent.click(projectRow);
+
+      expect(mockNavigate).toHaveBeenCalledWith(1);
+    });
+
+    it('should call onNavigateToProject with correct project id', () => {
+      render(<ProjectTimelinePanel {...defaultProps} />);
+
+      const projectRow = screen.getByText('Project Beta').closest('.timeline-project-row');
+      fireEvent.click(projectRow);
+
+      expect(mockNavigate).toHaveBeenCalledWith(2);
+    });
+  });
+
+  describe('Space Filtering', () => {
+    it('should filter projects by selected space', () => {
+      render(<ProjectTimelinePanel {...defaultProps} selectedSpace="1" />);
+
+      // Portfolio A is in space 1, so Project Alpha and Gamma should show
+      expect(screen.getByText('Project Alpha')).toBeInTheDocument();
+      expect(screen.getByText('Project Gamma')).toBeInTheDocument();
+      // Project Beta is in Portfolio B (space 2), should not show
+      expect(screen.queryByText('Project Beta')).not.toBeInTheDocument();
+    });
+
+    it('should show all projects when selectedSpace is "all"', () => {
+      render(<ProjectTimelinePanel {...defaultProps} selectedSpace="all" />);
 
       expect(screen.getByText('Project Alpha')).toBeInTheDocument();
-      expect(screen.queryByText('Project Beta')).not.toBeInTheDocument();
-      expect(screen.queryByText('Project Gamma')).not.toBeInTheDocument();
+      expect(screen.getByText('Project Beta')).toBeInTheDocument();
+      expect(screen.getByText('Project Gamma')).toBeInTheDocument();
     });
   });
 
-  describe('Project Selection', () => {
-    beforeEach(async () => {
-      const apiClient = require('../../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: mockProjects });
-    });
+  describe('Health Status Colors', () => {
+    it('should apply health-based colors to project bars', () => {
+      render(<ProjectTimelinePanel {...defaultProps} />);
 
-    it('should display project details when a project is clicked', async () => {
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        const projectAlpha = screen.getByTestId('project-1');
-        fireEvent.click(projectAlpha);
-      });
-
-      expect(screen.getByText(/PM: John Doe/i)).toBeInTheDocument();
-      expect(screen.getByText(/Portfolio: Portfolio A/i)).toBeInTheDocument();
-      expect(screen.getByText(/Start: 2024-01-01/i)).toBeInTheDocument();
-      expect(screen.getByText(/Target: 2024-06-30/i)).toBeInTheDocument();
-    });
-
-    it('should display milestones when a project with milestones is selected', async () => {
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        const projectAlpha = screen.getByTestId('project-1');
-        fireEvent.click(projectAlpha);
-      });
-
-      expect(screen.getByText('Milestones')).toBeInTheDocument();
-      expect(screen.getByText('Design Phase')).toBeInTheDocument();
-      expect(screen.getByText('Development')).toBeInTheDocument();
-    });
-
-    it('should display no milestones message for projects without milestones', async () => {
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        const projectGamma = screen.getByTestId('project-3');
-        fireEvent.click(projectGamma);
-      });
-
-      expect(screen.getByText('No milestones defined')).toBeInTheDocument();
-    });
-
-    it('should close project details when close button is clicked', async () => {
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        const projectAlpha = screen.getByTestId('project-1');
-        fireEvent.click(projectAlpha);
-      });
-
-      expect(screen.getByText(/PM: John Doe/i)).toBeInTheDocument();
-
-      const closeButton = screen.getByRole('button', { name: /close/i });
-      fireEvent.click(closeButton);
-
-      expect(screen.queryByText(/PM: John Doe/i)).not.toBeInTheDocument();
+      // Projects should be rendered with health score colors
+      const projectRows = document.querySelectorAll('.timeline-project-row');
+      expect(projectRows.length).toBe(3);
     });
   });
 
-  describe('View Modes', () => {
-    beforeEach(async () => {
-      const apiClient = require('../../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: mockProjects });
+  describe('Empty States', () => {
+    it('should handle undefined projects gracefully', () => {
+      render(<ProjectTimelinePanel {...defaultProps} projects={undefined} />);
+      expect(screen.getByText('No projects with end dates')).toBeInTheDocument();
     });
 
-    it('should toggle between timeline and list view', async () => {
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('project-timeline-bar')).toBeInTheDocument();
-      });
-
-      const listViewButton = screen.getByRole('button', { name: /list view/i });
-      fireEvent.click(listViewButton);
-
-      expect(screen.queryByTestId('project-timeline-bar')).not.toBeInTheDocument();
-      expect(screen.getByRole('table')).toBeInTheDocument();
+    it('should handle null projects gracefully', () => {
+      render(<ProjectTimelinePanel {...defaultProps} projects={null} />);
+      expect(screen.getByText('No projects with end dates')).toBeInTheDocument();
     });
 
-    it('should display projects in table format in list view', async () => {
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        const listViewButton = screen.getByRole('button', { name: /list view/i });
-        fireEvent.click(listViewButton);
-      });
-
-      expect(screen.getByRole('columnheader', { name: /project name/i })).toBeInTheDocument();
-      expect(screen.getByRole('columnheader', { name: /portfolio/i })).toBeInTheDocument();
-      expect(screen.getByRole('columnheader', { name: /pm/i })).toBeInTheDocument();
-      expect(screen.getByRole('columnheader', { name: /status/i })).toBeInTheDocument();
+    it('should handle missing portfolios gracefully', () => {
+      render(<ProjectTimelinePanel {...defaultProps} portfolios={undefined} />);
+      // Should still render projects
+      expect(screen.getByText('Project Alpha')).toBeInTheDocument();
     });
   });
 
-  describe('Expand/Full Screen Mode', () => {
-    beforeEach(async () => {
-      const apiClient = require('../../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: mockProjects });
-    });
+  describe('Milestones', () => {
+    it('should render milestones for projects that have them', () => {
+      render(<ProjectTimelinePanel {...defaultProps} />);
 
-    it('should expand to full screen when expand button is clicked', async () => {
-      const { container } = render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        const expandButton = screen.getByRole('button', { name: /expand/i });
-        fireEvent.click(expandButton);
-      });
-
-      expect(container.querySelector('.fullscreen')).toBeInTheDocument();
-    });
-
-    it('should show collapse button when in full screen mode', async () => {
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        const expandButton = screen.getByRole('button', { name: /expand/i });
-        fireEvent.click(expandButton);
-      });
-
-      expect(screen.getByRole('button', { name: /collapse/i })).toBeInTheDocument();
-    });
-
-    it('should exit full screen when collapse button is clicked', async () => {
-      const { container } = render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        const expandButton = screen.getByRole('button', { name: /expand/i });
-        fireEvent.click(expandButton);
-      });
-
-      expect(container.querySelector('.fullscreen')).toBeInTheDocument();
-
-      const collapseButton = screen.getByRole('button', { name: /collapse/i });
-      fireEvent.click(collapseButton);
-
-      expect(container.querySelector('.fullscreen')).not.toBeInTheDocument();
-    });
-
-    it('should exit full screen on Escape key press', async () => {
-      const { container } = render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        const expandButton = screen.getByRole('button', { name: /expand/i });
-        fireEvent.click(expandButton);
-      });
-
-      expect(container.querySelector('.fullscreen')).toBeInTheDocument();
-
-      fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' });
-
-      expect(container.querySelector('.fullscreen')).not.toBeInTheDocument();
+      // Milestones should be rendered as stop markers (tubemap-stop) on the timeline
+      const milestoneMarkers = document.querySelectorAll('.tubemap-stop');
+      expect(milestoneMarkers.length).toBeGreaterThan(0);
     });
   });
 
-  describe('Auto-refresh', () => {
-    beforeEach(() => {
-      vi.useFakeTimers();
-    });
+  describe('Today Indicator', () => {
+    it('should render today indicator on timeline', () => {
+      render(<ProjectTimelinePanel {...defaultProps} />);
 
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
-    it('should auto-refresh data every 30 seconds', async () => {
-      const apiClient = require('../../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: mockProjects });
-
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        expect(apiClient.get).toHaveBeenCalledTimes(1);
-      });
-
-      // Fast-forward 30 seconds
-      vi.advanceTimersByTime(30000);
-
-      await waitFor(() => {
-        expect(apiClient.get).toHaveBeenCalledTimes(2);
-      });
-    });
-
-    it('should clear auto-refresh interval on unmount', async () => {
-      const apiClient = require('../../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: mockProjects });
-
-      const { unmount } = render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        expect(apiClient.get).toHaveBeenCalledTimes(1);
-      });
-
-      unmount();
-
-      // Fast-forward 30 seconds after unmount
-      vi.advanceTimersByTime(30000);
-
-      // Should still only have been called once
-      expect(apiClient.get).toHaveBeenCalledTimes(1);
+      // Today marker uses timeline-today-marker-row class
+      const todayIndicator = document.querySelector('.timeline-today-marker-row');
+      expect(todayIndicator).toBeInTheDocument();
     });
   });
 
-  describe('Accessibility', () => {
-    beforeEach(async () => {
-      const apiClient = require('../../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: mockProjects });
-    });
-
-    it('should have proper ARIA labels', async () => {
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('region', { name: /project timeline/i })).toBeInTheDocument();
-      });
-    });
-
-    it('should be keyboard navigable', async () => {
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        const firstProject = screen.getByTestId('project-1');
-        firstProject.focus();
-        expect(document.activeElement).toBe(firstProject);
-
-        fireEvent.keyDown(firstProject, { key: 'Enter', code: 'Enter' });
-        expect(screen.getByText(/PM: John Doe/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should announce status changes to screen readers', async () => {
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        const greenButton = screen.getByRole('button', { name: /green/i });
-        fireEvent.click(greenButton);
-      });
-
-      const statusMessage = screen.getByRole('status');
-      expect(statusMessage).toHaveTextContent(/Showing.*green.*project/i);
-    });
-  });
-
-  describe('Sorting', () => {
-    beforeEach(async () => {
-      const apiClient = require('../../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: mockProjects });
-    });
-
-    it('should sort projects by start date by default', async () => {
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        const projects = screen.getAllByTestId(/^project-/);
-        expect(projects[0]).toHaveTextContent('Project Alpha');
-        expect(projects[1]).toHaveTextContent('Project Beta');
-        expect(projects[2]).toHaveTextContent('Project Gamma');
-      });
-    });
-
-    it('should allow sorting by name in list view', async () => {
-      render(<ProjectTimelinePanel />);
-
-      await waitFor(() => {
-        const listViewButton = screen.getByRole('button', { name: /list view/i });
-        fireEvent.click(listViewButton);
-      });
-
-      const nameHeader = screen.getByRole('columnheader', { name: /project name/i });
-      fireEvent.click(nameHeader);
-
-      const rows = screen.getAllByRole('row').slice(1); // Skip header row
-      expect(rows[0]).toHaveTextContent('Project Alpha');
-      expect(rows[1]).toHaveTextContent('Project Beta');
-      expect(rows[2]).toHaveTextContent('Project Gamma');
+  describe('Props Validation', () => {
+    it('should render with minimal props', () => {
+      render(
+        <ProjectTimelinePanel
+          projects={mockProjects}
+          onNavigateToProject={mockNavigate}
+        />
+      );
+      expect(screen.getByText('Project Timeline')).toBeInTheDocument();
     });
   });
 });

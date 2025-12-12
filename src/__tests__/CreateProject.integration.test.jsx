@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from '../App';
 import { api } from '../api/client';
 
@@ -18,6 +19,22 @@ import { api } from '../api/client';
  * - RAG status calculation
  * - Audit log entries
  */
+
+// Mock lottie-web to avoid canvas issues
+vi.mock('lottie-web', () => ({
+  default: {
+    loadAnimation: vi.fn(() => ({
+      destroy: vi.fn(),
+      play: vi.fn(),
+      stop: vi.fn(),
+    })),
+  },
+}));
+
+// Mock lottie-react
+vi.mock('lottie-react', () => ({
+  default: () => null,
+}));
 
 // Mock the API client
 vi.mock('../api/client', () => ({
@@ -37,17 +54,35 @@ vi.mock('../api/client', () => ({
     updatePeriod: vi.fn(),
     getUsers: vi.fn(),
     getSpaces: vi.fn(),
-  }
+    getPortfolios: vi.fn(),
+    getAuditLog: vi.fn(),
+  },
+  refreshToken: vi.fn().mockResolvedValue({ token: 'mock-refreshed-token' }),
 }));
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
+// localStorage is mocked in setupTests.js
+
+// Create a fresh QueryClient for each test
+const createTestQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: { retry: false },
+  },
+});
+
+// Wrapper component for tests
+const TestWrapper = ({ children }) => {
+  const queryClient = createTestQueryClient();
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  );
 };
-global.localStorage = localStorageMock;
+
+// Helper to render with QueryClient
+const renderWithClient = (ui) => {
+  return render(ui, { wrapper: TestWrapper });
+};
 
 describe('Integration: Create Project Workflow', () => {
   const mockAdminUser = {
@@ -74,8 +109,8 @@ describe('Integration: Create Project Workflow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Setup authenticated admin user
-    localStorageMock.getItem.mockImplementation((key) => {
+    // Setup authenticated admin user (using global localStorageMock from setupTests.js)
+    global.localStorageMock.getItem.mockImplementation((key) => {
       if (key === 'token') return 'mock-admin-token';
       if (key === 'user') return JSON.stringify(mockAdminUser);
       return null;
@@ -106,7 +141,7 @@ describe('Integration: Create Project Workflow', () => {
     const user = userEvent.setup();
 
     // Step 1: Render app as authenticated admin
-    render(<App />);
+    renderWithClient(<App />);
 
     await waitFor(() => {
       expect(screen.getByText('Account')).toBeInTheDocument();
@@ -394,7 +429,7 @@ describe('Integration: Create Project Workflow', () => {
   it('should validate required fields in project creation', async () => {
     const user = userEvent.setup();
 
-    render(<App />);
+    renderWithClient(<App />);
 
     await waitFor(() => {
       expect(screen.getByText('Project')).toBeInTheDocument();
@@ -437,7 +472,7 @@ describe('Integration: Create Project Workflow', () => {
       }
     });
 
-    render(<App />);
+    renderWithClient(<App />);
 
     await waitFor(() => {
       expect(screen.getByText('Project')).toBeInTheDocument();
@@ -501,7 +536,7 @@ describe('Integration: Create Project Workflow', () => {
       return Promise.resolve({ data: [] });
     });
 
-    render(<App />);
+    renderWithClient(<App />);
 
     // Verify project is selected on load
     await waitFor(() => {
@@ -550,7 +585,7 @@ describe('Integration: Create Project Workflow', () => {
       data: [{ id: 1, name: 'User Signups' }]
     });
 
-    render(<App />);
+    renderWithClient(<App />);
 
     // Navigate to project with red metric
     await waitFor(() => {
