@@ -662,7 +662,12 @@ function createApp(dbPath) {
   // ===== PORTFOLIOS =====
   app.get('/api/portfolios', async (req, res) => {
     try {
-      const portfolios = await dbAll('SELECT * FROM portfolios ORDER BY display_order, name');
+      const portfolios = await dbAll(`
+        SELECT p.*, u.name as manager_name
+        FROM portfolios p
+        LEFT JOIN users u ON p.manager_id = u.id
+        ORDER BY p.display_order, p.name
+      `);
       res.json(portfolios);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -671,7 +676,7 @@ function createApp(dbPath) {
   
   app.post('/api/portfolios', authenticateToken, async (req, res) => {
     try {
-      const { name, description, color, display_order, space_id } = req.body;
+      const { name, description, color, display_order, space_id, manager_id } = req.body;
 
       if (!name) {
         return res.status(400).json({ error: 'Portfolio name is required' });
@@ -683,8 +688,8 @@ function createApp(dbPath) {
       }
 
       const result = await dbRun(
-        'INSERT INTO portfolios (name, description, color, display_order, space_id) VALUES (?, ?, ?, ?, ?)',
-        [name, description || null, color || '#3b82f6', display_order || 0, space_id || null]
+        'INSERT INTO portfolios (name, description, color, display_order, space_id, manager_id) VALUES (?, ?, ?, ?, ?, ?)',
+        [name, description || null, color || '#3b82f6', display_order || 0, space_id || null, manager_id || null]
       );
 
       await logAudit(
@@ -693,14 +698,14 @@ function createApp(dbPath) {
         'portfolios',
         result.lastID,
         null,
-        { name, description, color, display_order, space_id },
+        { name, description, color, display_order, space_id, manager_id },
         `Created portfolio: ${name}`,
         req.ip
       );
 
-      logger.asset.create(req.user, 'portfolio', { name, description, color, space_id }, null);
+      logger.asset.create(req.user, 'portfolio', { name, description, color, space_id, manager_id }, null);
 
-      res.status(201).json({ id: result.lastID, name, description, color, display_order, space_id });
+      res.status(201).json({ id: result.lastID, name, description, color, display_order, space_id, manager_id });
     } catch (err) {
       logger.exception('PORTFOLIO', 'Error creating portfolio', err, { requestBody: req.body });
       res.status(500).json({ error: err.message });
@@ -710,7 +715,7 @@ function createApp(dbPath) {
   app.put('/api/portfolios/:id', authenticateToken, async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, description, color, display_order, space_id } = req.body;
+      const { name, description, color, display_order, space_id, manager_id } = req.body;
 
       if (!isAdmin(req.user)) {
         return res.status(403).json({ error: 'Only admins can update portfolios' });
@@ -722,8 +727,8 @@ function createApp(dbPath) {
       }
 
       await dbRun(
-        'UPDATE portfolios SET name = ?, description = ?, color = ?, display_order = ?, space_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [name, description, color, display_order, space_id || null, id]
+        'UPDATE portfolios SET name = ?, description = ?, color = ?, display_order = ?, space_id = ?, manager_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [name, description, color, display_order, space_id || null, manager_id || null, id]
       );
 
       await logAudit(
@@ -732,12 +737,12 @@ function createApp(dbPath) {
         'portfolios',
         id,
         oldPortfolio,
-        { name, description, color, display_order, space_id },
+        { name, description, color, display_order, space_id, manager_id },
         `Updated portfolio: ${name}`,
         req.ip
       );
 
-      res.json({ id, name, description, color, display_order, space_id });
+      res.json({ id, name, description, color, display_order, space_id, manager_id });
     } catch (err) {
       console.error('Update portfolio error:', err);
       res.status(500).json({ error: err.message });
@@ -7432,6 +7437,14 @@ function createApp(dbPath) {
     try {
       await dbRun(`ALTER TABLE portfolios ADD COLUMN space_id INTEGER REFERENCES spaces(id) ON DELETE SET NULL`);
       console.log('✅ Added space_id column to portfolios table');
+    } catch (err) {
+      // Column already exists, that's fine
+    }
+
+    // Migration: Add manager_id to portfolios table
+    try {
+      await dbRun(`ALTER TABLE portfolios ADD COLUMN manager_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
+      console.log('✅ Added manager_id column to portfolios table');
     } catch (err) {
       // Column already exists, that's fine
     }

@@ -8,6 +8,7 @@ import './PortfolioManager.css';
 export default function PortfolioManager({ onClose, onPortfolioCreated }) {
   const [portfolios, setPortfolios] = useState([]);
   const [spaces, setSpaces] = useState([]);
+  const [users, setUsers] = useState([]);
   const [showNewForm, setShowNewForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
     description: '',
     color: PORTFOLIO_COLORS[0].value,
     space_id: null,
+    manager_id: null,
     display_order: 0
   });
   const [error, setError] = useState('');
@@ -31,6 +33,7 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
   useEffect(() => {
     loadPortfolios();
     loadSpaces();
+    loadUsers();
   }, []);
 
   // Update form color when opening new form or when portfolios change
@@ -61,6 +64,15 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
     }
   };
 
+  const loadUsers = async () => {
+    try {
+      const response = await api.getUsers();
+      setUsers(response.data || []);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -86,6 +98,7 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
       description: portfolio.description || '',
       color: portfolio.color || PORTFOLIO_COLORS[0].value,
       space_id: portfolio.space_id || null,
+      manager_id: portfolio.manager_id || null,
       display_order: portfolio.display_order || 0
     });
     setEditingId(portfolio.id);
@@ -112,6 +125,7 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
       description: '',
       color: getUnusedColor(),
       space_id: null,
+      manager_id: null,
       display_order: 0
     });
     setEditingId(null);
@@ -158,6 +172,9 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
                             Space: {portfolio.space_id
                               ? spaces.find(s => s.id === portfolio.space_id)?.name || 'Unknown'
                               : 'No space'}
+                          </span>
+                          <span className="portfolio-order" style={{ marginRight: '12px' }}>
+                            Manager: {portfolio.manager_name || 'None'}
                           </span>
                           <span className="portfolio-order">Order: {portfolio.display_order}</span>
                         </div>
@@ -220,6 +237,22 @@ export default function PortfolioManager({ onClose, onPortfolioCreated }) {
                   placeholder="Select a space (optional)..."
                 />
                 <small className="form-hint">Assign this portfolio to a space for organization</small>
+              </div>
+
+              <div className="form-group">
+                <label>Portfolio Manager</label>
+                <Select
+                  styles={selectStyles}
+                  value={formData.manager_id ? { value: formData.manager_id, label: users.find(u => u.id === formData.manager_id)?.name } : null}
+                  onChange={(option) => setFormData({ ...formData, manager_id: option?.value || null })}
+                  options={users.map(user => ({
+                    value: user.id,
+                    label: user.name
+                  }))}
+                  isClearable
+                  placeholder="Select a manager (optional)..."
+                />
+                <small className="form-hint">Person responsible for this portfolio</small>
               </div>
 
               <div className="form-group">
