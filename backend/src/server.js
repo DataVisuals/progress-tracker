@@ -812,7 +812,7 @@ function createApp(dbPath) {
       for (const project of projects) {
         // Get all metrics for this project
         const metrics = await dbAll(`
-          SELECT m.id, m.name, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date
+          SELECT m.id, m.name, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date, m.final_target
           FROM metrics m
           WHERE m.project_id = ?
           ORDER BY COALESCE(m.display_order, 999), m.name
@@ -948,6 +948,18 @@ function createApp(dbPath) {
             variancePercent = periodRAG.variancePercent;
           }
 
+          // Check if final period's expected falls short of target (no plan to meet target)
+          // This should make the metric red even if current variance is acceptable
+          let missesTarget = false;
+          if (metric.final_target && metric.final_target > 0 && periods.length > 0) {
+            const finalPeriod = periods[periods.length - 1];
+            const finalExpected = finalPeriod.expected || 0;
+            if (finalExpected < metric.final_target) {
+              ragStatus = 'red';
+              missesTarget = true;
+            }
+          }
+
           // Get latest comment for this period (for red and amber metrics)
           let latestComment = null;
           if (ragStatus === 'red' || ragStatus === 'amber') {
@@ -973,7 +985,8 @@ function createApp(dbPath) {
             complete: currentPeriod.complete,
             expected: currentPeriod.expected,
             reporting_date: currentPeriod.reporting_date,
-            latestComment
+            latestComment,
+            missesTarget
           });
         }
 
@@ -1056,7 +1069,7 @@ function createApp(dbPath) {
       for (const project of projects) {
         // Get all metrics for this project
         const metrics = await dbAll(`
-          SELECT m.id, m.name, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date
+          SELECT m.id, m.name, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date, m.final_target
           FROM metrics m
           WHERE m.project_id = ?
           ORDER BY COALESCE(m.display_order, 999), m.name
@@ -1186,6 +1199,18 @@ function createApp(dbPath) {
             variancePercent = periodRAG.variancePercent;
           }
 
+          // Check if final period's expected falls short of target (no plan to meet target)
+          // This should make the metric red even if current variance is acceptable
+          let missesTarget = false;
+          if (metric.final_target && metric.final_target > 0 && periods.length > 0) {
+            const finalPeriod = periods[periods.length - 1];
+            const finalExpected = finalPeriod.expected || 0;
+            if (finalExpected < metric.final_target) {
+              ragStatus = 'red';
+              missesTarget = true;
+            }
+          }
+
           // Get latest comment for this period (for red and amber metrics)
           let latestComment = null;
           if (ragStatus === 'red' || ragStatus === 'amber') {
@@ -1211,7 +1236,8 @@ function createApp(dbPath) {
             complete: currentPeriod.complete,
             expected: currentPeriod.expected,
             reporting_date: currentPeriod.reporting_date,
-            latestComment
+            latestComment,
+            missesTarget
           });
         }
 
@@ -1323,7 +1349,7 @@ function createApp(dbPath) {
       for (const project of projects) {
         // Get all metrics for this project
         const metrics = await dbAll(`
-          SELECT m.id, m.name, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date
+          SELECT m.id, m.name, m.amber_tolerance, m.red_tolerance, m.start_date, m.end_date, m.final_target
           FROM metrics m
           WHERE m.project_id = ?
           ORDER BY COALESCE(m.display_order, 999), m.name
@@ -1459,6 +1485,18 @@ function createApp(dbPath) {
             variancePercent = periodRAG.variancePercent;
           }
 
+          // Check if final period's expected falls short of target (no plan to meet target)
+          // This should make the metric red even if current variance is acceptable
+          let missesTarget = false;
+          if (metric.final_target && metric.final_target > 0 && periods.length > 0) {
+            const finalPeriod = periods[periods.length - 1];
+            const finalExpected = finalPeriod.expected || 0;
+            if (finalExpected < metric.final_target) {
+              ragStatus = 'red';
+              missesTarget = true;
+            }
+          }
+
           // Get latest comment for this period (for red and amber metrics)
           let latestComment = null;
           if (ragStatus === 'red' || ragStatus === 'amber') {
@@ -1484,7 +1522,8 @@ function createApp(dbPath) {
             complete: currentPeriod.complete,
             expected: currentPeriod.expected,
             reporting_date: currentPeriod.reporting_date,
-            latestComment
+            latestComment,
+            missesTarget
           });
         }
 

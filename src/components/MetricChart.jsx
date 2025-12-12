@@ -503,6 +503,28 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     is_custom: isCustomCurve
   } : null;
 
+  // Check if the final period's expected falls short of the metric's final target
+  // This indicates no plan to meet the target, which should trigger a red status
+  const finalPeriodMissesTarget = sortedData.length > 0 ? (() => {
+    const finalPeriod = sortedData[sortedData.length - 1];
+    const metricFinalTarget = sortedData[0].metric_final_target;
+    const finalExpected = finalPeriod.expected || 0;
+
+    // If there's a target and the final expected is less than the target
+    if (metricFinalTarget && metricFinalTarget > 0 && finalExpected < metricFinalTarget) {
+      const shortfall = metricFinalTarget - finalExpected;
+      const shortfallPercent = (shortfall / metricFinalTarget) * 100;
+      return {
+        misses: true,
+        shortfall,
+        shortfallPercent: shortfallPercent.toFixed(1),
+        finalExpected,
+        metricFinalTarget
+      };
+    }
+    return { misses: false };
+  })() : { misses: false };
+
   // Calculate duration in days and months if metadata is available
   const calculateDuration = (startDate, endDate) => {
     if (!startDate || !endDate) return null;
@@ -712,6 +734,11 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       } else if (variance < -amberTolerance) {
         ragStatus = 'amber';
       }
+    }
+
+    // Also mark as red if final expected doesn't meet target (no plan to achieve target)
+    if (finalPeriodMissesTarget.misses) {
+      ragStatus = 'red';
     }
 
     // Check if red or amber and has no active recovery plan
@@ -1310,7 +1337,23 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     <div className={`metric-chart-container ${compactMode ? 'compact' : ''}`}>
       {compactMode && (
         <div className="compact-metric-header">
-          <div className="compact-metric-title">{metricName}</div>
+          <div className="compact-metric-title">
+            {metricName}
+            {finalPeriodMissesTarget.misses && (
+              <span
+                className="target-miss-warning"
+                title={`No plan to meet target. Final expected: ${formatNumber(finalPeriodMissesTarget.finalExpected)}, Target: ${formatNumber(finalPeriodMissesTarget.metricFinalTarget)} (${finalPeriodMissesTarget.shortfallPercent}% shortfall)`}
+                style={{
+                  marginLeft: '6px',
+                  color: '#ef4444',
+                  fontSize: '12px',
+                  cursor: 'help'
+                }}
+              >
+                ⚠️
+              </span>
+            )}
+          </div>
           {sortedData[0]?.metric_description && (
             <div className="compact-metric-description" title={sortedData[0].metric_description}>
               {sortedData[0].metric_description}
@@ -1572,7 +1615,19 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             animationDuration={800}
             animationBegin={200}
             fillOpacity={highlightedSeries === null || highlightedSeries === 'remaining' ? 0.6 : 0.2}
-          />
+          >
+            {chartData.map((entry, index) => {
+              const isLastPeriod = index === chartData.length - 1;
+              const showRedBorder = isLastPeriod && finalPeriodMissesTarget.misses;
+              return (
+                <Cell
+                  key={`remaining-${index}`}
+                  stroke={showRedBorder ? '#ef4444' : 'none'}
+                  strokeWidth={showRedBorder ? 2 : 0}
+                />
+              );
+            })}
+          </Bar>
 
           <Line
             type="monotone"
@@ -1605,6 +1660,29 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           />
         </ComposedChart>
       </ResponsiveContainer>
+          {/* Warning when final expected doesn't meet target */}
+          {finalPeriodMissesTarget.misses && !compactMode && (
+            <div
+              className="target-miss-banner"
+              style={{
+                marginTop: '8px',
+                padding: '8px 12px',
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '12px',
+                color: '#991b1b'
+              }}
+            >
+              <span style={{ fontSize: '16px' }}>⚠️</span>
+              <span>
+                <strong>No plan to meet target.</strong> Final expected ({formatNumber(finalPeriodMissesTarget.finalExpected)}) is {finalPeriodMissesTarget.shortfallPercent}% below the target ({formatNumber(finalPeriodMissesTarget.metricFinalTarget)}).
+              </span>
+            </div>
+          )}
           {/* Last updated timestamp */}
           {lastUpdated && (
             <div className="last-updated-container">
