@@ -1094,57 +1094,73 @@ const PortfolioReviewModal = ({
 
         {/* Project Content - No tabs, just show everything */}
         <div className="project-content-section" style={{ marginTop: '0' }}>
-          {/* Metrics Grid */}
+          {/* Metrics Grid - Limited to 5 charts for larger display and more comment space */}
           <div className="metrics-section" style={{ margin: '0 16px' }}>
-            <div className="grid-view-container" style={{ gap: '8px', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-              {projectMetrics.filter(m => m.show_in_portfolio_review !== 0).map((metric) => {
-                const metricData = projectData.filter(d => d.metric_id === metric.id);
-                if (metricData.length === 0) return null;
+            {(() => {
+              const selectedMetrics = projectMetrics.filter(m => m.show_in_portfolio_review !== 0);
+              const displayMetrics = selectedMetrics.slice(0, 5);
+              const hiddenCount = selectedMetrics.length - displayMetrics.length;
+              const unselectedCount = projectMetrics.filter(m => m.show_in_portfolio_review === 0).length;
 
-                return (
-                  <div key={metric.id} className="grid-view-item" style={{ padding: '0' }}>
-                    <MetricChart
-                      metricName={metric.name}
-                      data={metricData}
-                      canEdit={false}
-                      canEditData={false}
-                      amberTolerance={metric.amber_tolerance || 5.0}
-                      redTolerance={metric.red_tolerance || 10.0}
-                      compactMode={true}
-                      onCommentaryChange={() => {}}
-                      onDataChange={() => {}}
-                      onToleranceChange={() => {}}
-                      onTargetChange={() => {}}
-                      onProgressionChange={() => {}}
-                      onDescriptionChange={() => {}}
-                      onDatesChange={() => {}}
-                      timeTravelTimestamp={null}
-                      projectId={project.id}
-                      onTimeTravelChange={() => {}}
-                      onRevert={() => {}}
-                      isAdmin={false}
-                      currentUser={null}
-                    />
+              return (
+                <>
+                  <div className="grid-view-container" style={{ gap: '8px', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+                    {displayMetrics.map((metric) => {
+                      const metricData = projectData.filter(d => d.metric_id === metric.id);
+                      if (metricData.length === 0) return null;
+
+                      return (
+                        <div key={metric.id} className="grid-view-item" style={{ padding: '0' }}>
+                          <MetricChart
+                            metricName={metric.name}
+                            data={metricData}
+                            canEdit={false}
+                            canEditData={false}
+                            amberTolerance={metric.amber_tolerance || 5.0}
+                            redTolerance={metric.red_tolerance || 10.0}
+                            compactMode={true}
+                            onCommentaryChange={() => {}}
+                            onDataChange={() => {}}
+                            onToleranceChange={() => {}}
+                            onTargetChange={() => {}}
+                            onProgressionChange={() => {}}
+                            onDescriptionChange={() => {}}
+                            onDatesChange={() => {}}
+                            timeTravelTimestamp={null}
+                            projectId={project.id}
+                            onTimeTravelChange={() => {}}
+                            onRevert={() => {}}
+                            isAdmin={false}
+                            currentUser={null}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
-            {/* Show note if there are excluded metrics */}
-            {isExporting && projectMetrics.filter(m => m.show_in_portfolio_review === 0).length > 0 && (
-              <div style={{
-                marginTop: '8px',
-                padding: '8px 12px',
-                background: darkMode ? '#1e293b' : '#f8fafc',
-                borderRadius: '4px',
-                fontSize: '10px',
-                color: darkMode ? '#94a3b8' : '#6b7280',
-                fontStyle: 'italic',
-                textAlign: 'center',
-                border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0'
-              }}>
-                Note: {projectMetrics.filter(m => m.show_in_portfolio_review === 0).length} additional metric{projectMetrics.filter(m => m.show_in_portfolio_review === 0).length > 1 ? 's are' : ' is'} not shown (limited to metrics marked for Portfolio Review)
-              </div>
-            )}
+                  {/* Show note if there are additional metrics not displayed */}
+                  {(hiddenCount > 0 || unselectedCount > 0) && (
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '8px 12px',
+                      background: darkMode ? '#1e293b' : '#f8fafc',
+                      borderRadius: '4px',
+                      fontSize: '10px',
+                      color: darkMode ? '#94a3b8' : '#6b7280',
+                      fontStyle: 'italic',
+                      textAlign: 'center',
+                      border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0'
+                    }}>
+                      {hiddenCount > 0 && unselectedCount > 0
+                        ? `Note: Showing 5 of ${selectedMetrics.length} selected metrics. ${unselectedCount} additional metric${unselectedCount > 1 ? 's' : ''} not selected for Portfolio Review.`
+                        : hiddenCount > 0
+                          ? `Note: Showing 5 of ${selectedMetrics.length} selected metrics.`
+                          : `Note: ${unselectedCount} metric${unselectedCount > 1 ? 's' : ''} not selected for Portfolio Review.`
+                      }
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           {/* Commentary Section - Single box with Time User Comment per line */}
@@ -1207,6 +1223,53 @@ const PortfolioReviewModal = ({
                     {expandedComments[project.id] ? `Hide ${projectComments.length - 1} earlier comment${projectComments.length - 1 > 1 ? 's' : ''}` : `Show ${projectComments.length - 1} earlier comment${projectComments.length - 1 > 1 ? 's' : ''}`}
                   </button>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Recovery Plans Section */}
+          {projectRecoveryPlans.filter(rp => rp.status === 'active').length > 0 && (
+            <div className="recovery-plans-section" style={{
+              margin: '8px 16px 8px 16px',
+              paddingTop: '12px',
+              borderTop: darkMode ? '1px solid #334155' : '1px solid #e2e8f0'
+            }}>
+              <h3 style={{
+                fontSize: '11px',
+                marginBottom: '8px',
+                fontWeight: '600',
+                color: darkMode ? '#f59e0b' : '#d97706'
+              }}>Recovery Plans</h3>
+              <div className="recovery-plans-box" style={{
+                padding: '8px 10px',
+                background: darkMode ? '#292524' : '#fffbeb',
+                borderRadius: '4px',
+                fontSize: '12px',
+                lineHeight: '1.6',
+                color: darkMode ? '#e2e8f0' : '#334155',
+                border: darkMode ? '1px solid #44403c' : '1px solid #fde68a'
+              }}>
+                {projectRecoveryPlans.filter(rp => rp.status === 'active').map((plan, index) => {
+                  const metric = projectMetrics.find(m => m.id === plan.metric_id);
+                  const formatDate = (dateString) => {
+                    if (!dateString) return '';
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                  };
+                  return (
+                    <div key={plan.id} style={{ marginBottom: index < projectRecoveryPlans.filter(rp => rp.status === 'active').length - 1 ? '8px' : '0' }}>
+                      <span style={{ color: darkMode ? '#f59e0b' : '#d97706', fontWeight: '600' }}>
+                        {metric?.name || 'Unknown Metric'}
+                      </span>
+                      {plan.target_recovery_date && (
+                        <span style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: '10px', marginLeft: '8px' }}>
+                          Target: {formatDate(plan.target_recovery_date)}
+                        </span>
+                      )}
+                      <div style={{ marginTop: '2px' }}>{plan.plan_text}</div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
