@@ -65,20 +65,19 @@ const ProjectTimelinePanel = ({
       });
     }
 
-    // Calculate min/max considering project dates AND milestone dates
-    const allDates = [
-      now,
+    // Calculate min/max considering project dates AND milestone dates (excluding "now" from min calculation)
+    const projectDates = [
       ...projectsWithDates.map(p => p.startDate).filter(d => d !== null),
       ...projectsWithDates.map(p => p.endDate).filter(d => d !== null),
       ...milestoneDates
     ];
 
-    const minDate = new Date(Math.min(...allDates.filter(d => d instanceof Date && !isNaN(d))));
-    const maxDate = new Date(Math.max(...allDates.filter(d => d instanceof Date && !isNaN(d))));
+    const minDate = new Date(Math.min(...projectDates.filter(d => d instanceof Date && !isNaN(d))));
+    const maxDate = new Date(Math.max(...[now, ...projectDates].filter(d => d instanceof Date && !isNaN(d))));
 
-    // Add padding to range (1 month before, 2 months after)
-    minDate.setMonth(minDate.getMonth() - 1);
-    maxDate.setMonth(maxDate.getMonth() + 2);
+    // Add minimal padding to range (3 days before earliest, 1 month after latest)
+    minDate.setDate(minDate.getDate() - 3);
+    maxDate.setMonth(maxDate.getMonth() + 1);
 
     return {
       projects: projectsWithDates,
@@ -95,15 +94,26 @@ const ProjectTimelinePanel = ({
     return Math.max(0, Math.min(100, (dateMs / totalMs) * 100));
   };
 
-  // Scroll to today's position on mount
+  // Scroll to today's position on mount (left-aligned, not centered)
   useEffect(() => {
     if (scrollWrapperRef.current && timelineData.range) {
-      const todayPosition = getPosition(timelineData.range.now);
-      const scrollWidth = scrollWrapperRef.current.scrollWidth;
-      const containerWidth = scrollWrapperRef.current.clientWidth;
-      // Scroll to center today's position
-      const scrollLeft = (scrollWidth * todayPosition / 100) - (containerWidth / 2);
-      scrollWrapperRef.current.scrollLeft = Math.max(0, scrollLeft);
+      // Use requestAnimationFrame to ensure layout is complete
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (scrollWrapperRef.current && timelineData.range) {
+            const todayPosition = getPosition(timelineData.range.now);
+            const scrollWidth = scrollWrapperRef.current.scrollWidth;
+            // Scroll to show today at the left edge (with small offset)
+            const scrollLeft = (scrollWidth * todayPosition / 100) - 100;
+            console.log('Timeline scroll:', {
+              todayPosition: todayPosition.toFixed(2) + '%',
+              scrollWidth,
+              scrollLeft: Math.max(0, scrollLeft)
+            });
+            scrollWrapperRef.current.scrollLeft = Math.max(0, scrollLeft);
+          }
+        });
+      });
     }
   }, [timelineData.range]);
 
