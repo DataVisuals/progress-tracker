@@ -1,5 +1,6 @@
 import React from 'react';
-import { MdBugReport, MdCheckCircle, MdPeople } from 'react-icons/md';
+import { MdCheckCircle, MdPeople } from 'react-icons/md';
+import { FaSkullCrossbones } from 'react-icons/fa';
 
 const InconsistenciesPanel = ({
   panelId,
@@ -14,7 +15,7 @@ const InconsistenciesPanel = ({
   return (
     <div key={panelId} className={`home-quadrant inconsistency-quadrant panel-${index + 1}`}>
       <div className="quadrant-header">
-        <MdBugReport className="quadrant-icon warning" />
+        <FaSkullCrossbones className="quadrant-icon" />
         <h2>Inconsistencies</h2>
       </div>
       <div className="quadrant-content">

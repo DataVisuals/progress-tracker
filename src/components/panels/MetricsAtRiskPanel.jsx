@@ -1,6 +1,6 @@
 import React from 'react';
 import Select from 'react-select';
-import { MdPriorityHigh, MdTrendingUp, MdArrowForward, MdErrorOutline } from 'react-icons/md';
+import { MdFlag, MdTrendingUp, MdArrowForward, MdErrorOutline } from 'react-icons/md';
 import { smallSelectStyles } from '../SelectStyles';
 
 const MetricsAtRiskPanel = ({
@@ -49,7 +49,7 @@ const MetricsAtRiskPanel = ({
   return (
     <div key={panelId} className={`home-quadrant metrics-quadrant panel-${index + 1}`}>
       <div className="quadrant-header">
-        <MdPriorityHigh className="quadrant-icon warning" />
+        <MdFlag className="quadrant-icon warning" />
         <h2>Metrics at Risk</h2>
         <div className="filter-controls">
           <div className="rag-filter-buttons">

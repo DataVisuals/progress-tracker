@@ -5309,8 +5309,8 @@ html.dark-mode .quadrant-content {
   position: relative;
   display: flex;
   justify-content: center;
-  gap: 4px;
-  padding: 6px 12px;
+  gap: 3px;
+  padding: 4px 12px;
   background: #f3f4f6;
   border-top: 1px solid #e5e7eb;
 }
@@ -5319,9 +5319,9 @@ html.dark-mode .quadrant-content {
 .dock-divider {
   width: 2px;
   min-width: 2px;
-  height: 28px;
+  height: 22px;
   background: #d1d5db;
-  margin: 6px 8px;
+  margin: 4px 6px;
   flex-shrink: 0;
   -webkit-flex-shrink: 0;
 }
@@ -5332,12 +5332,12 @@ html.dark-mode .quadrant-content {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   background: none;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   color: #6b7280;
@@ -5374,12 +5374,23 @@ html.dark-mode .quadrant-content {
 }
 
 .minimized-tab svg {
-  font-size: 22px;
+  font-size: 18px;
 }
 
 /* FontAwesome database icon is slightly larger, scale it down */
 .minimized-tab[data-panel="database"] svg {
-  font-size: 18px;
+  font-size: 16px;
+}
+
+/* Metrics at Risk flag icon - red on hover/active */
+.minimized-tab[data-panel="metrics"]:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.minimized-tab[data-panel="metrics"].active {
+  background: #ef4444;
+  color: white;
 }
 
 /* Tooltip that appears above on hover */
@@ -5401,6 +5412,7 @@ html.dark-mode .quadrant-content {
   pointer-events: none;
   margin-bottom: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
 }
 
 .tab-tooltip::after {
@@ -5452,6 +5464,16 @@ html.dark-mode .quadrant-content {
 
 :root.dark-mode .minimized-tab .lock-icon {
   color: #6b7280;
+}
+
+:root.dark-mode .minimized-tab[data-panel="metrics"]:hover {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+}
+
+:root.dark-mode .minimized-tab[data-panel="metrics"].active {
+  background: #ef4444;
+  color: white;
 }
 
 :root.dark-mode .tab-tooltip {

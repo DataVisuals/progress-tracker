@@ -33,7 +33,6 @@ import {
   MdCalendarToday,
   MdFeedback,
   MdErrorOutline,
-  MdBugReport,
   MdSettings,
   MdPieChart,
   MdAccessTime,
@@ -1464,7 +1463,6 @@ const HomePage = ({
                         hoverTimeoutRef.current = null;
                       }
                     }}
-                    title={panel.name}
                   >
                     <PanelIcon />
                     <span className="tab-tooltip">{panel.name}</span>
@@ -1494,7 +1492,6 @@ const HomePage = ({
                       }
                     }}
                     disabled={isLocked}
-                    title={isLocked ? `${panel.name} (Admin only)` : panel.name}
                   >
                     <PanelIcon />
                     {isLocked && <MdLock className="lock-icon" />}
@@ -1533,21 +1530,6 @@ const HomePage = ({
         />
       )}
 
-      {/* Footer Links */}
-      <div className="homepage-footer">
-        <button className="footer-link" onClick={() => { setShowTipsModal(true); setSelectedTipsCategory('Best Practices'); }}>
-          Best Practices
-        </button>
-        <span className="footer-divider">|</span>
-        <a
-          className="footer-link"
-          href="https://github.com/DataVisuals/progress-tracker/commits/master/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          What's New
-        </a>
-      </div>
     </div>
   );
 };
