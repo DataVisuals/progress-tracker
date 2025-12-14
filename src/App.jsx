@@ -36,7 +36,7 @@ import TipsModal from './components/TipsModal';
 import PortfolioReviewModal from './components/PortfolioReviewModal';
 import { api, refreshToken } from './api/client';
 import { selectStyles } from './components/SelectStyles';
-import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode } from 'react-icons/md';
+import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode, MdSwapHoriz } from 'react-icons/md';
 import ProjectHealthModal, { calculateHealthScore } from './components/ProjectHealthModal';
 import ClarityIndicator from './components/ClarityIndicator';
 import Lottie from 'lottie-react';
@@ -89,6 +89,9 @@ function App() {
   const [projectRecoveryPlans, setProjectRecoveryPlans] = useState([]);
   const [recentProjectChanges, setRecentProjectChanges] = useState({}); // { recordId: { fields: [...], updated_at } }
   const [recentPeriodChanges, setRecentPeriodChanges] = useState({}); // { recordId: { fields: [...], updated_at } }
+  const [recentMilestoneChanges, setRecentMilestoneChanges] = useState({}); // { recordId: { fields: [...], updated_at } }
+  const [projectDateHistory, setProjectDateHistory] = useState({}); // { recordId: { dateFieldsChanged: {...} } }
+  const [milestoneDateHistory, setMilestoneDateHistory] = useState({}); // { recordId: { dateFieldsChanged: {...} } }
   const [projectFeedbackCount, setProjectFeedbackCount] = useState(0);
   const [projectMilestonesCount, setProjectMilestonesCount] = useState(0);
   const [projectMilestones, setProjectMilestones] = useState([]);
@@ -380,6 +383,7 @@ function App() {
   useEffect(() => {
     if (projects.length > 0) {
       loadAllProjectsData();
+      loadAllProjectDateHistory();
     }
   }, [projects.length]);
 
@@ -431,6 +435,7 @@ function App() {
       loadProjectMilestonesCount();
       loadProjectComments();
       loadRecentProjectChanges();
+      loadProjectDateHistory();
 
       // Track page view for analytics
       const project = projects.find(p => p.id === parseInt(selectedProject));
@@ -550,11 +555,21 @@ function App() {
 
   const loadRecentProjectChanges = async () => {
     try {
-      const response = await api.getRecentChanges('projects', [selectedProject], 2);
+      const response = await api.getRecentChanges('projects', [selectedProject], 168); // 7 days
       setRecentProjectChanges(response.data || {});
     } catch (err) {
       console.error('Failed to load recent project changes:', err);
       setRecentProjectChanges({});
+    }
+  };
+
+  const loadProjectDateHistory = async () => {
+    try {
+      const response = await api.getDateChanges('projects', [selectedProject], ['start_date', 'end_date']);
+      setProjectDateHistory(response.data || {});
+    } catch (err) {
+      console.error('Failed to load project date history:', err);
+      setProjectDateHistory({});
     }
   };
 
@@ -564,7 +579,7 @@ function App() {
       return;
     }
     try {
-      const response = await api.getRecentChanges('metric_periods', periodIds, 2);
+      const response = await api.getRecentChanges('metric_periods', periodIds, 168); // 7 days
       setRecentPeriodChanges(response.data || {});
     } catch (err) {
       console.error('Failed to load recent period changes:', err);
@@ -598,10 +613,49 @@ function App() {
       const milestones = response.data || [];
       setProjectMilestonesCount(milestones.length);
       setProjectMilestones(milestones);
+      // Load recent changes and date history for milestones
+      if (milestones.length > 0) {
+        const milestoneIds = milestones.map(m => m.id);
+        loadRecentMilestoneChanges(milestoneIds);
+        loadMilestoneDateHistory(milestoneIds);
+      } else {
+        setRecentMilestoneChanges({});
+        setMilestoneDateHistory({});
+      }
     } catch (err) {
       console.error('Failed to load milestones count:', err);
       setProjectMilestonesCount(0);
       setProjectMilestones([]);
+      setRecentMilestoneChanges({});
+      setMilestoneDateHistory({});
+    }
+  };
+
+  const loadRecentMilestoneChanges = async (milestoneIds) => {
+    if (!milestoneIds || milestoneIds.length === 0) {
+      setRecentMilestoneChanges({});
+      return;
+    }
+    try {
+      const response = await api.getRecentChanges('milestones', milestoneIds, 168); // 7 days
+      setRecentMilestoneChanges(response.data || {});
+    } catch (err) {
+      console.error('Failed to load recent milestone changes:', err);
+      setRecentMilestoneChanges({});
+    }
+  };
+
+  const loadMilestoneDateHistory = async (milestoneIds) => {
+    if (!milestoneIds || milestoneIds.length === 0) {
+      setMilestoneDateHistory({});
+      return;
+    }
+    try {
+      const response = await api.getDateChanges('milestones', milestoneIds, ['target_date']);
+      setMilestoneDateHistory(response.data || {});
+    } catch (err) {
+      console.error('Failed to load milestone date history:', err);
+      setMilestoneDateHistory({});
     }
   };
 
@@ -626,6 +680,38 @@ function App() {
       setAllProjectsData(projectsData);
     } catch (err) {
       console.error('Failed to load all projects data:', err);
+    }
+  };
+
+  // Load date history for all projects (for HomePage timeline panel)
+  const loadAllProjectDateHistory = async () => {
+    if (projects.length === 0) return;
+    try {
+      const projectIds = projects.map(p => p.id);
+      const response = await api.getDateChanges('projects', projectIds, ['start_date', 'end_date']);
+      setProjectDateHistory(response.data || {});
+    } catch (err) {
+      console.error('Failed to load all project date history:', err);
+    }
+  };
+
+  // Load date history for all milestones (for HomePage timeline panel)
+  const loadAllMilestoneDateHistory = async (allMilestones) => {
+    if (!allMilestones || Object.keys(allMilestones).length === 0) return;
+    try {
+      // Collect all milestone IDs from all projects
+      const milestoneIds = [];
+      Object.values(allMilestones).forEach(projectMilestones => {
+        if (Array.isArray(projectMilestones)) {
+          projectMilestones.forEach(m => milestoneIds.push(m.id));
+        }
+      });
+      if (milestoneIds.length === 0) return;
+
+      const response = await api.getDateChanges('milestones', milestoneIds, ['target_date']);
+      setMilestoneDateHistory(response.data || {});
+    } catch (err) {
+      console.error('Failed to load all milestone date history:', err);
     }
   };
 
@@ -1539,20 +1625,37 @@ function App() {
     return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
-  // Check if a timestamp is recent (same day) - used for comments/links with created_at
+  // Check if a timestamp is recent (within past 7 days) - used for comments/links with created_at
   const isRecentlyUpdated = (updatedAt) => {
     if (!updatedAt) return false;
-    const today = new Date();
+    const now = new Date();
     const updateTime = new Date(updatedAt);
-    return updateTime.toDateString() === today.toDateString();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return updateTime >= sevenDaysAgo;
   };
 
-  // Check if a specific field on the current project was recently changed
+  // Check if a specific field on the current project was recently changed (within 7 days)
   const isProjectFieldChanged = (fieldName) => {
     if (!selectedProject || !recentProjectChanges) return false;
     const changes = recentProjectChanges[selectedProject];
     if (!changes || !changes.fields) return false;
     return changes.fields.includes(fieldName);
+  };
+
+  // Check if a project date field has ever been moved (all-time history)
+  const hasProjectDateMoved = (fieldName) => {
+    if (!selectedProject || !projectDateHistory) return false;
+    const history = projectDateHistory[selectedProject];
+    if (!history || !history.dateFieldsChanged) return false;
+    return !!history.dateFieldsChanged[fieldName];
+  };
+
+  // Get the date movement info for project dates
+  const getProjectDateMoveInfo = (fieldName) => {
+    if (!selectedProject || !projectDateHistory) return null;
+    const history = projectDateHistory[selectedProject];
+    if (!history || !history.dateFieldsChanged) return null;
+    return history.dateFieldsChanged[fieldName] || null;
   };
 
   // Get metric tolerances from the selected metric's data
@@ -2017,11 +2120,35 @@ function App() {
                           setEditProjectEndDate(currentProject.end_date);
                           setEditingProjectDates(true);
                         } : undefined}
-                        title={canEdit() ? "Click to edit dates" : ((isProjectFieldChanged('start_date') || isProjectFieldChanged('end_date')) ? "Recently updated" : undefined)}
+                        title={canEdit() ? "Click to edit dates" : undefined}
                       >
-                        <span className={`project-timeline-date ${isProjectFieldChanged('start_date') ? 'recently-changed-value' : ''}`}>{formatDate(currentProject.start_date)}</span>
+                        <span
+                          className={`project-timeline-date ${isProjectFieldChanged('start_date') ? 'recently-changed-value' : ''} ${hasProjectDateMoved('start_date') ? 'date-moved' : ''}`}
+                          title={(() => {
+                            const moveInfo = getProjectDateMoveInfo('start_date');
+                            if (moveInfo) {
+                              return `Start date moved ${moveInfo.changeCount} time${moveInfo.changeCount > 1 ? 's' : ''} (from ${moveInfo.originalValue || 'not set'})`;
+                            }
+                            return isProjectFieldChanged('start_date') ? 'Start date changed this week' : undefined;
+                          })()}
+                        >
+                          {hasProjectDateMoved('start_date') && <MdSwapHoriz className="date-moved-icon" />}
+                          {formatDate(currentProject.start_date)}
+                        </span>
                         <span className="project-timeline-separator">{'\u2192'}</span>
-                        <span className={`project-timeline-date ${isProjectFieldChanged('end_date') ? 'recently-changed-value' : ''}`}>{formatDate(currentProject.end_date)}</span>
+                        <span
+                          className={`project-timeline-date ${isProjectFieldChanged('end_date') ? 'recently-changed-value' : ''} ${hasProjectDateMoved('end_date') ? 'date-moved' : ''}`}
+                          title={(() => {
+                            const moveInfo = getProjectDateMoveInfo('end_date');
+                            if (moveInfo) {
+                              return `End date moved ${moveInfo.changeCount} time${moveInfo.changeCount > 1 ? 's' : ''} (from ${moveInfo.originalValue || 'not set'})`;
+                            }
+                            return isProjectFieldChanged('end_date') ? 'End date changed this week' : undefined;
+                          })()}
+                        >
+                          {hasProjectDateMoved('end_date') && <MdSwapHoriz className="date-moved-icon" />}
+                          {formatDate(currentProject.end_date)}
+                        </span>
                         {projectDuration && (
                           <>
                             <span className="project-timeline-separator">•</span>
@@ -2351,6 +2478,9 @@ function App() {
                   onMilestonesChange={loadProjectMilestonesCount}
                   startDate={currentProject?.start_date}
                   endDate={currentProject?.end_date}
+                  recentMilestoneChanges={recentMilestoneChanges}
+                  milestoneDateHistory={milestoneDateHistory}
+                  projectDateHistory={projectDateHistory}
                 />
               </div>
             )}
@@ -2734,6 +2864,8 @@ function App() {
             showTipsModal={showTipsModal}
             setShowTipsModal={setShowTipsModal}
             setSelectedTipsCategory={setSelectedTipsCategory}
+            projectDateHistory={projectDateHistory}
+            milestoneDateHistory={milestoneDateHistory}
           />
         )}
       </div>

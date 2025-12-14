@@ -4689,6 +4689,108 @@ function createApp(dbPath) {
     }
   });
 
+  // ===== DATE MOVEMENT HISTORY (for showing if dates have ever been changed) =====
+  app.get('/api/date-changes', authenticateToken, async (req, res) => {
+    try {
+      const { table_name, record_ids, fields } = req.query;
+
+      if (!table_name) {
+        return res.status(400).json({ error: 'table_name is required' });
+      }
+
+      // Parse record_ids - can be comma-separated or single value
+      let ids = [];
+      if (record_ids) {
+        ids = record_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      }
+
+      // Parse fields to check - e.g., "start_date,end_date" or "target_date"
+      let fieldsToCheck = [];
+      if (fields) {
+        fieldsToCheck = fields.split(',').map(f => f.trim());
+      }
+
+      if (ids.length === 0) {
+        return res.json({});
+      }
+
+      // Query audit log for any changes to these records (no time limit)
+      let query = `
+        SELECT record_id, old_values, new_values, created_at
+        FROM audit_log
+        WHERE table_name = ?
+          AND action = 'UPDATE'
+          AND record_id IN (${ids.map(() => '?').join(',')})
+        ORDER BY created_at ASC
+      `;
+      let params = [table_name, ...ids];
+
+      const changes = await dbAll(query, params);
+
+      // Process changes to determine which date fields have ever changed
+      const result = {};
+
+      for (const change of changes) {
+        const recordId = change.record_id;
+        if (!result[recordId]) {
+          result[recordId] = { dateFieldsChanged: {}, firstChangeDate: null };
+        }
+
+        try {
+          const oldVals = change.old_values ? JSON.parse(change.old_values) : {};
+          const newVals = change.new_values ? JSON.parse(change.new_values) : {};
+
+          // Check if specified date fields changed
+          for (const field of fieldsToCheck) {
+            const oldVal = oldVals[field];
+            const newVal = newVals[field];
+
+            // If values differ, mark as changed
+            if (oldVal !== undefined || newVal !== undefined) {
+              if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+                if (!result[recordId].dateFieldsChanged[field]) {
+                  result[recordId].dateFieldsChanged[field] = {
+                    firstChanged: change.created_at,
+                    originalValue: oldVal,
+                    changeCount: 0,
+                    history: [] // Array of {date, changedAt} for all prior values
+                  };
+                  // Add original value to history if it exists
+                  if (oldVal) {
+                    result[recordId].dateFieldsChanged[field].history.push({
+                      date: oldVal,
+                      changedAt: change.created_at,
+                      wasOriginal: true
+                    });
+                  }
+                }
+                result[recordId].dateFieldsChanged[field].changeCount++;
+                result[recordId].dateFieldsChanged[field].latestValue = newVal;
+                result[recordId].dateFieldsChanged[field].latestChange = change.created_at;
+                // Add each new value to history
+                if (newVal) {
+                  result[recordId].dateFieldsChanged[field].history.push({
+                    date: newVal,
+                    changedAt: change.created_at,
+                    wasOriginal: false
+                  });
+                }
+              }
+            }
+          }
+        } catch (e) {
+          // JSON parse error, skip this entry
+          console.error('Error parsing audit values:', e);
+        }
+      }
+
+      res.json(result);
+    } catch (err) {
+      console.error('Date changes error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== AUTO-GENERATE FEEDBACK FROM CONSISTENCY ISSUES =====
   // Helper function to create or get system user
   async function getSystemUserId() {

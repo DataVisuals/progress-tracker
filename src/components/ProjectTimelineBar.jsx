@@ -1,9 +1,25 @@
 import React from 'react';
-import { MdCheckCircle, MdFlag } from 'react-icons/md';
+import { MdCheckCircle, MdFlag, MdSwapHoriz } from 'react-icons/md';
 import './ProjectTimelineBar.css';
 
-const ProjectTimelineBar = ({ milestones, startDate, endDate }) => {
+const ProjectTimelineBar = ({ milestones, startDate, endDate, milestoneDateHistory = {}, startDateMoved = false, endDateMoved = false, startDateMoveCount = 0, endDateMoveCount = 0 }) => {
   const [hoveredElement, setHoveredElement] = React.useState(null);
+
+  // Check if a milestone date has ever been moved
+  const hasMilestoneDateMoved = (milestoneId) => {
+    if (!milestoneId || !milestoneDateHistory) return false;
+    const history = milestoneDateHistory[milestoneId];
+    if (!history || !history.dateFieldsChanged) return false;
+    return !!history.dateFieldsChanged['target_date'];
+  };
+
+  // Get the move count for tooltip
+  const getMilestoneMoveCount = (milestoneId) => {
+    if (!milestoneId || !milestoneDateHistory) return 0;
+    const history = milestoneDateHistory[milestoneId];
+    if (!history || !history.dateFieldsChanged || !history.dateFieldsChanged['target_date']) return 0;
+    return history.dateFieldsChanged['target_date'].changeCount || 0;
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -41,14 +57,10 @@ const ProjectTimelineBar = ({ milestones, startDate, endDate }) => {
     return `${Math.floor(days / 365)}y`;
   };
 
-  if (!milestones || milestones.length === 0) {
-    return null;
-  }
-
-  // Sort milestones by date
-  const sortedMilestones = [...milestones].sort((a, b) =>
-    new Date(a.target_date) - new Date(b.target_date)
-  );
+  // Sort milestones by date (handle empty array)
+  const sortedMilestones = milestones && milestones.length > 0
+    ? [...milestones].sort((a, b) => new Date(a.target_date) - new Date(b.target_date))
+    : [];
 
   // Use project dates if provided, otherwise fall back to milestone dates with padding
   let firstDate, lastDate;
@@ -57,7 +69,7 @@ const ProjectTimelineBar = ({ milestones, startDate, endDate }) => {
     // Use project dates as timeline bounds
     firstDate = new Date(startDate);
     lastDate = new Date(endDate);
-  } else {
+  } else if (sortedMilestones.length > 0) {
     // Fall back to milestone dates with padding for visual breathing room
     const firstMilestoneDate = new Date(sortedMilestones[0].target_date);
     const lastMilestoneDate = new Date(sortedMilestones[sortedMilestones.length - 1].target_date);
@@ -65,6 +77,9 @@ const ProjectTimelineBar = ({ milestones, startDate, endDate }) => {
     const padding = rawSpan * 0.05;
     firstDate = new Date(firstMilestoneDate.getTime() - padding);
     lastDate = new Date(lastMilestoneDate.getTime() + padding);
+  } else {
+    // No dates available at all, can't render
+    return null;
   }
 
   const totalSpan = lastDate - firstDate;
@@ -99,17 +114,21 @@ const ProjectTimelineBar = ({ milestones, startDate, endDate }) => {
 
         {/* Start marker */}
         <div
-          className="timeline-terminus start"
+          className={`timeline-terminus start ${startDateMoved ? 'date-moved' : ''}`}
           onMouseEnter={() => setHoveredElement('start')}
           onMouseLeave={() => setHoveredElement(null)}
         >
           <div className="terminus-circle">
+            {startDateMoved && <MdSwapHoriz className="terminus-moved-icon" />}
             <div className="terminus-label">Start</div>
           </div>
           {hoveredElement === 'start' && (
             <div className="terminus-tooltip">
               <strong>Project Start</strong>
               <span>{formatDate(firstDate)}</span>
+              {startDateMoved && (
+                <span className="tooltip-moved">Moved {startDateMoveCount} time{startDateMoveCount > 1 ? 's' : ''}</span>
+              )}
             </div>
           )}
         </div>
@@ -125,17 +144,26 @@ const ProjectTimelineBar = ({ milestones, startDate, endDate }) => {
 
           const isAbove = index % 2 === 0; // Alternate above and below
           const isNextMilestone = milestone.id === nextMilestoneId;
+          const hasMoved = hasMilestoneDateMoved(milestone.id);
+          const moveCount = getMilestoneMoveCount(milestone.id);
 
           return (
             <div
               key={milestone.id}
-              className={`timeline-stop ${status} ${isAbove ? 'above' : 'below'} ${isNextMilestone ? 'next-milestone' : ''}`}
+              className={`timeline-stop ${status} ${isAbove ? 'above' : 'below'} ${isNextMilestone ? 'next-milestone' : ''} ${hasMoved ? 'date-moved' : ''}`}
               style={{ left: `${position}%` }}
-              title={`${milestone.title} - ${formatDate(milestone.target_date)}`}
+              title={hasMoved
+                ? `${milestone.title} - ${formatDate(milestone.target_date)} (moved ${moveCount} time${moveCount > 1 ? 's' : ''})`
+                : `${milestone.title} - ${formatDate(milestone.target_date)}`
+              }
             >
               <div className="stop-marker">
                 {milestone.completed ? (
                   <MdCheckCircle className="stop-icon" />
+                ) : hasMoved ? (
+                  <div className="stop-dot moved">
+                    <MdSwapHoriz className="moved-icon" />
+                  </div>
                 ) : (
                   <div className="stop-dot" />
                 )}
@@ -153,11 +181,12 @@ const ProjectTimelineBar = ({ milestones, startDate, endDate }) => {
 
         {/* End marker with time to completion */}
         <div
-          className="timeline-terminus end"
+          className={`timeline-terminus end ${endDateMoved ? 'date-moved' : ''}`}
           onMouseEnter={() => setHoveredElement('end')}
           onMouseLeave={() => setHoveredElement(null)}
         >
           <div className="terminus-circle">
+            {endDateMoved && <MdSwapHoriz className="terminus-moved-icon" />}
             <div className="terminus-label">End</div>
           </div>
           <div className="terminus-countdown">
@@ -174,6 +203,9 @@ const ProjectTimelineBar = ({ milestones, startDate, endDate }) => {
               <span className="tooltip-countdown">
                 {daysToCompletion >= 0 ? `${formatTimeRemaining(daysToCompletion)} remaining` : `${formatTimeRemaining(daysToCompletion)}`}
               </span>
+              {endDateMoved && (
+                <span className="tooltip-moved">Moved {endDateMoveCount} time{endDateMoveCount > 1 ? 's' : ''}</span>
+              )}
             </div>
           )}
         </div>

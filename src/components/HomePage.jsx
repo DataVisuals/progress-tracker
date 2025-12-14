@@ -81,7 +81,9 @@ const HomePage = ({
   onAttentionModalShown,
   showTipsModal = false,
   setShowTipsModal,
-  setSelectedTipsCategory
+  setSelectedTipsCategory,
+  projectDateHistory = {},
+  milestoneDateHistory = {}
 }) => {
 
   const [recentCommentary, setRecentCommentary] = useState([]);
@@ -1254,6 +1256,8 @@ const HomePage = ({
             milestones={allMilestones}
             projectHealthRankings={projectHealthRankings}
             onNavigateToProject={onNavigateToProject}
+            projectDateHistory={projectDateHistory}
+            milestoneDateHistory={milestoneDateHistory}
           />
         );
 

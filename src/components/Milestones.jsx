@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { MdAdd, MdEdit, MdDelete, MdCheck, MdClose, MdFlag, MdCheckCircle } from 'react-icons/md';
+import { MdAdd, MdEdit, MdDelete, MdCheck, MdClose, MdFlag, MdCheckCircle, MdSwapHoriz } from 'react-icons/md';
 import { api } from '../api/client';
 import ProjectTimelineBar from './ProjectTimelineBar';
 import ClarityIndicator from './ClarityIndicator';
 import './Milestones.css';
 
-const Milestones = ({ projectId, currentUser, onMilestonesChange, startDate, endDate }) => {
+const Milestones = ({ projectId, currentUser, onMilestonesChange, startDate, endDate, recentMilestoneChanges = {}, milestoneDateHistory = {}, projectDateHistory = {} }) => {
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,6 +16,52 @@ const Milestones = ({ projectId, currentUser, onMilestonesChange, startDate, end
     description: '',
     target_date: ''
   });
+
+  // Check if a specific field on a milestone was recently changed (within 7 days)
+  const isMilestoneFieldChanged = (milestoneId, fieldName) => {
+    if (!milestoneId || !recentMilestoneChanges) return false;
+    const changes = recentMilestoneChanges[milestoneId];
+    if (!changes || !changes.fields) return false;
+    return changes.fields.includes(fieldName);
+  };
+
+  // Check if a milestone date has ever been moved (all-time history)
+  const hasMilestoneDateMoved = (milestoneId) => {
+    if (!milestoneId || !milestoneDateHistory) return false;
+    const history = milestoneDateHistory[milestoneId];
+    if (!history || !history.dateFieldsChanged) return false;
+    return !!history.dateFieldsChanged['target_date'];
+  };
+
+  // Get the date movement info for a milestone
+  const getMilestoneDateMoveInfo = (milestoneId) => {
+    if (!milestoneId || !milestoneDateHistory) return null;
+    const history = milestoneDateHistory[milestoneId];
+    if (!history || !history.dateFieldsChanged) return null;
+    return history.dateFieldsChanged['target_date'] || null;
+  };
+
+  // Check if project start/end dates have been moved
+  const hasProjectStartDateMoved = () => {
+    if (!projectId || !projectDateHistory) return false;
+    const history = projectDateHistory[projectId];
+    if (!history || !history.dateFieldsChanged) return false;
+    return !!history.dateFieldsChanged['start_date'];
+  };
+
+  const hasProjectEndDateMoved = () => {
+    if (!projectId || !projectDateHistory) return false;
+    const history = projectDateHistory[projectId];
+    if (!history || !history.dateFieldsChanged) return false;
+    return !!history.dateFieldsChanged['end_date'];
+  };
+
+  const getProjectDateMoveCount = (fieldName) => {
+    if (!projectId || !projectDateHistory) return 0;
+    const history = projectDateHistory[projectId];
+    if (!history || !history.dateFieldsChanged || !history.dateFieldsChanged[fieldName]) return 0;
+    return history.dateFieldsChanged[fieldName].changeCount || 0;
+  };
 
   useEffect(() => {
     if (projectId) {
@@ -182,6 +228,20 @@ const Milestones = ({ projectId, currentUser, onMilestonesChange, startDate, end
         </form>
       )}
 
+      {/* Always show timeline if we have project dates */}
+      {startDate && endDate && (
+        <ProjectTimelineBar
+          milestones={milestones}
+          startDate={startDate}
+          endDate={endDate}
+          milestoneDateHistory={milestoneDateHistory}
+          startDateMoved={hasProjectStartDateMoved()}
+          endDateMoved={hasProjectEndDateMoved()}
+          startDateMoveCount={getProjectDateMoveCount('start_date')}
+          endDateMoveCount={getProjectDateMoveCount('end_date')}
+        />
+      )}
+
       {milestones.length === 0 ? (
         <div className="no-milestones">
           <MdFlag className="no-milestones-icon" />
@@ -190,13 +250,6 @@ const Milestones = ({ projectId, currentUser, onMilestonesChange, startDate, end
         </div>
       ) : (
         <>
-          {/* Horizontal Timeline View */}
-          <ProjectTimelineBar
-            milestones={milestones}
-            startDate={startDate}
-            endDate={endDate}
-          />
-
           {/* Compact Milestone List */}
           <div className="milestones-list">
             <h3>Milestone Details</h3>
@@ -212,7 +265,19 @@ const Milestones = ({ projectId, currentUser, onMilestonesChange, startDate, end
                         <MdFlag className={`milestone-status-icon ${status}`} />
                       )}
                       <h4>{milestone.title}</h4>
-                      <span className="milestone-date">{formatDate(milestone.target_date)}</span>
+                      <span
+                        className={`milestone-date ${isMilestoneFieldChanged(milestone.id, 'target_date') ? 'recently-changed-value' : ''} ${hasMilestoneDateMoved(milestone.id) ? 'date-moved' : ''}`}
+                        title={(() => {
+                          const moveInfo = getMilestoneDateMoveInfo(milestone.id);
+                          if (moveInfo) {
+                            return `Date moved ${moveInfo.changeCount} time${moveInfo.changeCount > 1 ? 's' : ''} (from ${moveInfo.originalValue || 'not set'})`;
+                          }
+                          return isMilestoneFieldChanged(milestone.id, 'target_date') ? 'Date changed this week' : undefined;
+                        })()}
+                      >
+                        {hasMilestoneDateMoved(milestone.id) && <MdSwapHoriz className="date-moved-icon" />}
+                        {formatDate(milestone.target_date)}
+                      </span>
                     </div>
                     <div className="milestone-actions">
                       {currentUser?.role !== 'viewer' && (

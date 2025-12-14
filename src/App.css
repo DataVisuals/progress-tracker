@@ -727,6 +727,33 @@
   border-left-color: #fbbf24 !important;
 }
 
+/* ===== Date Moved Indicator ===== */
+/* Icon shown when a date has ever been moved/changed */
+.date-moved {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.date-moved-icon {
+  color: #8b5cf6;
+  font-size: 14px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.project-timeline-date.date-moved {
+  color: #7c3aed;
+}
+
+:root.dark-mode .date-moved-icon {
+  color: #a78bfa;
+}
+
+:root.dark-mode .project-timeline-date.date-moved {
+  color: #a78bfa;
+}
+
 .add-dates-btn {
   padding: 3px 8px;
   font-size: 11px;

@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { MdDateRange, MdCheckCircle } from 'react-icons/md';
+import { MdDateRange, MdCheckCircle, MdHistory } from 'react-icons/md';
 import './ProjectTimelinePanel.css';
 
 const ProjectTimelinePanel = ({
@@ -11,10 +11,13 @@ const ProjectTimelinePanel = ({
   selectedSpace,
   milestones,
   projectHealthRankings,
-  onNavigateToProject
+  onNavigateToProject,
+  projectDateHistory = {},
+  milestoneDateHistory = {}
 }) => {
   const [hoveredProject, setHoveredProject] = useState(null);
   const [hoveredMilestone, setHoveredMilestone] = useState(null);
+  const [hoveredDateHistory, setHoveredDateHistory] = useState(null); // {projectId, field} or {milestoneId}
   const scrollWrapperRef = useRef(null);
 
   // Get projects with end dates, filtered by space
@@ -193,6 +196,45 @@ const ProjectTimelinePanel = ({
     return 'upcoming';
   };
 
+  // Check if a project date has ever been moved
+  const hasProjectDateMoved = (projectId, fieldName) => {
+    if (!projectId || !projectDateHistory) return false;
+    const history = projectDateHistory[projectId];
+    if (!history || !history.dateFieldsChanged) return false;
+    return !!history.dateFieldsChanged[fieldName];
+  };
+
+  // Check if a milestone date has ever been moved
+  const hasMilestoneDateMoved = (milestoneId) => {
+    if (!milestoneId || !milestoneDateHistory) return false;
+    const history = milestoneDateHistory[milestoneId];
+    if (!history || !history.dateFieldsChanged) return false;
+    return !!history.dateFieldsChanged['target_date'];
+  };
+
+  // Get full date history for a project field
+  const getProjectDateHistory = (projectId, fieldName) => {
+    if (!projectId || !projectDateHistory) return [];
+    const history = projectDateHistory[projectId];
+    if (!history || !history.dateFieldsChanged || !history.dateFieldsChanged[fieldName]) return [];
+    return history.dateFieldsChanged[fieldName].history || [];
+  };
+
+  // Get full date history for a milestone
+  const getMilestoneDateHistory = (milestoneId) => {
+    if (!milestoneId || !milestoneDateHistory) return [];
+    const history = milestoneDateHistory[milestoneId];
+    if (!history || !history.dateFieldsChanged || !history.dateFieldsChanged['target_date']) return [];
+    return history.dateFieldsChanged['target_date'].history || [];
+  };
+
+  // Format date for history display
+  const formatHistoryDate = (dateStr) => {
+    if (!dateStr) return 'Not set';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
   // Render timeline content
   const renderTimeline = (isFullscreen = false) => {
     if (timelineData.projects.length === 0) {
@@ -296,6 +338,34 @@ const ProjectTimelinePanel = ({
                     onMouseLeave={() => setHoveredProject(null)}
                   >
                     <div className="terminus-circle" style={{ background: statusColor }} />
+                    {hasProjectDateMoved(project.id, 'start_date') && (
+                      <div
+                        className="date-history-icon"
+                        onMouseEnter={(e) => {
+                          e.stopPropagation();
+                          setHoveredDateHistory({ projectId: project.id, field: 'start_date' });
+                        }}
+                        onMouseLeave={(e) => {
+                          e.stopPropagation();
+                          setHoveredDateHistory(null);
+                        }}
+                      >
+                        <MdHistory />
+                        {hoveredDateHistory?.projectId === project.id && hoveredDateHistory?.field === 'start_date' && (
+                          <div className="date-history-tooltip">
+                            <strong>Start Date History</strong>
+                            <div className="history-list">
+                              {getProjectDateHistory(project.id, 'start_date').map((entry, idx) => (
+                                <div key={idx} className={`history-entry ${entry.wasOriginal ? 'original' : ''}`}>
+                                  <span className="history-date">{formatHistoryDate(entry.date)}</span>
+                                  {entry.wasOriginal && <span className="history-label">Original</span>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {hoveredProject === project.id && (
                       <div className="project-tooltip start-tooltip">
                         <strong>{project.name}</strong>
@@ -314,6 +384,7 @@ const ProjectTimelinePanel = ({
                     const milestoneDate = new Date(milestone.target_date);
                     const milestonePosition = getPosition(milestoneDate);
                     const status = getMilestoneStatus(milestone);
+                    const milestoneMoved = hasMilestoneDateMoved(milestone.id);
 
                     // Only show milestone if it's within project bounds
                     if (milestonePosition < startPosition || milestonePosition > endPosition) return null;
@@ -338,6 +409,34 @@ const ProjectTimelinePanel = ({
                           ) : (
                             <div className="stop-dot" />
                           )}
+                          {milestoneMoved && (
+                            <div
+                              className="milestone-history-icon"
+                              onMouseEnter={(e) => {
+                                e.stopPropagation();
+                                setHoveredDateHistory({ milestoneId: milestone.id });
+                              }}
+                              onMouseLeave={(e) => {
+                                e.stopPropagation();
+                                setHoveredDateHistory(null);
+                              }}
+                            >
+                              <MdHistory />
+                              {hoveredDateHistory?.milestoneId === milestone.id && (
+                                <div className="date-history-tooltip milestone-history">
+                                  <strong>Date History</strong>
+                                  <div className="history-list">
+                                    {getMilestoneDateHistory(milestone.id).map((entry, idx) => (
+                                      <div key={idx} className={`history-entry ${entry.wasOriginal ? 'original' : ''}`}>
+                                        <span className="history-date">{formatHistoryDate(entry.date)}</span>
+                                        {entry.wasOriginal && <span className="history-label">Original</span>}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                         {hoveredMilestone === milestone.id && (
                           <div className="milestone-tooltip">
@@ -358,6 +457,34 @@ const ProjectTimelinePanel = ({
                     onMouseLeave={() => setHoveredProject(null)}
                   >
                     <div className="terminus-circle" style={{ background: statusColor }} />
+                    {hasProjectDateMoved(project.id, 'end_date') && (
+                      <div
+                        className="date-history-icon end-icon"
+                        onMouseEnter={(e) => {
+                          e.stopPropagation();
+                          setHoveredDateHistory({ projectId: project.id, field: 'end_date' });
+                        }}
+                        onMouseLeave={(e) => {
+                          e.stopPropagation();
+                          setHoveredDateHistory(null);
+                        }}
+                      >
+                        <MdHistory />
+                        {hoveredDateHistory?.projectId === project.id && hoveredDateHistory?.field === 'end_date' && (
+                          <div className="date-history-tooltip end-tooltip">
+                            <strong>End Date History</strong>
+                            <div className="history-list">
+                              {getProjectDateHistory(project.id, 'end_date').map((entry, idx) => (
+                                <div key={idx} className={`history-entry ${entry.wasOriginal ? 'original' : ''}`}>
+                                  <span className="history-date">{formatHistoryDate(entry.date)}</span>
+                                  {entry.wasOriginal && <span className="history-label">Original</span>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {hoveredProject === project.id && (
                       <div className="project-tooltip">
                         <strong>{project.name}</strong>

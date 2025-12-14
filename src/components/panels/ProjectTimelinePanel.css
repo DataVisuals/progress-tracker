@@ -421,6 +421,141 @@
   margin-top: 2px;
 }
 
+/* Date History Icon */
+.date-history-icon {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  background: #6366f1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.date-history-icon.end-icon {
+  left: auto;
+  right: -2px;
+  transform: none;
+}
+
+.date-history-icon svg {
+  font-size: 9px;
+  color: white;
+}
+
+.date-history-icon:hover {
+  transform: translateX(-50%) scale(1.15);
+  background: #4f46e5;
+}
+
+.date-history-icon.end-icon:hover {
+  transform: scale(1.15);
+}
+
+/* Milestone History Icon */
+.milestone-history-icon {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 12px;
+  height: 12px;
+  background: #6366f1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.milestone-history-icon svg {
+  font-size: 8px;
+  color: white;
+}
+
+.milestone-history-icon:hover {
+  transform: scale(1.15);
+  background: #4f46e5;
+}
+
+/* Date History Tooltip */
+.date-history-tooltip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 10px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 300;
+  min-width: 120px;
+}
+
+.date-history-tooltip.end-tooltip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.date-history-tooltip.milestone-history {
+  left: auto;
+  right: -6px;
+  transform: none;
+}
+
+.date-history-tooltip strong {
+  display: block;
+  font-size: 11px;
+  margin-bottom: 6px;
+  color: #9ca3af;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  border-bottom: 1px solid #374151;
+}
+
+.history-entry:last-child {
+  border-bottom: none;
+}
+
+.history-entry.original {
+  color: #9ca3af;
+}
+
+.history-date {
+  font-weight: 500;
+}
+
+.history-label {
+  font-size: 8px;
+  background: #4b5563;
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: #d1d5db;
+}
+
 /* Today Marker - One per row to create continuous effect */
 .timeline-today-marker-row {
   position: absolute;

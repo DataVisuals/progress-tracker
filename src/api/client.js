@@ -197,6 +197,16 @@ export const api = {
     }
     return client.get(`/recent-changes?${params.toString()}`);
   },
+  getDateChanges: (tableName, recordIds, fields) => {
+    const params = new URLSearchParams({ table_name: tableName });
+    if (recordIds && recordIds.length > 0) {
+      params.append('record_ids', recordIds.join(','));
+    }
+    if (fields && fields.length > 0) {
+      params.append('fields', fields.join(','));
+    }
+    return client.get(`/date-changes?${params.toString()}`);
+  },
 
   // User Management
   getUsers: () => client.get('/users'),
