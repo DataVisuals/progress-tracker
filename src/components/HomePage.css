@@ -5301,7 +5301,7 @@ html.dark-mode .quadrant-content {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: 10000;
 }
 
 /* Icon Tab Bar - always visible */
@@ -5313,6 +5313,8 @@ html.dark-mode .quadrant-content {
   padding: 4px 12px;
   background: #f3f4f6;
   border-top: 1px solid #e5e7eb;
+  overflow: visible;
+  z-index: 200;
 }
 
 /* Vertical divider between regular and admin panels */
@@ -5339,8 +5341,9 @@ html.dark-mode .quadrant-content {
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.15s ease, color 0.15s ease, background 0.15s ease;
   color: #6b7280;
+  transform-origin: bottom center;
 }
 
 .minimized-tab:hover {
@@ -5410,9 +5413,9 @@ html.dark-mode .quadrant-content {
   visibility: hidden;
   transition: opacity 0.2s, visibility 0.2s;
   pointer-events: none;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 9999;
 }
 
 .tab-tooltip::after {

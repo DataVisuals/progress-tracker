@@ -158,6 +158,7 @@ const HomePage = ({
   const [allMilestones, setAllMilestones] = useState({}); // Milestones grouped by project ID
   const [hideInactiveProjects, setHideInactiveProjects] = useState(false); // Filter for active projects only
   const hoverTimeoutRef = useRef(null); // Timeout for hover delay
+  const dockPositionsRef = useRef(null); // Cache original dock button positions for smooth magnification
 
   // Check if current user is admin
   const isAdmin = currentUser?.role === 'admin';
@@ -1447,9 +1448,53 @@ const HomePage = ({
             )}
 
             {/* Icon tab bar - always visible at bottom */}
-            <div className="minimized-tabs">
+            <div
+              className="minimized-tabs"
+              onMouseEnter={(e) => {
+                // Cache original button positions before any transforms
+                const container = e.currentTarget;
+                const buttons = container.querySelectorAll('.minimized-tab');
+                const positions = [];
+                buttons.forEach((btn) => {
+                  const rect = btn.getBoundingClientRect();
+                  positions.push({
+                    centerX: rect.left + rect.width / 2,
+                    width: rect.width
+                  });
+                });
+                dockPositionsRef.current = positions;
+              }}
+              onMouseMove={(e) => {
+                const container = e.currentTarget;
+                const buttons = container.querySelectorAll('.minimized-tab');
+                const mouseX = e.clientX;
+
+                // Use cached positions to avoid feedback loop from transforms
+                const positions = dockPositionsRef.current;
+                if (!positions) return;
+
+                buttons.forEach((btn, idx) => {
+                  const pos = positions[idx];
+                  if (!pos) return;
+
+                  const distance = Math.abs(mouseX - pos.centerX);
+                  const maxDistance = 100;
+                  const scale = Math.max(1, 1.5 - (distance / maxDistance) * 0.5);
+                  const translateY = Math.max(0, (1.5 - scale) * -16);
+
+                  btn.style.transform = `scale(${scale}) translateY(${translateY}px)`;
+                });
+              }}
+              onMouseLeave={(e) => {
+                const buttons = e.currentTarget.querySelectorAll('.minimized-tab');
+                buttons.forEach((btn) => {
+                  btn.style.transform = '';
+                });
+                dockPositionsRef.current = null;
+              }}
+            >
               {/* Regular panels */}
-              {allPanels.filter(p => !p.adminOnly).map((panel) => {
+              {allPanels.filter(p => !p.adminOnly && !p.hiddenFromDock).map((panel) => {
                 const PanelIcon = panel.icon;
                 return (
                   <button

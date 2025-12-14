@@ -13,15 +13,16 @@ import {
 import { FaDatabase, FaSkullCrossbones } from 'react-icons/fa';
 
 // Panel configuration - defines all available panels
+// Order determines dock display order (timeline, inconsistencies, health first)
 export const PANEL_CONFIG = {
+  timeline: { id: 'timeline', name: 'Project Timeline', icon: MdDateRange, adminOnly: false, dockOnly: true },
+  inconsistencies: { id: 'inconsistencies', name: 'Inconsistencies', icon: FaSkullCrossbones, adminOnly: false },
+  projectHealth: { id: 'projectHealth', name: 'Project Health Rankings', icon: MdFavorite, adminOnly: false },
   heatmap: { id: 'heatmap', name: 'Most Viewed Projects', icon: MdVisibility, adminOnly: false },
   metrics: { id: 'metrics', name: 'Metrics at Risk', icon: MdFlag, adminOnly: false },
   commentary: { id: 'commentary', name: 'Recent Commentary', icon: MdComment, adminOnly: false },
   recentUpdates: { id: 'recentUpdates', name: 'Recent Updates', icon: MdUpdate, adminOnly: false },
-  inconsistencies: { id: 'inconsistencies', name: 'Inconsistencies', icon: FaSkullCrossbones, adminOnly: false },
-  attention: { id: 'attention', name: 'My Projects Needing Attention', icon: MdBuild, adminOnly: false },
-  projectHealth: { id: 'projectHealth', name: 'Project Health Rankings', icon: MdFavorite, adminOnly: false },
-  timeline: { id: 'timeline', name: 'Project Timeline', icon: MdDateRange, adminOnly: false, dockOnly: true },
+  attention: { id: 'attention', name: 'My Projects Needing Attention', icon: MdBuild, adminOnly: false, hiddenFromDock: true },
   audit: { id: 'audit', name: 'Audit Log', icon: MdHistory, adminOnly: true },
   activeUsers: { id: 'activeUsers', name: 'User Insights', icon: MdPeople, adminOnly: true },
   performance: { id: 'performance', name: 'Performance', icon: MdSpeed, adminOnly: true }
