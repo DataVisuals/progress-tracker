@@ -1613,8 +1613,7 @@
 
 /* Performance Panel with Database - Better Layout */
 .performance-quadrant .database-stats-content {
-  margin-bottom: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 24px;
   padding-bottom: 12px;
   flex: 0 0 auto;
   max-height: 45%;
@@ -1628,17 +1627,20 @@
   flex: 1;
   min-height: 0;
   max-height: 100%;
+  overflow: visible;
 }
 
 .performance-quadrant .db-main-content {
   flex: 1;
   min-height: 0;
   gap: 20px;
+  overflow: visible;
 }
 
 .performance-quadrant .db-chart-section {
   flex: 1.5;
   min-height: 0;
+  overflow: visible;
 }
 
 .performance-quadrant .db-tables-section {
@@ -1676,10 +1678,6 @@
   width: 8px;
   height: 8px;
   margin-right: 8px;
-}
-
-.dark-mode .performance-quadrant .database-stats-content {
-  border-bottom-color: #475569;
 }
 
 .dark-mode .performance-quadrant .db-section-title {
@@ -1853,6 +1851,25 @@
   max-width: 220px;
 }
 
+.db-tables-indexes-grid {
+  flex: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  overflow-y: auto;
+  min-width: 300px;
+}
+
+.db-tables-column,
+.db-indexes-column {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .db-section-title {
   font-size: 10px;
   font-weight: 600;
@@ -1871,13 +1888,28 @@
   border: 1px solid #e5e7eb;
 }
 
+.db-data-table.db-scrollable {
+  flex: 1;
+  min-height: 0;
+}
+
+.db-data-table.db-scrollable .db-table-body {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 150px;
+}
+
+.db-table-body .db-table-row:last-child {
+  border-bottom: none;
+}
+
 .db-table-header {
   display: grid;
   grid-template-columns: 1fr auto auto;
-  gap: 8px;
-  padding: 6px 10px;
+  gap: 6px;
+  padding: 4px 8px;
   background: #f3f4f6;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   color: #6b7280;
   text-transform: uppercase;
@@ -1888,9 +1920,9 @@
 .db-data-table .db-table-row {
   display: grid;
   grid-template-columns: 1fr auto auto;
-  gap: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
+  gap: 6px;
+  padding: 4px 8px;
+  font-size: 10px;
   border-bottom: 1px solid #f3f4f6;
   background: white;
 }
@@ -3490,10 +3522,32 @@ html.dark-mode .quadrant-content {
   gap: 12px;
 }
 
+.performance-quadrant .performance-stats {
+  gap: 12px;
+  padding: 0;
+  justify-content: center;
+  flex: 1;
+  align-items: center;
+}
+
+.performance-quadrant .perf-stat {
+  padding: 6px 12px;
+  min-width: 70px;
+}
+
+.performance-quadrant .perf-value {
+  font-size: 16px;
+}
+
+.performance-quadrant .perf-label {
+  font-size: 9px;
+}
+
 .performance-stats {
   display: flex;
   gap: 16px;
   padding: 8px 0;
+  justify-content: center;
 }
 
 .perf-stat {
@@ -3502,8 +3556,8 @@ html.dark-mode .quadrant-content {
   align-items: center;
   padding: 8px 16px;
   background: #f3f4f6;
-  border-radius: 8px;
-  min-width: 80px;
+  border-radius: 6px;
+  min-width: 70px;
 }
 
 .perf-stat.fast .perf-value {

@@ -305,7 +305,7 @@ const ProjectTimelinePanel = ({
                   <span className="project-name" title="">
                     {project.name}
                   </span>
-                  {hoveredProject === project.id && (
+                  {hoveredProject === project.id && !hoveredDateHistory && (
                     <div className="project-label-tooltip">
                       <strong>{project.name}</strong>
                       <span className="tooltip-date">
@@ -334,8 +334,16 @@ const ProjectTimelinePanel = ({
                   <div
                     className="tubemap-terminus start"
                     style={{ left: `${startPosition}%` }}
-                    onMouseEnter={() => setHoveredProject(project.id)}
-                    onMouseLeave={() => setHoveredProject(null)}
+                    onMouseEnter={(e) => {
+                      if (!e.target.closest('.date-history-icon')) {
+                        setHoveredProject(project.id);
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!e.target.closest('.date-history-icon')) {
+                        setHoveredProject(null);
+                      }
+                    }}
                   >
                     <div className="terminus-circle" style={{ background: statusColor }} />
                     {hasProjectDateMoved(project.id, 'start_date') && (
@@ -355,18 +363,32 @@ const ProjectTimelinePanel = ({
                           <div className="date-history-tooltip">
                             <strong>Start Date History</strong>
                             <div className="history-list">
-                              {getProjectDateHistory(project.id, 'start_date').map((entry, idx) => (
-                                <div key={idx} className={`history-entry ${entry.wasOriginal ? 'original' : ''}`}>
-                                  <span className="history-date">{formatHistoryDate(entry.date)}</span>
-                                  {entry.wasOriginal && <span className="history-label">Original</span>}
-                                </div>
-                              ))}
+                              {getProjectDateHistory(project.id, 'start_date').map((entry, idx, arr) => {
+                                const prevEntry = arr[idx + 1];
+                                let slippage = null;
+                                if (prevEntry && entry.date && prevEntry.date) {
+                                  const currentDate = new Date(entry.date);
+                                  const previousDate = new Date(prevEntry.date);
+                                  const diffDays = Math.round((currentDate - previousDate) / (1000 * 60 * 60 * 24));
+                                  if (diffDays !== 0) {
+                                    slippage = diffDays > 0 ? `+${diffDays}d` : `${diffDays}d`;
+                                  }
+                                }
+                                return (
+                                  <div key={idx} className={`history-entry ${entry.wasOriginal ? 'original' : ''}`}>
+                                    <span className="history-date">{formatHistoryDate(entry.date)}</span>
+                                    {entry.wasOriginal && <span className="history-label">Original</span>}
+                                    {!entry.wasOriginal && idx === 0 && <span className="history-label">Current</span>}
+                                    {slippage && <span className="history-slippage">{slippage}</span>}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}
                       </div>
                     )}
-                    {hoveredProject === project.id && (
+                    {hoveredProject === project.id && !hoveredDateHistory && (
                       <div className="project-tooltip start-tooltip">
                         <strong>{project.name}</strong>
                         {project.startDate && (
@@ -380,7 +402,7 @@ const ProjectTimelinePanel = ({
                   </div>
 
                   {/* Milestones */}
-                  {sortedMilestones.map((milestone) => {
+                  {sortedMilestones.map((milestone, idx) => {
                     const milestoneDate = new Date(milestone.target_date);
                     const milestonePosition = getPosition(milestoneDate);
                     const status = getMilestoneStatus(milestone);
@@ -394,13 +416,18 @@ const ProjectTimelinePanel = ({
                         key={milestone.id}
                         className={`tubemap-stop ${status}`}
                         style={{ left: `${milestonePosition}%` }}
+                        data-milestone-id={milestone.id}
                         onMouseEnter={(e) => {
                           e.stopPropagation();
-                          setHoveredMilestone(milestone.id);
+                          if (!e.target.closest('.milestone-history-icon')) {
+                            setHoveredMilestone(milestone.id);
+                          }
                         }}
                         onMouseLeave={(e) => {
                           e.stopPropagation();
-                          setHoveredMilestone(null);
+                          if (!e.target.closest('.milestone-history-icon')) {
+                            setHoveredMilestone(null);
+                          }
                         }}
                       >
                         <div className="stop-marker">
@@ -412,6 +439,7 @@ const ProjectTimelinePanel = ({
                           {milestoneMoved && (
                             <div
                               className="milestone-history-icon"
+                              data-milestone-id={milestone.id}
                               onMouseEnter={(e) => {
                                 e.stopPropagation();
                                 setHoveredDateHistory({ milestoneId: milestone.id });
@@ -426,19 +454,33 @@ const ProjectTimelinePanel = ({
                                 <div className="date-history-tooltip milestone-history">
                                   <strong>Date History</strong>
                                   <div className="history-list">
-                                    {getMilestoneDateHistory(milestone.id).map((entry, idx) => (
-                                      <div key={idx} className={`history-entry ${entry.wasOriginal ? 'original' : ''}`}>
-                                        <span className="history-date">{formatHistoryDate(entry.date)}</span>
-                                        {entry.wasOriginal && <span className="history-label">Original</span>}
-                                      </div>
-                                    ))}
+                                    {getMilestoneDateHistory(milestone.id).map((entry, idx, arr) => {
+                                      const prevEntry = arr[idx + 1];
+                                      let slippage = null;
+                                      if (prevEntry && entry.date && prevEntry.date) {
+                                        const currentDate = new Date(entry.date);
+                                        const previousDate = new Date(prevEntry.date);
+                                        const diffDays = Math.round((currentDate - previousDate) / (1000 * 60 * 60 * 24));
+                                        if (diffDays !== 0) {
+                                          slippage = diffDays > 0 ? `+${diffDays}d` : `${diffDays}d`;
+                                        }
+                                      }
+                                      return (
+                                        <div key={idx} className={`history-entry ${entry.wasOriginal ? 'original' : ''}`}>
+                                          <span className="history-date">{formatHistoryDate(entry.date)}</span>
+                                          {entry.wasOriginal && <span className="history-label">Original</span>}
+                                          {!entry.wasOriginal && idx === 0 && <span className="history-label">Current</span>}
+                                          {slippage && <span className="history-slippage">{slippage}</span>}
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               )}
                             </div>
                           )}
                         </div>
-                        {hoveredMilestone === milestone.id && (
+                        {hoveredMilestone === milestone.id && !hoveredDateHistory && (
                           <div className="milestone-tooltip">
                             <strong>{milestone.title}</strong>
                             <span>{formatDate(milestoneDate)}</span>
@@ -453,8 +495,16 @@ const ProjectTimelinePanel = ({
                   <div
                     className="tubemap-terminus end"
                     style={{ left: `${endPosition}%` }}
-                    onMouseEnter={() => setHoveredProject(project.id)}
-                    onMouseLeave={() => setHoveredProject(null)}
+                    onMouseEnter={(e) => {
+                      if (!e.target.closest('.date-history-icon')) {
+                        setHoveredProject(project.id);
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!e.target.closest('.date-history-icon')) {
+                        setHoveredProject(null);
+                      }
+                    }}
                   >
                     <div className="terminus-circle" style={{ background: statusColor }} />
                     {hasProjectDateMoved(project.id, 'end_date') && (
@@ -474,18 +524,32 @@ const ProjectTimelinePanel = ({
                           <div className="date-history-tooltip end-tooltip">
                             <strong>End Date History</strong>
                             <div className="history-list">
-                              {getProjectDateHistory(project.id, 'end_date').map((entry, idx) => (
-                                <div key={idx} className={`history-entry ${entry.wasOriginal ? 'original' : ''}`}>
-                                  <span className="history-date">{formatHistoryDate(entry.date)}</span>
-                                  {entry.wasOriginal && <span className="history-label">Original</span>}
-                                </div>
-                              ))}
+                              {getProjectDateHistory(project.id, 'end_date').map((entry, idx, arr) => {
+                                const prevEntry = arr[idx + 1];
+                                let slippage = null;
+                                if (prevEntry && entry.date && prevEntry.date) {
+                                  const currentDate = new Date(entry.date);
+                                  const previousDate = new Date(prevEntry.date);
+                                  const diffDays = Math.round((currentDate - previousDate) / (1000 * 60 * 60 * 24));
+                                  if (diffDays !== 0) {
+                                    slippage = diffDays > 0 ? `+${diffDays}d` : `${diffDays}d`;
+                                  }
+                                }
+                                return (
+                                  <div key={idx} className={`history-entry ${entry.wasOriginal ? 'original' : ''}`}>
+                                    <span className="history-date">{formatHistoryDate(entry.date)}</span>
+                                    {entry.wasOriginal && <span className="history-label">Original</span>}
+                                    {!entry.wasOriginal && idx === 0 && <span className="history-label">Current</span>}
+                                    {slippage && <span className="history-slippage">{slippage}</span>}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}
                       </div>
                     )}
-                    {hoveredProject === project.id && (
+                    {hoveredProject === project.id && !hoveredDateHistory && (
                       <div className="project-tooltip">
                         <strong>{project.name}</strong>
                         {project.startDate && (

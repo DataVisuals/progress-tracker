@@ -168,37 +168,16 @@ const PerformancePanel = ({
                   indexes: indexesByTable[t.name] || []
                 })) || [];
 
-                const renderLabel = ({ cx, cy, midAngle, outerRadius, innerRadius, displayName, percent, fill }) => {
+                const renderLabel = ({ cx, cy, midAngle, outerRadius, displayName, percent, fill }) => {
                   const RADIAN = Math.PI / 180;
                   const textColor = darkMode ? '#e5e7eb' : '#374151';
 
                   // Hide labels for tiny slices (less than 3%)
                   if (percent < 0.03) return null;
 
-                  // For large slices (>15%), show label inside the slice
-                  if (percent >= 0.15) {
-                    const midRadius = (innerRadius + outerRadius) / 2;
-                    const x = cx + midRadius * Math.cos(-midAngle * RADIAN);
-                    const y = cy + midRadius * Math.sin(-midAngle * RADIAN);
-                    return (
-                      <text
-                        x={x}
-                        y={y}
-                        fill="#ffffff"
-                        fontSize={9}
-                        fontWeight="600"
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
-                      >
-                        {displayName}
-                      </text>
-                    );
-                  }
-
-                  // For medium slices (3-15%), show label outside with leader line
-                  const outerLabelRadius = outerRadius * 1.15;
-                  const lineEndRadius = outerRadius * 1.05;
+                  // All labels outside the donut with leader line
+                  const outerLabelRadius = outerRadius * 1.25;
+                  const lineEndRadius = outerRadius * 1.08;
                   const x = cx + outerLabelRadius * Math.cos(-midAngle * RADIAN);
                   const y = cy + outerLabelRadius * Math.sin(-midAngle * RADIAN);
                   const lineStartX = cx + outerRadius * Math.cos(-midAngle * RADIAN);
@@ -239,8 +218,8 @@ const PerformancePanel = ({
                             data={chartData}
                             cx="50%"
                             cy="50%"
-                            innerRadius="50%"
-                            outerRadius="85%"
+                            innerRadius="35%"
+                            outerRadius="55%"
                             dataKey="value"
                             label={renderLabel}
                             labelLine={false}
@@ -267,41 +246,47 @@ const PerformancePanel = ({
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <div className="db-tables-section">
-                      <div className="db-section-title">Tables</div>
-                      <div className="db-data-table">
-                        <div className="db-table-header">
-                          <span>Name</span>
-                          <span>Rows</span>
-                          <span>Size</span>
-                        </div>
-                        {chartData.slice(0, forDock ? 12 : 5).map((table, idx) => (
-                          <div key={idx} className="db-table-row">
-                            <span className="db-table-name">
-                              <span className="db-color-dot" style={{ background: table.fill }} />
-                              {table.displayName}
-                            </span>
-                            <span className="db-table-rows">{table.rows?.toLocaleString()}</span>
-                            <span className="db-table-size">{table.sizeLabel}</span>
+                    <div className="db-tables-indexes-grid">
+                      <div className="db-tables-column">
+                        <div className="db-section-title">Tables</div>
+                        <div className="db-data-table db-scrollable">
+                          <div className="db-table-header">
+                            <span>Name</span>
+                            <span>Rows</span>
+                            <span>Size</span>
                           </div>
-                        ))}
+                          <div className="db-table-body">
+                            {chartData.map((table, idx) => (
+                              <div key={idx} className="db-table-row">
+                                <span className="db-table-name">
+                                  <span className="db-color-dot" style={{ background: table.fill }} />
+                                  {table.displayName}
+                                </span>
+                                <span className="db-table-rows">{table.rows?.toLocaleString()}</span>
+                                <span className="db-table-size">{table.sizeLabel}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                       {databaseStats.indexes?.length > 0 && (
-                        <>
+                        <div className="db-indexes-column">
                           <div className="db-section-title">Indexes</div>
-                          <div className="db-data-table db-index-table">
+                          <div className="db-data-table db-index-table db-scrollable">
                             <div className="db-table-header">
                               <span>Index</span>
                               <span>Table</span>
                             </div>
-                            {databaseStats.indexes.slice(0, forDock ? 10 : 4).map((idx, i) => (
-                              <div key={i} className="db-table-row">
-                                <span className="db-index-name">{idx.name}</span>
-                                <span className="db-index-table-name">{idx.tableName?.replace(/^(project_|user_|metric_)/, '')}</span>
-                              </div>
-                            ))}
+                            <div className="db-table-body">
+                              {databaseStats.indexes.map((idx, i) => (
+                                <div key={i} className="db-table-row">
+                                  <span className="db-index-name">{idx.name}</span>
+                                  <span className="db-index-table-name">{idx.tableName?.replace(/^(project_|user_|metric_)/, '')}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -365,30 +350,32 @@ const PerformancePanel = ({
               </div>
             )}
 
-            {/* Slowest Pages */}
-            <div className="performance-list">
-              <h4>Slowest Pages</h4>
-              {performanceData.slowestPages && performanceData.slowestPages.length > 0 ? (
-                performanceData.slowestPages.slice(0, forDock ? 20 : getDisplayLimit()).map((page, idx) => (
-                  <div
-                    key={page.path}
-                    className={`perf-row ${page.path.startsWith('Project: ') ? 'clickable' : ''}`}
-                    onClick={() => handlePageClick(page.path)}
-                  >
-                    <span className="perf-rank">{idx + 1}</span>
-                    <span className="perf-name" title={page.path}>
-                      {page.path.startsWith('Project: ') ? page.path.replace('Project: ', '') : page.path}
-                    </span>
-                    <span className={`perf-time ${getSpeedClass(page.avgLoadTime)}`}>
-                      {formatMs(page.avgLoadTime)}
-                    </span>
-                    <span className="perf-views">{page.views} views</span>
-                  </div>
-                ))
-              ) : (
-                <div className="empty-hint">Need more data (min 3 views per page)</div>
-              )}
-            </div>
+            {/* Slowest Pages - only show in dock view */}
+            {forDock && (
+              <div className="performance-list">
+                <h4>Slowest Pages</h4>
+                {performanceData.slowestPages && performanceData.slowestPages.length > 0 ? (
+                  performanceData.slowestPages.slice(0, 20).map((page, idx) => (
+                    <div
+                      key={page.path}
+                      className={`perf-row ${page.path.startsWith('Project: ') ? 'clickable' : ''}`}
+                      onClick={() => handlePageClick(page.path)}
+                    >
+                      <span className="perf-rank">{idx + 1}</span>
+                      <span className="perf-name" title={page.path}>
+                        {page.path.startsWith('Project: ') ? page.path.replace('Project: ', '') : page.path}
+                      </span>
+                      <span className={`perf-time ${getSpeedClass(page.avgLoadTime)}`}>
+                        {formatMs(page.avgLoadTime)}
+                      </span>
+                      <span className="perf-views">{page.views} views</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="empty-hint">Need more data (min 3 views per page)</div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>

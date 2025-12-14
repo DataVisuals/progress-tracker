@@ -83,10 +83,11 @@ const HomePage = ({
   setShowTipsModal,
   setSelectedTipsCategory,
   projectDateHistory = {},
-  milestoneDateHistory = {}
+  milestoneDateHistory: milestoneDateHistoryProp = {}
 }) => {
 
   const [recentCommentary, setRecentCommentary] = useState([]);
+  const [milestoneDateHistory, setMilestoneDateHistory] = useState(milestoneDateHistoryProp);
   const [atRiskMetrics, setAtRiskMetrics] = useState([]);
   const [upcomingMetrics, setUpcomingMetrics] = useState([]); // Metrics with upcoming updates needed
   const [ragFilter, setRagFilter] = useState('all'); // 'all', 'red', 'amber'
@@ -198,12 +199,20 @@ const HomePage = ({
 
         const results = await Promise.all(milestonePromises);
         const milestonesById = {};
+        const allMilestoneIds = [];
         results.forEach(({ projectId, milestones }) => {
           if (milestones.length > 0) {
             milestonesById[projectId] = milestones;
+            milestones.forEach(m => allMilestoneIds.push(m.id));
           }
         });
         setAllMilestones(milestonesById);
+
+        // Load date history for all milestones
+        if (allMilestoneIds.length > 0) {
+          const historyResponse = await api.getDateChanges('milestones', allMilestoneIds, ['target_date']);
+          setMilestoneDateHistory(historyResponse.data || {});
+        }
       } catch (err) {
         console.error('Failed to load milestones:', err);
       }

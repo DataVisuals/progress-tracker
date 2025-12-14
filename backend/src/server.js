@@ -6210,62 +6210,158 @@ function createApp(dbPath) {
 
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - days);
+      const retentionDays = 30; // Must match the aggregation job setting
+      const retentionCutoff = new Date();
+      retentionCutoff.setDate(retentionCutoff.getDate() - retentionDays);
 
-      // Overall average load time
+      // Overall average load time - combine detailed recent + aggregated historical data
       const overallStats = await dbGet(`
         SELECT
-          AVG(load_time_ms) as avg_load_time,
-          MIN(load_time_ms) as min_load_time,
-          MAX(load_time_ms) as max_load_time,
-          COUNT(*) as total_views,
-          COUNT(load_time_ms) as views_with_timing
-        FROM page_views
-        WHERE created_at >= ? AND load_time_ms IS NOT NULL
-      `, [daysAgo.toISOString()]);
+          SUM(total_avg * views_count) / NULLIF(SUM(views_count), 0) as avg_load_time,
+          MIN(min_load_time) as min_load_time,
+          MAX(max_load_time) as max_load_time,
+          SUM(total_views) as total_views,
+          SUM(views_count) as views_with_timing
+        FROM (
+          -- Recent detailed data
+          SELECT
+            AVG(load_time_ms) as total_avg,
+            MIN(load_time_ms) as min_load_time,
+            MAX(load_time_ms) as max_load_time,
+            COUNT(*) as total_views,
+            COUNT(load_time_ms) as views_count
+          FROM page_views
+          WHERE created_at >= ? AND load_time_ms IS NOT NULL
 
-      // Average load time by day (for trend chart)
+          UNION ALL
+
+          -- Historical aggregated data
+          SELECT
+            avg_load_time as total_avg,
+            min_load_time,
+            max_load_time,
+            total_views,
+            views_with_timing as views_count
+          FROM page_views_daily_summary
+          WHERE summary_date >= DATE(?) AND summary_date < DATE(?)
+          AND avg_load_time IS NOT NULL
+        )
+      `, [daysAgo.toISOString(), daysAgo.toISOString(), retentionCutoff.toISOString()]);
+
+      // Average load time by day - combine detailed recent + aggregated historical
       const dailyTrend = await dbAll(`
         SELECT
-          DATE(created_at) as date,
-          AVG(load_time_ms) as avg_load_time,
-          COUNT(*) as views
-        FROM page_views
-        WHERE created_at >= ? AND load_time_ms IS NOT NULL
-        GROUP BY DATE(created_at)
-        ORDER BY date
-      `, [daysAgo.toISOString()]);
+          date,
+          SUM(total_avg * views_count) / NULLIF(SUM(views_count), 0) as avg_load_time,
+          SUM(total_views) as views
+        FROM (
+          -- Recent detailed data
+          SELECT
+            DATE(created_at) as date,
+            AVG(load_time_ms) as total_avg,
+            COUNT(*) as total_views,
+            COUNT(load_time_ms) as views_count
+          FROM page_views
+          WHERE created_at >= ? AND load_time_ms IS NOT NULL
+          GROUP BY DATE(created_at)
 
-      // Top 10 slowest pages (by average load time, min 3 views)
+          UNION ALL
+
+          -- Historical aggregated data
+          SELECT
+            summary_date as date,
+            avg_load_time as total_avg,
+            total_views,
+            views_with_timing as views_count
+          FROM page_views_daily_summary
+          WHERE summary_date >= DATE(?) AND summary_date < DATE(?)
+          AND avg_load_time IS NOT NULL
+        )
+        GROUP BY date
+        ORDER BY date
+      `, [daysAgo.toISOString(), daysAgo.toISOString(), retentionCutoff.toISOString()]);
+
+      // Top 10 slowest pages - combine detailed recent + aggregated historical
       const slowestPages = await dbAll(`
         SELECT
           path,
-          AVG(load_time_ms) as avg_load_time,
-          MIN(load_time_ms) as min_load_time,
-          MAX(load_time_ms) as max_load_time,
-          COUNT(*) as views
-        FROM page_views
-        WHERE created_at >= ? AND load_time_ms IS NOT NULL
+          SUM(total_avg * views_count) / NULLIF(SUM(views_count), 0) as avg_load_time,
+          MIN(min_load_time) as min_load_time,
+          MAX(max_load_time) as max_load_time,
+          SUM(total_views) as views
+        FROM (
+          -- Recent detailed data
+          SELECT
+            path,
+            AVG(load_time_ms) as total_avg,
+            MIN(load_time_ms) as min_load_time,
+            MAX(load_time_ms) as max_load_time,
+            COUNT(*) as total_views,
+            COUNT(load_time_ms) as views_count
+          FROM page_views
+          WHERE created_at >= ? AND load_time_ms IS NOT NULL
+          GROUP BY path
+
+          UNION ALL
+
+          -- Historical aggregated data
+          SELECT
+            path,
+            avg_load_time as total_avg,
+            min_load_time,
+            max_load_time,
+            total_views,
+            views_with_timing as views_count
+          FROM page_views_path_summary
+          WHERE summary_date >= DATE(?) AND summary_date < DATE(?)
+          AND avg_load_time IS NOT NULL
+        )
         GROUP BY path
-        HAVING COUNT(*) >= 3
+        HAVING SUM(total_views) >= 3
         ORDER BY avg_load_time DESC
         LIMIT 10
-      `, [daysAgo.toISOString()]);
+      `, [daysAgo.toISOString(), daysAgo.toISOString(), retentionCutoff.toISOString()]);
 
-      // Top 10 fastest pages (by average load time, min 3 views)
+      // Top 10 fastest pages - combine detailed recent + aggregated historical
       const fastestPages = await dbAll(`
         SELECT
           path,
-          AVG(load_time_ms) as avg_load_time,
-          MIN(load_time_ms) as min_load_time,
-          MAX(load_time_ms) as max_load_time,
-          COUNT(*) as views
-        FROM page_views
-        WHERE created_at >= ? AND load_time_ms IS NOT NULL
+          SUM(total_avg * views_count) / NULLIF(SUM(views_count), 0) as avg_load_time,
+          MIN(min_load_time) as min_load_time,
+          MAX(max_load_time) as max_load_time,
+          SUM(total_views) as views
+        FROM (
+          -- Recent detailed data
+          SELECT
+            path,
+            AVG(load_time_ms) as total_avg,
+            MIN(load_time_ms) as min_load_time,
+            MAX(load_time_ms) as max_load_time,
+            COUNT(*) as total_views,
+            COUNT(load_time_ms) as views_count
+          FROM page_views
+          WHERE created_at >= ? AND load_time_ms IS NOT NULL
+          GROUP BY path
+
+          UNION ALL
+
+          -- Historical aggregated data
+          SELECT
+            path,
+            avg_load_time as total_avg,
+            min_load_time,
+            max_load_time,
+            total_views,
+            views_with_timing as views_count
+          FROM page_views_path_summary
+          WHERE summary_date >= DATE(?) AND summary_date < DATE(?)
+          AND avg_load_time IS NOT NULL
+        )
         GROUP BY path
-        HAVING COUNT(*) >= 3
+        HAVING SUM(total_views) >= 3
         ORDER BY avg_load_time ASC
         LIMIT 10
-      `, [daysAgo.toISOString()]);
+      `, [daysAgo.toISOString(), daysAgo.toISOString(), retentionCutoff.toISOString()]);
 
       const result = {
         overallStats: {
@@ -7848,7 +7944,7 @@ function createApp(dbPath) {
   });
 
   // Return app and database functions for use (server start moved outside)
-  return { app, PORT, dbRun, dbGet, dbAll, generateConsistencyFeedback };
+  return { app, PORT, dbRun, dbGet, dbAll, generateConsistencyFeedback, db };
 }
 
 // ===== DEFAULT INSTANCE AND SERVER START =====
@@ -7865,6 +7961,13 @@ if (process.env.NODE_ENV !== 'test') {
 
     // Start the daily export and consistency feedback schedulers
     startScheduler(generateConsistencyFeedback);
+
+    // Start the page_views aggregation job
+    const { schedulePageViewsAggregation } = require('./jobs/page-views-aggregation');
+    const retentionDays = parseInt(process.env.PAGE_VIEWS_RETENTION_DAYS) || 30;
+    const schedule = process.env.PAGE_VIEWS_AGGREGATION_SCHEDULE || '0 2 * * *'; // 2 AM daily by default
+
+    schedulePageViewsAggregation(defaultInstance.db, schedule, retentionDays);
   });
 }
 

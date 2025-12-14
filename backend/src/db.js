@@ -14,8 +14,8 @@ function initializeDatabase(dbPath = DEFAULT_DB_PATH) {
 
   const db = new sqlite3.Database(dbPath);
 
-  // Initialize schema v2 (normalized)
-  const schema = fs.readFileSync(path.join(__dirname, 'schema-v2.sql'), 'utf8');
+  // Initialize schema v3
+  const schema = fs.readFileSync(path.join(__dirname, 'schema-v3.sql'), 'utf8');
   db.exec(schema, (err) => {
     if (err) console.error('Schema initialization error:', err);
   });

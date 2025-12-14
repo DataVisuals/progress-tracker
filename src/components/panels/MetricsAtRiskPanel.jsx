@@ -34,12 +34,12 @@ const MetricsAtRiskPanel = ({
     const variance = getVariance(item.complete, item.expected);
     return (
       <div className="metric-stats">
-        <span className="stat-actual">{item.complete}</span>
+        <span className="stat-actual">{Number(item.complete).toFixed(2)}</span>
         <span className="stat-separator">of</span>
-        <span className="stat-expected">{item.expected}</span>
+        <span className="stat-expected">{Number(item.expected).toFixed(2)}</span>
         <span className="stat-separator">expected</span>
         <span className="stat-divider">·</span>
-        <span className="stat-target">{item.target}</span>
+        <span className="stat-target">{Number(item.target).toFixed(2)}</span>
         <span className="stat-separator">target</span>
         <span className={`stat-variance ${item.ragStatus}`}>({variance}% behind)</span>
       </div>
