@@ -8,7 +8,7 @@ import {
   MdPeople,
   MdSpeed,
   MdDateRange,
-  MdUpdate
+  MdFiberNew
 } from 'react-icons/md';
 import { FaDatabase, FaSkullCrossbones } from 'react-icons/fa';
 
@@ -21,7 +21,7 @@ export const PANEL_CONFIG = {
   heatmap: { id: 'heatmap', name: 'Most Viewed Projects', icon: MdVisibility, adminOnly: false },
   metrics: { id: 'metrics', name: 'Metrics at Risk', icon: MdFlag, adminOnly: false },
   commentary: { id: 'commentary', name: 'Recent Commentary', icon: MdComment, adminOnly: false },
-  recentUpdates: { id: 'recentUpdates', name: 'Recent Updates', icon: MdUpdate, adminOnly: false },
+  recentUpdates: { id: 'recentUpdates', name: 'Recent Updates', icon: MdFiberNew, adminOnly: false },
   attention: { id: 'attention', name: 'My Projects Needing Attention', icon: MdBuild, adminOnly: false, hiddenFromDock: true },
   audit: { id: 'audit', name: 'Audit Log', icon: MdHistory, adminOnly: true },
   activeUsers: { id: 'activeUsers', name: 'User Insights', icon: MdPeople, adminOnly: true },

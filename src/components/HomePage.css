@@ -6654,10 +6654,19 @@ html.dark-mode .quadrant-content {
 }
 
 /* ===== Recent Updates Panel ===== */
+.recent-updates-quadrant .quadrant-content {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
 .recent-updates-list {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: 8px 12px;
+  overflow-y: auto;
 }
 
 .recent-update-item {

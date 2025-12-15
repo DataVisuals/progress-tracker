@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { MdUpdate, MdAdd, MdEdit, MdRemove, MdChevronRight } from 'react-icons/md';
+import { MdFiberNew, MdAdd, MdEdit, MdRemove, MdChevronRight, MdUpdate } from 'react-icons/md';
 import { api } from '../../api/client';
 
 const RecentUpdatesPanel = ({
@@ -161,7 +161,7 @@ const RecentUpdatesPanel = ({
   return (
     <div key={panelId} className={`home-quadrant recent-updates-quadrant panel-${index + 1}`}>
       <div className="quadrant-header">
-        <MdUpdate className="quadrant-icon" />
+        <MdFiberNew className="quadrant-icon" />
         <h2>Recent Updates</h2>
       </div>
       <div className="quadrant-content">
@@ -169,7 +169,7 @@ const RecentUpdatesPanel = ({
           <div className="loading-state">Loading...</div>
         ) : groupedUpdates.length === 0 ? (
           <div className="empty-state">
-            <MdUpdate className="empty-icon" />
+            <MdFiberNew className="empty-icon" />
             <p>No recent updates</p>
           </div>
         ) : (
