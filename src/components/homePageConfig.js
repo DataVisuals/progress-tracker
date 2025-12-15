@@ -6,7 +6,7 @@ import {
   MdFavorite,
   MdHistory,
   MdPeople,
-  MdSpeed,
+  MdDirectionsRun,
   MdDateRange,
   MdFiberNew
 } from 'react-icons/md';
@@ -25,7 +25,7 @@ export const PANEL_CONFIG = {
   attention: { id: 'attention', name: 'My Projects Needing Attention', icon: MdBuild, adminOnly: false, hiddenFromDock: true },
   audit: { id: 'audit', name: 'Audit Log', icon: MdHistory, adminOnly: true },
   activeUsers: { id: 'activeUsers', name: 'User Insights', icon: MdPeople, adminOnly: true },
-  performance: { id: 'performance', name: 'Performance', icon: MdSpeed, adminOnly: true }
+  performance: { id: 'performance', name: 'Performance', icon: MdDirectionsRun, adminOnly: true }
 };
 
 // Layout configurations
