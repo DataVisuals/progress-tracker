@@ -126,7 +126,7 @@ const CommentaryPanel = ({
                 <div key={item.id || idx}>
                   <div className="commentary-item" onClick={() => onMetricClick(item.projectId, item.metricName)} style={{ padding: '6px 8px' }}>
                     <div className="commentary-header" style={{ gap: '4px', marginBottom: '2px', flexWrap: 'wrap' }}>
-                      <div className="commentary-context" style={{ fontSize: '11px' }}>
+                      <div className="commentary-context" style={{ fontSize: '12px' }}>
                         {item.portfolioColor && <span className="commentary-portfolio-dot" style={{ backgroundColor: item.portfolioColor, width: '6px', height: '6px' }} title={item.portfolioName || 'No Portfolio'} />}
                         <span className="commentary-project" style={{ fontWeight: 500 }}>{item.projectName}</span>
                         <span style={{ color: '#9ca3af' }}>·</span>
@@ -135,8 +135,8 @@ const CommentaryPanel = ({
                         <span className="commentary-period" style={{ color: '#6b7280' }}>{item.periodName}</span>
                       </div>
                     </div>
-                    <div className="commentary-text ql-editor" style={{ fontSize: '12px', lineHeight: '1.4', padding: '0', margin: '0' }} dangerouslySetInnerHTML={{ __html: item.commentary }} />
-                    <div className="commentary-footer" style={{ fontSize: '10px', marginTop: '2px', gap: '6px' }}>
+                    <div className="commentary-text ql-editor" style={{ fontSize: '13px', lineHeight: '1.4', padding: '0', margin: '0' }} dangerouslySetInnerHTML={{ __html: item.commentary }} />
+                    <div className="commentary-footer" style={{ fontSize: '11px', marginTop: '2px', gap: '6px' }}>
                       {item.createdBy && <span className="commentary-author">{item.createdBy}</span>}
                       <span className="commentary-time">{formatTimestamp(item.timestamp)}</span>
                       <ClarityIndicator text={stripHtml(item.commentary)} size="sm" compact />
