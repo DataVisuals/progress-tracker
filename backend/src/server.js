@@ -8557,6 +8557,15 @@ function createApp(dbPath) {
       }
     }
 
+    // Create default system admin if none exists
+    const existingSystemAdmin = await dbGet('SELECT id FROM users WHERE is_system_admin = 1');
+    if (!existingSystemAdmin) {
+      const hash = await hashPassword('admin123');
+      await dbRun('INSERT INTO users (email, name, password_hash, role, is_system_admin) VALUES (?, ?, ?, ?, ?)',
+        ['sysadmin@example.com', 'System Admin', hash, 'admin', 1]);
+      console.log('✅ Created default system admin: sysadmin@example.com / admin123');
+    }
+
     // Migration: Create space_admin_assignments table
     try {
       await dbRun(`CREATE TABLE IF NOT EXISTS space_admin_assignments (
