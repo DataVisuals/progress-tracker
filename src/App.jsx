@@ -146,11 +146,12 @@ function App() {
   const [showTokenWarning, setShowTokenWarning] = useState(false); // Show warning modal
 
   // React Query hooks for cached data fetching
+  // Note: Don't require isAuthenticated - app allows unauthenticated viewing
   const { data: cachedProjectData, refetch: refetchProjectData } = useProjectData(selectedProject, {
-    enabled: !!selectedProject && isAuthenticated,
+    enabled: !!selectedProject,
   });
   const { data: cachedProjectMetrics, refetch: refetchProjectMetrics } = useProjectMetrics(selectedProject, {
-    enabled: !!selectedProject && isAuthenticated,
+    enabled: !!selectedProject,
   });
   const { invalidateProject } = useInvalidateProjectQueries();
 
