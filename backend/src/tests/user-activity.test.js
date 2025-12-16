@@ -64,7 +64,9 @@ describe('User Activity Report API Tests', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         name: 'Activity Test Project',
-        description: 'Testing user activity'
+        description: 'Testing user activity',
+        start_date: '2025-01-01',
+        end_date: '2025-12-31'
       });
     testProjectId = projectResponse.body.id;
 

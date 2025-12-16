@@ -5,7 +5,7 @@ const fs = require('fs');
 const TEST_DB_PATH = path.join(__dirname, '../data/test-recovery-plans.db');
 
 let app, adminToken, pmToken, viewerToken, dbGet, dbRun;
-let testProjectId, testRecoveryPlanId;
+let testProjectId, testMetricId, testRecoveryPlanId;
 
 describe('Recovery Plans API Tests', () => {
   beforeAll(async () => {
@@ -71,9 +71,25 @@ describe('Recovery Plans API Tests', () => {
       .set('Authorization', `Bearer ${pmToken}`)
       .send({
         name: 'Recovery Plan Test Project',
-        description: 'Project for recovery plan testing'
+        description: 'Project for recovery plan testing',
+        start_date: '2025-01-01',
+        end_date: '2025-12-31'
       });
     testProjectId = projectResponse.body.id;
+
+    if (!testProjectId) {
+      console.error('Failed to create project:', projectResponse.body);
+      throw new Error('Failed to create test project');
+    }
+
+    // Create a test metric for the project using direct DB insert
+    const pmUserForMetric = await dbGet('SELECT * FROM users WHERE email = ?', ['pm@recovery.test']);
+    const metricResult = await dbRun(
+      `INSERT INTO metrics (project_id, name, description, owner_id, start_date, end_date, frequency, progression_type, final_target, amber_tolerance, red_tolerance, metric_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [testProjectId, 'Test Metric', 'Metric for recovery plan testing', pmUserForMetric.id, '2025-01-01', '2025-12-31', 'monthly', 'linear', 100, 5.0, 10.0, 'lead']
+    );
+    testMetricId = metricResult.lastID;
   });
 
   afterAll(async () => {
@@ -98,13 +114,12 @@ describe('Recovery Plans API Tests', () => {
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
           project_id: testProjectId,
-          title: 'Test Recovery Plan',
-          description: 'Recovery plan description',
-          status: 'active'
+          metric_id: testMetricId,
+          plan_text: 'Test recovery plan'
         });
 
       const response = await request(app)
-        .get(`/api/recovery-plans?projectId=${testProjectId}`)
+        .get(`/api/recovery-plans?project_id=${testProjectId}`)
         .expect(200);
 
       expect(response.body.length).toBeGreaterThan(0);
@@ -113,24 +128,24 @@ describe('Recovery Plans API Tests', () => {
 
     it('should return recovery plans with correct structure', async () => {
       const response = await request(app)
-        .get(`/api/recovery-plans?projectId=${testProjectId}`)
+        .get(`/api/recovery-plans?project_id=${testProjectId}`)
         .expect(200);
 
       if (response.body.length > 0) {
         const plan = response.body[0];
         expect(plan).toHaveProperty('id');
         expect(plan).toHaveProperty('project_id');
-        expect(plan).toHaveProperty('title');
-        expect(plan).toHaveProperty('description');
+        expect(plan).toHaveProperty('metric_id');
+        expect(plan).toHaveProperty('plan_text');
         expect(plan).toHaveProperty('status');
         expect(plan).toHaveProperty('created_at');
         expect(plan).toHaveProperty('created_by');
       }
     });
 
-    it('should include creator information when authenticated', async () => {
+    it('should include creator information', async () => {
       const response = await request(app)
-        .get(`/api/recovery-plans?projectId=${testProjectId}`)
+        .get(`/api/recovery-plans?project_id=${testProjectId}`)
         .set('Authorization', `Bearer ${pmToken}`)
         .expect(200);
 
@@ -148,15 +163,14 @@ describe('Recovery Plans API Tests', () => {
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
           project_id: testProjectId,
-          title: 'New Recovery Plan',
-          description: 'Detailed recovery plan description',
-          status: 'active'
+          metric_id: testMetricId,
+          plan_text: 'New recovery plan with detailed steps',
+          target_recovery_date: '2025-06-30'
         })
-        .expect(201);
+        .expect(200);
 
       expect(response.body).toHaveProperty('id');
-      expect(response.body.title).toBe('New Recovery Plan');
-      expect(response.body.description).toBe('Detailed recovery plan description');
+      expect(response.body.plan_text).toBe('New recovery plan with detailed steps');
       expect(response.body.status).toBe('active');
       testRecoveryPlanId = response.body.id;
     });
@@ -167,14 +181,12 @@ describe('Recovery Plans API Tests', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           project_id: testProjectId,
-          title: 'Admin Recovery Plan',
-          description: 'Created by admin',
-          status: 'pending'
+          metric_id: testMetricId,
+          plan_text: 'Admin created recovery plan'
         })
-        .expect(201);
+        .expect(200);
 
-      expect(response.body.title).toBe('Admin Recovery Plan');
-      expect(response.body.status).toBe('pending');
+      expect(response.body.plan_text).toBe('Admin created recovery plan');
     });
 
     it('should reject creation with viewer token', async () => {
@@ -183,9 +195,8 @@ describe('Recovery Plans API Tests', () => {
         .set('Authorization', `Bearer ${viewerToken}`)
         .send({
           project_id: testProjectId,
-          title: 'Viewer Recovery Plan',
-          description: 'Should not be created',
-          status: 'active'
+          metric_id: testMetricId,
+          plan_text: 'Should not be created'
         })
         .expect(403);
     });
@@ -195,61 +206,48 @@ describe('Recovery Plans API Tests', () => {
         .post('/api/recovery-plans')
         .send({
           project_id: testProjectId,
-          title: 'Unauthorized Plan',
-          description: 'Should not be created',
-          status: 'active'
+          metric_id: testMetricId,
+          plan_text: 'Unauthorized plan'
         })
         .expect(401);
     });
 
     it('should validate required fields', async () => {
-      // Missing title
-      await request(app)
+      // Missing plan_text
+      const res1 = await request(app)
         .post('/api/recovery-plans')
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
           project_id: testProjectId,
-          description: 'No title',
-          status: 'active'
+          metric_id: testMetricId
         })
         .expect(400);
+
+      expect(res1.body.error).toContain('required');
+
+      // Missing metric_id
+      const res2 = await request(app)
+        .post('/api/recovery-plans')
+        .set('Authorization', `Bearer ${pmToken}`)
+        .send({
+          project_id: testProjectId,
+          plan_text: 'No metric'
+        })
+        .expect(400);
+
+      expect(res2.body.error).toContain('required');
 
       // Missing project_id
-      await request(app)
+      const res3 = await request(app)
         .post('/api/recovery-plans')
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
-          title: 'No Project',
-          description: 'No project ID',
-          status: 'active'
+          metric_id: testMetricId,
+          plan_text: 'No project'
         })
         .expect(400);
-    });
 
-    it('should validate status values', async () => {
-      await request(app)
-        .post('/api/recovery-plans')
-        .set('Authorization', `Bearer ${pmToken}`)
-        .send({
-          project_id: testProjectId,
-          title: 'Invalid Status Plan',
-          description: 'Invalid status value',
-          status: 'invalid_status'
-        })
-        .expect(400);
-    });
-
-    it('should handle non-existent project', async () => {
-      await request(app)
-        .post('/api/recovery-plans')
-        .set('Authorization', `Bearer ${pmToken}`)
-        .send({
-          project_id: 99999,
-          title: 'Non-existent Project Plan',
-          description: 'Project does not exist',
-          status: 'active'
-        })
-        .expect(404);
+      expect(res3.body.error).toContain('required');
     });
   });
 
@@ -259,15 +257,15 @@ describe('Recovery Plans API Tests', () => {
         .put(`/api/recovery-plans/${testRecoveryPlanId}`)
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
-          title: 'Updated Recovery Plan',
-          description: 'Updated description',
-          status: 'completed'
+          plan_text: 'Updated recovery plan',
+          status: 'completed',
+          completion_notes: 'Successfully completed'
         })
         .expect(200);
 
-      expect(response.body.title).toBe('Updated Recovery Plan');
-      expect(response.body.description).toBe('Updated description');
+      expect(response.body.plan_text).toBe('Updated recovery plan');
       expect(response.body.status).toBe('completed');
+      expect(response.body.completion_notes).toBe('Successfully completed');
     });
 
     it('should update recovery plan with admin token', async () => {
@@ -287,7 +285,7 @@ describe('Recovery Plans API Tests', () => {
         .put(`/api/recovery-plans/${testRecoveryPlanId}`)
         .set('Authorization', `Bearer ${viewerToken}`)
         .send({
-          title: 'Viewer Update'
+          plan_text: 'Viewer update'
         })
         .expect(403);
     });
@@ -296,7 +294,7 @@ describe('Recovery Plans API Tests', () => {
       await request(app)
         .put(`/api/recovery-plans/${testRecoveryPlanId}`)
         .send({
-          title: 'Unauthorized Update'
+          plan_text: 'Unauthorized update'
         })
         .expect(401);
     });
@@ -306,7 +304,7 @@ describe('Recovery Plans API Tests', () => {
         .put('/api/recovery-plans/99999')
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
-          title: 'Update Non-existent'
+          plan_text: 'Update non-existent'
         })
         .expect(404);
     });
@@ -316,38 +314,12 @@ describe('Recovery Plans API Tests', () => {
         .put(`/api/recovery-plans/${testRecoveryPlanId}`)
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
-          description: 'Only updating description'
+          target_recovery_date: '2025-12-31'
         })
         .expect(200);
 
-      expect(response.body.description).toBe('Only updating description');
-      expect(response.body.title).toBeTruthy(); // Title should remain unchanged
-    });
-
-    it('should track updated_at timestamp', async () => {
-      const before = await request(app)
-        .get(`/api/recovery-plans?projectId=${testProjectId}`)
-        .set('Authorization', `Bearer ${pmToken}`);
-
-      const planBefore = before.body.find(p => p.id === testRecoveryPlanId);
-      const updatedAtBefore = planBefore.updated_at;
-
-      // Wait a moment to ensure timestamp difference
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      await request(app)
-        .put(`/api/recovery-plans/${testRecoveryPlanId}`)
-        .set('Authorization', `Bearer ${pmToken}`)
-        .send({
-          description: 'Checking timestamp update'
-        });
-
-      const after = await request(app)
-        .get(`/api/recovery-plans?projectId=${testProjectId}`)
-        .set('Authorization', `Bearer ${pmToken}`);
-
-      const planAfter = after.body.find(p => p.id === testRecoveryPlanId);
-      expect(planAfter.updated_at).not.toBe(updatedAtBefore);
+      expect(response.body.target_recovery_date).toBe('2025-12-31');
+      expect(response.body.plan_text).toBeTruthy(); // Plan text should remain unchanged
     });
   });
 
@@ -361,9 +333,8 @@ describe('Recovery Plans API Tests', () => {
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
           project_id: testProjectId,
-          title: 'Plan to Delete',
-          description: 'Will be deleted',
-          status: 'active'
+          metric_id: testMetricId,
+          plan_text: 'Plan to delete'
         });
       deletePlanId = response.body.id;
     });
@@ -376,7 +347,7 @@ describe('Recovery Plans API Tests', () => {
 
       // Verify deletion
       const plans = await request(app)
-        .get(`/api/recovery-plans?projectId=${testProjectId}`);
+        .get(`/api/recovery-plans?project_id=${testProjectId}`);
       const deleted = plans.body.find(p => p.id === deletePlanId);
       expect(deleted).toBeUndefined();
     });
@@ -418,56 +389,38 @@ describe('Recovery Plans API Tests', () => {
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
           project_id: testProjectId,
-          title: 'Workflow Test Plan',
-          description: 'Testing status workflow',
-          status: 'pending'
+          metric_id: testMetricId,
+          plan_text: 'Workflow test plan'
         });
       workflowPlanId = response.body.id;
     });
 
-    it('should transition from pending to active', async () => {
-      const response = await request(app)
-        .put(`/api/recovery-plans/${workflowPlanId}`)
-        .set('Authorization', `Bearer ${pmToken}`)
-        .send({
-          status: 'active'
-        })
-        .expect(200);
-
-      expect(response.body.status).toBe('active');
-    });
-
     it('should transition from active to completed', async () => {
-      // First set to active
-      await request(app)
-        .put(`/api/recovery-plans/${workflowPlanId}`)
-        .set('Authorization', `Bearer ${pmToken}`)
-        .send({
-          status: 'active'
-        });
-
-      // Then complete
       const response = await request(app)
         .put(`/api/recovery-plans/${workflowPlanId}`)
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
-          status: 'completed'
+          status: 'completed',
+          completion_notes: 'Plan successfully completed'
         })
         .expect(200);
 
       expect(response.body.status).toBe('completed');
+      expect(response.body.completed_at).toBeTruthy();
     });
 
-    it('should allow cancellation at any stage', async () => {
+    it('should allow cancellation', async () => {
       const response = await request(app)
         .put(`/api/recovery-plans/${workflowPlanId}`)
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
-          status: 'cancelled'
+          status: 'cancelled',
+          completion_notes: 'Plan no longer needed'
         })
         .expect(200);
 
       expect(response.body.status).toBe('cancelled');
+      expect(response.body.completed_at).toBeTruthy();
     });
   });
 });

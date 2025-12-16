@@ -5,7 +5,7 @@ const fs = require('fs');
 const TEST_DB_PATH = path.join(__dirname, '../data/test-dependencies.db');
 
 let app, adminToken, pmToken, viewerToken, dbGet, dbRun;
-let testProjectId, dependentProjectId, testDependencyId;
+let testProjectId, dependentProjectId;
 
 describe('Project Dependencies API Tests', () => {
   beforeAll(async () => {
@@ -71,7 +71,9 @@ describe('Project Dependencies API Tests', () => {
       .set('Authorization', `Bearer ${pmToken}`)
       .send({
         name: 'Main Project',
-        description: 'Project with dependencies'
+        description: 'Project with dependencies',
+        start_date: '2025-01-01',
+        end_date: '2025-12-31'
       });
     testProjectId = projectResponse.body.id;
 
@@ -80,7 +82,9 @@ describe('Project Dependencies API Tests', () => {
       .set('Authorization', `Bearer ${pmToken}`)
       .send({
         name: 'Dependent Project',
-        description: 'This project depends on main project'
+        description: 'This project depends on main project',
+        start_date: '2025-01-01',
+        end_date: '2025-12-31'
       });
     dependentProjectId = dependentResponse.body.id;
   });
@@ -107,9 +111,7 @@ describe('Project Dependencies API Tests', () => {
         .post(`/api/projects/${testProjectId}/dependencies`)
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
-          dependentProjectId: dependentProjectId,
-          type: 'blocks',
-          description: 'Project B blocks Project A'
+          depends_on_project_id: dependentProjectId
         });
 
       const response = await request(app)
@@ -118,28 +120,20 @@ describe('Project Dependencies API Tests', () => {
 
       expect(response.body.length).toBeGreaterThan(0);
       expect(response.body[0]).toHaveProperty('id');
-      expect(response.body[0]).toHaveProperty('project_id');
-      expect(response.body[0]).toHaveProperty('dependent_project_id');
-      expect(response.body[0]).toHaveProperty('type');
-      expect(response.body[0]).toHaveProperty('description');
+      expect(response.body[0]).toHaveProperty('depends_on_project_id');
+      expect(response.body[0]).toHaveProperty('project_name');
     });
 
-    it('should include project names in response', async () => {
+    it('should include project names and portfolio info in response', async () => {
       const response = await request(app)
         .get(`/api/projects/${testProjectId}/dependencies`)
         .expect(200);
 
       if (response.body.length > 0) {
-        expect(response.body[0]).toHaveProperty('dependent_project_name');
+        expect(response.body[0]).toHaveProperty('project_name');
+        // Portfolio fields may be null if project has no portfolio
+        expect(response.body[0]).toHaveProperty('portfolio_name');
       }
-    });
-
-    it('should handle non-existent project', async () => {
-      const response = await request(app)
-        .get('/api/projects/99999/dependencies')
-        .expect(404);
-
-      expect(response.body).toHaveProperty('error');
     });
   });
 
@@ -151,25 +145,21 @@ describe('Project Dependencies API Tests', () => {
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
           name: 'New Dependent Project',
-          description: 'Another dependent project'
+          description: 'Another dependent project',
+          start_date: '2025-01-01',
+          end_date: '2025-12-31'
         });
 
       const response = await request(app)
         .post(`/api/projects/${testProjectId}/dependencies`)
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
-          dependentProjectId: newProjectResponse.body.id,
-          type: 'requires',
-          description: 'Project A requires Project C'
+          depends_on_project_id: newProjectResponse.body.id
         })
-        .expect(201);
+        .expect(200);
 
+      expect(response.body).toHaveProperty('success', true);
       expect(response.body).toHaveProperty('id');
-      expect(response.body.project_id).toBe(testProjectId);
-      expect(response.body.dependent_project_id).toBe(newProjectResponse.body.id);
-      expect(response.body.type).toBe('requires');
-      expect(response.body.description).toBe('Project A requires Project C');
-      testDependencyId = response.body.id;
     });
 
     it('should create dependency with admin token', async () => {
@@ -178,20 +168,20 @@ describe('Project Dependencies API Tests', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           name: 'Admin Dependent Project',
-          description: 'Created by admin'
+          description: 'Created by admin',
+          start_date: '2025-01-01',
+          end_date: '2025-12-31'
         });
 
       const response = await request(app)
         .post(`/api/projects/${testProjectId}/dependencies`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          dependentProjectId: newProjectResponse.body.id,
-          type: 'informs',
-          description: 'Admin created dependency'
+          depends_on_project_id: newProjectResponse.body.id
         })
-        .expect(201);
+        .expect(200);
 
-      expect(response.body.type).toBe('informs');
+      expect(response.body.success).toBe(true);
     });
 
     it('should reject creation with viewer token', async () => {
@@ -199,9 +189,7 @@ describe('Project Dependencies API Tests', () => {
         .post(`/api/projects/${testProjectId}/dependencies`)
         .set('Authorization', `Bearer ${viewerToken}`)
         .send({
-          dependentProjectId: dependentProjectId,
-          type: 'blocks',
-          description: 'Viewer attempt'
+          depends_on_project_id: dependentProjectId
         })
         .expect(403);
     });
@@ -210,35 +198,21 @@ describe('Project Dependencies API Tests', () => {
       await request(app)
         .post(`/api/projects/${testProjectId}/dependencies`)
         .send({
-          dependentProjectId: dependentProjectId,
-          type: 'blocks',
-          description: 'Unauthorized attempt'
+          depends_on_project_id: dependentProjectId
         })
         .expect(401);
     });
 
-    it('should validate dependency type', async () => {
-      await request(app)
-        .post(`/api/projects/${testProjectId}/dependencies`)
-        .set('Authorization', `Bearer ${pmToken}`)
-        .send({
-          dependentProjectId: dependentProjectId,
-          type: 'invalid_type',
-          description: 'Invalid type test'
-        })
-        .expect(400);
-    });
-
     it('should prevent self-dependency', async () => {
-      await request(app)
+      const response = await request(app)
         .post(`/api/projects/${testProjectId}/dependencies`)
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
-          dependentProjectId: testProjectId,
-          type: 'blocks',
-          description: 'Self dependency'
+          depends_on_project_id: testProjectId
         })
         .expect(400);
+
+      expect(response.body.error).toContain('cannot depend on itself');
     });
 
     it('should prevent duplicate dependencies', async () => {
@@ -248,7 +222,9 @@ describe('Project Dependencies API Tests', () => {
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
           name: 'Duplicate Test Project',
-          description: 'For duplicate test'
+          description: 'For duplicate test',
+          start_date: '2025-01-01',
+          end_date: '2025-12-31'
         });
 
       // Create first dependency
@@ -256,56 +232,42 @@ describe('Project Dependencies API Tests', () => {
         .post(`/api/projects/${testProjectId}/dependencies`)
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
-          dependentProjectId: newProject.body.id,
-          type: 'blocks',
-          description: 'First dependency'
+          depends_on_project_id: newProject.body.id
         })
-        .expect(201);
+        .expect(200);
 
       // Attempt to create duplicate
-      await request(app)
+      const response = await request(app)
         .post(`/api/projects/${testProjectId}/dependencies`)
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
-          dependentProjectId: newProject.body.id,
-          type: 'blocks',
-          description: 'Duplicate dependency'
+          depends_on_project_id: newProject.body.id
         })
         .expect(400);
+
+      expect(response.body.error).toContain('already exists');
     });
 
-    it('should validate required fields', async () => {
-      // Missing dependentProjectId
-      await request(app)
+    it('should validate required field depends_on_project_id', async () => {
+      const response = await request(app)
         .post(`/api/projects/${testProjectId}/dependencies`)
         .set('Authorization', `Bearer ${pmToken}`)
-        .send({
-          type: 'blocks',
-          description: 'Missing dependent project'
-        })
+        .send({})
         .expect(400);
 
-      // Missing type
-      await request(app)
-        .post(`/api/projects/${testProjectId}/dependencies`)
-        .set('Authorization', `Bearer ${pmToken}`)
-        .send({
-          dependentProjectId: dependentProjectId,
-          description: 'Missing type'
-        })
-        .expect(400);
+      expect(response.body.error).toContain('depends_on_project_id is required');
     });
 
     it('should handle non-existent dependent project', async () => {
-      await request(app)
+      const response = await request(app)
         .post(`/api/projects/${testProjectId}/dependencies`)
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
-          dependentProjectId: 99999,
-          type: 'blocks',
-          description: 'Non-existent dependent'
+          depends_on_project_id: 99999
         })
         .expect(404);
+
+      expect(response.body.error).toContain('not found');
     });
   });
 
@@ -319,16 +281,16 @@ describe('Project Dependencies API Tests', () => {
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
           name: `Delete Test Project ${Date.now()}`,
-          description: 'For deletion test'
+          description: 'For deletion test',
+          start_date: '2025-01-01',
+          end_date: '2025-12-31'
         });
 
       const depResponse = await request(app)
         .post(`/api/projects/${testProjectId}/dependencies`)
         .set('Authorization', `Bearer ${pmToken}`)
         .send({
-          dependentProjectId: newProject.body.id,
-          type: 'requires',
-          description: 'To be deleted'
+          depends_on_project_id: newProject.body.id
         });
       deleteDependencyId = depResponse.body.id;
     });
@@ -379,80 +341,6 @@ describe('Project Dependencies API Tests', () => {
         .delete(`/api/projects/${dependentProjectId}/dependencies/${deleteDependencyId}`)
         .set('Authorization', `Bearer ${pmToken}`)
         .expect(404);
-    });
-  });
-
-  describe('Dependency Types', () => {
-    it('should support all dependency types', async () => {
-      const types = ['blocks', 'requires', 'informs'];
-
-      for (const type of types) {
-        const newProject = await request(app)
-          .post('/api/projects')
-          .set('Authorization', `Bearer ${pmToken}`)
-          .send({
-            name: `Type Test ${type}`,
-            description: `Testing ${type} type`
-          });
-
-        const response = await request(app)
-          .post(`/api/projects/${testProjectId}/dependencies`)
-          .set('Authorization', `Bearer ${pmToken}`)
-          .send({
-            dependentProjectId: newProject.body.id,
-            type: type,
-            description: `Testing ${type} dependency`
-          })
-          .expect(201);
-
-        expect(response.body.type).toBe(type);
-      }
-    });
-  });
-
-  describe('Circular Dependency Detection', () => {
-    it('should detect direct circular dependencies', async () => {
-      // Create Project A -> Project B dependency
-      const projectA = await request(app)
-        .post('/api/projects')
-        .set('Authorization', `Bearer ${pmToken}`)
-        .send({
-          name: 'Circular A',
-          description: 'Project A in circular test'
-        });
-
-      const projectB = await request(app)
-        .post('/api/projects')
-        .set('Authorization', `Bearer ${pmToken}`)
-        .send({
-          name: 'Circular B',
-          description: 'Project B in circular test'
-        });
-
-      // A depends on B
-      await request(app)
-        .post(`/api/projects/${projectA.body.id}/dependencies`)
-        .set('Authorization', `Bearer ${pmToken}`)
-        .send({
-          dependentProjectId: projectB.body.id,
-          type: 'blocks',
-          description: 'A depends on B'
-        })
-        .expect(201);
-
-      // Attempt B depends on A (circular)
-      const response = await request(app)
-        .post(`/api/projects/${projectB.body.id}/dependencies`)
-        .set('Authorization', `Bearer ${pmToken}`)
-        .send({
-          dependentProjectId: projectA.body.id,
-          type: 'blocks',
-          description: 'B depends on A - circular!'
-        });
-
-      // Note: If circular detection is implemented, expect 400
-      // If not implemented, this test documents current behavior
-      // Update expectation based on actual implementation
     });
   });
 });

@@ -29,7 +29,9 @@ const ACCEPTABLE_ABBREVIATIONS = [
   'UK', 'US', 'USA', 'EU', 'UN', 'CEO', 'CTO', 'CFO', 'COO', 'HR', 'IT',
   'PM', 'AM', 'ID', 'OK', 'PDF', 'API', 'URL', 'SQL', 'CSS', 'HTML', 'JSON',
   'MB', 'GB', 'TB', 'KB', 'USD', 'GBP', 'EUR', 'Q1', 'Q2', 'Q3', 'Q4',
-  'FY', 'YTD', 'MTD', 'RAG', 'KPI', 'ROI', 'P&L', 'BAU', 'UAT', 'SLA'
+  'FY', 'YTD', 'MTD', 'RAG', 'KPI', 'ROI', 'P&L', 'BAU', 'UAT', 'SLA',
+  // Common status color words (not acronyms, but often written uppercase)
+  'RED', 'AMBER', 'GREEN'
 ];
 
 /**

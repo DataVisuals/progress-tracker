@@ -519,15 +519,26 @@ function createApp(dbPath) {
   // Update user's default space
   app.put('/api/auth/default-space', authenticateToken, async (req, res) => {
     try {
-      const { default_space_id } = req.body;
-      const userId = req.user.id;
+      const { spaceId } = req.body;
+      const userId = req.user.userId;
+
+      // Validate spaceId is provided
+      if (spaceId === undefined || spaceId === null) {
+        return res.status(400).json({ error: 'spaceId is required' });
+      }
+
+      // Verify the space exists
+      const space = await dbGet('SELECT id FROM spaces WHERE id = ?', [spaceId]);
+      if (!space) {
+        return res.status(404).json({ error: 'Space not found' });
+      }
 
       await dbRun(
         'UPDATE users SET default_space_id = ? WHERE id = ?',
-        [default_space_id || null, userId]
+        [spaceId, userId]
       );
 
-      res.json({ success: true, default_space_id });
+      res.json({ message: 'Default space updated successfully', default_space_id: spaceId });
     } catch (err) {
       console.error('Update default space error:', err);
       res.status(500).json({ error: 'Failed to update default space' });
@@ -557,6 +568,12 @@ function createApp(dbPath) {
 
       if (!isAdmin(req.user)) {
         return res.status(403).json({ error: 'Only admins can create spaces' });
+      }
+
+      // Check for duplicate space name
+      const existingSpace = await dbGet('SELECT id FROM spaces WHERE name = ?', [name]);
+      if (existingSpace) {
+        return res.status(400).json({ error: 'A space with this name already exists' });
       }
 
       const result = await dbRun(
@@ -982,6 +999,14 @@ function createApp(dbPath) {
             }
           }
 
+          // Build trend data from the last 6 periods (or all if less than 6)
+          const trendData = periods.slice(-6).map(p => ({
+            reporting_date: p.reporting_date,
+            complete: p.complete,
+            expected: p.expected,
+            target: p.target
+          }));
+
           metricsWithStatus.push({
             id: metric.id,
             name: metric.name,
@@ -992,7 +1017,8 @@ function createApp(dbPath) {
             expected: currentPeriod.expected,
             reporting_date: currentPeriod.reporting_date,
             latestComment,
-            missesTarget
+            missesTarget,
+            trendData
           });
         }
 
@@ -1234,6 +1260,14 @@ function createApp(dbPath) {
             }
           }
 
+          // Build trend data from the last 6 periods (or all if less than 6)
+          const trendData = periods.slice(-6).map(p => ({
+            reporting_date: p.reporting_date,
+            complete: p.complete,
+            expected: p.expected,
+            target: p.target
+          }));
+
           metricsWithStatus.push({
             id: metric.id,
             name: metric.name,
@@ -1244,7 +1278,8 @@ function createApp(dbPath) {
             expected: currentPeriod.expected,
             reporting_date: currentPeriod.reporting_date,
             latestComment,
-            missesTarget
+            missesTarget,
+            trendData
           });
         }
 
@@ -1521,6 +1556,14 @@ function createApp(dbPath) {
             }
           }
 
+          // Build trend data from the last 6 periods (or all if less than 6)
+          const trendData = periods.slice(-6).map(p => ({
+            reporting_date: p.reporting_date,
+            complete: p.complete,
+            expected: p.expected,
+            target: p.target
+          }));
+
           metricsWithStatus.push({
             id: metric.id,
             name: metric.name,
@@ -1531,7 +1574,8 @@ function createApp(dbPath) {
             expected: currentPeriod.expected,
             reporting_date: currentPeriod.reporting_date,
             latestComment,
-            missesTarget
+            missesTarget,
+            trendData
           });
         }
 
@@ -1693,7 +1737,7 @@ function createApp(dbPath) {
         return res.status(400).json({ error: 'User not found' });
       }
 
-      // Get unresolved feedback for projects where user is initiative_manager or secondary_pm
+      // Get unresolved feedback for projects where user is initiative_manager, secondary_pm, or portfolio manager
       const feedback = await dbAll(`
         SELECT f.*,
                u.name as user_name,
@@ -1701,17 +1745,19 @@ function createApp(dbPath) {
                p.name as project_name,
                p.id as project_id,
                r.name as responder_name,
-               s.name as resolver_name
+               s.name as resolver_name,
+               port.name as portfolio_name
         FROM feedback f
         JOIN projects p ON f.project_id = p.id
+        LEFT JOIN portfolios port ON p.portfolio_id = port.id
         LEFT JOIN users u ON f.user_id = u.id
         LEFT JOIN users r ON f.responded_by = r.id
         LEFT JOIN users s ON f.resolved_by = s.id
-        WHERE (p.initiative_manager = ? OR p.secondary_pm = ?)
+        WHERE (p.initiative_manager = ? OR p.secondary_pm = ? OR port.manager_id = ?)
           AND f.status != 'resolved'
         ORDER BY f.created_at DESC
         LIMIT ?
-      `, [userName, userName, parseInt(limit)]);
+      `, [userName, userName, req.user.id, parseInt(limit)]);
 
       res.json(feedback);
     } catch (err) {
@@ -5254,15 +5300,18 @@ function createApp(dbPath) {
       // TODO: Implement RAG status calculation for metrics without recovery plans
       // For now, just check other types of inconsistencies
 
-      // 1. Projects without descriptions (include both primary and secondary PM)
+      // 1. Projects without descriptions (include primary PM, secondary PM, and portfolio manager)
       const projectsWithoutDesc = await dbAll(`
         SELECT
           p.id as project_id,
           p.name as project_name,
           p.initiative_manager as pm_name,
           p.secondary_pm,
+          u.name as portfolio_manager_name,
           p.created_at as first_detected
         FROM projects p
+        LEFT JOIN portfolios port ON p.portfolio_id = port.id
+        LEFT JOIN users u ON port.manager_id = u.id
         WHERE p.description IS NULL OR p.description = ''
         ORDER BY p.initiative_manager, p.name
       `);
@@ -5298,9 +5347,24 @@ function createApp(dbPath) {
             age_days: Math.floor((Date.now() - new Date(project.first_detected)) / (1000 * 60 * 60 * 24))
           });
         }
+        // Add for portfolio manager if different from primary and secondary PM
+        if (project.portfolio_manager_name && project.portfolio_manager_name !== project.pm_name && project.portfolio_manager_name !== project.secondary_pm) {
+          inconsistencies.push({
+            type: 'missing_project_description',
+            severity: 'low',
+            pm_name: project.portfolio_manager_name,
+            project_id: project.project_id,
+            project_name: project.project_name,
+            metric_id: null,
+            metric_name: null,
+            details: 'Project missing description',
+            first_detected: project.first_detected,
+            age_days: Math.floor((Date.now() - new Date(project.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
       }
 
-      // 2. Metrics without descriptions (include both primary and secondary PM)
+      // 2. Metrics without descriptions (include primary PM, secondary PM, and portfolio manager)
       const metricsWithoutDescriptions = await dbAll(`
         SELECT
           m.id as metric_id,
@@ -5309,9 +5373,12 @@ function createApp(dbPath) {
           p.name as project_name,
           p.initiative_manager as pm_name,
           p.secondary_pm,
+          u.name as portfolio_manager_name,
           m.created_at as first_detected
         FROM metrics m
         JOIN projects p ON m.project_id = p.id
+        LEFT JOIN portfolios port ON p.portfolio_id = port.id
+        LEFT JOIN users u ON port.manager_id = u.id
         WHERE m.description IS NULL OR TRIM(m.description) = ''
         ORDER BY p.initiative_manager, p.name, m.name
       `);
@@ -5345,18 +5412,36 @@ function createApp(dbPath) {
             age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
           });
         }
+        // Add for portfolio manager if different from primary and secondary PM
+        if (metric.portfolio_manager_name && metric.portfolio_manager_name !== metric.pm_name && metric.portfolio_manager_name !== metric.secondary_pm) {
+          inconsistencies.push({
+            type: 'missing_metric_description',
+            severity: 'low',
+            pm_name: metric.portfolio_manager_name,
+            project_id: metric.project_id,
+            project_name: metric.project_name,
+            metric_id: metric.metric_id,
+            metric_name: metric.metric_name,
+            details: 'Metric missing description',
+            first_detected: metric.first_detected,
+            age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
       }
 
-      // 3. Projects without documentation links (include both primary and secondary PM)
+      // 3. Projects without documentation links (include primary PM, secondary PM, and portfolio manager)
       const projectsWithoutDocs = await dbAll(`
         SELECT
           p.id as project_id,
           p.name as project_name,
           p.initiative_manager as pm_name,
           p.secondary_pm,
+          u.name as portfolio_manager_name,
           p.created_at as first_detected
         FROM projects p
         LEFT JOIN project_links pl ON p.id = pl.project_id
+        LEFT JOIN portfolios port ON p.portfolio_id = port.id
+        LEFT JOIN users u ON port.manager_id = u.id
         WHERE pl.id IS NULL
         ORDER BY p.initiative_manager, p.name
       `);
@@ -5379,6 +5464,19 @@ function createApp(dbPath) {
             type: 'missing_documentation',
             severity: 'low',
             pm_name: proj.secondary_pm,
+            project_id: proj.project_id,
+            project_name: proj.project_name,
+            details: 'Project has no documentation links',
+            first_detected: proj.first_detected,
+            age_days: Math.floor((Date.now() - new Date(proj.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
+        // Add for portfolio manager if different from primary and secondary PM
+        if (proj.portfolio_manager_name && proj.portfolio_manager_name !== proj.pm_name && proj.portfolio_manager_name !== proj.secondary_pm) {
+          inconsistencies.push({
+            type: 'missing_documentation',
+            severity: 'low',
+            pm_name: proj.portfolio_manager_name,
             project_id: proj.project_id,
             project_name: proj.project_name,
             details: 'Project has no documentation links',
@@ -5455,6 +5553,7 @@ function createApp(dbPath) {
             p.name as project_name,
             p.initiative_manager as pm_name,
             p.secondary_pm,
+            u.name as portfolio_manager_name,
             m.amber_tolerance,
             m.red_tolerance,
             m.created_at as first_detected,
@@ -5479,6 +5578,8 @@ function createApp(dbPath) {
           FROM CurrentAndPrevious cp
           JOIN metrics m ON cp.metric_id = m.id
           JOIN projects p ON m.project_id = p.id
+          LEFT JOIN portfolios port ON p.portfolio_id = port.id
+          LEFT JOIN users u ON port.manager_id = u.id
           LEFT JOIN recovery_plans rp ON m.id = rp.metric_id AND rp.status = 'active'
           WHERE rp.id IS NULL
         )
@@ -5489,6 +5590,7 @@ function createApp(dbPath) {
           project_name,
           pm_name,
           secondary_pm,
+          portfolio_manager_name,
           first_detected,
           CASE
             WHEN should_skip = 1 THEN 'grey'
@@ -5524,6 +5626,22 @@ function createApp(dbPath) {
             type: 'missing_recovery_plan',
             severity: 'high',
             pm_name: metric.secondary_pm,
+            project_id: metric.project_id,
+            project_name: metric.project_name,
+            metric_id: metric.metric_id,
+            metric_name: metric.metric_name,
+            details: `${metric.metric_name} is ${metric.rag_status.toUpperCase()} but has no recovery plan`,
+            rag_status: metric.rag_status,
+            first_detected: metric.first_detected,
+            age_days: Math.floor((Date.now() - new Date(metric.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
+        // Add for portfolio manager if different from primary and secondary PM
+        if (metric.portfolio_manager_name && metric.portfolio_manager_name !== metric.pm_name && metric.portfolio_manager_name !== metric.secondary_pm) {
+          inconsistencies.push({
+            type: 'missing_recovery_plan',
+            severity: 'high',
+            pm_name: metric.portfolio_manager_name,
             project_id: metric.project_id,
             project_name: metric.project_name,
             metric_id: metric.metric_id,
@@ -6196,6 +6314,16 @@ function createApp(dbPath) {
   });
 
   // Get page performance stats
+  // Outlier threshold (10s) excludes cold starts/release reloads for cleaner metrics
+  const OUTLIER_THRESHOLD_MS = 10000;
+
+  // Helper to calculate percentile from sorted array
+  const calculatePercentile = (sortedArr, percentile) => {
+    if (!sortedArr || sortedArr.length === 0) return null;
+    const index = Math.ceil((percentile / 100) * sortedArr.length) - 1;
+    return sortedArr[Math.max(0, index)];
+  };
+
   app.get('/api/analytics/performance', optionalAuthenticateToken, async (req, res) => {
     try {
       const days = parseInt(req.query.days) || 30;
@@ -6214,7 +6342,46 @@ function createApp(dbPath) {
       const retentionCutoff = new Date();
       retentionCutoff.setDate(retentionCutoff.getDate() - retentionDays);
 
-      // Overall average load time - combine detailed recent + aggregated historical data
+      // Get recent load times for percentile calculation
+      const recentLoadTimes = await dbAll(`
+        SELECT load_time_ms
+        FROM page_views
+        WHERE created_at >= ? AND load_time_ms IS NOT NULL
+        ORDER BY load_time_ms
+      `, [daysAgo.toISOString()]);
+      const recentSorted = recentLoadTimes.map(r => r.load_time_ms);
+
+      // Get historical percentiles from summary (weighted average approximation)
+      const historicalPercentiles = await dbGet(`
+        SELECT
+          SUM(p50_load_time * views_with_timing) / NULLIF(SUM(views_with_timing), 0) as p50,
+          SUM(p90_load_time * views_with_timing) / NULLIF(SUM(views_with_timing), 0) as p90,
+          SUM(views_with_timing) as views_count
+        FROM page_views_daily_summary
+        WHERE summary_date >= DATE(?) AND summary_date < DATE(?)
+        AND p50_load_time IS NOT NULL
+      `, [daysAgo.toISOString(), retentionCutoff.toISOString()]);
+
+      // Combine recent and historical for overall percentiles
+      const recentP50 = calculatePercentile(recentSorted, 50);
+      const recentP90 = calculatePercentile(recentSorted, 90);
+      const recentCount = recentSorted.length;
+      const histCount = historicalPercentiles?.views_count || 0;
+      const totalCount = recentCount + histCount;
+
+      // Weighted average of percentiles
+      let overallP50 = recentP50;
+      let overallP90 = recentP90;
+      if (histCount > 0 && historicalPercentiles.p50) {
+        overallP50 = totalCount > 0
+          ? Math.round((recentP50 * recentCount + historicalPercentiles.p50 * histCount) / totalCount)
+          : historicalPercentiles.p50;
+        overallP90 = totalCount > 0
+          ? Math.round((recentP90 * recentCount + historicalPercentiles.p90 * histCount) / totalCount)
+          : historicalPercentiles.p90;
+      }
+
+      // Overall stats
       const overallStats = await dbGet(`
         SELECT
           SUM(total_avg * views_count) / NULLIF(SUM(views_count), 0) as avg_load_time,
@@ -6248,44 +6415,70 @@ function createApp(dbPath) {
         )
       `, [daysAgo.toISOString(), daysAgo.toISOString(), retentionCutoff.toISOString()]);
 
-      // Average load time by day - combine detailed recent + aggregated historical
-      const dailyTrend = await dbAll(`
-        SELECT
+      // Count outliers for transparency
+      const outlierCount = await dbGet(`
+        SELECT COUNT(*) as count FROM page_views
+        WHERE created_at >= ? AND load_time_ms > ?
+      `, [daysAgo.toISOString(), OUTLIER_THRESHOLD_MS]);
+
+      // Daily trend with true percentiles
+      // For recent data, calculate actual p50/p90 per day in JavaScript
+      const recentDailyRaw = await dbAll(`
+        SELECT DATE(created_at) as date, load_time_ms
+        FROM page_views
+        WHERE created_at >= ? AND load_time_ms IS NOT NULL
+        ORDER BY date, load_time_ms
+      `, [daysAgo.toISOString()]);
+
+      // Group by date and calculate percentiles
+      const recentDailyMap = {};
+      for (const row of recentDailyRaw) {
+        if (!recentDailyMap[row.date]) {
+          recentDailyMap[row.date] = [];
+        }
+        recentDailyMap[row.date].push(row.load_time_ms);
+      }
+
+      const recentDaily = Object.entries(recentDailyMap).map(([date, times]) => {
+        const sorted = times.sort((a, b) => a - b);
+        const sum = sorted.reduce((a, b) => a + b, 0);
+        return {
           date,
-          SUM(total_avg * views_count) / NULLIF(SUM(views_count), 0) as avg_load_time,
-          SUM(total_views) as views
-        FROM (
-          -- Recent detailed data
-          SELECT
-            DATE(created_at) as date,
-            AVG(load_time_ms) as total_avg,
-            COUNT(*) as total_views,
-            COUNT(load_time_ms) as views_count
-          FROM page_views
-          WHERE created_at >= ? AND load_time_ms IS NOT NULL
-          GROUP BY DATE(created_at)
+          avg_load_time: sum / sorted.length,
+          p50_load_time: calculatePercentile(sorted, 50),
+          p90_load_time: calculatePercentile(sorted, 90),
+          views: sorted.length
+        };
+      });
 
-          UNION ALL
+      // Get historical aggregated data
+      const historicalDaily = await dbAll(`
+        SELECT
+          summary_date as date,
+          avg_load_time,
+          COALESCE(p50_load_time, avg_load_time) as p50_load_time,
+          COALESCE(p90_load_time, avg_load_time) as p90_load_time,
+          total_views as views
+        FROM page_views_daily_summary
+        WHERE summary_date >= DATE(?) AND summary_date < DATE(?)
+        AND avg_load_time IS NOT NULL
+        ORDER BY summary_date
+      `, [daysAgo.toISOString(), retentionCutoff.toISOString()]);
 
-          -- Historical aggregated data
-          SELECT
-            summary_date as date,
-            avg_load_time as total_avg,
-            total_views,
-            views_with_timing as views_count
-          FROM page_views_daily_summary
-          WHERE summary_date >= DATE(?) AND summary_date < DATE(?)
-          AND avg_load_time IS NOT NULL
-        )
-        GROUP BY date
-        ORDER BY date
-      `, [daysAgo.toISOString(), daysAgo.toISOString(), retentionCutoff.toISOString()]);
+      // Merge recent and historical, recent takes precedence
+      const recentDates = new Set(recentDaily.map(d => d.date));
+      const dailyTrend = [
+        ...historicalDaily.filter(d => !recentDates.has(d.date)),
+        ...recentDaily
+      ].sort((a, b) => a.date.localeCompare(b.date));
 
-      // Top 10 slowest pages - combine detailed recent + aggregated historical
+      // Top 10 slowest pages by p90 (more meaningful than avg for outliers)
       const slowestPages = await dbAll(`
         SELECT
           path,
           SUM(total_avg * views_count) / NULLIF(SUM(views_count), 0) as avg_load_time,
+          SUM(p50 * views_count) / NULLIF(SUM(views_count), 0) as p50_load_time,
+          SUM(p90 * views_count) / NULLIF(SUM(views_count), 0) as p90_load_time,
           MIN(min_load_time) as min_load_time,
           MAX(max_load_time) as max_load_time,
           SUM(total_views) as views
@@ -6294,6 +6487,8 @@ function createApp(dbPath) {
           SELECT
             path,
             AVG(load_time_ms) as total_avg,
+            AVG(load_time_ms) as p50,
+            AVG(load_time_ms) as p90,
             MIN(load_time_ms) as min_load_time,
             MAX(load_time_ms) as max_load_time,
             COUNT(*) as total_views,
@@ -6308,6 +6503,8 @@ function createApp(dbPath) {
           SELECT
             path,
             avg_load_time as total_avg,
+            COALESCE(p50_load_time, avg_load_time) as p50,
+            COALESCE(p90_load_time, avg_load_time) as p90,
             min_load_time,
             max_load_time,
             total_views,
@@ -6318,15 +6515,17 @@ function createApp(dbPath) {
         )
         GROUP BY path
         HAVING SUM(total_views) >= 3
-        ORDER BY avg_load_time DESC
+        ORDER BY p90_load_time DESC
         LIMIT 10
       `, [daysAgo.toISOString(), daysAgo.toISOString(), retentionCutoff.toISOString()]);
 
-      // Top 10 fastest pages - combine detailed recent + aggregated historical
+      // Top 10 fastest pages by p50 (median)
       const fastestPages = await dbAll(`
         SELECT
           path,
           SUM(total_avg * views_count) / NULLIF(SUM(views_count), 0) as avg_load_time,
+          SUM(p50 * views_count) / NULLIF(SUM(views_count), 0) as p50_load_time,
+          SUM(p90 * views_count) / NULLIF(SUM(views_count), 0) as p90_load_time,
           MIN(min_load_time) as min_load_time,
           MAX(max_load_time) as max_load_time,
           SUM(total_views) as views
@@ -6335,6 +6534,8 @@ function createApp(dbPath) {
           SELECT
             path,
             AVG(load_time_ms) as total_avg,
+            AVG(load_time_ms) as p50,
+            AVG(load_time_ms) as p90,
             MIN(load_time_ms) as min_load_time,
             MAX(load_time_ms) as max_load_time,
             COUNT(*) as total_views,
@@ -6349,6 +6550,8 @@ function createApp(dbPath) {
           SELECT
             path,
             avg_load_time as total_avg,
+            COALESCE(p50_load_time, avg_load_time) as p50,
+            COALESCE(p90_load_time, avg_load_time) as p90,
             min_load_time,
             max_load_time,
             total_views,
@@ -6359,26 +6562,34 @@ function createApp(dbPath) {
         )
         GROUP BY path
         HAVING SUM(total_views) >= 3
-        ORDER BY avg_load_time ASC
+        ORDER BY p50_load_time ASC
         LIMIT 10
       `, [daysAgo.toISOString(), daysAgo.toISOString(), retentionCutoff.toISOString()]);
 
       const result = {
         overallStats: {
           avgLoadTime: Math.round(overallStats.avg_load_time) || 0,
+          p50LoadTime: overallP50 || 0,
+          p90LoadTime: overallP90 || 0,
           minLoadTime: overallStats.min_load_time || 0,
           maxLoadTime: overallStats.max_load_time || 0,
           totalViews: overallStats.total_views || 0,
-          viewsWithTiming: overallStats.views_with_timing || 0
+          viewsWithTiming: overallStats.views_with_timing || 0,
+          outlierCount: outlierCount?.count || 0,
+          outlierThreshold: OUTLIER_THRESHOLD_MS
         },
         dailyTrend: dailyTrend.map(d => ({
           date: d.date,
           avgLoadTime: Math.round(d.avg_load_time),
+          p50LoadTime: Math.round(d.p50_load_time || d.avg_load_time),
+          p90LoadTime: Math.round(d.p90_load_time || d.avg_load_time),
           views: d.views
         })),
         slowestPages: slowestPages.map(p => ({
           path: p.path,
           avgLoadTime: Math.round(p.avg_load_time),
+          p50LoadTime: Math.round(p.p50_load_time || p.avg_load_time),
+          p90LoadTime: Math.round(p.p90_load_time || p.avg_load_time),
           minLoadTime: p.min_load_time,
           maxLoadTime: p.max_load_time,
           views: p.views
@@ -6386,6 +6597,8 @@ function createApp(dbPath) {
         fastestPages: fastestPages.map(p => ({
           path: p.path,
           avgLoadTime: Math.round(p.avg_load_time),
+          p50LoadTime: Math.round(p.p50_load_time || p.avg_load_time),
+          p90LoadTime: Math.round(p.p90_load_time || p.avg_load_time),
           minLoadTime: p.min_load_time,
           maxLoadTime: p.max_load_time,
           views: p.views
@@ -7621,6 +7834,32 @@ function createApp(dbPath) {
       console.log('✅ Created page_views summary tables');
     } catch (err) {
       // Tables already exist, that's fine
+    }
+
+    // Migration: Add p50 and p90 percentile columns to summary tables
+    try {
+      await dbRun(`ALTER TABLE page_views_daily_summary ADD COLUMN p50_load_time INTEGER`);
+      console.log('✅ Added p50_load_time to page_views_daily_summary');
+    } catch (err) {
+      // Column already exists
+    }
+    try {
+      await dbRun(`ALTER TABLE page_views_daily_summary ADD COLUMN p90_load_time INTEGER`);
+      console.log('✅ Added p90_load_time to page_views_daily_summary');
+    } catch (err) {
+      // Column already exists
+    }
+    try {
+      await dbRun(`ALTER TABLE page_views_path_summary ADD COLUMN p50_load_time INTEGER`);
+      console.log('✅ Added p50_load_time to page_views_path_summary');
+    } catch (err) {
+      // Column already exists
+    }
+    try {
+      await dbRun(`ALTER TABLE page_views_path_summary ADD COLUMN p90_load_time INTEGER`);
+      console.log('✅ Added p90_load_time to page_views_path_summary');
+    } catch (err) {
+      // Column already exists
     }
 
     // Migration: Create recovery_plans table for Return to Green plans

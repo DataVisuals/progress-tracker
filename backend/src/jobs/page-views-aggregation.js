@@ -5,9 +5,24 @@
  * 1. Aggregate page_views data older than 30 days into summary tables
  * 2. Delete the aggregated detailed records
  * 3. Keep recent (last 30 days) detailed data for real-time analytics
+ *
+ * Percentiles (p50, p90) provide smoothed metrics that are less affected
+ * by outliers from deployments/restarts.
  */
 
 const logger = console;
+
+/**
+ * Calculate percentile from a sorted array
+ * @param {number[]} sortedArr - Sorted array of values
+ * @param {number} percentile - Percentile to calculate (0-100)
+ * @returns {number|null}
+ */
+function calculatePercentile(sortedArr, percentile) {
+  if (!sortedArr || sortedArr.length === 0) return null;
+  const index = Math.ceil((percentile / 100) * sortedArr.length) - 1;
+  return sortedArr[Math.max(0, index)];
+}
 
 /**
  * Aggregate page views data older than the retention period
@@ -23,57 +38,105 @@ async function aggregateOldPageViews(db, retentionDays = 30) {
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
     const cutoffDateStr = cutoffDate.toISOString().split('T')[0]; // YYYY-MM-DD
 
-    // Step 1: Aggregate daily summaries
+    // Step 1: Aggregate daily summaries with percentiles
     logger.info(`  📊 Aggregating daily summaries before ${cutoffDateStr}...`);
 
-    const dailyAggResult = await db.run(`
-      INSERT OR REPLACE INTO page_views_daily_summary (
-        summary_date,
-        total_views,
-        avg_load_time,
-        min_load_time,
-        max_load_time,
-        views_with_timing
-      )
-      SELECT
-        DATE(created_at) as summary_date,
-        COUNT(*) as total_views,
-        AVG(load_time_ms) as avg_load_time,
-        MIN(load_time_ms) as min_load_time,
-        MAX(load_time_ms) as max_load_time,
-        COUNT(load_time_ms) as views_with_timing
+    // Get all dates that need aggregation
+    const dailyDates = await db.all(`
+      SELECT DISTINCT DATE(created_at) as date
       FROM page_views
       WHERE DATE(created_at) < ?
-      GROUP BY DATE(created_at)
+      ORDER BY date
     `, [cutoffDateStr]);
 
-    logger.info(`  ✅ Aggregated ${dailyAggResult.changes || 0} daily summary records`);
+    let dailyAggCount = 0;
+    for (const { date } of dailyDates) {
+      // Get all load times for this date
+      const loadTimes = await db.all(`
+        SELECT load_time_ms
+        FROM page_views
+        WHERE DATE(created_at) = ? AND load_time_ms IS NOT NULL
+        ORDER BY load_time_ms
+      `, [date]);
 
-    // Step 2: Aggregate path summaries
+      const sortedTimes = loadTimes.map(r => r.load_time_ms);
+      const p50 = calculatePercentile(sortedTimes, 50);
+      const p90 = calculatePercentile(sortedTimes, 90);
+
+      // Get aggregate stats
+      const stats = await db.get(`
+        SELECT
+          COUNT(*) as total_views,
+          AVG(load_time_ms) as avg_load_time,
+          MIN(load_time_ms) as min_load_time,
+          MAX(load_time_ms) as max_load_time,
+          COUNT(load_time_ms) as views_with_timing
+        FROM page_views
+        WHERE DATE(created_at) = ?
+      `, [date]);
+
+      await db.run(`
+        INSERT OR REPLACE INTO page_views_daily_summary (
+          summary_date, total_views, avg_load_time, min_load_time, max_load_time,
+          views_with_timing, p50_load_time, p90_load_time
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `, [date, stats.total_views, stats.avg_load_time, stats.min_load_time,
+          stats.max_load_time, stats.views_with_timing, p50, p90]);
+
+      dailyAggCount++;
+    }
+
+    logger.info(`  ✅ Aggregated ${dailyAggCount} daily summary records`);
+
+    // Step 2: Aggregate path summaries with percentiles
     logger.info(`  📊 Aggregating path summaries before ${cutoffDateStr}...`);
 
-    const pathAggResult = await db.run(`
-      INSERT OR REPLACE INTO page_views_path_summary (
-        summary_date,
-        path,
-        total_views,
-        avg_load_time,
-        min_load_time,
-        max_load_time,
-        views_with_timing
-      )
-      SELECT
-        DATE(created_at) as summary_date,
-        path,
-        COUNT(*) as total_views,
-        AVG(load_time_ms) as avg_load_time,
-        MIN(load_time_ms) as min_load_time,
-        MAX(load_time_ms) as max_load_time,
-        COUNT(load_time_ms) as views_with_timing
+    // Get all date/path combinations
+    const pathGroups = await db.all(`
+      SELECT DISTINCT DATE(created_at) as date, path
       FROM page_views
       WHERE DATE(created_at) < ?
-      GROUP BY DATE(created_at), path
+      ORDER BY date, path
     `, [cutoffDateStr]);
+
+    let pathAggCount = 0;
+    for (const { date, path } of pathGroups) {
+      // Get all load times for this date/path
+      const loadTimes = await db.all(`
+        SELECT load_time_ms
+        FROM page_views
+        WHERE DATE(created_at) = ? AND path = ? AND load_time_ms IS NOT NULL
+        ORDER BY load_time_ms
+      `, [date, path]);
+
+      const sortedTimes = loadTimes.map(r => r.load_time_ms);
+      const p50 = calculatePercentile(sortedTimes, 50);
+      const p90 = calculatePercentile(sortedTimes, 90);
+
+      const stats = await db.get(`
+        SELECT
+          COUNT(*) as total_views,
+          AVG(load_time_ms) as avg_load_time,
+          MIN(load_time_ms) as min_load_time,
+          MAX(load_time_ms) as max_load_time,
+          COUNT(load_time_ms) as views_with_timing
+        FROM page_views
+        WHERE DATE(created_at) = ? AND path = ?
+      `, [date, path]);
+
+      await db.run(`
+        INSERT OR REPLACE INTO page_views_path_summary (
+          summary_date, path, total_views, avg_load_time, min_load_time, max_load_time,
+          views_with_timing, p50_load_time, p90_load_time
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [date, path, stats.total_views, stats.avg_load_time, stats.min_load_time,
+          stats.max_load_time, stats.views_with_timing, p50, p90]);
+
+      pathAggCount++;
+    }
+
+    const dailyAggResult = { changes: dailyAggCount };
+    const pathAggResult = { changes: pathAggCount };
 
     logger.info(`  ✅ Aggregated ${pathAggResult.changes || 0} path summary records`);
 

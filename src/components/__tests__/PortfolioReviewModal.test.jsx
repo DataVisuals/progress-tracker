@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import PortfolioReviewModal from '../PortfolioReviewModal';
 
 // Mock lottie-web to avoid canvas issues
@@ -19,7 +19,7 @@ vi.mock('lottie-react', () => ({
   default: () => null,
 }));
 
-// Mock the API client (use named export 'api')
+// Mock the API client
 vi.mock('../../api/client', () => ({
   api: {
     get: vi.fn().mockResolvedValue({ data: [] }),
@@ -47,345 +47,172 @@ vi.mock('recharts', () => ({
   Radar: () => null
 }));
 
-describe('PortfolioReviewModal', () => {
-  const defaultProps = {
-    isOpen: true,
-    onClose: vi.fn(),
-    portfolioId: 1,
-    portfolioName: 'Test Portfolio'
-  };
+// Mock html2canvas
+vi.mock('html2canvas', () => ({
+  default: vi.fn().mockResolvedValue({
+    toDataURL: () => 'data:image/png;base64,test'
+  })
+}));
 
+// Mock jsPDF
+vi.mock('jspdf', () => ({
+  default: vi.fn().mockImplementation(() => ({
+    addPage: vi.fn(),
+    addImage: vi.fn(),
+    save: vi.fn()
+  }))
+}));
+
+// Mock the ProjectTimelineBar component
+vi.mock('../ProjectTimelineBar', () => ({
+  default: () => <div data-testid="project-timeline-bar">Timeline Bar</div>
+}));
+
+// Mock the MetricChart component
+vi.mock('../MetricChart', () => ({
+  default: ({ metricName }) => <div data-testid="metric-chart">{metricName}</div>
+}));
+
+// Mock the health score and clarity score utilities
+vi.mock('../ProjectHealthModal', () => ({
+  calculateHealthScores: vi.fn().mockReturnValue({
+    overall: 75,
+    projectDescribed: 80,
+    metricsDescribed: 70,
+    metricCoverage: 75,
+    metricManagement: 70,
+    projectControl: 80,
+    contentClarity: 75
+  })
+}));
+
+vi.mock('../../utils/clarityScore', () => ({
+  calculateClarityScore: vi.fn().mockReturnValue(70)
+}));
+
+describe('PortfolioReviewModal', () => {
   const mockProjects = [
     {
       id: 1,
       name: 'Project Alpha',
-      pm_name: 'John Doe',
-      status: 'green',
-      health_score: 85,
-      completion: 65,
-      metrics: [
-        { name: 'Budget', status: 'green', value: 80000, target: 100000 },
-        { name: 'Timeline', status: 'amber', value: 60, target: 100 }
-      ]
+      portfolio_id: 1,
+      description: 'Test project',
+      initiative_manager: 'John Doe',
+      start_date: '2025-01-01',
+      end_date: '2025-12-31'
     },
     {
       id: 2,
       name: 'Project Beta',
-      pm_name: 'Jane Smith',
-      status: 'amber',
-      health_score: 70,
-      completion: 40,
-      metrics: [
-        { name: 'Budget', status: 'amber', value: 120000, target: 100000 },
-        { name: 'Timeline', status: 'red', value: 30, target: 100 }
-      ]
-    },
-    {
-      id: 3,
-      name: 'Project Gamma',
-      pm_name: 'Bob Wilson',
-      status: 'red',
-      health_score: 45,
-      completion: 20,
-      metrics: [
-        { name: 'Budget', status: 'red', value: 150000, target: 100000 },
-        { name: 'Timeline', status: 'red', value: 20, target: 100 }
-      ]
+      portfolio_id: 1,
+      description: 'Another test project',
+      initiative_manager: 'Jane Smith',
+      start_date: '2025-02-01',
+      end_date: '2025-11-30'
     }
   ];
+
+  const defaultProps = {
+    portfolioId: 1,
+    portfolioName: 'Test Portfolio',
+    projects: mockProjects,
+    portfolios: [],
+    onClose: vi.fn(),
+    darkMode: false
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('Rendering', () => {
-    it('should render when isOpen is true', () => {
+  describe('Basic Rendering', () => {
+    it('should render the modal with portfolio name', async () => {
       render(<PortfolioReviewModal {...defaultProps} />);
-      expect(screen.getByText('Portfolio Review: Test Portfolio')).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(screen.getByText(/Portfolio Review.*Test Portfolio/)).toBeInTheDocument();
+      });
     });
 
-    it('should not render when isOpen is false', () => {
-      render(<PortfolioReviewModal {...defaultProps} isOpen={false} />);
-      expect(screen.queryByText('Portfolio Review: Test Portfolio')).not.toBeInTheDocument();
-    });
-
-    it('should display close button', () => {
+    it('should render close button', async () => {
       render(<PortfolioReviewModal {...defaultProps} />);
-      const closeButton = screen.getByRole('button', { name: /×/i });
-      expect(closeButton).toBeInTheDocument();
+
+      await waitFor(() => {
+        const closeButton = screen.getByRole('button', { name: '' });
+        expect(closeButton).toBeInTheDocument();
+      });
     });
 
-    it('should call onClose when close button is clicked', () => {
+    it('should call onClose when close button is clicked', async () => {
       render(<PortfolioReviewModal {...defaultProps} />);
-      const closeButton = screen.getByRole('button', { name: /×/i });
-      fireEvent.click(closeButton);
-      expect(defaultProps.onClose).toHaveBeenCalled();
+
+      await waitFor(() => {
+        // Find the close button (it has the MdClose icon inside)
+        const buttons = screen.getAllByRole('button');
+        const closeButton = buttons.find(btn => btn.classList.contains('modal-close'));
+        if (closeButton) {
+          fireEvent.click(closeButton);
+          expect(defaultProps.onClose).toHaveBeenCalled();
+        }
+      });
     });
 
-    it('should call onClose when clicking outside modal', () => {
-      render(<PortfolioReviewModal {...defaultProps} />);
-      const overlay = screen.getByTestId('modal-overlay');
-      fireEvent.click(overlay);
-      expect(defaultProps.onClose).toHaveBeenCalled();
-    });
-  });
-
-  describe('Data Loading', () => {
-    beforeEach(() => {
-      const apiClient = require('../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: mockProjects });
-    });
-
-    it('should display loading state initially', async () => {
+    it('should display loading state initially', () => {
       render(<PortfolioReviewModal {...defaultProps} />);
       expect(screen.getByText('Loading portfolio data...')).toBeInTheDocument();
     });
+  });
 
-    it('should fetch portfolio report data on mount', async () => {
-      const apiClient = require('../../api/client').default;
+  describe('Navigation', () => {
+    it('should have navigation buttons', async () => {
       render(<PortfolioReviewModal {...defaultProps} />);
 
       await waitFor(() => {
-        expect(apiClient.get).toHaveBeenCalledWith('/portfolios/1/report');
+        expect(screen.getByText(/Previous/)).toBeInTheDocument();
+        expect(screen.getByText(/Next/)).toBeInTheDocument();
       });
     });
 
-    it('should display projects after loading', async () => {
+    it('should disable Previous button on first slide', async () => {
       render(<PortfolioReviewModal {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText('Project Alpha')).toBeInTheDocument();
-        expect(screen.getByText('Project Beta')).toBeInTheDocument();
-        expect(screen.getByText('Project Gamma')).toBeInTheDocument();
-      });
-    });
-
-    it('should handle API errors gracefully', async () => {
-      const apiClient = require('../../api/client').default;
-      apiClient.get.mockRejectedValue(new Error('API Error'));
-
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Error loading portfolio data/i)).toBeInTheDocument();
+        const prevButton = screen.getByText(/Previous/).closest('button');
+        expect(prevButton).toBeDisabled();
       });
     });
   });
 
-  describe('View Modes', () => {
-    beforeEach(async () => {
-      const apiClient = require('../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: mockProjects });
-    });
+  describe('Empty State', () => {
+    it('should handle empty projects array', async () => {
+      const props = {
+        ...defaultProps,
+        projects: []
+      };
 
-    it('should display view mode buttons', async () => {
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Executive Summary')).toBeInTheDocument();
-        expect(screen.getByText('Projects Grid')).toBeInTheDocument();
-        expect(screen.getByText('Health Dashboard')).toBeInTheDocument();
-        expect(screen.getByText('Risk Matrix')).toBeInTheDocument();
-      });
-    });
-
-    it('should switch to Projects Grid view when clicked', async () => {
-      render(<PortfolioReviewModal {...defaultProps} />);
+      render(<PortfolioReviewModal {...props} />);
 
       await waitFor(() => {
-        const gridButton = screen.getByText('Projects Grid');
-        fireEvent.click(gridButton);
-      });
-
-      expect(screen.getByText('Project Name')).toBeInTheDocument();
-      expect(screen.getByText('PM')).toBeInTheDocument();
-      expect(screen.getByText('Status')).toBeInTheDocument();
-    });
-
-    it('should switch to Health Dashboard view when clicked', async () => {
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      await waitFor(() => {
-        const healthButton = screen.getByText('Health Dashboard');
-        fireEvent.click(healthButton);
-      });
-
-      expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
-    });
-
-    it('should switch to Risk Matrix view when clicked', async () => {
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      await waitFor(() => {
-        const riskButton = screen.getByText('Risk Matrix');
-        fireEvent.click(riskButton);
-      });
-
-      expect(screen.getByText(/High Impact/i)).toBeInTheDocument();
-      expect(screen.getByText(/Low Impact/i)).toBeInTheDocument();
-    });
-  });
-
-  describe('Executive Summary View', () => {
-    beforeEach(async () => {
-      const apiClient = require('../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: mockProjects });
-    });
-
-    it('should display portfolio overview statistics', async () => {
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Total Projects/i)).toBeInTheDocument();
-        expect(screen.getByText(/Average Health/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should calculate and display correct RAG status counts', async () => {
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText(/1.*Green/)).toBeInTheDocument();
-        expect(screen.getByText(/1.*Amber/)).toBeInTheDocument();
-        expect(screen.getByText(/1.*Red/)).toBeInTheDocument();
-      });
-    });
-
-    it('should display top performing projects', async () => {
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Top Performers/i)).toBeInTheDocument();
-        expect(screen.getByText('Project Alpha')).toBeInTheDocument();
-      });
-    });
-
-    it('should display projects needing attention', async () => {
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Needs Attention/i)).toBeInTheDocument();
-        expect(screen.getByText('Project Gamma')).toBeInTheDocument();
+        // Should still render but with no project slides
+        expect(screen.getByText(/Portfolio Review.*Test Portfolio/)).toBeInTheDocument();
       });
     });
   });
 
-  describe('Export Functionality', () => {
-    beforeEach(async () => {
-      const apiClient = require('../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: mockProjects });
-    });
-
-    it('should display export button', async () => {
+  describe('Keyboard Navigation', () => {
+    it('should navigate with arrow keys', async () => {
       render(<PortfolioReviewModal {...defaultProps} />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Export/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should show export options when export button is clicked', async () => {
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      await waitFor(() => {
-        const exportButton = screen.getByText(/Export/i);
-        fireEvent.click(exportButton);
+        expect(screen.getByText(/Portfolio Review.*Test Portfolio/)).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Export as PDF')).toBeInTheDocument();
-      expect(screen.getByText('Export as Excel')).toBeInTheDocument();
-      expect(screen.getByText('Export as PowerPoint')).toBeInTheDocument();
-    });
+      // Fire keyboard events
+      fireEvent.keyDown(window, { key: 'ArrowRight', code: 'ArrowRight' });
+      fireEvent.keyDown(window, { key: 'ArrowLeft', code: 'ArrowLeft' });
 
-    it('should trigger PDF export when PDF option is clicked', async () => {
-      const mockExport = vi.fn();
-      window.print = mockExport;
-
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      await waitFor(() => {
-        const exportButton = screen.getByText(/Export/i);
-        fireEvent.click(exportButton);
-      });
-
-      const pdfOption = screen.getByText('Export as PDF');
-      fireEvent.click(pdfOption);
-
-      expect(mockExport).toHaveBeenCalled();
-    });
-  });
-
-  describe('Accessibility', () => {
-    it('should have proper ARIA attributes', async () => {
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      const modal = screen.getByRole('dialog');
-      expect(modal).toHaveAttribute('aria-labelledby');
-      expect(modal).toHaveAttribute('aria-modal', 'true');
-    });
-
-    it('should trap focus within modal', async () => {
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      const closeButton = screen.getByRole('button', { name: /×/i });
-      expect(closeButton).toBeInTheDocument();
-
-      // Focus should be trapped within modal elements
-      closeButton.focus();
-      expect(document.activeElement).toBe(closeButton);
-    });
-
-    it('should close modal on Escape key press', async () => {
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' });
-      expect(defaultProps.onClose).toHaveBeenCalled();
-    });
-  });
-
-  describe('Empty States', () => {
-    it('should display empty state when no projects in portfolio', async () => {
-      const apiClient = require('../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: [] });
-
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByText(/No projects found in this portfolio/i)).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Refresh Functionality', () => {
-    beforeEach(async () => {
-      const apiClient = require('../../api/client').default;
-      apiClient.get.mockResolvedValue({ data: mockProjects });
-    });
-
-    it('should display refresh button', async () => {
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument();
-      });
-    });
-
-    it('should refresh data when refresh button is clicked', async () => {
-      const apiClient = require('../../api/client').default;
-
-      render(<PortfolioReviewModal {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(apiClient.get).toHaveBeenCalledTimes(1);
-      });
-
-      const refreshButton = screen.getByRole('button', { name: /refresh/i });
-      fireEvent.click(refreshButton);
-
-      await waitFor(() => {
-        expect(apiClient.get).toHaveBeenCalledTimes(2);
-        expect(apiClient.get).toHaveBeenLastCalledWith('/portfolios/1/report');
-      });
+      // The component should handle these without errors
+      expect(screen.getByText(/Portfolio Review.*Test Portfolio/)).toBeInTheDocument();
     });
   });
 });

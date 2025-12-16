@@ -754,8 +754,9 @@ function App() {
     setSelectedPortfolio(null);
     startPageLoadTimer();
     setSelectedProject(project.id.toString());
-    // Clear metric so the auto-select useEffect picks the first one
+    // Clear metric and metrics array so auto-select waits for fresh data
     setSelectedMetric('');
+    setProjectMetrics([]);
     updateURL(project.id.toString(), '');
   };
 

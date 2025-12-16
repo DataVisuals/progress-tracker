@@ -61,7 +61,9 @@ describe('Audit Log API Tests', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           name: 'Audit Test Project',
-          description: 'Testing audit logs'
+          description: 'Testing audit logs',
+          start_date: '2025-01-01',
+          end_date: '2025-12-31'
         });
       testProjectId = projectResponse.body.id;
 
@@ -219,11 +221,13 @@ describe('Audit Log API Tests', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           name: projectName,
-          description: 'For audit testing'
+          description: 'For audit testing',
+          start_date: '2025-01-01',
+          end_date: '2025-12-31'
         });
 
       const response = await request(app)
-        .get('/api/audit?table=projects&action=CREATE')
+        .get('/api/audit?table_name=projects&action=CREATE')
         .set('Authorization', `Bearer ${adminToken}`);
 
       const projectEntry = response.body.find(e =>

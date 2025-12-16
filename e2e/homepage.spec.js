@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
 
+// NOTE: These tests are Playwright e2e tests, not Vitest unit tests
+// Run with: npx playwright test
+// They require the app to be running and Playwright browsers to be installed
 test.describe('Homepage Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');

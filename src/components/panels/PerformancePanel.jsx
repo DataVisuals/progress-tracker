@@ -209,19 +209,105 @@ const PerformancePanel = ({
                   );
                 };
 
+                // Dock view: donut with tables/indexes
+                if (forDock) {
+                  return (
+                    <div className="db-main-content">
+                      <div className="db-chart-section">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={chartData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius="35%"
+                              outerRadius="55%"
+                              dataKey="value"
+                              label={renderLabel}
+                              labelLine={false}
+                            >
+                              {chartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              content={({ active, payload }) => {
+                                if (!active || !payload?.[0]) return null;
+                                const data = payload[0].payload;
+                                return (
+                                  <div className="db-table-tooltip">
+                                    <div className="tooltip-title">{data.name}</div>
+                                    <div className="tooltip-stats">
+                                      <span>{data.sizeLabel}</span>
+                                      <span>{data.rows?.toLocaleString()} rows</span>
+                                    </div>
+                                  </div>
+                                );
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="db-tables-indexes-grid">
+                        <div className="db-tables-column">
+                          <div className="db-section-title">Tables</div>
+                          <div className="db-data-table db-scrollable">
+                            <div className="db-table-header">
+                              <span>Name</span>
+                              <span>Rows</span>
+                              <span>Size</span>
+                            </div>
+                            <div className="db-table-body">
+                              {chartData.map((table, idx) => (
+                                <div key={idx} className="db-table-row">
+                                  <span className="db-table-name">
+                                    <span className="db-color-dot" style={{ background: table.fill }} />
+                                    {table.displayName}
+                                  </span>
+                                  <span className="db-table-rows">{table.rows?.toLocaleString()}</span>
+                                  <span className="db-table-size">{table.sizeLabel}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        {databaseStats.indexes?.length > 0 && (
+                          <div className="db-indexes-column">
+                            <div className="db-section-title">Indexes</div>
+                            <div className="db-data-table db-index-table db-scrollable">
+                              <div className="db-table-header">
+                                <span>Index</span>
+                                <span>Table</span>
+                              </div>
+                              <div className="db-table-body">
+                                {databaseStats.indexes.map((idx, i) => (
+                                  <div key={i} className="db-table-row">
+                                    <span className="db-index-name">{idx.name}</span>
+                                    <span className="db-index-table-name">{idx.tableName?.replace(/^(project_|user_|metric_)/, '')}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Compact view: donut left, chart right
                 return (
-                  <div className="db-main-content">
-                    <div className="db-chart-section">
+                  <div className="compact-perf-layout">
+                    <div className="donut-section">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={chartData}
                             cx="50%"
                             cy="50%"
-                            innerRadius="35%"
-                            outerRadius="55%"
+                            innerRadius="25%"
+                            outerRadius="90%"
                             dataKey="value"
-                            label={renderLabel}
                             labelLine={false}
                           >
                             {chartData.map((entry, index) => (
@@ -246,49 +332,47 @@ const PerformancePanel = ({
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <div className="db-tables-indexes-grid">
-                      <div className="db-tables-column">
-                        <div className="db-section-title">Tables</div>
-                        <div className="db-data-table db-scrollable">
-                          <div className="db-table-header">
-                            <span>Name</span>
-                            <span>Rows</span>
-                            <span>Size</span>
+                    {performanceData?.overallStats?.viewsWithTiming > 0 && (
+                      <div className="chart-section">
+                        <div className="compact-stats-inline">
+                          <div className="stat-item">
+                            <span className={`stat-value ${getSpeedClass(performanceData.overallStats?.p50LoadTime || performanceData.overallStats?.avgLoadTime)}`}>
+                              {formatMs(performanceData.overallStats?.p50LoadTime || performanceData.overallStats?.avgLoadTime)}
+                            </span>
+                            <span className="stat-label">Median Load</span>
                           </div>
-                          <div className="db-table-body">
-                            {chartData.map((table, idx) => (
-                              <div key={idx} className="db-table-row">
-                                <span className="db-table-name">
-                                  <span className="db-color-dot" style={{ background: table.fill }} />
-                                  {table.displayName}
-                                </span>
-                                <span className="db-table-rows">{table.rows?.toLocaleString()}</span>
-                                <span className="db-table-size">{table.sizeLabel}</span>
-                              </div>
-                            ))}
+                          <div className="stat-item">
+                            <span className="stat-value">{performanceData.overallStats?.viewsWithTiming?.toLocaleString()}</span>
+                            <span className="stat-label">Page Views</span>
                           </div>
                         </div>
+                        {performanceData.dailyTrend?.length > 0 && (
+                          <div className="compact-trend-chart">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={performanceData.dailyTrend}>
+                                <XAxis
+                                  dataKey="date"
+                                  tick={{ fontSize: 9 }}
+                                  tickFormatter={(date) => new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                  interval="preserveStartEnd"
+                                />
+                                <YAxis
+                                  tick={{ fontSize: 9 }}
+                                  tickFormatter={(ms) => formatMs(ms)}
+                                  width={35}
+                                />
+                                <Tooltip
+                                  formatter={(value, name) => [formatMs(value), name === 'p50LoadTime' ? 'p50' : 'p90']}
+                                  labelFormatter={(date) => new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                />
+                                <Line type="monotone" dataKey="p50LoadTime" stroke="#00aeef" strokeWidth={1.5} dot={false} />
+                                <Line type="monotone" dataKey="p90LoadTime" stroke="#f59e0b" strokeWidth={1} strokeDasharray="3 2" dot={false} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        )}
                       </div>
-                      {databaseStats.indexes?.length > 0 && (
-                        <div className="db-indexes-column">
-                          <div className="db-section-title">Indexes</div>
-                          <div className="db-data-table db-index-table db-scrollable">
-                            <div className="db-table-header">
-                              <span>Index</span>
-                              <span>Table</span>
-                            </div>
-                            <div className="db-table-body">
-                              {databaseStats.indexes.map((idx, i) => (
-                                <div key={i} className="db-table-row">
-                                  <span className="db-index-name">{idx.name}</span>
-                                  <span className="db-index-table-name">{idx.tableName?.replace(/^(project_|user_|metric_)/, '')}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
                 );
               })()}
@@ -306,23 +390,25 @@ const PerformancePanel = ({
           </div>
         ) : (
           <>
-            {/* Overall Stats */}
-            <div className="performance-stats">
-              <div className={`perf-stat ${getSpeedClass(performanceData.overallStats.avgLoadTime)}`}>
-                <span className="perf-value">{formatMs(performanceData.overallStats.avgLoadTime)}</span>
-                <span className="perf-label">Avg Load Time</span>
+            {/* Overall Stats - show in dock view OR for non-admins (admins in compact view have them in side-by-side layout) */}
+            {(forDock || !isAdmin || !databaseStats) && (
+              <div className="performance-stats">
+                <div className={`perf-stat ${getSpeedClass(performanceData.overallStats.p50LoadTime || performanceData.overallStats.avgLoadTime)}`}>
+                  <span className="perf-value">{formatMs(performanceData.overallStats.p50LoadTime || performanceData.overallStats.avgLoadTime)}</span>
+                  <span className="perf-label">Median Load</span>
+                </div>
+                <div className="perf-stat">
+                  <span className="perf-value">{performanceData.overallStats.viewsWithTiming.toLocaleString()}</span>
+                  <span className="perf-label">Page Views</span>
+                </div>
               </div>
-              <div className="perf-stat">
-                <span className="perf-value">{performanceData.overallStats.viewsWithTiming.toLocaleString()}</span>
-                <span className="perf-label">Page Views</span>
-              </div>
-            </div>
+            )}
 
-            {/* Trend Chart */}
-            {performanceData.dailyTrend && performanceData.dailyTrend.length > 0 && (
+            {/* Trend Chart - show in dock view OR for non-admins */}
+            {(forDock || !isAdmin || !databaseStats) && performanceData.dailyTrend && performanceData.dailyTrend.length > 0 && (
               <div className="performance-chart">
                 <h4>Load Time Trend</h4>
-                <ResponsiveContainer width="100%" height={forDock ? 120 : 80}>
+                <ResponsiveContainer width="100%" height={120}>
                   <LineChart data={performanceData.dailyTrend}>
                     <XAxis
                       dataKey="date"
@@ -335,18 +421,31 @@ const PerformancePanel = ({
                       width={45}
                     />
                     <Tooltip
-                      formatter={(value) => [formatMs(value), 'Avg Load Time']}
+                      formatter={(value, name) => [formatMs(value), name === 'p50LoadTime' ? 'p50 (median)' : 'p90']}
                       labelFormatter={(date) => new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                     />
                     <Line
                       type="monotone"
-                      dataKey="avgLoadTime"
+                      dataKey="p50LoadTime"
+                      name="p50LoadTime"
                       stroke="#00aeef"
                       strokeWidth={2}
-                      dot={true}
+                      dot={{ r: 2 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="p90LoadTime"
+                      name="p90LoadTime"
+                      stroke="#f59e0b"
+                      strokeWidth={1.5}
+                      strokeDasharray="4 2"
+                      dot={{ r: 2 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
+                <p className="performance-note">
+                  Intraday deployments may cause temporary spikes in load times.
+                </p>
               </div>
             )}
 

@@ -16,6 +16,7 @@ import { calculateHealthScores } from './ProjectHealthModal';
 import { calculateClarityScore } from '../utils/clarityScore';
 import MetricChart from './MetricChart';
 import ProjectTimelineBar from './ProjectTimelineBar';
+import Sparkline from './Sparkline';
 import './PortfolioReviewModal.css';
 
 const getHealthColor = (score) => {
@@ -190,10 +191,17 @@ const PortfolioReviewModal = ({
           const redTolerance = parseFloat(latest.red_tolerance) || 10.0;
 
           if (variance < 0 && variancePercent > redTolerance) {
+            // Get last 6 periods for sparkline trend data
+            const trendData = metricData.slice(-6).map(d => ({
+              complete: parseFloat(d.complete) || 0,
+              expected: parseFloat(d.expected) || 0,
+              date: d.reporting_date
+            }));
             stats.metricsNeedingAttention.push({
               projectName: project.name,
               metricName: metric.name,
-              variancePercent: variancePercent.toFixed(1)
+              variancePercent: variancePercent.toFixed(1),
+              trendData
             });
           }
         }
@@ -761,6 +769,11 @@ const PortfolioReviewModal = ({
                       <div key={idx} className="attention-item-compact">
                         <div className="attention-project-compact">{item.projectName}</div>
                         <div className="attention-metric-compact">{item.metricName}</div>
+                        <div className="attention-sparkline-compact">
+                          {item.trendData && item.trendData.length >= 2 && (
+                            <Sparkline data={item.trendData} width={50} height={16} />
+                          )}
+                        </div>
                         <div className="attention-variance-compact">{item.variancePercent}% behind</div>
                       </div>
                     ))}

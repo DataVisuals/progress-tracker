@@ -251,10 +251,9 @@ describe('Portfolio Management API Tests', () => {
 
       // Create a metric for this project
       const metricResponse = await request(app)
-        .post('/api/metrics')
+        .post(`/api/projects/${testProjectId}/metrics`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          projectId: testProjectId,
           name: 'Test Metric',
           start_date: '2025-01-01',
           end_date: '2025-06-30',

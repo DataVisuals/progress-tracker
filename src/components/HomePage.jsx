@@ -515,10 +515,12 @@ const HomePage = ({
         const projectInfo = projects[projectId];
         if (!projectInfo) return;
 
-        // Only show projects where user is PM or secondary IM (this is "My Projects" view)
+        // Only show projects where user is PM, secondary IM, or portfolio manager
         const isProjectOwner = projectInfo.initiative_manager === currentUser?.name;
         const isSecondaryIM = projectInfo.secondary_pm === currentUser?.name;
-        if (!isProjectOwner && !isSecondaryIM) return;
+        const portfolio = portfolios.find(p => p.id === projectInfo.portfolio_id);
+        const isPortfolioManager = portfolio?.manager_id === currentUser?.id;
+        if (!isProjectOwner && !isSecondaryIM && !isPortfolioManager) return;
 
         const metricGroups = {};
         data.forEach(period => {

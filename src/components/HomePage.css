@@ -1613,21 +1613,103 @@
 
 /* Performance Panel with Database - Better Layout */
 .performance-quadrant .database-stats-content {
-  margin-bottom: 24px;
-  padding-bottom: 12px;
-  flex: 0 0 auto;
-  max-height: 45%;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Compact view - horizontal layout: donut left, chart right */
+.performance-quadrant .compact-perf-layout {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.performance-quadrant .compact-perf-layout .donut-section {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.performance-quadrant .compact-perf-layout .chart-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 4px;
+}
+
+.performance-quadrant .compact-perf-layout .compact-trend-chart {
+  flex: 1;
+  min-height: 80px;
+}
+
+.performance-quadrant .compact-perf-layout .compact-trend-chart h4 {
+  margin: 0 0 4px 0;
+  font-size: 11px;
+}
+
+.performance-quadrant .compact-stats-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.performance-quadrant .compact-stats-inline .stat-item {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.performance-quadrant .compact-stats-inline .stat-value {
+  font-weight: 600;
+  color: #003c71;
+}
+
+.performance-quadrant .compact-stats-inline .stat-value.fast {
+  color: #10b981;
+}
+
+.performance-quadrant .compact-stats-inline .stat-label {
+  color: #6b7280;
+  text-transform: uppercase;
+  font-size: 9px;
+}
+
+:root.dark-mode .performance-quadrant .compact-stats-inline .stat-value {
+  color: #e5e7eb;
+}
+
+:root.dark-mode .performance-quadrant .compact-stats-inline .stat-label {
+  color: #9ca3af;
 }
 
 .performance-quadrant .db-summary-line {
-  margin-bottom: 12px;
+  margin-bottom: 4px;
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+.performance-quadrant .db-summary-line .db-size-value {
+  font-size: 11px;
 }
 
 .performance-quadrant .db-donut-chart {
   flex: 1;
   min-height: 0;
-  max-height: 100%;
   overflow: visible;
+  display: flex;
+  width: 100%;
 }
 
 .performance-quadrant .db-main-content {
@@ -3524,23 +3606,26 @@ html.dark-mode .quadrant-content {
 
 .performance-quadrant .performance-stats {
   gap: 12px;
-  padding: 0;
+  padding: 2px 0;
   justify-content: center;
-  flex: 1;
   align-items: center;
 }
 
 .performance-quadrant .perf-stat {
-  padding: 6px 12px;
-  min-width: 70px;
+  padding: 2px 8px;
+  min-width: auto;
+  background: transparent;
+  flex-direction: row;
+  gap: 4px;
 }
 
 .performance-quadrant .perf-value {
-  font-size: 16px;
+  font-size: 12px;
 }
 
 .performance-quadrant .perf-label {
-  font-size: 9px;
+  font-size: 8px;
+  margin-top: 0;
 }
 
 .performance-stats {
@@ -3593,6 +3678,14 @@ html.dark-mode .quadrant-content {
   font-size: 12px;
   font-weight: 600;
   color: #374151;
+}
+
+.performance-note {
+  margin: 6px 0 0 0;
+  font-size: 10px;
+  color: #9ca3af;
+  font-style: italic;
+  text-align: center;
 }
 
 .performance-list {

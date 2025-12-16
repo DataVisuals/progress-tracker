@@ -30,6 +30,7 @@ vi.mock('react-icons/md', async (importOriginal) => {
 // Mock FontAwesome icons
 vi.mock('react-icons/fa', () => ({
   FaDatabase: () => <div>DatabaseIcon</div>,
+  FaSkullCrossbones: () => <div>SkullIcon</div>,
 }));
 
 // Mock DashboardConfigModal

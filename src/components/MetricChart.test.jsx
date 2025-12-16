@@ -107,6 +107,7 @@ describe('MetricChart - Inline Editing Tests', () => {
           metricName={mockMetricName}
           data={mockData}
           currentUser={mockCurrentUser}
+          canEdit={true}
           onDataChange={mockOnDataChange}
         />
       );
@@ -142,7 +143,7 @@ describe('MetricChart - Inline Editing Tests', () => {
       expect(editableCells.length).toBe(0);
     });
 
-    it('should NOT show editable cells for admin users', () => {
+    it('should show editable cells for admin users when canEdit is true', () => {
       const adminUser = { ...mockCurrentUser, role: 'admin' };
 
       render(
@@ -151,6 +152,7 @@ describe('MetricChart - Inline Editing Tests', () => {
           metricName={mockMetricName}
           data={mockData}
           currentUser={adminUser}
+          canEdit={true}
           onDataChange={mockOnDataChange}
         />
       );
@@ -159,7 +161,7 @@ describe('MetricChart - Inline Editing Tests', () => {
       const latestProgressTab = screen.getByText('Latest Progress');
       fireEvent.click(latestProgressTab);
 
-      // Admins should be able to edit
+      // Admins should be able to edit when canEdit is passed
       const editableCells = document.querySelectorAll('.editable-cell');
       expect(editableCells.length).toBeGreaterThan(0);
     });
@@ -173,6 +175,7 @@ describe('MetricChart - Inline Editing Tests', () => {
           metricName={mockMetricName}
           data={mockData}
           currentUser={mockCurrentUser}
+          canEdit={true}
           onDataChange={mockOnDataChange}
         />
       );
@@ -201,6 +204,7 @@ describe('MetricChart - Inline Editing Tests', () => {
           metricName={mockMetricName}
           data={mockData}
           currentUser={mockCurrentUser}
+          canEdit={true}
           onDataChange={mockOnDataChange}
         />
       );
@@ -233,6 +237,7 @@ describe('MetricChart - Inline Editing Tests', () => {
           metricName={mockMetricName}
           data={mockData}
           currentUser={mockCurrentUser}
+          canEdit={true}
           onDataChange={mockOnDataChange}
         />
       );
@@ -277,6 +282,7 @@ describe('MetricChart - Inline Editing Tests', () => {
           metricName={mockMetricName}
           data={mockData}
           currentUser={mockCurrentUser}
+          canEdit={true}
           onDataChange={mockOnDataChange}
         />
       );
@@ -315,6 +321,7 @@ describe('MetricChart - Inline Editing Tests', () => {
           metricName={mockMetricName}
           data={mockData}
           currentUser={mockCurrentUser}
+          canEdit={true}
           onDataChange={mockOnDataChange}
         />
       );
@@ -354,6 +361,7 @@ describe('MetricChart - Inline Editing Tests', () => {
           metricName={mockMetricName}
           data={mockData}
           currentUser={mockCurrentUser}
+          canEdit={true}
           onDataChange={mockOnDataChange}
         />
       );
@@ -393,6 +401,7 @@ describe('MetricChart - Inline Editing Tests', () => {
           metricName={mockMetricName}
           data={mockData}
           currentUser={mockCurrentUser}
+          canEdit={true}
           onDataChange={mockOnDataChange}
         />
       );
@@ -441,6 +450,7 @@ describe('MetricChart - Inline Editing Tests', () => {
           metricName={mockMetricName}
           data={mockData}
           currentUser={mockCurrentUser}
+          canEdit={true}
           onDataChange={mockOnDataChange}
         />
       );
@@ -479,6 +489,7 @@ describe('MetricChart - Inline Editing Tests', () => {
           metricName={mockMetricName}
           data={mockData}
           currentUser={mockCurrentUser}
+          canEdit={true}
           onDataChange={mockOnDataChange}
         />
       );
@@ -486,15 +497,15 @@ describe('MetricChart - Inline Editing Tests', () => {
       const latestProgressTab = screen.getByText('Latest Progress');
       fireEvent.click(latestProgressTab);
 
-      // Find rows by their labels
-      const completeLabel = screen.getByText('Complete');
-      const expectedLabel = screen.getByText('Expected');
-      const targetLabel = screen.getByText('Target');
+      // Find rows by their labels (use getAllByText since there may be multiple matches)
+      const completeLabels = screen.getAllByText('Complete');
+      const expectedLabels = screen.getAllByText('Expected');
+      const targetLabels = screen.getAllByText('Target');
 
-      // All three rows should be present
-      expect(completeLabel).toBeTruthy();
-      expect(expectedLabel).toBeTruthy();
-      expect(targetLabel).toBeTruthy();
+      // All three row types should be present
+      expect(completeLabels.length).toBeGreaterThan(0);
+      expect(expectedLabels.length).toBeGreaterThan(0);
+      expect(targetLabels.length).toBeGreaterThan(0);
 
       // Check that cells in all rows are editable
       const editableCells = document.querySelectorAll('.editable-cell');
@@ -510,6 +521,7 @@ describe('MetricChart - Inline Editing Tests', () => {
           metricName={mockMetricName}
           data={mockData}
           currentUser={mockCurrentUser}
+          canEdit={true}
           onDataChange={mockOnDataChange}
         />
       );
@@ -534,6 +546,7 @@ describe('MetricChart - Inline Editing Tests', () => {
           metricName={mockMetricName}
           data={mockData}
           currentUser={mockCurrentUser}
+          canEdit={true}
           onDataChange={mockOnDataChange}
         />
       );

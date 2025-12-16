@@ -343,7 +343,7 @@ describe('Consistency Feedback Generation Tests', () => {
 
       expect(systemUser).toBeDefined();
       expect(systemUser.name).toBe('System');
-      expect(systemUser.role).toBe('viewer');
+      expect(systemUser.role).toBe('pm'); // System user uses pm role
     });
 
     test('all generated feedback should be from system user', async () => {

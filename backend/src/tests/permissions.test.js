@@ -85,7 +85,9 @@ describe('Project Permissions API Tests', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         name: 'Test Project for Permissions',
-        description: 'Testing permissions'
+        description: 'Testing permissions',
+        start_date: '2025-01-01',
+        end_date: '2025-12-31'
       });
     testProjectId = projectResponse.body.id;
   });

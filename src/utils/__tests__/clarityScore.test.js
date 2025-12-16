@@ -83,6 +83,44 @@ describe('clarityScore', () => {
         const result = calculateClarityScore('The Project Management Office (PMO) approved the request. PMO will follow up.');
         expect(result.details.abbreviationCount).toBe(0);
       });
+
+      it('should not penalize RAG as an abbreviation', () => {
+        const result = calculateClarityScore('The project RAG status is green. RAG will be updated weekly.');
+        expect(result.details.abbreviationCount).toBe(0);
+      });
+
+      it('should not penalize RED, AMBER, GREEN as abbreviations', () => {
+        // These are common English words used in status contexts, not acronyms
+        const result = calculateClarityScore('Status is RED due to resource issues. AMBER items need attention. GREEN items are on track.');
+        expect(result.details.abbreviationCount).toBe(0);
+        expect(result.details.issues.some(i => i.toLowerCase().includes('abbreviation'))).toBe(false);
+      });
+
+      it('should not penalize individual color words', () => {
+        const redResult = calculateClarityScore('The status has been set to RED because we are blocked.');
+        expect(redResult.details.abbreviationCount).toBe(0);
+
+        const amberResult = calculateClarityScore('We moved the project to AMBER status pending review.');
+        expect(amberResult.details.abbreviationCount).toBe(0);
+
+        const greenResult = calculateClarityScore('Good news - the project is now GREEN and on track.');
+        expect(greenResult.details.abbreviationCount).toBe(0);
+      });
+
+      it('should handle mixed RAG terminology', () => {
+        const result = calculateClarityScore('The RAG status changed from RED to AMBER. We expect GREEN by next week.');
+        expect(result.details.abbreviationCount).toBe(0);
+      });
+
+      it('should not penalize abbreviation defined with parentheses after', () => {
+        const result = calculateClarityScore('The CRM (Customer Relationship Management) system is being upgraded. CRM will be offline.');
+        expect(result.details.abbreviationCount).toBe(0);
+      });
+
+      it('should not penalize abbreviation defined with dash or colon', () => {
+        const result = calculateClarityScore('ERP - Enterprise Resource Planning is being evaluated. ERP vendors were contacted.');
+        expect(result.details.abbreviationCount).toBe(0);
+      });
     });
 
     describe('sentence counting', () => {

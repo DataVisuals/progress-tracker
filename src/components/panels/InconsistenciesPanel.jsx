@@ -21,7 +21,7 @@ const InconsistenciesPanel = ({
       <div className="quadrant-content">
         {!inconsistencies ? (
           <div className="loading-text">Loading...</div>
-        ) : inconsistencies.total_inconsistencies === 0 ? (
+        ) : (!inconsistencies.summary || inconsistencies.total_inconsistencies === 0) ? (
           <div className="no-inconsistencies">
             <MdCheckCircle style={{ fontSize: '48px', color: '#10b981', marginBottom: '8px' }} />
             <p>No inconsistencies found</p>
