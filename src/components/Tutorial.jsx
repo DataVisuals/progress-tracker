@@ -541,7 +541,7 @@ const Tutorial = ({ onClose }) => {
       {/* Left arrow navigation */}
       <button
         className="tutorial-side-nav prev"
-        onClick={handlePrev}
+        onClick={(e) => { e.stopPropagation(); handlePrev(); }}
         disabled={currentPage === 0}
         aria-label="Previous page"
       >
@@ -604,7 +604,7 @@ const Tutorial = ({ onClose }) => {
       {/* Right arrow navigation */}
       <button
         className="tutorial-side-nav next"
-        onClick={handleNext}
+        onClick={(e) => { e.stopPropagation(); handleNext(); }}
         disabled={currentPage === pages.length - 1}
         aria-label="Next page"
       >

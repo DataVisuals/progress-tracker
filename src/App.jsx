@@ -270,6 +270,11 @@ function App() {
         return;
       }
 
+      // Don't interfere when tutorial is open
+      if (showTutorial) {
+        return;
+      }
+
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
         const currentIndex = projectMetrics.findIndex(m => m.name === selectedMetric);
