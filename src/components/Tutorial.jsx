@@ -20,7 +20,12 @@ import {
   MdPeople,
   MdAssignment,
   MdFilterList,
-  MdHistory
+  MdHistory,
+  MdDock,
+  MdOpenInNew,
+  MdSearch,
+  MdKeyboardArrowUp,
+  MdKeyboardArrowDown
 } from 'react-icons/md';
 import './Tutorial.css';
 
@@ -388,7 +393,88 @@ const Tutorial = ({ onClose }) => {
         }
       ]
     },
-    // Page 10: Get Started
+    // Page 10: The Dock
+    {
+      type: 'guide',
+      title: 'The Dock',
+      subtitle: 'Quick full-screen views of your data',
+      icon: <MdDock />,
+      steps: [
+        'The dock appears at the bottom of your screen',
+        'Click any icon to open a full-screen view',
+        'Options include: All Projects, Red Metrics, Milestones, and more',
+        'Use the zoom slider to expand the dock for easier selection'
+      ],
+      tip: 'Full-screen views are great for presentations and executive reviews!',
+      visual: (
+        <div className="tutorial-visual dock-visual">
+          <div className="mock-dock">
+            <div className="mock-dock-item" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)' }}>
+              <MdDashboard />
+              <span className="dock-label">All Projects</span>
+            </div>
+            <div className="mock-dock-item" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}>
+              <MdWarning />
+              <span className="dock-label">Red Metrics</span>
+            </div>
+            <div className="mock-dock-item" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+              <MdTimeline />
+              <span className="dock-label">Milestones</span>
+            </div>
+            <div className="mock-dock-item" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>
+              <MdTrendingUp />
+              <span className="dock-label">Trends</span>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    // Page 11: Project Jump
+    {
+      type: 'guide',
+      title: 'Project Jump',
+      subtitle: 'Navigate anywhere instantly with keyboard shortcuts',
+      icon: <MdSearch />,
+      steps: [
+        'Press "/" (forward slash) to open Project Jump',
+        'Start typing to search projects, metrics, or portfolios',
+        'Use arrow keys to navigate, Enter to select',
+        'Press Escape to close without selecting'
+      ],
+      tip: 'Project Jump searches across all spaces and portfolios - perfect for large organizations!',
+      visual: (
+        <div className="tutorial-visual jump-visual">
+          <div className="mock-jump-dialog">
+            <div className="mock-jump-header">
+              <MdSearch className="jump-search-icon" />
+              <span className="jump-input">mobile app...</span>
+            </div>
+            <div className="mock-jump-results">
+              <div className="jump-result highlighted">
+                <MdAssignment className="jump-result-icon" />
+                <div className="jump-result-text">
+                  <span className="jump-result-name">Mobile App Relaunch</span>
+                  <span className="jump-result-path">Engineering → Digital</span>
+                </div>
+              </div>
+              <div className="jump-result">
+                <MdShowChart className="jump-result-icon" />
+                <div className="jump-result-text">
+                  <span className="jump-result-name">Mobile Downloads</span>
+                  <span className="jump-result-path">Marketing → Growth</span>
+                </div>
+              </div>
+            </div>
+            <div className="mock-jump-footer">
+              <span><MdKeyboardArrowUp /><MdKeyboardArrowDown /> navigate</span>
+              <span>↵ select</span>
+              <span>esc close</span>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    // Page 12: Get Started
     {
       type: 'finish',
       title: 'You\'re Ready!',

@@ -247,18 +247,35 @@ function App() {
     };
   }, [isAuthenticated]);
 
-  // Keyboard shortcut for Jump to Project (Cmd+K / Ctrl+K)
+  // Keyboard shortcuts: Cmd+K for Jump to Project, ? for Tutorial, Ctrl+N for New Project
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Don't trigger shortcuts when typing in inputs
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+        return;
+      }
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setShowJumpToProject(true);
+      }
+
+      // ? key to show tutorial (only on homepage)
+      if (e.key === '?' && !selectedProject) {
+        e.preventDefault();
+        setShowTutorial(true);
+      }
+
+      // Ctrl+N to open new project dialog (only on homepage)
+      if (e.ctrlKey && e.key === 'n' && !selectedProject) {
+        e.preventDefault();
+        setShowNewProject(true);
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [selectedProject]);
 
   // Arrow key navigation between metrics when in metric view
   useEffect(() => {
