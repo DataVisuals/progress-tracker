@@ -117,7 +117,6 @@ function App() {
   const [showPageHeatmap, setShowPageHeatmap] = useState(false);
   const [showGridView, setShowGridView] = useState(false);
   const [showArchivedMetrics, setShowArchivedMetrics] = useState(false);
-  const [showTenReasons, setShowTenReasons] = useState(false);
   const [showProjectHealth, setShowProjectHealth] = useState(false);
   const [allProjectsData, setAllProjectsData] = useState({}); // For HomePage red metrics
   const [attentionCount, setAttentionCount] = useState(0); // Count of items needing attention
@@ -1800,7 +1799,7 @@ function App() {
                   className="ten-reasons-link"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setShowTenReasons(true);
+                    setShowTutorial(true);
                   }}
                 >
                   Ten reasons you need this
@@ -3174,66 +3173,6 @@ function App() {
                   );
                 })}
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Ten Reasons Modal */}
-      {showTenReasons && (
-        <div
-          className="modal-overlay"
-          onMouseDown={handleModalMouseDown}
-          onClick={(e) => handleModalClick(e, () => setShowTenReasons(false))}
-        >
-          <div className="modal-content ten-reasons-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Ten Reasons You Need This</h2>
-              <button className="modal-close" onClick={() => setShowTenReasons(false)}>×</button>
-            </div>
-            <div className="modal-body ten-reasons-body">
-              <ol className="ten-reasons-list">
-                <li>
-                  <strong>Track measures that predict success</strong>
-                  <p>Focus on leading indicators, not status narratives that describe failure after the fact.</p>
-                </li>
-                <li>
-                  <strong>Course correct early</strong>
-                  <p>Identify trends before they become problems and take action while there's still time.</p>
-                </li>
-                <li>
-                  <strong>Take the subjectivity out of status reporting</strong>
-                  <p>Numbers don't lie. Replace "I think we're on track" with objective, measurable progress.</p>
-                </li>
-                <li>
-                  <strong>Ensure completeness and consistency</strong>
-                  <p>A structured approach means nothing gets forgotten and everyone reports the same way.</p>
-                </li>
-                <li>
-                  <strong>A picture paints a thousand words</strong>
-                  <p>Visualise progress at a glance. Spot patterns and issues instantly with clear charts.</p>
-                </li>
-                <li>
-                  <strong>Low maintenance</strong>
-                  <p>Happy path is a single number updated for each moving metric. No lengthy status reports to write.</p>
-                </li>
-                <li>
-                  <strong>Focus on what matters</strong>
-                  <p>RAG status highlights the metrics that need attention. Green means move on, red means dig in.</p>
-                </li>
-                <li>
-                  <strong>Show the current in the context of the past and the future</strong>
-                  <p>See if you're getting better or worse. Has scope changed since original planning? Do we expect a ramp-up? What needs to be true to succeed?</p>
-                </li>
-                <li>
-                  <strong>Augments existing tools</strong>
-                  <p>It doesn't duplicate your project management tools—it provides the progress view they lack.</p>
-                </li>
-                <li>
-                  <strong>Automated reporting</strong>
-                  <p>Generate consistent, professional reports with a click. Fewer slides!</p>
-                </li>
-              </ol>
             </div>
           </div>
         </div>

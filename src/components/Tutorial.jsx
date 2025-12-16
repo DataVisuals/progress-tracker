@@ -25,45 +25,103 @@ import {
   MdOpenInNew,
   MdSearch,
   MdKeyboardArrowUp,
-  MdKeyboardArrowDown
+  MdKeyboardArrowDown,
+  MdLightbulb,
+  MdSpeed,
+  MdVisibility,
+  MdAutoGraph,
+  MdExtension,
+  MdArticle
 } from 'react-icons/md';
 import './Tutorial.css';
 
-const Tutorial = ({ onClose }) => {
-  const [currentPage, setCurrentPage] = useState(0);
+const Tutorial = ({ onClose, startPage = 0 }) => {
+  const [currentPage, setCurrentPage] = useState(startPage);
   const [isFlipping, setIsFlipping] = useState(false);
   const [flipDirection, setFlipDirection] = useState('next');
 
   const pages = [
-    // Page 0: Welcome
+    // Page 0: Ten Reasons You Need This
     {
-      type: 'welcome',
-      title: 'Welcome to Progress Tracker',
-      subtitle: 'Your guide to tracking projects with objective metrics',
-      icon: <MdPlayArrow />,
+      type: 'reasons',
+      title: 'Ten Reasons You Need This',
+      subtitle: 'Why objective metrics tracking transforms project delivery',
+      icon: <MdLightbulb />,
       content: (
-        <div className="tutorial-welcome">
-          <div className="welcome-hero">
-            <div className="hero-icon-container">
-              <MdDashboard className="hero-icon" />
+        <div className="tutorial-reasons">
+          <div className="reasons-grid">
+            <div className="reason-item">
+              <span className="reason-number">1</span>
+              <div className="reason-content">
+                <strong>Track measures that predict success</strong>
+                <p>Focus on leading indicators, not status narratives</p>
+              </div>
             </div>
-            <p className="welcome-tagline">Track progress, not promises</p>
+            <div className="reason-item">
+              <span className="reason-number">2</span>
+              <div className="reason-content">
+                <strong>Course correct early</strong>
+                <p>Identify trends before they become problems</p>
+              </div>
+            </div>
+            <div className="reason-item">
+              <span className="reason-number">3</span>
+              <div className="reason-content">
+                <strong>Remove subjectivity</strong>
+                <p>Replace "I think we're on track" with real data</p>
+              </div>
+            </div>
+            <div className="reason-item">
+              <span className="reason-number">4</span>
+              <div className="reason-content">
+                <strong>Ensure consistency</strong>
+                <p>Everyone reports the same way, nothing forgotten</p>
+              </div>
+            </div>
+            <div className="reason-item">
+              <span className="reason-number">5</span>
+              <div className="reason-content">
+                <strong>Visualize instantly</strong>
+                <p>A picture paints a thousand words</p>
+              </div>
+            </div>
+            <div className="reason-item">
+              <span className="reason-number">6</span>
+              <div className="reason-content">
+                <strong>Low maintenance</strong>
+                <p>Just one number per metric - no lengthy reports</p>
+              </div>
+            </div>
+            <div className="reason-item">
+              <span className="reason-number">7</span>
+              <div className="reason-content">
+                <strong>Focus on what matters</strong>
+                <p>RAG status highlights metrics that need attention</p>
+              </div>
+            </div>
+            <div className="reason-item">
+              <span className="reason-number">8</span>
+              <div className="reason-content">
+                <strong>See past, present, future</strong>
+                <p>Context of trends and expectations</p>
+              </div>
+            </div>
+            <div className="reason-item">
+              <span className="reason-number">9</span>
+              <div className="reason-content">
+                <strong>Augments existing tools</strong>
+                <p>The progress view your PM tools lack</p>
+              </div>
+            </div>
+            <div className="reason-item">
+              <span className="reason-number">10</span>
+              <div className="reason-content">
+                <strong>Automated reporting</strong>
+                <p>Generate consistent reports with a click</p>
+              </div>
+            </div>
           </div>
-          <div className="welcome-features">
-            <div className="welcome-feature">
-              <MdShowChart />
-              <span>Data-driven status</span>
-            </div>
-            <div className="welcome-feature">
-              <MdTrendingUp />
-              <span>Predict outcomes</span>
-            </div>
-            <div className="welcome-feature">
-              <MdPeople />
-              <span>Team transparency</span>
-            </div>
-          </div>
-          <p className="welcome-instruction">Use the arrows below to navigate through this tutorial</p>
+          <p className="reasons-cta">Use arrows to learn how to get started →</p>
         </div>
       )
     },
@@ -572,7 +630,7 @@ const Tutorial = ({ onClose }) => {
 
   const renderPageContent = () => {
     switch (page.type) {
-      case 'welcome':
+      case 'reasons':
       case 'concept':
       case 'finish':
         return page.content;

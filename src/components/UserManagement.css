@@ -1,9 +1,10 @@
 .modal-content.user-management-modal {
-  max-width: 1300px !important;
-  width: 85vw !important;
+  max-width: 1400px !important;
+  width: 90vw !important;
   max-height: 90vh;
   overflow-y: auto;
   overflow-x: hidden;
+  padding: 24px 32px;
 }
 
 .user-management-container {
@@ -306,13 +307,19 @@
 
 .user-permissions {
   flex: 1;
+  min-width: 280px;
+  max-width: 350px;
   border-left: 1px solid #ddd;
   padding-left: 16px;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 .user-permissions h3 {
   font-size: 15px;
-  margin: 0 0 8px 0;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
 }
 
 .users-table {
@@ -324,7 +331,7 @@
 
 .users-table th,
 .users-table td {
-  padding: 8px 10px;
+  padding: 10px 12px;
   text-align: left;
   border-bottom: 1px solid #eee;
   overflow: hidden;
@@ -335,9 +342,9 @@
 /* Compact table variant */
 .users-table.compact th,
 .users-table.compact td {
-  padding: 4px 8px;
+  padding: 8px 12px;
   font-size: 13px;
-  line-height: 1.3;
+  line-height: 1.4;
 }
 
 /* Allow the Actions column to overflow so dropdowns aren't clipped */
@@ -347,22 +354,23 @@
 
 .users-table th:nth-child(1),
 .users-table td:nth-child(1) {
-  width: 25%;
+  width: 28%;
 }
 
 .users-table th:nth-child(2),
 .users-table td:nth-child(2) {
-  width: 25%;
+  width: 22%;
 }
 
 .users-table th:nth-child(3),
 .users-table td:nth-child(3) {
-  width: 15%;
+  width: 10%;
+  text-align: center;
 }
 
 .users-table th:nth-child(4),
 .users-table td:nth-child(4) {
-  width: 35%;
+  width: 40%;
   white-space: normal;
 }
 
@@ -416,44 +424,149 @@
   color: white;
 }
 
-.role-select {
-  padding: 6px 10px;
-  border: 1px solid #ddd;
+.role-badge-sysadmin {
+  background-color: #9333ea;
+  color: white;
+}
+
+/* System admin toggle button */
+.sysadmin-btn {
+  padding: 4px 8px;
+  background-color: transparent;
+  color: #9ca3af;
+  border: 1px solid #d1d5db;
   border-radius: 4px;
-  margin-right: 8px;
-  font-size: 14px;
-  min-width: 100px;
+  cursor: pointer;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.sysadmin-btn:hover {
+  background-color: #faf5ff;
+  border-color: #a855f7;
+  color: #a855f7;
+}
+
+.sysadmin-btn.active {
+  background-color: #9333ea;
+  color: white;
+  border-color: #9333ea;
+}
+
+.sysadmin-btn.active:hover {
+  background-color: #7e22ce;
+  border-color: #7e22ce;
+}
+
+:root.dark-mode .sysadmin-btn {
+  background-color: transparent;
+  border-color: #4b5563;
+  color: #6b7280;
+}
+
+:root.dark-mode .sysadmin-btn:hover {
+  background-color: rgba(168, 85, 247, 0.15);
+  border-color: #a855f7;
+  color: #c084fc;
+}
+
+:root.dark-mode .sysadmin-btn.active {
+  background-color: #9333ea;
+  color: white;
+  border-color: #9333ea;
+}
+
+:root.dark-mode .sysadmin-btn.active:hover {
+  background-color: #7e22ce;
+  border-color: #7e22ce;
+}
+
+/* System admin note styling */
+.system-admin-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f3e8ff !important;
+  border-left: 4px solid #9333ea;
+}
+
+.system-admin-note .sysadmin-icon {
+  color: #9333ea;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+:root.dark-mode .system-admin-note {
+  background-color: #4c1d95 !important;
+  border-left-color: #a855f7;
+}
+
+:root.dark-mode .system-admin-note .sysadmin-icon {
+  color: #c084fc;
+}
+
+.role-select {
+  min-width: 90px;
+}
+
+.user-actions-group .role-select {
+  flex-shrink: 0;
+}
+
+/* Action buttons container */
+.user-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .reset-password-btn {
-  padding: 2px 8px;
-  background-color: #2196F3;
+  padding: 4px 10px;
+  background-color: #3b82f6;
   color: white;
   border: none;
-  border-radius: 3px;
+  border-radius: 4px;
   cursor: pointer;
   font-size: 11px;
+  font-weight: 500;
   white-space: nowrap;
-  margin-right: 4px;
+  transition: background-color 0.15s;
 }
 
 .reset-password-btn:hover {
-  background-color: #1976D2;
+  background-color: #2563eb;
 }
 
 .delete-user-btn {
-  padding: 2px 8px;
-  background-color: #f44336;
-  color: white;
-  border: none;
-  border-radius: 3px;
+  padding: 4px 10px;
+  background-color: transparent;
+  color: #dc2626;
+  border: 1px solid #dc2626;
+  border-radius: 4px;
   cursor: pointer;
   font-size: 11px;
+  font-weight: 500;
   white-space: nowrap;
+  transition: all 0.15s;
 }
 
 .delete-user-btn:hover {
-  background-color: #d32f2f;
+  background-color: #dc2626;
+  color: white;
+}
+
+:root.dark-mode .delete-user-btn {
+  color: #f87171;
+  border-color: #f87171;
+}
+
+:root.dark-mode .delete-user-btn:hover {
+  background-color: #dc2626;
+  color: white;
+  border-color: #dc2626;
 }
 
 .reset-password-info {
@@ -733,6 +846,10 @@
 /* Dark Mode Styles */
 :root.dark-mode .user-permissions {
   border-left-color: #374151;
+}
+
+:root.dark-mode .user-permissions h3 {
+  border-bottom-color: #374151;
 }
 
 :root.dark-mode .users-table th,

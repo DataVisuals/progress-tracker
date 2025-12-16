@@ -59,13 +59,25 @@ function createApp(dbPath) {
     EDITOR: 'editor' // Legacy role - treat as PM
   };
 
-  // Check if user can edit a project
+  // Check if user can edit a project (space-scoped for admins)
   async function canEditProject(userId, projectId) {
-    const user = await dbGet('SELECT role FROM users WHERE id = ?', [userId]);
+    const user = await dbGet('SELECT role, is_system_admin FROM users WHERE id = ?', [userId]);
 
-    // Admins can edit anything
-    if (user.role === ROLES.ADMIN) {
+    // System admins can edit anything across all spaces
+    if (user.is_system_admin === 1) {
       return true;
+    }
+
+    // Regular admins: check space assignment
+    if (user.role === ROLES.ADMIN) {
+      const spaceId = await getProjectSpaceId(projectId);
+
+      // If project has no space, admin can edit (legacy/unassigned projects)
+      if (!spaceId) {
+        return true;
+      }
+
+      return await isAdminForSpace(userId, spaceId);
     }
 
     // PMs and Editors can edit if they have permission
@@ -88,6 +100,68 @@ function createApp(dbPath) {
   // Check if user is admin
   function isAdmin(user) {
     return user.role === ROLES.ADMIN;
+  }
+
+  // Check if user is a system admin (cross-space/global permissions)
+  function isSystemAdmin(user) {
+    return user && user.is_system_admin === 1;
+  }
+
+  // Check if admin is assigned to a specific space
+  async function isAdminForSpace(userId, spaceId) {
+    const user = await dbGet('SELECT role, is_system_admin FROM users WHERE id = ?', [userId]);
+
+    if (!user || user.role !== ROLES.ADMIN) {
+      return false;
+    }
+
+    // System admins have access to all spaces
+    if (user.is_system_admin === 1) {
+      return true;
+    }
+
+    // Check space_admin_assignments table
+    const assignment = await dbGet(
+      'SELECT id FROM space_admin_assignments WHERE user_id = ? AND space_id = ?',
+      [userId, spaceId]
+    );
+
+    return !!assignment;
+  }
+
+  // Get the space ID for a project (via portfolio)
+  async function getProjectSpaceId(projectId) {
+    const result = await dbGet(`
+      SELECT p.space_id
+      FROM projects pr
+      JOIN portfolios p ON pr.portfolio_id = p.id
+      WHERE pr.id = ?
+    `, [projectId]);
+
+    return result ? result.space_id : null;
+  }
+
+  // Get all spaces an admin has access to
+  async function getAdminSpaces(userId) {
+    const user = await dbGet('SELECT role, is_system_admin FROM users WHERE id = ?', [userId]);
+
+    if (!user || user.role !== ROLES.ADMIN) {
+      return [];
+    }
+
+    // System admins have access to all spaces
+    if (user.is_system_admin === 1) {
+      return await dbAll('SELECT id, name FROM spaces ORDER BY display_order');
+    }
+
+    // Regular admins get assigned spaces only
+    return await dbAll(`
+      SELECT s.id, s.name
+      FROM spaces s
+      INNER JOIN space_admin_assignments sa ON s.id = sa.space_id
+      WHERE sa.user_id = ?
+      ORDER BY s.display_order
+    `, [userId]);
   }
 
   // Check if user is PM or above (PM or admin)
@@ -4079,7 +4153,7 @@ function createApp(dbPath) {
         return res.status(403).json({ error: 'You do not have permission to view users' });
       }
   
-      const users = await dbAll('SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC');
+      const users = await dbAll('SELECT id, email, name, role, is_system_admin, created_at FROM users ORDER BY created_at DESC');
       res.json(users);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -4385,7 +4459,249 @@ function createApp(dbPath) {
       res.status(500).json({ error: err.message });
     }
   });
-  
+
+  // ===== SPACE ADMIN ASSIGNMENTS =====
+  // Get all space admin assignments (System Admin only)
+  app.get('/api/space-admin-assignments', authenticateToken, async (req, res) => {
+    try {
+      const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
+      if (!isSystemAdmin(user)) {
+        return res.status(403).json({ error: 'System admin access required' });
+      }
+
+      const assignments = await dbAll(`
+        SELECT sa.*, u.name as user_name, u.email as user_email, s.name as space_name
+        FROM space_admin_assignments sa
+        JOIN users u ON sa.user_id = u.id
+        JOIN spaces s ON sa.space_id = s.id
+        ORDER BY u.name, s.name
+      `);
+
+      res.json(assignments);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Get space admin assignments for a specific user (System Admin only)
+  app.get('/api/users/:userId/space-assignments', authenticateToken, async (req, res) => {
+    try {
+      const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
+      if (!isSystemAdmin(user)) {
+        return res.status(403).json({ error: 'System admin access required' });
+      }
+
+      const assignments = await dbAll(`
+        SELECT sa.*, s.name as space_name, s.color as space_color
+        FROM space_admin_assignments sa
+        JOIN spaces s ON sa.space_id = s.id
+        WHERE sa.user_id = ?
+        ORDER BY s.display_order
+      `, [req.params.userId]);
+
+      res.json(assignments);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Get spaces available for admin assignment (System Admin only)
+  app.get('/api/spaces-for-assignment', authenticateToken, async (req, res) => {
+    try {
+      const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
+      if (!isSystemAdmin(user)) {
+        return res.status(403).json({ error: 'System admin access required' });
+      }
+
+      const spaces = await dbAll('SELECT id, name FROM spaces ORDER BY display_order');
+      res.json(spaces);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Assign admin to space (System Admin only)
+  app.post('/api/space-admin-assignments', authenticateToken, async (req, res) => {
+    try {
+      const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
+      if (!isSystemAdmin(user)) {
+        return res.status(403).json({ error: 'System admin access required' });
+      }
+
+      const { user_id, space_id } = req.body;
+      if (!user_id || !space_id) {
+        return res.status(400).json({ error: 'user_id and space_id are required' });
+      }
+
+      // Check if target user is an admin
+      const targetUser = await dbGet('SELECT * FROM users WHERE id = ?', [user_id]);
+      if (!targetUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      if (targetUser.role !== 'admin') {
+        return res.status(400).json({ error: 'Can only assign spaces to admin users' });
+      }
+      if (targetUser.is_system_admin === 1) {
+        return res.status(400).json({ error: 'System admins already have access to all spaces' });
+      }
+
+      // Check if space exists
+      const space = await dbGet('SELECT * FROM spaces WHERE id = ?', [space_id]);
+      if (!space) {
+        return res.status(404).json({ error: 'Space not found' });
+      }
+
+      // Check if assignment already exists
+      const existing = await dbGet(
+        'SELECT id FROM space_admin_assignments WHERE user_id = ? AND space_id = ?',
+        [user_id, space_id]
+      );
+      if (existing) {
+        return res.status(400).json({ error: 'Assignment already exists' });
+      }
+
+      await dbRun(
+        'INSERT INTO space_admin_assignments (user_id, space_id, created_by) VALUES (?, ?, ?)',
+        [user_id, space_id, req.user.userId]
+      );
+
+      await logAudit(req.user, 'CREATE', 'space_admin_assignments', null,
+        null,
+        { user_id, space_id },
+        `Assigned ${targetUser.email} as admin for space "${space.name}"`,
+        req.ip
+      );
+
+      res.status(201).json({
+        success: true,
+        message: `Assigned ${targetUser.email} to space "${space.name}"`
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Remove admin from space (System Admin only)
+  app.delete('/api/space-admin-assignments/:userId/:spaceId', authenticateToken, async (req, res) => {
+    try {
+      const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
+      if (!isSystemAdmin(user)) {
+        return res.status(403).json({ error: 'System admin access required' });
+      }
+
+      const { userId, spaceId } = req.params;
+
+      // Check if assignment exists
+      const assignment = await dbGet(
+        'SELECT id FROM space_admin_assignments WHERE user_id = ? AND space_id = ?',
+        [userId, spaceId]
+      );
+      if (!assignment) {
+        return res.status(404).json({ error: 'Assignment not found' });
+      }
+
+      const targetUser = await dbGet('SELECT * FROM users WHERE id = ?', [userId]);
+      const space = await dbGet('SELECT * FROM spaces WHERE id = ?', [spaceId]);
+
+      await dbRun(
+        'DELETE FROM space_admin_assignments WHERE user_id = ? AND space_id = ?',
+        [userId, spaceId]
+      );
+
+      await logAudit(req.user, 'DELETE', 'space_admin_assignments', null,
+        { user_id: userId, space_id: spaceId },
+        null,
+        `Removed ${targetUser?.email || 'user'} as admin from space "${space?.name || 'unknown'}"`,
+        req.ip
+      );
+
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Get admin's accessible spaces (for current user)
+  app.get('/api/my-admin-spaces', authenticateToken, async (req, res) => {
+    try {
+      const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
+
+      if (!isAdmin(user)) {
+        return res.json([]);
+      }
+
+      if (isSystemAdmin(user)) {
+        // System admins have access to all spaces
+        const spaces = await dbAll('SELECT id, name FROM spaces ORDER BY display_order');
+        res.json(spaces);
+      } else {
+        // Regular admins get assigned spaces only
+        const spaces = await dbAll(`
+          SELECT s.id, s.name
+          FROM spaces s
+          INNER JOIN space_admin_assignments sa ON s.id = sa.space_id
+          WHERE sa.user_id = ?
+          ORDER BY s.display_order
+        `, [req.user.userId]);
+        res.json(spaces);
+      }
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Update user to/from system admin (System Admin only)
+  app.put('/api/users/:id/system-admin', authenticateToken, async (req, res) => {
+    try {
+      const user = await dbGet('SELECT * FROM users WHERE id = ?', [req.user.userId]);
+      if (!isSystemAdmin(user)) {
+        return res.status(403).json({ error: 'System admin access required' });
+      }
+
+      const { is_system_admin } = req.body;
+      if (typeof is_system_admin !== 'boolean' && typeof is_system_admin !== 'number') {
+        return res.status(400).json({ error: 'is_system_admin must be a boolean' });
+      }
+
+      // Prevent removing system admin from yourself
+      if (parseInt(req.params.id) === req.user.userId && !is_system_admin) {
+        return res.status(400).json({ error: 'You cannot remove system admin from yourself' });
+      }
+
+      const targetUser = await dbGet('SELECT * FROM users WHERE id = ?', [req.params.id]);
+      if (!targetUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // User must be an admin to become system admin
+      if (is_system_admin && targetUser.role !== 'admin') {
+        return res.status(400).json({ error: 'User must be an admin to become a system admin' });
+      }
+
+      const newValue = is_system_admin ? 1 : 0;
+      await dbRun('UPDATE users SET is_system_admin = ? WHERE id = ?', [newValue, req.params.id]);
+
+      // If promoting to system admin, remove space assignments (they now have all spaces)
+      if (is_system_admin) {
+        await dbRun('DELETE FROM space_admin_assignments WHERE user_id = ?', [req.params.id]);
+      }
+
+      await logAudit(req.user, 'UPDATE', 'users', req.params.id,
+        { is_system_admin: targetUser.is_system_admin },
+        { is_system_admin: newValue },
+        `${is_system_admin ? 'Promoted' : 'Demoted'} ${targetUser.email} ${is_system_admin ? 'to' : 'from'} system admin`,
+        req.ip
+      );
+
+      res.json({
+        success: true,
+        message: `${targetUser.email} is ${is_system_admin ? 'now a system admin' : 'no longer a system admin'}`
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== AUDIT LOG =====
   app.get('/api/audit', authenticateToken, async (req, res) => {
     try {
@@ -7943,6 +8259,35 @@ function createApp(dbPath) {
       console.log('✅ Created index for space_id in portfolios');
     } catch (err) {
       // Index already exists, that's fine
+    }
+
+    // Migration: Create space_admin_assignments table
+    try {
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS space_admin_assignments (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          space_id INTEGER NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          created_by INTEGER,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (space_id) REFERENCES spaces(id) ON DELETE CASCADE,
+          FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+          UNIQUE(user_id, space_id)
+        )
+      `);
+      console.log('✅ Created space_admin_assignments table');
+    } catch (err) {
+      // Table already exists, that's fine
+    }
+
+    // Migration: Create indexes for space_admin_assignments
+    try {
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_space_admin_user ON space_admin_assignments(user_id)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_space_admin_space ON space_admin_assignments(space_id)`);
+      console.log('✅ Created indexes for space_admin_assignments');
+    } catch (err) {
+      // Indexes already exist, that's fine
     }
 
     // Migration: Insert default space if none exists

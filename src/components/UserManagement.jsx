@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Select from 'react-select';
-import { MdContentCopy, MdSearch } from 'react-icons/md';
+import { MdContentCopy, MdSearch, MdStar, MdStarBorder } from 'react-icons/md';
 import { api } from '../api/client';
 import { selectStyles, compactSelectStyles } from './SelectStyles';
 import './FormInputs.css';
@@ -9,8 +9,10 @@ import './UserManagement.css';
 const UserManagement = ({ currentUser, onClose }) => {
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [spaces, setSpaces] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userPermissions, setUserPermissions] = useState([]);
+  const [userSpaceAssignments, setUserSpaceAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUser, setNewUser] = useState({
@@ -31,10 +33,21 @@ const UserManagement = ({ currentUser, onClose }) => {
   const [resetPasswordUser, setResetPasswordUser] = useState(null);
   const [newPassword, setNewPassword] = useState('');
 
+  // Check if current user is a system admin
+  // Note: login returns isSystemAdmin (camelCase), but user list returns is_system_admin (snake_case)
+  const isCurrentUserSystemAdmin = currentUser?.isSystemAdmin === true || currentUser?.is_system_admin === 1;
+
+  console.log('UserManagement - currentUser:', currentUser);
+  console.log('UserManagement - isCurrentUserSystemAdmin:', isCurrentUserSystemAdmin);
+
   useEffect(() => {
     loadUsers();
     loadProjects();
-  }, []);
+    // Always try to load spaces for admin users - the API will reject non-system-admins
+    if (currentUser?.role === 'admin') {
+      loadSpaces();
+    }
+  }, [currentUser?.role]);
 
   const loadUsers = async () => {
     try {
@@ -55,6 +68,29 @@ const UserManagement = ({ currentUser, onClose }) => {
       setProjects(response.data);
     } catch (err) {
       console.error('Failed to load projects:', err);
+    }
+  };
+
+  const loadSpaces = async () => {
+    try {
+      // Note: api.get already includes /api base URL, so just use the path without /api prefix
+      const response = await api.get('/spaces-for-assignment');
+      console.log('Loaded spaces for assignment:', response.data);
+      setSpaces(response.data || []);
+    } catch (err) {
+      console.error('Failed to load spaces:', err);
+      setSpaces([]);
+    }
+  };
+
+  const loadUserSpaceAssignments = async (userId) => {
+    if (!isCurrentUserSystemAdmin) return;
+    try {
+      const response = await api.get(`/users/${userId}/space-assignments`);
+      setUserSpaceAssignments(response.data || []);
+    } catch (err) {
+      console.error('Failed to load space assignments:', err);
+      setUserSpaceAssignments([]);
     }
   };
 
@@ -83,8 +119,13 @@ const UserManagement = ({ currentUser, onClose }) => {
     setSelectedUser(user);
     if (user.role === 'pm') {
       loadUserPermissions(user.id);
+      setUserSpaceAssignments([]);
+    } else if (user.role === 'admin' && isCurrentUserSystemAdmin && !user.is_system_admin) {
+      loadUserSpaceAssignments(user.id);
+      setUserPermissions([]);
     } else {
       setUserPermissions([]);
+      setUserSpaceAssignments([]);
     }
   };
 
@@ -229,6 +270,60 @@ const UserManagement = ({ currentUser, onClose }) => {
     }
   };
 
+  const handleAssignSpace = async (spaceId) => {
+    if (!selectedUser || !isCurrentUserSystemAdmin) return;
+
+    try {
+      await api.post('/space-admin-assignments', {
+        user_id: selectedUser.id,
+        space_id: spaceId
+      });
+      await loadUserSpaceAssignments(selectedUser.id);
+    } catch (err) {
+      console.error('Failed to assign space:', err);
+      alert('Failed to assign space: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleRevokeSpaceAssignment = async (spaceId) => {
+    if (!selectedUser || !isCurrentUserSystemAdmin) return;
+
+    try {
+      await api.delete(`/space-admin-assignments/${selectedUser.id}/${spaceId}`);
+      await loadUserSpaceAssignments(selectedUser.id);
+    } catch (err) {
+      console.error('Failed to revoke space assignment:', err);
+      alert('Failed to revoke space assignment: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleToggleSystemAdmin = async (user) => {
+    if (!isCurrentUserSystemAdmin) return;
+
+    const newValue = !user.is_system_admin;
+    const action = newValue ? 'promote' : 'demote';
+
+    if (!confirm(`Are you sure you want to ${action} ${user.email} ${newValue ? 'to' : 'from'} system admin?`)) {
+      return;
+    }
+
+    try {
+      await api.put(`/users/${user.id}/system-admin`, { is_system_admin: newValue });
+      await loadUsers();
+      if (selectedUser?.id === user.id) {
+        setSelectedUser({ ...selectedUser, is_system_admin: newValue ? 1 : 0 });
+        if (!newValue) {
+          loadUserSpaceAssignments(user.id);
+        } else {
+          setUserSpaceAssignments([]);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to update system admin status:', err);
+      alert('Failed to update system admin status: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
   const checkNameAvailability = async (name) => {
     if (!name || name.trim().length < 2) {
       setNameError('');
@@ -282,13 +377,25 @@ const UserManagement = ({ currentUser, onClose }) => {
     }
   };
 
-  const getRoleBadgeClass = (role) => {
+  const getRoleBadgeClass = (role, isSystemAdmin) => {
+    if (isSystemAdmin) return 'role-badge-sysadmin';
     switch (role) {
       case 'admin': return 'role-badge-admin';
       case 'pm': return 'role-badge-pm';
       default: return '';
     }
   };
+
+  const getRoleLabel = (user) => {
+    if (user.is_system_admin) return 'sys admin';
+    return user.role;
+  };
+
+  // Get spaces available for assignment (excluding already assigned)
+  const availableSpaces = useMemo(() => {
+    const assignedSpaceIds = new Set(userSpaceAssignments.map(a => a.space_id));
+    return spaces.filter(s => !assignedSpaceIds.has(s.id));
+  }, [spaces, userSpaceAssignments]);
 
   // Sort and filter users
   const sortedFilteredUsers = useMemo(() => {
@@ -439,12 +546,12 @@ const UserManagement = ({ currentUser, onClose }) => {
                         )}
                       </td>
                       <td>
-                        <span className={`role-badge ${getRoleBadgeClass(user.role)}`}>
-                          {user.role}
+                        <span className={`role-badge ${getRoleBadgeClass(user.role, user.is_system_admin)}`}>
+                          {getRoleLabel(user)}
                         </span>
                       </td>
                       <td>
-                        <div style={{ display: 'inline-block', minWidth: '80px', marginRight: '6px' }} onClick={(e) => e.stopPropagation()}>
+                        <div className="user-actions-group" onClick={(e) => e.stopPropagation()}>
                           <Select
                             value={{ value: user.role, label: user.role.toUpperCase() }}
                             onChange={(option) => handleChangeRole(user.id, option.value)}
@@ -456,24 +563,33 @@ const UserManagement = ({ currentUser, onClose }) => {
                             className="role-select"
                             menuPlacement="auto"
                           />
+                          {user.id !== currentUser.userId && (
+                            <>
+                              <button
+                                onClick={() => setResetPasswordUser(user)}
+                                className="reset-password-btn"
+                                title="Reset user's password"
+                              >
+                                Reset PW
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(user.id, user.email)}
+                                className="delete-user-btn"
+                              >
+                                Delete
+                              </button>
+                              {isCurrentUserSystemAdmin && user.role === 'admin' && (
+                                <button
+                                  onClick={() => handleToggleSystemAdmin(user)}
+                                  className={user.is_system_admin ? 'sysadmin-btn active' : 'sysadmin-btn'}
+                                  title={user.is_system_admin ? 'Remove System Admin' : 'Make System Admin'}
+                                >
+                                  {user.is_system_admin ? <MdStar /> : <MdStarBorder />}
+                                </button>
+                              )}
+                            </>
+                          )}
                         </div>
-                        {user.id !== currentUser.userId && (
-                          <>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setResetPasswordUser(user); }}
-                              className="reset-password-btn"
-                              title="Reset user's password"
-                            >
-                              Reset PW
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleDeleteUser(user.id, user.email); }}
-                              className="delete-user-btn"
-                            >
-                              Delete
-                            </button>
-                          </>
-                        )}
                       </td>
                     </tr>
                   ))}
@@ -549,12 +665,70 @@ const UserManagement = ({ currentUser, onClose }) => {
             </div>
           )}
 
-          {selectedUser && selectedUser.role !== 'pm' && (
+          {selectedUser && selectedUser.role === 'admin' && (
             <div className="user-permissions">
               <h3>{selectedUser.name}</h3>
-              <p className="role-description">
-                {selectedUser.role === 'admin' && 'Admins have full access to all projects and can manage users.'}
-              </p>
+
+              {selectedUser.is_system_admin ? (
+                <p className="role-description system-admin-note">
+                  <MdStar className="sysadmin-icon" />
+                  System Admin - Full access to all spaces and projects.
+                </p>
+              ) : (
+                <>
+                  <p className="role-description">
+                    Regular Admin - Access limited to assigned spaces only.
+                  </p>
+
+                  {isCurrentUserSystemAdmin && (
+                    <>
+                      <div className="permissions-section">
+                        <h4>Assigned Spaces ({userSpaceAssignments.length})</h4>
+                        {userSpaceAssignments.length === 0 ? (
+                          <p className="no-permissions">No spaces assigned - this admin cannot manage any spaces</p>
+                        ) : (
+                          <ul className="permissions-list">
+                            {userSpaceAssignments.map(assignment => (
+                              <li key={assignment.space_id}>
+                                {assignment.space_name}
+                                <button
+                                  onClick={() => handleRevokeSpaceAssignment(assignment.space_id)}
+                                  className="revoke-btn"
+                                >
+                                  Revoke
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+
+                      <div className="permissions-section">
+                        <h4>Grant Space Access ({availableSpaces.length})</h4>
+                        {availableSpaces.length === 0 ? (
+                          <p className="no-permissions">
+                            {spaces.length === 0 ? 'Loading spaces...' : 'All spaces already assigned'}
+                          </p>
+                        ) : (
+                          <ul className="permissions-list">
+                            {availableSpaces.map(space => (
+                              <li key={space.id}>
+                                {space.name}
+                                <button
+                                  onClick={() => handleAssignSpace(space.id)}
+                                  className="grant-btn"
+                                >
+                                  Assign
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>
