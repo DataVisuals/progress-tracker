@@ -16,13 +16,38 @@ const InconsistenciesPanel = ({
 
   const handleShare = async (e) => {
     e.stopPropagation();
-    const shareUrl = `${window.location.origin}${window.location.pathname}?view=inconsistencies`;
+    // Build the share URL preserving any existing params except view
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', 'inconsistencies');
+    const shareUrl = url.toString();
+
+    // Update browser URL bar first
+    window.history.replaceState({}, '', shareUrl);
+
+    // Try multiple clipboard methods
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        // Fallback: use execCommand
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
     } catch (err) {
       console.error('Failed to copy:', err);
+      // URL is already in address bar, user can copy manually
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 

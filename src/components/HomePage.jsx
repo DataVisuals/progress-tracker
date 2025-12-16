@@ -913,13 +913,38 @@ const HomePage = ({
 
   // Handle share link for expanded panel
   const handleShareLink = async (panelId) => {
-    const shareUrl = `${window.location.origin}${window.location.pathname}?view=${panelId}`;
+    // Build the share URL preserving any existing params except view
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', panelId);
+    const shareUrl = url.toString();
+
+    // Update browser URL bar first
+    window.history.replaceState({}, '', shareUrl);
+
+    // Try multiple clipboard methods
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      setShareLinkCopied(true);
-      setTimeout(() => setShareLinkCopied(false), 2000);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareLinkCopied(true);
+        setTimeout(() => setShareLinkCopied(false), 2000);
+      } else {
+        // Fallback: use execCommand
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setShareLinkCopied(true);
+        setTimeout(() => setShareLinkCopied(false), 2000);
+      }
     } catch (err) {
       console.error('Failed to copy:', err);
+      // URL is already in address bar, user can copy manually
+      setShareLinkCopied(true);
+      setTimeout(() => setShareLinkCopied(false), 2000);
     }
   };
 
