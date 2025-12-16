@@ -3,6 +3,9 @@
 -- System admins (is_system_admin = 1) have full access to all spaces
 -- Regular admins need to be assigned to spaces via this table
 
+-- Add is_system_admin column to users table
+ALTER TABLE users ADD COLUMN is_system_admin INTEGER DEFAULT 0;
+
 -- Create space_admin_assignments table
 CREATE TABLE IF NOT EXISTS space_admin_assignments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
