@@ -34,6 +34,7 @@ import PageHeatmapReport from './components/PageHeatmapReport';
 import HomePage from './components/HomePage';
 import JumpToProject from './components/JumpToProject';
 import TipsModal from './components/TipsModal';
+import Tutorial from './components/Tutorial';
 import PortfolioReviewModal from './components/PortfolioReviewModal';
 import { api, refreshToken } from './api/client';
 import { selectStyles } from './components/SelectStyles';
@@ -124,6 +125,7 @@ function App() {
   const [showUserModal, setShowUserModal] = useState(false);
   const [showTipsModal, setShowTipsModal] = useState(false);
   const [selectedTipsCategory, setSelectedTipsCategory] = useState(null);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [showPortfolioReview, setShowPortfolioReview] = useState(false);
   const [portfolioReviewId, setPortfolioReviewId] = useState(null);
   const [showPortfolioSelector, setShowPortfolioSelector] = useState(false);
@@ -1989,6 +1991,15 @@ function App() {
                       <button
                         className="user-modal-link"
                         onClick={() => {
+                          setShowTutorial(true);
+                          setShowUserModal(false);
+                        }}
+                      >
+                        Tutorial
+                      </button>
+                      <button
+                        className="user-modal-link"
+                        onClick={() => {
                           setShowTipsModal(true);
                           setSelectedTipsCategory('Best Practices');
                           setShowUserModal(false);
@@ -3241,6 +3252,11 @@ function App() {
           window.history.replaceState({}, '', url);
         }}
       />
+
+      {/* Tutorial Modal */}
+      {showTutorial && (
+        <Tutorial onClose={() => setShowTutorial(false)} />
+      )}
 
       {/* Jump to Project (Cmd+K / Ctrl+K) */}
       <JumpToProject
