@@ -8546,6 +8546,37 @@ function createApp(dbPath) {
       console.log('ℹ️  Thread columns migration skipped or failed:', err.message);
     }
 
+    // Migration: Add is_system_admin column to users table
+    try {
+      await dbRun(`ALTER TABLE users ADD COLUMN is_system_admin INTEGER DEFAULT 0`);
+      console.log('✅ Added is_system_admin column to users table');
+    } catch (err) {
+      // Column likely already exists
+      if (!err.message.includes('duplicate column')) {
+        console.log('ℹ️  is_system_admin migration skipped:', err.message);
+      }
+    }
+
+    // Migration: Create space_admin_assignments table
+    try {
+      await dbRun(`CREATE TABLE IF NOT EXISTS space_admin_assignments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        space_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_by INTEGER,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (space_id) REFERENCES spaces(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+        UNIQUE(user_id, space_id)
+      )`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_space_admin_user ON space_admin_assignments(user_id)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_space_admin_space ON space_admin_assignments(space_id)`);
+      console.log('✅ Created space_admin_assignments table');
+    } catch (err) {
+      console.log('ℹ️  space_admin_assignments migration skipped:', err.message);
+    }
+
     // Create default admin user if none exists
     const existingAdmin = await dbGet('SELECT id FROM users WHERE email = ? OR name = ?', ['admin@example.com', 'Admin User']);
     if (!existingAdmin) {
