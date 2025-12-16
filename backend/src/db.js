@@ -59,26 +59,29 @@ const dbGet = defaultDb.dbGet;
 const dbAll = defaultDb.dbAll;
 
 // Helper function to calculate expected value based on progression type
+// Uses 2 decimal precision to avoid stepped/zigzag appearance in charts
 function calculateExpectedValue(progressionType, finalTarget, periodIndex, totalPeriods) {
   const ratio = periodIndex / totalPeriods;
+  // Round to 2 decimal places for smooth curves without zigzag from integer rounding
+  const round2 = (val) => Math.round(val * 100) / 100;
 
   switch(progressionType) {
     case 'linear':
-      return Math.round(finalTarget * ratio);
+      return round2(finalTarget * ratio);
     case 's-curve':
       // Sigmoid S-curve: 1 / (1 + e^(-10(x-0.5)))
       // This creates slow start, fast middle, slow end
-      return Math.round(finalTarget / (1 + Math.exp(-10 * (ratio - 0.5))));
+      return round2(finalTarget / (1 + Math.exp(-10 * (ratio - 0.5))));
     case 'exponential':
       // Exponential J-curve: e^(3x) - 1 normalized
       // This creates slow start, then rapid acceleration
-      return Math.round(finalTarget * (Math.exp(3 * ratio) - 1) / (Math.exp(3) - 1));
+      return round2(finalTarget * (Math.exp(3 * ratio) - 1) / (Math.exp(3) - 1));
     case 'logarithmic':
       // Square root curve: front-loaded progress
       // This creates fast start, gradually slowing down
-      return Math.round(finalTarget * Math.sqrt(ratio));
+      return round2(finalTarget * Math.sqrt(ratio));
     default:
-      return Math.round(finalTarget * ratio);
+      return round2(finalTarget * ratio);
   }
 }
 

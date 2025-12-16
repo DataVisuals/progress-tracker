@@ -3102,7 +3102,11 @@ function createApp(dbPath) {
       // from_period_index: which period index to start updating from (0 = all)
       const from_period_index = req.body.from_period_index || 0;
 
-      if (final_target !== undefined && recalculate_expected) {
+      // Recalculate expected values when progression_type changes OR when explicitly requested
+      const shouldRecalculate = (progression_type !== undefined && progression_type !== metric.progression_type) ||
+                                 (final_target !== undefined && recalculate_expected);
+
+      if (shouldRecalculate) {
         const updatedMetric = await dbGet('SELECT * FROM metrics WHERE id = ?', [req.params.id]);
         const periods = await dbAll(
           'SELECT id, reporting_date, expected FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date ASC',
@@ -3129,9 +3133,11 @@ function createApp(dbPath) {
             [updatedMetric.final_target, periods[i].id]
           );
 
-          // For 'all' mode: recalculate expected from start based on full progression
+          // For progression_type change or 'all' mode: recalculate all expected values
           // For 'future' mode: recalculate expected from current base to new target
-          if (recalculate_expected === 'all') {
+          const progressionTypeChanged = progression_type !== undefined && progression_type !== metric.progression_type;
+
+          if (progressionTypeChanged || recalculate_expected === 'all') {
             // Recalculate expected based on position in full progression curve
             const expected = calculateExpectedValue(
               updatedMetric.progression_type,
