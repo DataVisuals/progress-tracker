@@ -1,5 +1,5 @@
-import React from 'react';
-import { MdCheckCircle, MdPeople } from 'react-icons/md';
+import React, { useState } from 'react';
+import { MdCheckCircle, MdPeople, MdShare, MdCheck } from 'react-icons/md';
 import { FaSkullCrossbones } from 'react-icons/fa';
 
 const InconsistenciesPanel = ({
@@ -12,11 +12,32 @@ const InconsistenciesPanel = ({
   spaces,
   onNavigateToProject
 }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async (e) => {
+    e.stopPropagation();
+    const shareUrl = `${window.location.origin}${window.location.pathname}?view=inconsistencies`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
   return (
     <div key={panelId} className={`home-quadrant inconsistency-quadrant panel-${index + 1}`}>
       <div className="quadrant-header">
         <FaSkullCrossbones className="quadrant-icon" />
         <h2>Inconsistencies</h2>
+        <button
+          className="share-link-btn"
+          onClick={handleShare}
+          title={copied ? 'Copied!' : 'Copy share link'}
+        >
+          {copied ? <MdCheck /> : <MdShare />}
+        </button>
       </div>
       <div className="quadrant-content">
         {!inconsistencies ? (

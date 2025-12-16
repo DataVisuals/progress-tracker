@@ -40,7 +40,9 @@ import {
   MdRemove,
   MdAdd,
   MdClose,
-  MdLock
+  MdLock,
+  MdShare,
+  MdCheck
 } from 'react-icons/md';
 import { FaDatabase } from 'react-icons/fa';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, RadialBarChart, RadialBar, Legend, PolarAngleAxis, LabelList, Treemap, CartesianGrid, PieChart, Pie } from 'recharts';
@@ -157,6 +159,7 @@ const HomePage = ({
   const [expandedDockPanel, setExpandedDockPanel] = useState(null); // Panel ID currently expanded from dock
   const [allMilestones, setAllMilestones] = useState({}); // Milestones grouped by project ID
   const [hideInactiveProjects, setHideInactiveProjects] = useState(false); // Filter for active projects only
+  const [shareLinkCopied, setShareLinkCopied] = useState(false); // For share link feedback
   const hoverTimeoutRef = useRef(null); // Timeout for hover delay
   const dockPositionsRef = useRef(null); // Cache original dock button positions for smooth magnification
 
@@ -908,6 +911,18 @@ const HomePage = ({
     setExpandedDockPanel(null);
   };
 
+  // Handle share link for expanded panel
+  const handleShareLink = async (panelId) => {
+    const shareUrl = `${window.location.origin}${window.location.pathname}?view=${panelId}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareLinkCopied(true);
+      setTimeout(() => setShareLinkCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
   // Check if a red metric needs a recovery plan
   const needsRecoveryPlan = (metricId) => {
     return !recoveryPlans.some(plan =>
@@ -1435,6 +1450,16 @@ const HomePage = ({
                       </div>
                     </label>
                   )}
+                  {/* Share link button for inconsistencies panel */}
+                  {expandedDockPanel === 'inconsistencies' && (
+                    <button
+                      className="share-link-btn"
+                      onClick={() => handleShareLink(expandedDockPanel)}
+                      title={shareLinkCopied ? 'Copied!' : 'Copy share link'}
+                    >
+                      {shareLinkCopied ? <MdCheck /> : <MdShare />}
+                    </button>
+                  )}
                   <button
                     className="preview-close-btn"
                     onClick={dismissPreview}
@@ -1480,9 +1505,12 @@ const HomePage = ({
                   if (!pos) return;
 
                   const distance = Math.abs(mouseX - pos.centerX);
-                  const maxDistance = 100;
-                  const scale = Math.max(1, 1.5 - (distance / maxDistance) * 0.5);
-                  const translateY = Math.max(0, (1.5 - scale) * -16);
+                  const maxDistance = 70;
+                  // Smooth cosine easing for natural falloff
+                  const normalizedDist = Math.min(distance / maxDistance, 1);
+                  const eased = (1 + Math.cos(normalizedDist * Math.PI)) / 2;
+                  const scale = 1 + eased * 0.5; // Max scale 1.5
+                  const translateY = eased * -10;
 
                   btn.style.transform = `scale(${scale}) translateY(${translateY}px)`;
                 });

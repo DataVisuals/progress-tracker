@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Lottie from 'lottie-react';
 import fixingAnimation from '../assets/fixing-animation.json';
 import {
@@ -7,7 +7,9 @@ import {
   MdWarning,
   MdArrowForward,
   MdFeedback,
-  MdCalendarToday
+  MdCalendarToday,
+  MdShare,
+  MdCheck
 } from 'react-icons/md';
 
 // Helper function to format timestamps
@@ -35,10 +37,23 @@ const UserInconsistenciesModal = ({
   feedback,
   upcomingMetrics = []
 }) => {
+  const [copied, setCopied] = useState(false);
+
   // Show modal if there are inconsistencies OR upcoming metrics (forward view)
   if (!isOpen || (inconsistencies.length === 0 && upcomingMetrics.length === 0)) return null;
 
   const hasIssues = inconsistencies.length > 0 || feedback.length > 0;
+
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}${window.location.pathname}?view=inconsistencies`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -50,7 +65,16 @@ const UserInconsistenciesModal = ({
             className="modal-icon-lottie"
           />
           <h2>{hasIssues ? 'Your Projects Need Attention' : 'Coming Up'}</h2>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <div className="modal-header-actions">
+            <button
+              className="share-link-btn"
+              onClick={handleShare}
+              title={copied ? 'Copied!' : 'Copy share link'}
+            >
+              {copied ? <MdCheck /> : <MdShare />}
+            </button>
+            <button className="modal-close" onClick={onClose}>×</button>
+          </div>
         </div>
         <div className="modal-body">
           {hasIssues && (

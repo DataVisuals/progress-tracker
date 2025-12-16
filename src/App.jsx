@@ -317,6 +317,7 @@ function App() {
     const projectId = params.get('project');
     const metricName = params.get('metric');
     const tipsCategory = params.get('tips');
+    const viewParam = params.get('view');
 
     if (projectId) {
       setSelectedProject(projectId);
@@ -331,12 +332,18 @@ function App() {
       setSelectedTipsCategory(tipsCategory);
     }
 
+    // Open panel if view param is present (attention or inconsistencies)
+    if (viewParam === 'attention' || viewParam === 'inconsistencies') {
+      setShowAttentionModal(viewParam);
+    }
+
     // Handle browser back/forward buttons
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
       const projectId = params.get('project');
       const metricName = params.get('metric');
       const tipsCategory = params.get('tips');
+      const viewParam = params.get('view');
 
       setSelectedProject(projectId || '');
       setSelectedMetric(metricName || '');
@@ -347,6 +354,13 @@ function App() {
       } else {
         setShowTipsModal(false);
         setSelectedTipsCategory(null);
+      }
+
+      // Handle view URL param (attention or inconsistencies)
+      if (viewParam === 'attention' || viewParam === 'inconsistencies') {
+        setShowAttentionModal(viewParam);
+      } else {
+        setShowAttentionModal(false);
       }
     };
 

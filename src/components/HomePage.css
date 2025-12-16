@@ -2764,6 +2764,48 @@
   text-align: left;
 }
 
+/* Inconsistency quadrant header - don't stretch h2 when share button present */
+.inconsistency-quadrant .quadrant-header h2 {
+  flex: 0 0 auto;
+}
+
+/* Share link button */
+.share-link-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.15s ease;
+}
+
+.share-link-btn:hover {
+  background: rgba(0, 174, 239, 0.1);
+  border-color: #00aeef;
+  color: #00aeef;
+}
+
+.share-link-btn svg {
+  font-size: 16px;
+}
+
+:root.dark-mode .share-link-btn {
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+:root.dark-mode .share-link-btn:hover {
+  background: rgba(0, 174, 239, 0.2);
+  border-color: #00aeef;
+  color: #00aeef;
+}
+
 .filter-controls {
   display: flex;
   align-items: center;
@@ -2854,7 +2896,7 @@
 }
 
 .quadrant-icon.warning {
-  color: #6b7280;
+  color: #00aeef;
 }
 
 .quadrant-icon.tip {
@@ -5402,8 +5444,8 @@ html.dark-mode .quadrant-content {
   position: relative;
   display: flex;
   justify-content: center;
-  gap: 3px;
-  padding: 4px 12px;
+  gap: 8px;
+  padding: 4px 16px;
   background: #f3f4f6;
   border-top: 1px solid #e5e7eb;
   overflow: visible;
@@ -5434,9 +5476,13 @@ html.dark-mode .quadrant-content {
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: transform 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: transform 0.08s ease-out, color 0.15s ease, background 0.15s ease;
   color: #6b7280;
   transform-origin: bottom center;
+  will-change: transform;
+  flex-shrink: 0;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
 }
 
 .minimized-tab:hover {
@@ -5679,6 +5725,11 @@ html.dark-mode .quadrant-content {
 /* Fullscreen panel controls */
 .expanded-panel-header .fullscreen-switch {
   margin-left: auto;
+}
+
+/* Share link button in expanded panel header - left aligned after title */
+.expanded-panel-header .share-link-btn {
+  margin-left: 0;
 }
 
 /* When switch is present, close button doesn't need auto margin */
