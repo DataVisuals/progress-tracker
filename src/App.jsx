@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 // Build timestamp - updated automatically before each commit to gh
 const BUILD_TIMESTAMP = '2025-12-14 19:20:10';
 import Select from 'react-select';
+import 'react-quill/dist/quill.snow.css';
 import Login from './components/Login';
 import ProjectSelector from './components/ProjectSelector';
 import PortfolioSelector from './components/PortfolioSelector';
@@ -2679,14 +2680,13 @@ function App() {
                                 </div>
                               ) : (
                                 <>
-                                  <div className="comment-text" style={{
+                                  <div className="comment-text ql-editor" style={{
                                     fontSize: '12px',
                                     lineHeight: '1.4',
-                                    whiteSpace: 'pre-wrap',
-                                    wordWrap: 'break-word'
-                                  }}>
-                                    {comment.comment_text}
-                                  </div>
+                                    wordWrap: 'break-word',
+                                    padding: 0,
+                                    margin: 0
+                                  }} dangerouslySetInnerHTML={{ __html: comment.comment_text }} />
                                   <div className="comment-meta" style={{
                                     display: 'flex',
                                     justifyContent: 'space-between',
@@ -2793,9 +2793,7 @@ function App() {
                                           </div>
                                         ) : (
                                           <>
-                                            <div className="comment-text" style={{ fontSize: '11px', lineHeight: '1.4', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
-                                              {reply.comment_text}
-                                            </div>
+                                            <div className="comment-text ql-editor" style={{ fontSize: '11px', lineHeight: '1.4', wordWrap: 'break-word', padding: 0, margin: 0 }} dangerouslySetInnerHTML={{ __html: reply.comment_text }} />
                                             <div className="comment-meta" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px', color: '#6b7280' }}>
                                               <div className="comment-author">
                                                 <span>{new Date(reply.created_at).toLocaleDateString()}</span>
