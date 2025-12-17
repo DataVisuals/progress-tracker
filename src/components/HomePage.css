@@ -2895,9 +2895,21 @@
   color: #00aeef;
 }
 
-.quadrant-icon.warning {
-  color: #00aeef;
-}
+/* Panel-specific quadrant icon colors */
+.timeline-quadrant .quadrant-icon { color: #8b5cf6; }
+.inconsistency-quadrant .quadrant-icon { color: #1f2937; }
+.health-rankings-quadrant .quadrant-icon { color: #ec4899; }
+.heatmap-quadrant .quadrant-icon { color: #14b8a6; }
+.metrics-quadrant .quadrant-icon { color: #ef4444; }
+.commentary-quadrant .quadrant-icon { color: #10b981; }
+.recent-updates-quadrant .quadrant-icon { color: #3b82f6; }
+.audit-quadrant .quadrant-icon { color: #6366f1; }
+.active-users-quadrant .quadrant-icon { color: #06b6d4; }
+.performance-quadrant .quadrant-icon { color: #fbbf24; }
+.attention-quadrant .quadrant-icon { color: #f59e0b; }
+
+/* Dark mode quadrant icons */
+:root.dark-mode .inconsistency-quadrant .quadrant-icon { color: #e5e7eb; }
 
 .quadrant-icon.tip {
   color: #f5ad5b;
@@ -5524,16 +5536,57 @@ html.dark-mode .quadrant-content {
   font-size: 16px;
 }
 
-/* Metrics at Risk flag icon - red on hover/active */
-.minimized-tab[data-panel="metrics"]:hover {
-  background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
-}
+/* Dock icon colors - each panel has a unique color by default */
 
-.minimized-tab[data-panel="metrics"].active {
-  background: #ef4444;
-  color: white;
-}
+/* Timeline - purple */
+.minimized-tab[data-panel="timeline"] { color: #8b5cf6; }
+.minimized-tab[data-panel="timeline"]:hover { background: rgba(139, 92, 246, 0.15); }
+.minimized-tab[data-panel="timeline"].active { background: #8b5cf6; color: white; }
+
+/* Inconsistencies - black */
+.minimized-tab[data-panel="inconsistencies"] { color: #1f2937; }
+.minimized-tab[data-panel="inconsistencies"]:hover { background: rgba(31, 41, 55, 0.15); }
+.minimized-tab[data-panel="inconsistencies"].active { background: #1f2937; color: white; }
+
+/* Project Health - pink */
+.minimized-tab[data-panel="projectHealth"] { color: #ec4899; }
+.minimized-tab[data-panel="projectHealth"]:hover { background: rgba(236, 72, 153, 0.15); }
+.minimized-tab[data-panel="projectHealth"].active { background: #ec4899; color: white; }
+
+/* Heatmap/Most Viewed - teal */
+.minimized-tab[data-panel="heatmap"] { color: #14b8a6; }
+.minimized-tab[data-panel="heatmap"]:hover { background: rgba(20, 184, 166, 0.15); }
+.minimized-tab[data-panel="heatmap"].active { background: #14b8a6; color: white; }
+
+/* Metrics at Risk - red */
+.minimized-tab[data-panel="metrics"] { color: #ef4444; }
+.minimized-tab[data-panel="metrics"]:hover { background: rgba(239, 68, 68, 0.15); }
+.minimized-tab[data-panel="metrics"].active { background: #ef4444; color: white; }
+
+/* Commentary - green */
+.minimized-tab[data-panel="commentary"] { color: #10b981; }
+.minimized-tab[data-panel="commentary"]:hover { background: rgba(16, 185, 129, 0.15); }
+.minimized-tab[data-panel="commentary"].active { background: #10b981; color: white; }
+
+/* Recent Updates - blue */
+.minimized-tab[data-panel="recentUpdates"] { color: #3b82f6; }
+.minimized-tab[data-panel="recentUpdates"]:hover { background: rgba(59, 130, 246, 0.15); }
+.minimized-tab[data-panel="recentUpdates"].active { background: #3b82f6; color: white; }
+
+/* Audit Log - indigo */
+.minimized-tab[data-panel="audit"]:not(.locked) { color: #6366f1; }
+.minimized-tab[data-panel="audit"]:hover:not(.locked) { background: rgba(99, 102, 241, 0.15); }
+.minimized-tab[data-panel="audit"].active { background: #6366f1; color: white; }
+
+/* Active Users - cyan */
+.minimized-tab[data-panel="activeUsers"]:not(.locked) { color: #06b6d4; }
+.minimized-tab[data-panel="activeUsers"]:hover:not(.locked) { background: rgba(6, 182, 212, 0.15); }
+.minimized-tab[data-panel="activeUsers"].active { background: #06b6d4; color: white; }
+
+/* Performance - amber */
+.minimized-tab[data-panel="performance"]:not(.locked) { color: #fbbf24; }
+.minimized-tab[data-panel="performance"]:hover:not(.locked) { background: rgba(251, 191, 36, 0.15); }
+.minimized-tab[data-panel="performance"].active { background: #f59e0b; color: white; }
 
 /* Tooltip that appears above on hover */
 .tab-tooltip {
@@ -5581,41 +5634,22 @@ html.dark-mode .quadrant-content {
   background: #4b5563;
 }
 
-:root.dark-mode .minimized-tab {
-  color: #9ca3af;
-}
+/* Dark mode - skull needs light color on dark background */
+:root.dark-mode .minimized-tab[data-panel="inconsistencies"] { color: #e5e7eb; }
+:root.dark-mode .minimized-tab[data-panel="inconsistencies"]:hover { background: rgba(229, 231, 235, 0.15); }
+:root.dark-mode .expanded-panel-fullscreen[data-panel="inconsistencies"] .expanded-panel-icon { color: #e5e7eb; }
 
-:root.dark-mode .minimized-tab:hover {
-  background: rgba(0, 174, 239, 0.2);
-  color: #00aeef;
-}
-
-:root.dark-mode .minimized-tab.active {
-  background: #00aeef;
-  color: white;
-}
-
+/* Dark mode - locked tabs only need opacity adjustment, colors inherited from panel-specific styles */
 :root.dark-mode .minimized-tab.locked {
   opacity: 0.4;
 }
 
 :root.dark-mode .minimized-tab.locked:hover {
   background: transparent;
-  color: #9ca3af;
 }
 
 :root.dark-mode .minimized-tab .lock-icon {
   color: #6b7280;
-}
-
-:root.dark-mode .minimized-tab[data-panel="metrics"]:hover {
-  background: rgba(248, 113, 113, 0.2);
-  color: #f87171;
-}
-
-:root.dark-mode .minimized-tab[data-panel="metrics"].active {
-  background: #ef4444;
-  color: white;
 }
 
 :root.dark-mode .tab-tooltip {
@@ -5721,6 +5755,18 @@ html.dark-mode .quadrant-content {
   font-size: 24px;
   color: #00aeef;
 }
+
+/* Panel-specific icon colors for expanded view */
+.expanded-panel-fullscreen[data-panel="timeline"] .expanded-panel-icon { color: #8b5cf6; }
+.expanded-panel-fullscreen[data-panel="inconsistencies"] .expanded-panel-icon { color: #1f2937; }
+.expanded-panel-fullscreen[data-panel="projectHealth"] .expanded-panel-icon { color: #ec4899; }
+.expanded-panel-fullscreen[data-panel="heatmap"] .expanded-panel-icon { color: #14b8a6; }
+.expanded-panel-fullscreen[data-panel="metrics"] .expanded-panel-icon { color: #ef4444; }
+.expanded-panel-fullscreen[data-panel="commentary"] .expanded-panel-icon { color: #10b981; }
+.expanded-panel-fullscreen[data-panel="recentUpdates"] .expanded-panel-icon { color: #3b82f6; }
+.expanded-panel-fullscreen[data-panel="audit"] .expanded-panel-icon { color: #6366f1; }
+.expanded-panel-fullscreen[data-panel="activeUsers"] .expanded-panel-icon { color: #06b6d4; }
+.expanded-panel-fullscreen[data-panel="performance"] .expanded-panel-icon { color: #fbbf24; }
 
 /* Fullscreen panel controls */
 .expanded-panel-header .fullscreen-switch {

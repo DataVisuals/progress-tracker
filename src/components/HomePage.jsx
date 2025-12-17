@@ -1444,7 +1444,7 @@ const HomePage = ({
           >
             {/* Full-screen preview of hovered panel */}
             {expandedDockPanel && (
-              <div className="expanded-panel-fullscreen">
+              <div className="expanded-panel-fullscreen" data-panel={expandedDockPanel}>
                 <div className="expanded-panel-header">
                   {(() => {
                     const panelConfig = PANEL_CONFIG[expandedDockPanel];
