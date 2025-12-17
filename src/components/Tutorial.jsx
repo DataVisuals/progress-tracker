@@ -523,45 +523,75 @@ const Tutorial = ({ onClose, startPage = 0 }) => {
       icon: <MdCheckCircle />,
       content: (
         <div className="tutorial-consistency">
-          <div className="consistency-intro">
-            <p>Ambiguous metrics lead to misunderstanding. Consistency checks ensure everyone interprets progress the same way.</p>
-          </div>
-          <div className="consistency-sections">
-            <div className="consistency-section">
-              <h4><MdAssignment className="section-icon" /> Why Precision Matters</h4>
-              <ul>
-                <li><strong>"Improve customer satisfaction"</strong> - By how much? Measured how?</li>
-                <li><strong>"Deliver the platform"</strong> - What features? What's the definition of done?</li>
-                <li><strong>"Reduce costs"</strong> - Which costs? Compared to what baseline?</li>
-              </ul>
-              <p className="section-tip">Vague goals make it impossible to know if you've succeeded.</p>
+          <div className="consistency-columns">
+            <div className="consistency-left">
+              <div className="consistency-section compact">
+                <h4><MdAssignment className="section-icon" /> Why Precision Matters</h4>
+                <ul>
+                  <li><strong>"Improve satisfaction"</strong> - By how much?</li>
+                  <li><strong>"Deliver the platform"</strong> - Definition of done?</li>
+                  <li><strong>"Reduce costs"</strong> - Which costs?</li>
+                </ul>
+                <p className="section-tip">Vague goals make success impossible to measure.</p>
+              </div>
+              <div className="consistency-section compact">
+                <h4><MdEdit className="section-icon" /> Clarity Score Factors</h4>
+                <div className="clarity-factors-compact">
+                  <span><strong>Length:</strong> 30-150 words</span>
+                  <span><strong>Readability:</strong> Grade 16 or below</span>
+                  <span><strong>Plain Language:</strong> No jargon</span>
+                  <span><strong>Abbreviations:</strong> All defined</span>
+                </div>
+              </div>
             </div>
-            <div className="consistency-section">
-              <h4><MdEdit className="section-icon" /> Clarity Score (1-5)</h4>
-              <p>Every description is automatically scored for clarity based on:</p>
-              <div className="clarity-factors">
-                <div className="clarity-factor">
-                  <span className="factor-label">Length</span>
-                  <span className="factor-desc">30-150 words is ideal - enough detail without rambling</span>
-                </div>
-                <div className="clarity-factor">
-                  <span className="factor-label">Readability</span>
-                  <span className="factor-desc">Grade 16 or below reading level</span>
-                </div>
-                <div className="clarity-factor">
-                  <span className="factor-label">Plain Language</span>
-                  <span className="factor-desc">Avoids jargon like "synergy" or "leverage"</span>
-                </div>
-                <div className="clarity-factor">
-                  <span className="factor-label">Abbreviations</span>
-                  <span className="factor-desc">All acronyms defined: "PMO (Project Management Office)"</span>
+            <div className="consistency-right">
+              <div className="clarity-gem-demo">
+                <h4>The Clarity Gem</h4>
+                <p>Look for this indicator on descriptions:</p>
+                <div className="gem-examples">
+                  <div className="gem-example good">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 3L4 8H20L12 3Z" opacity="0.95" />
+                      <path d="M4 8L6 10H18L20 8H4Z" opacity="0.8" />
+                      <path d="M6 10L12 21L9 10H6Z" opacity="0.7" />
+                      <path d="M9 10L12 21L12 10H9Z" opacity="0.6" />
+                      <path d="M12 10L12 21L15 10H12Z" opacity="0.5" />
+                      <path d="M15 10L12 21L18 10H15Z" opacity="0.4" />
+                    </svg>
+                    <span className="gem-score">4-5</span>
+                    <span className="gem-label">Clear</span>
+                  </div>
+                  <div className="gem-example average">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 3L4 8H20L12 3Z" opacity="0.95" />
+                      <path d="M4 8L6 10H18L20 8H4Z" opacity="0.8" />
+                      <path d="M6 10L12 21L9 10H6Z" opacity="0.7" />
+                      <path d="M9 10L12 21L12 10H9Z" opacity="0.6" />
+                      <path d="M12 10L12 21L15 10H12Z" opacity="0.5" />
+                      <path d="M15 10L12 21L18 10H15Z" opacity="0.4" />
+                    </svg>
+                    <span className="gem-score">3</span>
+                    <span className="gem-label">Average</span>
+                  </div>
+                  <div className="gem-example poor">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 3L4 8H20L12 3Z" opacity="0.95" />
+                      <path d="M4 8L6 10H18L20 8H4Z" opacity="0.8" />
+                      <path d="M6 10L12 21L9 10H6Z" opacity="0.7" />
+                      <path d="M9 10L12 21L12 10H9Z" opacity="0.6" />
+                      <path d="M12 10L12 21L15 10H12Z" opacity="0.5" />
+                      <path d="M15 10L12 21L18 10H15Z" opacity="0.4" />
+                    </svg>
+                    <span className="gem-score">1-2</span>
+                    <span className="gem-label">Needs work</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
           <div className="consistency-tip">
             <MdLightbulb className="tip-icon" />
-            <span>The Inconsistencies panel flags projects with missing descriptions, undefined metrics, and red metrics without recovery plans.</span>
+            <span>The Inconsistencies panel flags missing descriptions and red metrics without recovery plans.</span>
           </div>
         </div>
       )
