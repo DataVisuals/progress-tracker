@@ -31,7 +31,8 @@ import {
   MdVisibility,
   MdAutoGraph,
   MdExtension,
-  MdArticle
+  MdArticle,
+  MdNotInterested
 } from 'react-icons/md';
 import './Tutorial.css';
 
@@ -125,7 +126,70 @@ const Tutorial = ({ onClose, startPage = 0 }) => {
         </div>
       )
     },
-    // Page 1: Hierarchy Overview
+    // Page 1: Why not JIRA?
+    {
+      type: 'reasons',
+      title: 'Why Not Just Use JIRA?',
+      subtitle: 'Great tools have their limits',
+      icon: <MdNotInterested />,
+      content: (
+        <div className="tutorial-reasons why-not-jira">
+          <div className="reasons-grid">
+            <div className="reason-item">
+              <span className="reason-number">1</span>
+              <div className="reason-content">
+                <strong>Inconsistent content</strong>
+                <p>Teams track different things in different ways with varying definitions</p>
+              </div>
+            </div>
+            <div className="reason-item">
+              <span className="reason-number">2</span>
+              <div className="reason-content">
+                <strong>Process varies</strong>
+                <p>Every team has their own workflow, making cross-team comparison difficult</p>
+              </div>
+            </div>
+            <div className="reason-item">
+              <span className="reason-number">3</span>
+              <div className="reason-content">
+                <strong>Vendor blind spot</strong>
+                <p>External partner and vendor progress typically isn't captured</p>
+              </div>
+            </div>
+            <div className="reason-item">
+              <span className="reason-number">4</span>
+              <div className="reason-content">
+                <strong>Non-tech teams excluded</strong>
+                <p>Operations, finance, and business teams often don't like or use dev tools</p>
+              </div>
+            </div>
+            <div className="reason-item">
+              <span className="reason-number">5</span>
+              <div className="reason-content">
+                <strong>Not exec-ready</strong>
+                <p>Textual status updates require interpretation and aren't presentation-ready</p>
+              </div>
+            </div>
+            <div className="reason-item">
+              <span className="reason-number">6</span>
+              <div className="reason-content">
+                <strong>No time travel</strong>
+                <p>Hard to see what progress looked like at a specific point in the past</p>
+              </div>
+            </div>
+            <div className="reason-item">
+              <span className="reason-number">7</span>
+              <div className="reason-content">
+                <strong>DRY principles</strong>
+                <p>Keep detailed work in JIRA, surface progress metrics here - don't repeat yourself</p>
+              </div>
+            </div>
+          </div>
+          <p className="reasons-summary">This tool complements JIRA by providing the consistent, visual progress layer that executives need.</p>
+        </div>
+      )
+    },
+    // Page 2: Hierarchy Overview
     {
       type: 'concept',
       title: 'Understanding the Hierarchy',
@@ -451,7 +515,114 @@ const Tutorial = ({ onClose, startPage = 0 }) => {
         }
       ]
     },
-    // Page 10: The Dock
+    // Page 10: Consistency Checks
+    {
+      type: 'concept',
+      title: 'Consistency Checks',
+      subtitle: 'Be clear on your goals and precise in measurement',
+      icon: <MdCheckCircle />,
+      content: (
+        <div className="tutorial-consistency">
+          <div className="consistency-intro">
+            <p>Ambiguous metrics lead to misunderstanding. Consistency checks ensure everyone interprets progress the same way.</p>
+          </div>
+          <div className="consistency-sections">
+            <div className="consistency-section">
+              <h4><MdAssignment className="section-icon" /> Why Precision Matters</h4>
+              <ul>
+                <li><strong>"Improve customer satisfaction"</strong> - By how much? Measured how?</li>
+                <li><strong>"Deliver the platform"</strong> - What features? What's the definition of done?</li>
+                <li><strong>"Reduce costs"</strong> - Which costs? Compared to what baseline?</li>
+              </ul>
+              <p className="section-tip">Vague goals make it impossible to know if you've succeeded.</p>
+            </div>
+            <div className="consistency-section">
+              <h4><MdEdit className="section-icon" /> Clarity Score (1-5)</h4>
+              <p>Every description is automatically scored for clarity based on:</p>
+              <div className="clarity-factors">
+                <div className="clarity-factor">
+                  <span className="factor-label">Length</span>
+                  <span className="factor-desc">30-150 words is ideal - enough detail without rambling</span>
+                </div>
+                <div className="clarity-factor">
+                  <span className="factor-label">Readability</span>
+                  <span className="factor-desc">Grade 16 or below reading level</span>
+                </div>
+                <div className="clarity-factor">
+                  <span className="factor-label">Plain Language</span>
+                  <span className="factor-desc">Avoids jargon like "synergy" or "leverage"</span>
+                </div>
+                <div className="clarity-factor">
+                  <span className="factor-label">Abbreviations</span>
+                  <span className="factor-desc">All acronyms defined: "PMO (Project Management Office)"</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="consistency-tip">
+            <MdLightbulb className="tip-icon" />
+            <span>The Inconsistencies panel flags projects with missing descriptions, undefined metrics, and red metrics without recovery plans.</span>
+          </div>
+        </div>
+      )
+    },
+    // Page 11: Time Travel Deep Dive
+    {
+      type: 'concept',
+      title: 'Time Travel',
+      subtitle: 'Your secret weapon for diagnosis and retrospectives',
+      icon: <MdHistory />,
+      content: (
+        <div className="tutorial-time-travel">
+          <div className="time-travel-intro">
+            <p>See exactly how your projects looked at any point in the past - not just what changed, but the complete picture as it was.</p>
+          </div>
+          <div className="time-travel-benefits">
+            <div className="tt-benefit">
+              <div className="tt-benefit-icon diagnosis">
+                <MdSearch />
+              </div>
+              <div className="tt-benefit-content">
+                <h4>Root Cause Diagnosis</h4>
+                <p>When did things start going wrong? Travel back to find the inflection point where metrics diverged from expectations.</p>
+              </div>
+            </div>
+            <div className="tt-benefit">
+              <div className="tt-benefit-icon retro">
+                <MdHistory />
+              </div>
+              <div className="tt-benefit-content">
+                <h4>Retrospectives</h4>
+                <p>Review progress at key milestones. What did we know at go-live? At phase completion? Perfect for lessons learned.</p>
+              </div>
+            </div>
+            <div className="tt-benefit">
+              <div className="tt-benefit-icon audit">
+                <MdVisibility />
+              </div>
+              <div className="tt-benefit-content">
+                <h4>Audit Trail</h4>
+                <p>Prove what was reported and when. No more "the data must have changed" - see the historical record.</p>
+              </div>
+            </div>
+            <div className="tt-benefit">
+              <div className="tt-benefit-icon patterns">
+                <MdAutoGraph />
+              </div>
+              <div className="tt-benefit-content">
+                <h4>Pattern Recognition</h4>
+                <p>Compare similar points across projects. Did we see this pattern before? What worked last time?</p>
+              </div>
+            </div>
+          </div>
+          <div className="time-travel-tip">
+            <MdLightbulb className="tip-icon" />
+            <span>Use the date picker in the toolbar to jump to any historical date</span>
+          </div>
+        </div>
+      )
+    },
+    // Page 11: The Dock
     {
       type: 'guide',
       title: 'The Dock',
