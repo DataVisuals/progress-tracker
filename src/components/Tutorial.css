@@ -1003,6 +1003,125 @@
   color: #475569;
 }
 
+/* Dimensional Breakdown Tutorial */
+.tutorial-dimensions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dimensions-intro {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.dimensions-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.dimension-bar-example {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bar-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dimension-bar {
+  display: flex;
+  height: 28px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.bar-segment {
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+.bar-segment.green {
+  background: #22c55e;
+}
+
+.bar-segment.amber {
+  background: #f59e0b;
+}
+
+.bar-segment.red {
+  background: #ef4444;
+}
+
+.bar-segment.remaining {
+  background: #d1d5db;
+}
+
+.bar-segment.dim-1 {
+  border-right: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.bar-segment.dim-2 {
+  border-right: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.dimension-labels {
+  display: flex;
+  gap: 4px;
+  font-size: 10px;
+  color: #64748b;
+}
+
+.dimension-labels span {
+  flex: 0 0 auto;
+}
+
+.dimension-labels span:nth-child(1) { width: 25%; text-align: center; }
+.dimension-labels span:nth-child(2) { width: 20%; text-align: center; }
+.dimension-labels span:nth-child(3) { width: 15%; text-align: center; }
+
+.dimensions-key-points {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.key-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: #334155;
+}
+
+.point-icon {
+  font-size: 18px;
+  color: #64748b;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.point-icon.green {
+  color: #22c55e;
+}
+
+.dimensions-note {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+  margin: 0;
+}
+
 /* Edit/Chart visual */
 .mock-chart {
   position: relative;

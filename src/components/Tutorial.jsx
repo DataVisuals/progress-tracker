@@ -418,7 +418,61 @@ const Tutorial = ({ onClose, startPage = 0, skipAtStartup = false, onSkipAtStart
         </div>
       )
     },
-    // Page 7: Updating Metrics
+    // Page 7: Dimensional Breakdown
+    {
+      type: 'concept',
+      title: 'Dimensional Breakdown',
+      subtitle: 'Split metrics by category while preserving RAG status',
+      icon: <MdLayers />,
+      content: (
+        <div className="tutorial-dimensions">
+          <p className="dimensions-intro">
+            Optionally break down a metric's "complete" value into categories (e.g., by region, team, or product line).
+          </p>
+          <div className="dimensions-visual">
+            <div className="dimension-bar-example">
+              <div className="bar-label">Standard Bar</div>
+              <div className="dimension-bar single">
+                <div className="bar-segment green" style={{ width: '60%' }}></div>
+                <div className="bar-segment remaining" style={{ width: '40%' }}></div>
+              </div>
+            </div>
+            <div className="dimension-bar-example">
+              <div className="bar-label">With Dimensions</div>
+              <div className="dimension-bar stacked">
+                <div className="bar-segment green dim-1" style={{ width: '25%', opacity: 1 }}></div>
+                <div className="bar-segment green dim-2" style={{ width: '20%', opacity: 0.75 }}></div>
+                <div className="bar-segment green dim-3" style={{ width: '15%', opacity: 0.5 }}></div>
+                <div className="bar-segment remaining" style={{ width: '40%' }}></div>
+              </div>
+              <div className="dimension-labels">
+                <span>Team A</span>
+                <span>Team B</span>
+                <span>Team C</span>
+              </div>
+            </div>
+          </div>
+          <div className="dimensions-key-points">
+            <div className="key-point">
+              <MdCheckCircle className="point-icon green" />
+              <span><strong>RAG colors preserved:</strong> Bar color reflects variance from expected (green/amber/red)</span>
+            </div>
+            <div className="key-point">
+              <MdLayers className="point-icon" />
+              <span><strong>Opacity shows breakdown:</strong> Stacked segments use different opacity levels (100%, 75%, 50%, 40%)</span>
+            </div>
+            <div className="key-point">
+              <MdTune className="point-icon" />
+              <span><strong>Configure via menu:</strong> Click the metric options (⋮) and select "Configure Dimensions"</span>
+            </div>
+          </div>
+          <p className="dimensions-note">
+            Maximum 4 dimensions per metric for clear visual distinction.
+          </p>
+        </div>
+      )
+    },
+    // Page 8: Updating Metrics
     {
       type: 'guide',
       title: 'Updating Your Metrics',

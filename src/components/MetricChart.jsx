@@ -153,7 +153,7 @@ const CustomExpectedDot = (props) => {
 };
 
 // Custom Tooltip component
-const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance }) => {
+const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance, hasDimensions, dimensions }) => {
   if (active && payload && payload.length) {
     const date = new Date(label);
     const formattedDate = date.toLocaleDateString('en-GB', {
@@ -169,7 +169,18 @@ const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance })
     periodDate.setHours(0, 0, 0, 0);
     const isFuturePeriod = periodDate > today;
 
-    const complete = payload.find(p => p.dataKey === 'complete')?.value || 0;
+    // Get complete value - either from 'complete' dataKey or sum of dimension values
+    let complete = 0;
+    if (hasDimensions && dimensions?.length > 0) {
+      // Sum up all dimension values
+      dimensions.forEach(dim => {
+        const dimPayload = payload.find(p => p.dataKey === `dimension_${dim.id}`);
+        complete += dimPayload?.value || 0;
+      });
+    } else {
+      complete = payload.find(p => p.dataKey === 'complete')?.value || 0;
+    }
+
     const remaining = payload.find(p => p.dataKey === 'remaining')?.value || 0;
     const expected = payload.find(p => p.dataKey === 'expected')?.value || 0;
     const total = complete + remaining;
@@ -199,6 +210,23 @@ const CustomTooltip = ({ active, payload, label, amberTolerance, redTolerance })
             <span className="tooltip-label">Complete:</span>
             <span className="tooltip-value complete">{formatNumber(complete)}</span>
           </div>
+          {/* Show dimensional breakdown if dimensions exist */}
+          {hasDimensions && dimensions?.length > 0 && (
+            <div className="tooltip-dimensions">
+              {dimensions.map(dim => {
+                const dimPayload = payload.find(p => p.dataKey === `dimension_${dim.id}`);
+                const dimValue = dimPayload?.value || 0;
+                return (
+                  <div key={dim.id} className="tooltip-row dimension-row">
+                    <span className="tooltip-label" style={{ paddingLeft: '12px' }}>
+                      {dim.name}:
+                    </span>
+                    <span className="tooltip-value">{formatNumber(dimValue)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
           <div className="tooltip-row">
             <span className="tooltip-label">Remaining:</span>
             <span className="tooltip-value">{formatNumber(remaining)}</span>
@@ -670,6 +698,19 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   // Get baseline target (first period's target)
   const baselineTarget = sortedData.length > 0 ? sortedData[0].final_target : 0;
 
+  // Extract unique dimensions from all periods (for metrics with dimensional breakdown)
+  // Check any period that has dimension_values (not just first, as first might be empty)
+  const periodWithDimensions = sortedData.find(item => item.dimension_values?.length > 0);
+  const dimensions = periodWithDimensions
+    ? periodWithDimensions.dimension_values.map(dv => ({
+        id: dv.dimension_id,
+        name: dv.name,
+        color: dv.color
+      }))
+    : [];
+
+  const hasDimensions = dimensions.length > 0;
+
   // Transform data for the chart
   const chartData = sortedData.map((item, index) => {
     const scopeDelta = item.final_target - baselineTarget;
@@ -687,7 +728,8 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     // item.metric_final_target = metric's overall target (from metrics.final_target)
     const metricFinalTarget = item.final_target;
 
-    return {
+    // Build base chart data
+    const chartPoint = {
       name: item.reporting_date,
       complete: item.complete,
       remaining: Math.max(0, metricFinalTarget - item.complete),
@@ -698,6 +740,59 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       id: item.id,
       updated_at: item.updated_at
     };
+
+    // Add dimension values if present
+    if (hasDimensions && item.dimension_values) {
+      let dimensionSum = 0;
+      item.dimension_values.forEach(dv => {
+        const dimValue = dv.value || 0;
+        chartPoint[`dimension_${dv.dimension_id}`] = dimValue;
+        dimensionSum += dimValue;
+      });
+      // Store dimension values for tooltip
+      chartPoint.dimension_values = item.dimension_values;
+      // Store dimension sum for RAG calculation
+      chartPoint.dimensionSum = dimensionSum;
+
+      // When dimensions are present, calculate remaining based on the sum of dimension values
+      // This ensures the stacked bar height (dimensions + remaining) equals the target
+      chartPoint.remaining = Math.max(0, metricFinalTarget - dimensionSum);
+    }
+
+    // Calculate RAG color for this period (used for both dimensional and non-dimensional metrics)
+    const variance = item.complete - expectedValue;
+    const variancePercent = expectedValue > 0 ? Math.abs((variance / expectedValue) * 100) : 0;
+    const hasData = item.complete !== null && item.complete !== undefined && item.complete > 0;
+
+    // Check if period has ended
+    const periodDate = new Date(item.reporting_date);
+    periodDate.setHours(0, 0, 0, 0);
+    const nextItem = sortedData[index + 1];
+    const periodHasEnded = nextItem
+      ? new Date() >= new Date(nextItem.reporting_date)
+      : false;
+
+    // Determine RAG status
+    let ragColor = RAG_COLORS.green;
+    let ragCategory = 'green';
+
+    if (hasData && variance < 0) {
+      if (variancePercent > redTolerance) {
+        ragColor = RAG_COLORS.red;
+        ragCategory = 'red';
+      } else if (variancePercent > amberTolerance) {
+        ragColor = RAG_COLORS.amber;
+        ragCategory = 'amber';
+      }
+    } else if (!hasData && periodHasEnded) {
+      ragColor = RAG_COLORS.red;
+      ragCategory = 'red';
+    }
+
+    chartPoint.ragColor = ragColor;
+    chartPoint.ragCategory = ragCategory;
+
+    return chartPoint;
   });
 
   // Find current period (closest date to today that is <= today)
@@ -1032,6 +1127,27 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       } catch (err) {
         console.error('Failed to update target:', err);
         alert('Failed to update target');
+      }
+      return;
+    }
+
+    // For dimension values, use the dimensions API
+    if (field.startsWith('dimension_')) {
+      const dimensionId = parseInt(field.replace('dimension_', ''), 10);
+      try {
+        await api.put(`/metric-periods/${periodId}/dimensions`, {
+          dimensions: [{ dimension_id: dimensionId, value: numericValue }]
+        });
+
+        // Refresh data to update chart
+        if (onDataChange) {
+          onDataChange();
+        }
+        setEditingCell(null);
+      } catch (err) {
+        console.error('Failed to save dimension value:', err);
+        alert('Failed to save dimension value: ' + (err.response?.data?.error || err.message));
+        setEditingCell(null);
       }
       return;
     }
@@ -1563,83 +1679,108 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
             tickFormatter={(value) => formatNumber(value)}
             domain={[0, 'dataMax']}
           />
-          <Tooltip content={<CustomTooltip amberTolerance={amberTolerance} redTolerance={redTolerance} />} />
-          <Bar dataKey="complete" stackId="a" name="Complete" animationDuration={800} animationBegin={0}>
-            {chartData.map((entry, index) => {
-              // Calculate variance for this period
-              const variance = entry.complete - entry.expected;
-              const variancePercent = entry.expected > 0 ? Math.abs((variance / entry.expected) * 100) : 0;
+          <Tooltip content={<CustomTooltip amberTolerance={amberTolerance} redTolerance={redTolerance} hasDimensions={hasDimensions} dimensions={dimensions} />} />
+          {/* Render dimension bars if metric has dimensional breakdown, otherwise render single complete bar */}
+          {hasDimensions ? (
+            // Render stacked dimension bars with RAG coloring
+            // Each dimension gets a different opacity level to distinguish them
+            dimensions.map((dim, dimIndex) => {
+              // Calculate opacity for this dimension (first = darkest, last = lightest)
+              const baseOpacity = 1 - (dimIndex * 0.25);
+              const dimOpacity = Math.max(0.4, baseOpacity); // Don't go below 0.4
 
-              // Determine color based on variance and tolerances
-              let barColor = RAG_COLORS.green; // Green - on track or ahead
-              let barCategory = 'green';
+              return (
+                <Bar
+                  key={`dimension-${dim.id}`}
+                  dataKey={`dimension_${dim.id}`}
+                  stackId="complete"
+                  name={dim.name}
+                  animationDuration={800}
+                  animationBegin={dimIndex * 100}
+                  stroke="#fff"
+                  strokeWidth={1}
+                >
+                  {chartData.map((entry, index) => {
+                    // Use RAG color with varying opacity per dimension
+                    const opacity = highlightedSeries === null || highlightedSeries === entry.ragCategory
+                      ? dimOpacity
+                      : dimOpacity * 0.3;
 
-              // Check if period has actual completion data
-              const hasData = entry.complete !== null && entry.complete !== undefined && entry.complete > 0;
+                    return (
+                      <Cell
+                        key={`dim-${dim.id}-cell-${index}`}
+                        fill={entry.ragColor}
+                        fillOpacity={opacity}
+                      />
+                    );
+                  })}
+                  {/* Add current period marker on first dimension bar only */}
+                  {dimIndex === 0 && (
+                    <LabelList
+                      content={({ x, width, index }) => {
+                        const item = chartData[index];
+                        if (!item) return null;
 
-              // Check if this period has ended (next period has started)
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              const periodDate = new Date(entry.name);
-              periodDate.setHours(0, 0, 0, 0);
+                        // Check if this is the current period
+                        const isCurrentPeriod = currentPeriodX1 === item.name;
+                        if (!isCurrentPeriod) return null;
 
-              // Get next period date if it exists
-              const nextPeriod = chartData[index + 1];
-              const periodHasEnded = nextPeriod
-                ? today >= new Date(nextPeriod.name)
-                : false; // Last period is considered ongoing
+                        return (
+                          <text
+                            x={x + width / 2}
+                            y={compactMode ? 5 : 5}
+                            fill={RAG_COLORS.red}
+                            textAnchor="middle"
+                            fontSize={compactMode ? "14" : "20"}
+                          >
+                            ▼
+                          </text>
+                        );
+                      }}
+                    />
+                  )}
+                </Bar>
+              );
+            })
+          ) : (
+            // Render single complete bar with RAG coloring
+            <Bar dataKey="complete" stackId="a" name="Complete" animationDuration={800} animationBegin={0}>
+              {chartData.map((entry, index) => {
+                // Use pre-calculated RAG color from chartData
+                const opacity = highlightedSeries === null || highlightedSeries === entry.ragCategory ? 1 : 0.3;
+                return <Cell key={`cell-${index}`} fill={entry.ragColor} fillOpacity={opacity} />;
+              })}
+              <LabelList
+                content={({ x, width, index }) => {
+                  const item = chartData[index];
+                  if (!item) return null;
 
-              // Only apply red/amber if period has ended OR if there's data showing we're behind
-              // If period is still ongoing and no data, keep it green (grey would be better but we don't have that option for bars)
-              if (hasData && variance < 0) { // Behind schedule with data
-                if (variancePercent > redTolerance) {
-                  barColor = RAG_COLORS.red; // Red
-                  barCategory = 'red';
-                } else if (variancePercent > amberTolerance) {
-                  barColor = RAG_COLORS.amber; // Amber
-                  barCategory = 'amber';
-                }
-              } else if (!hasData && periodHasEnded) {
-                // Period has ended but no data - mark as red
-                barColor = RAG_COLORS.red;
-                barCategory = 'red';
-              }
+                  // Check if this is the current period
+                  const isCurrentPeriod = currentPeriodX1 === item.name;
+                  if (!isCurrentPeriod) return null;
 
-              // Apply opacity based on highlightedSeries
-              const opacity = highlightedSeries === null || highlightedSeries === barCategory ? 1 : 0.3;
-
-              return <Cell key={`cell-${index}`} fill={barColor} fillOpacity={opacity} />;
-            })}
-            <LabelList
-              content={({ x, width, index }) => {
-                const item = chartData[index];
-                if (!item) return null;
-
-                // Check if this is the current period
-                const isCurrentPeriod = currentPeriodX1 === item.name;
-                if (!isCurrentPeriod) return null;
-
-                return (
-                  <text
-                    x={x + width / 2}
-                    y={compactMode ? 5 : 5}
-                    fill={RAG_COLORS.red}
-                    textAnchor="middle"
-                    fontSize={compactMode ? "14" : "20"}
-                  >
-                    ▼
-                  </text>
-                );
-              }}
-            />
-          </Bar>
+                  return (
+                    <text
+                      x={x + width / 2}
+                      y={compactMode ? 5 : 5}
+                      fill={RAG_COLORS.red}
+                      textAnchor="middle"
+                      fontSize={compactMode ? "14" : "20"}
+                    >
+                      ▼
+                    </text>
+                  );
+                }}
+              />
+            </Bar>
+          )}
           <Bar
             dataKey="remaining"
-            stackId="a"
+            stackId={hasDimensions ? "complete" : "a"}
             fill="#d1d5db"
             name="Remaining"
             animationDuration={800}
-            animationBegin={200}
+            animationBegin={hasDimensions ? dimensions.length * 100 : 200}
             fillOpacity={highlightedSeries === null || highlightedSeries === 'remaining' ? 0.6 : 0.2}
           >
             {chartData.map((entry, index) => {
@@ -1724,6 +1865,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           {!compactMode && <div className="legend-title">Legend</div>}
 
           <div className="legend-items">
+            {/* Always show RAG colors */}
             {!compactMode && (
               <div
                 className={`legend-item ${highlightedSeries === 'green' ? 'active' : ''}`}
@@ -1809,6 +1951,19 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                 </span>
               )}
             </div>
+            {/* Show dimension breakdown labels when metric has dimensions */}
+            {hasDimensions && !compactMode && (
+              <div className="legend-divider" />
+            )}
+            {hasDimensions && dimensions.map((dim) => (
+              <div
+                key={dim.id}
+                className="legend-item dimension-legend-item"
+                title={dim.name}
+              >
+                <span className="legend-text">{dim.name}</span>
+              </div>
+            ))}
             <div
               className={`legend-item ${highlightedSeries === 'remaining' ? 'active' : ''}`}
               onMouseEnter={() => setHighlightedSeries('remaining')}
@@ -2236,6 +2391,48 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                 );
               })}
             </tr>
+
+            {/* Dimension Rows (when metric has dimensions) */}
+            {hasDimensions && dimensions.map((dim) => (
+              <tr key={`dim-${dim.id}`} className="data-row dimension-row">
+                <td className="row-label dimension-label">
+                  {dim.name}
+                </td>
+                {paginatedChartData.map((item, index) => {
+                  const dimValue = item[`dimension_${dim.id}`] || 0;
+                  const isEditing = editingCell?.periodId === item.id && editingCell?.field === `dimension_${dim.id}`;
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const periodDate = new Date(item.name);
+                  const isValidDate = !isNaN(periodDate.getTime());
+                  const isFuture = isValidDate ? periodDate > today : false;
+
+                  return (
+                    <td
+                      key={index}
+                      className={`number-cell dimension-cell ${allowDataEdits && !isFuture ? 'editable-cell' : ''} ${isFuture ? 'future-cell' : ''}`}
+                      onClick={() => allowDataEdits && !isFuture && handleCellClick(item.id, `dimension_${dim.id}`, dimValue)}
+                      style={allowDataEdits && !isFuture ? { cursor: 'pointer' } : {}}
+                      title={isFuture ? 'Future periods cannot be edited' : (allowDataEdits ? 'Click to edit' : '')}
+                    >
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          value={tempCellValue}
+                          onChange={handleCellChange}
+                          onBlur={handleCellBlur}
+                          onKeyDown={handleCellKeyDown}
+                          autoFocus
+                          style={{ width: '100%', textAlign: 'right' }}
+                        />
+                      ) : (
+                        formatNumber(dimValue)
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
 
             {/* Expected Row */}
             <tr className="data-row">

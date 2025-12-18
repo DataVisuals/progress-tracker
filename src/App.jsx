@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Build timestamp - updated automatically before each commit to gh
-const BUILD_TIMESTAMP = '2025-12-14 19:20:10';
+const BUILD_TIMESTAMP = '2025-12-18 15:49:34';
 
 import Select from 'react-select';
 import 'react-quill/dist/quill.snow.css';
@@ -28,6 +28,7 @@ import ProjectSetup from './components/ProjectSetup';
 import ProjectLinksEditor from './components/ProjectLinksEditor';
 import ProjectDependencies from './components/ProjectDependencies';
 import AddMetricModal from './components/AddMetricModal';
+import DimensionConfig from './components/DimensionConfig';
 import UserProfile from './components/UserProfile';
 import ImportData from './components/ImportData';
 import UserActivityReport from './components/UserActivityReport';
@@ -68,6 +69,8 @@ function App() {
   const [selectedProjectTab, setSelectedProjectTab] = useState('overview');
   const [showDataGrid, setShowDataGrid] = useState(false);
   const [showAddMetric, setShowAddMetric] = useState(false);
+  const [showDimensionConfig, setShowDimensionConfig] = useState(false);
+  const [dimensionConfigMetric, setDimensionConfigMetric] = useState(null);
   const [showNewProject, setShowNewProject] = useState(false);
   const [editingProjectName, setEditingProjectName] = useState(false);
   const [editProjectNameValue, setEditProjectNameValue] = useState('');
@@ -1379,6 +1382,16 @@ function App() {
     }
   };
 
+  const handleConfigureDimensions = (metric) => {
+    setDimensionConfigMetric(metric);
+    setShowDimensionConfig(true);
+  };
+
+  const handleDimensionsChanged = async () => {
+    // Reload project data to reflect dimension changes
+    await loadProjectData();
+  };
+
   const handleMetricReorder = async (metricIds) => {
     try {
       await api.reorderMetrics(selectedProject, metricIds);
@@ -2510,6 +2523,7 @@ function App() {
                 archivedMetrics={archivedMetrics}
                 showArchived={showArchivedMetrics}
                 onToggleShowArchived={() => setShowArchivedMetrics(prev => !prev)}
+                onConfigureDimensions={handleConfigureDimensions}
               />
             )}
 
@@ -2963,6 +2977,17 @@ function App() {
           projectId={selectedProject}
           onClose={() => setShowAddMetric(false)}
           onMetricCreated={handleMetricCreated}
+        />
+      )}
+
+      {showDimensionConfig && dimensionConfigMetric && (
+        <DimensionConfig
+          metric={dimensionConfigMetric}
+          onClose={() => {
+            setShowDimensionConfig(false);
+            setDimensionConfigMetric(null);
+          }}
+          onDimensionsChanged={handleDimensionsChanged}
         />
       )}
 

@@ -3140,7 +3140,7 @@ function createApp(dbPath) {
       }
   
       // Extract all editable fields from request body
-      const { name, description, amber_tolerance, red_tolerance, final_target, progression_type, metric_type, start_date, end_date, recalculate_expected, show_in_portfolio_review, is_archived } = req.body;
+      const { name, description, amber_tolerance, red_tolerance, final_target, progression_type, metric_type, start_date, end_date, recalculate_expected, show_in_portfolio_review, is_archived, has_dimensions } = req.body;
 
       // Build update query for provided fields
       const updates = [];
@@ -3213,6 +3213,12 @@ function createApp(dbPath) {
         values.push(is_archived ? 1 : 0);
         oldValues.is_archived = metric.is_archived;
         newValues.is_archived = is_archived ? 1 : 0;
+      }
+      if (has_dimensions !== undefined) {
+        updates.push('has_dimensions = ?');
+        values.push(has_dimensions ? 1 : 0);
+        oldValues.has_dimensions = metric.has_dimensions;
+        newValues.has_dimensions = has_dimensions ? 1 : 0;
       }
 
       if (updates.length === 0) {
@@ -3431,6 +3437,7 @@ function createApp(dbPath) {
           m.frequency,
           m.progression_type,
           m.metric_type,
+          m.has_dimensions,
           p.name as initiative,
           u.name as owner,
           p.initiative_manager
@@ -3441,6 +3448,62 @@ function createApp(dbPath) {
         WHERE m.project_id = ?
         ORDER BY mp.reporting_date
       `, [projectId]);
+
+      // For metrics with dimensions, fetch dimension values
+      const metricsWithDimensions = [...new Set(data.filter(d => d.has_dimensions).map(d => d.metric_id))];
+
+      if (metricsWithDimensions.length > 0) {
+        // First, get all dimension definitions for these metrics
+        const allDimensions = await dbAll(`
+          SELECT id, metric_id, name, display_order
+          FROM metric_dimensions
+          WHERE metric_id IN (${metricsWithDimensions.join(',')})
+          ORDER BY display_order, id
+        `);
+
+        // Group dimensions by metric_id for easy lookup
+        const dimensionsByMetric = {};
+        for (const dim of allDimensions) {
+          if (!dimensionsByMetric[dim.metric_id]) {
+            dimensionsByMetric[dim.metric_id] = [];
+          }
+          dimensionsByMetric[dim.metric_id].push(dim);
+        }
+
+        // Get all stored dimension values for periods in this project
+        const periodIds = data.map(d => d.id);
+        const dimensionValues = await dbAll(`
+          SELECT mpdv.period_id, mpdv.dimension_id, mpdv.value, md.name, md.metric_id
+          FROM metric_period_dimension_values mpdv
+          JOIN metric_dimensions md ON mpdv.dimension_id = md.id
+          WHERE mpdv.period_id IN (${periodIds.join(',')})
+          ORDER BY md.display_order, md.id
+        `);
+
+        // Group stored dimension values by period
+        const valuesByPeriod = {};
+        for (const dv of dimensionValues) {
+          if (!valuesByPeriod[dv.period_id]) {
+            valuesByPeriod[dv.period_id] = {};
+          }
+          valuesByPeriod[dv.period_id][dv.dimension_id] = dv.value;
+        }
+
+        // Attach dimension values to each period (include all dimensions with default 0)
+        for (const period of data) {
+          if (period.has_dimensions) {
+            const metricDimensions = dimensionsByMetric[period.metric_id] || [];
+            const storedValues = valuesByPeriod[period.id] || {};
+
+            // Build dimension_values array with all dimensions, using stored value or 0
+            period.dimension_values = metricDimensions.map(dim => ({
+              dimension_id: dim.id,
+              name: dim.name,
+              value: storedValues[dim.id] !== undefined ? storedValues[dim.id] : 0
+            }));
+          }
+        }
+      }
 
       // Cache for 60 seconds (default TTL)
       cache.set(cacheKey, data);
@@ -3455,7 +3518,55 @@ function createApp(dbPath) {
   // ===== METRIC PERIODS =====
   app.get('/api/metrics/:metricId/periods', async (req, res) => {
     try {
-      const periods = await dbAll('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date', [req.params.metricId]);
+      const metricId = req.params.metricId;
+
+      // Check if metric has dimensions enabled
+      const metric = await dbGet('SELECT has_dimensions FROM metrics WHERE id = ?', [metricId]);
+
+      const periods = await dbAll('SELECT * FROM metric_periods WHERE metric_id = ? ORDER BY reporting_date', [metricId]);
+
+      // If metric has dimensions, fetch dimension values for all periods
+      if (metric?.has_dimensions) {
+        const dimensions = await dbAll(
+          'SELECT * FROM metric_dimensions WHERE metric_id = ? ORDER BY display_order, id',
+          [metricId]
+        );
+
+        // Get all stored dimension values for this metric's periods
+        const periodIds = periods.map(p => p.id);
+        const valuesByPeriod = {};
+
+        if (periodIds.length > 0) {
+          const dimensionValues = await dbAll(`
+            SELECT mpdv.period_id, mpdv.dimension_id, mpdv.value
+            FROM metric_period_dimension_values mpdv
+            JOIN metric_dimensions md ON mpdv.dimension_id = md.id
+            WHERE mpdv.period_id IN (${periodIds.join(',')})
+          `);
+
+          // Group stored dimension values by period
+          for (const dv of dimensionValues) {
+            if (!valuesByPeriod[dv.period_id]) {
+              valuesByPeriod[dv.period_id] = {};
+            }
+            valuesByPeriod[dv.period_id][dv.dimension_id] = dv.value;
+          }
+        }
+
+        // Attach dimension values to each period (include all dimensions with default 0)
+        for (const period of periods) {
+          const storedValues = valuesByPeriod[period.id] || {};
+          period.dimension_values = dimensions.map(dim => ({
+            dimension_id: dim.id,
+            name: dim.name,
+            value: storedValues[dim.id] !== undefined ? storedValues[dim.id] : 0
+          }));
+        }
+
+        // Also return dimensions metadata
+        return res.json({ periods, dimensions, has_dimensions: true });
+      }
+
       res.json(periods);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -3709,6 +3820,234 @@ function createApp(dbPath) {
       res.json({ success: true });
     } catch (err) {
       console.error('Error deleting metric period:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ===== METRIC DIMENSIONS =====
+
+  // Get all dimensions for a metric
+  app.get('/api/metrics/:metricId/dimensions', async (req, res) => {
+    try {
+      const dimensions = await dbAll(
+        'SELECT * FROM metric_dimensions WHERE metric_id = ? ORDER BY display_order, id',
+        [req.params.metricId]
+      );
+      res.json(dimensions);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Create a new dimension for a metric
+  app.post('/api/metrics/:metricId/dimensions', authenticateToken, async (req, res) => {
+    try {
+      const { name, display_order } = req.body;
+      const metricId = req.params.metricId;
+
+      // Get metric and check permissions
+      const metric = await dbGet('SELECT project_id, name as metric_name FROM metrics WHERE id = ?', [metricId]);
+      if (!metric) {
+        return res.status(404).json({ error: 'Metric not found' });
+      }
+
+      if (!(await canEditProject(req.user.userId, metric.project_id))) {
+        return res.status(403).json({ error: 'You do not have permission to edit this metric' });
+      }
+
+      if (!name || !name.trim()) {
+        return res.status(400).json({ error: 'Dimension name is required' });
+      }
+
+      const result = await dbRun(
+        'INSERT INTO metric_dimensions (metric_id, name, display_order) VALUES (?, ?, ?)',
+        [metricId, name.trim(), display_order || 0]
+      );
+
+      // Enable dimensions on the metric if not already
+      await dbRun('UPDATE metrics SET has_dimensions = 1 WHERE id = ?', [metricId]);
+
+      await logAudit(req.user, 'CREATE', 'metric_dimensions', result.lastID, null,
+        { metric_id: metricId, name: name.trim() },
+        `Created dimension "${name}" for metric "${metric.metric_name}"`,
+        req.ip
+      );
+
+      invalidateProjectCache(metric.project_id);
+
+      res.json({ id: result.lastID, name: name.trim(), display_order: display_order || 0 });
+    } catch (err) {
+      if (err.message.includes('UNIQUE constraint failed')) {
+        return res.status(400).json({ error: 'A dimension with this name already exists for this metric' });
+      }
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Update a dimension
+  app.put('/api/metrics/:metricId/dimensions/:id', authenticateToken, async (req, res) => {
+    try {
+      const { name, display_order } = req.body;
+      const dimensionId = req.params.id;
+
+      // Get dimension and metric info
+      const dimension = await dbGet(`
+        SELECT md.*, m.project_id, m.name as metric_name
+        FROM metric_dimensions md
+        JOIN metrics m ON md.metric_id = m.id
+        WHERE md.id = ?
+      `, [dimensionId]);
+
+      if (!dimension) {
+        return res.status(404).json({ error: 'Dimension not found' });
+      }
+
+      if (!(await canEditProject(req.user.userId, dimension.project_id))) {
+        return res.status(403).json({ error: 'You do not have permission to edit this metric' });
+      }
+
+      const updates = [];
+      const params = [];
+      if (name !== undefined) { updates.push('name = ?'); params.push(name.trim()); }
+      if (display_order !== undefined) { updates.push('display_order = ?'); params.push(display_order); }
+
+      if (updates.length === 0) {
+        return res.status(400).json({ error: 'No updates provided' });
+      }
+
+      params.push(dimensionId);
+      await dbRun(`UPDATE metric_dimensions SET ${updates.join(', ')} WHERE id = ?`, params);
+
+      await logAudit(req.user, 'UPDATE', 'metric_dimensions', dimensionId,
+        { name: dimension.name, display_order: dimension.display_order },
+        { name, display_order },
+        `Updated dimension "${dimension.name}" for metric "${dimension.metric_name}"`,
+        req.ip
+      );
+
+      invalidateProjectCache(dimension.project_id);
+
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Delete a dimension
+  app.delete('/api/metrics/:metricId/dimensions/:id', authenticateToken, async (req, res) => {
+    try {
+      const dimensionId = req.params.id;
+
+      // Get dimension info
+      const dimension = await dbGet(`
+        SELECT md.*, m.project_id, m.name as metric_name
+        FROM metric_dimensions md
+        JOIN metrics m ON md.metric_id = m.id
+        WHERE md.id = ?
+      `, [dimensionId]);
+
+      if (!dimension) {
+        return res.status(404).json({ error: 'Dimension not found' });
+      }
+
+      if (!(await canEditProject(req.user.userId, dimension.project_id))) {
+        return res.status(403).json({ error: 'You do not have permission to edit this metric' });
+      }
+
+      // Delete dimension (cascade will remove dimension values)
+      await dbRun('DELETE FROM metric_dimensions WHERE id = ?', [dimensionId]);
+
+      // Check if metric still has any dimensions
+      const remainingCount = await dbGet(
+        'SELECT COUNT(*) as count FROM metric_dimensions WHERE metric_id = ?',
+        [dimension.metric_id]
+      );
+      if (remainingCount.count === 0) {
+        await dbRun('UPDATE metrics SET has_dimensions = 0 WHERE id = ?', [dimension.metric_id]);
+      }
+
+      await logAudit(req.user, 'DELETE', 'metric_dimensions', dimensionId,
+        { name: dimension.name },
+        null,
+        `Deleted dimension "${dimension.name}" from metric "${dimension.metric_name}"`,
+        req.ip
+      );
+
+      invalidateProjectCache(dimension.project_id);
+
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Update dimension values for a period (bulk update)
+  app.put('/api/metric-periods/:periodId/dimensions', authenticateToken, async (req, res) => {
+    try {
+      const periodId = req.params.periodId;
+      const { dimensions } = req.body; // [{ dimension_id, value }]
+
+      if (!Array.isArray(dimensions)) {
+        return res.status(400).json({ error: 'dimensions must be an array' });
+      }
+
+      // Get period and metric info
+      const period = await dbGet(`
+        SELECT mp.*, m.project_id, m.name as metric_name, m.has_dimensions
+        FROM metric_periods mp
+        JOIN metrics m ON mp.metric_id = m.id
+        WHERE mp.id = ?
+      `, [periodId]);
+
+      if (!period) {
+        return res.status(404).json({ error: 'Period not found' });
+      }
+
+      if (!(await canEditProject(req.user.userId, period.project_id))) {
+        return res.status(403).json({ error: 'You do not have permission to edit this data' });
+      }
+
+      // Upsert each dimension value
+      for (const dim of dimensions) {
+        if (dim.dimension_id && dim.value !== undefined) {
+          await dbRun(`
+            INSERT INTO metric_period_dimension_values (period_id, dimension_id, value)
+            VALUES (?, ?, ?)
+            ON CONFLICT(period_id, dimension_id) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
+          `, [periodId, dim.dimension_id, dim.value, dim.value]);
+        }
+      }
+
+      // Calculate total and update the period's complete value
+      const totalResult = await dbGet(`
+        SELECT SUM(value) as total
+        FROM metric_period_dimension_values
+        WHERE period_id = ?
+      `, [periodId]);
+
+      const total = totalResult?.total || 0;
+      await dbRun('UPDATE metric_periods SET complete = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [total, periodId]);
+
+      invalidateProjectCache(period.project_id);
+
+      res.json({ success: true, total });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Get dimension values for a period
+  app.get('/api/metric-periods/:periodId/dimensions', async (req, res) => {
+    try {
+      const values = await dbAll(`
+        SELECT mpdv.*, md.name, md.display_order
+        FROM metric_period_dimension_values mpdv
+        JOIN metric_dimensions md ON mpdv.dimension_id = md.id
+        WHERE mpdv.period_id = ?
+        ORDER BY md.display_order, md.id
+      `, [req.params.periodId]);
+      res.json(values);
+    } catch (err) {
       res.status(500).json({ error: err.message });
     }
   });
@@ -8635,6 +8974,50 @@ function createApp(dbPath) {
       console.log('✅ Created space_admin_assignments table');
     } catch (err) {
       console.log('ℹ️  space_admin_assignments migration skipped:', err.message);
+    }
+
+    // Migration: Create metric_dimensions table
+    try {
+      await dbRun(`CREATE TABLE IF NOT EXISTS metric_dimensions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        metric_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        display_order INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (metric_id) REFERENCES metrics(id) ON DELETE CASCADE,
+        UNIQUE(metric_id, name)
+      )`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_metric_dimensions_metric ON metric_dimensions(metric_id)`);
+      console.log('✅ Created metric_dimensions table');
+    } catch (err) {
+      console.log('ℹ️  metric_dimensions migration skipped:', err.message);
+    }
+
+    // Migration: Create metric_period_dimension_values table
+    try {
+      await dbRun(`CREATE TABLE IF NOT EXISTS metric_period_dimension_values (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        period_id INTEGER NOT NULL,
+        dimension_id INTEGER NOT NULL,
+        value REAL NOT NULL DEFAULT 0,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (period_id) REFERENCES metric_periods(id) ON DELETE CASCADE,
+        FOREIGN KEY (dimension_id) REFERENCES metric_dimensions(id) ON DELETE CASCADE,
+        UNIQUE(period_id, dimension_id)
+      )`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_dimension_values_period ON metric_period_dimension_values(period_id)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_dimension_values_dimension ON metric_period_dimension_values(dimension_id)`);
+      console.log('✅ Created metric_period_dimension_values table');
+    } catch (err) {
+      console.log('ℹ️  metric_period_dimension_values migration skipped:', err.message);
+    }
+
+    // Migration: Add has_dimensions column to metrics table
+    try {
+      await dbRun(`ALTER TABLE metrics ADD COLUMN has_dimensions INTEGER DEFAULT 0`);
+      console.log('✅ Added has_dimensions column to metrics');
+    } catch (err) {
+      // Column likely already exists
     }
 
     // Create default admin user if none exists

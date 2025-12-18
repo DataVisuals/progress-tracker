@@ -1699,6 +1699,40 @@
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.02);
 }
 
+/* Dimension row styles */
+.dimension-row {
+  background: rgba(243, 244, 246, 0.5);
+}
+
+.dimension-label {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%) !important;
+  color: #374151 !important;
+  font-weight: 600 !important;
+  border-right: 2px solid #9ca3af !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px !important;
+  text-transform: none !important;
+}
+
+.dimension-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.dimension-cell {
+  background: rgba(249, 250, 251, 0.8);
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.dimension-cell.editable-cell:hover {
+  background: rgba(229, 231, 235, 0.8);
+}
+
 .number-cell {
   color: #1f2937;
   font-weight: 500;
@@ -1869,6 +1903,17 @@
 .legend-item.active .legend-text {
   color: #0c4a6e;
   font-weight: 700;
+}
+
+.legend-divider {
+  width: 100%;
+  height: 1px;
+  background: #e5e7eb;
+  margin: 6px 0;
+}
+
+.dimension-legend-item {
+  opacity: 0.85;
 }
 
 /* Add animation to bars */
@@ -2171,6 +2216,25 @@
   background: linear-gradient(135deg, #78350f 0%, #92400e 100%) !important;
   color: #fef3c7 !important;
   border-right-color: #f59e0b !important;
+}
+
+:root.dark-mode .dimension-row {
+  background: rgba(55, 65, 81, 0.5);
+}
+
+:root.dark-mode .dimension-label {
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%) !important;
+  color: #e5e7eb !important;
+  border-right-color: #6b7280 !important;
+}
+
+:root.dark-mode .dimension-cell {
+  background: rgba(55, 65, 81, 0.6);
+  color: #d1d5db;
+}
+
+:root.dark-mode .dimension-cell.editable-cell:hover {
+  background: rgba(75, 85, 99, 0.8);
 }
 
 :root.dark-mode .target-cell {

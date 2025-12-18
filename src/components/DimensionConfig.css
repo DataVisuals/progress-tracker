@@ -1,0 +1,238 @@
+.dimension-config-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.dimension-config-modal {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  width: 400px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dimension-config-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dimension-config-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.dimension-config-metric-name {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.dimension-config-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.dimension-config-help {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.dimension-config-error {
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.dimension-config-loading {
+  text-align: center;
+  color: #6b7280;
+  padding: 20px;
+}
+
+.dimension-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.dimension-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+}
+
+.dimension-name {
+  flex: 1;
+  font-size: 14px;
+  color: #374151;
+}
+
+.dimension-remove {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.dimension-remove:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.dimension-remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dimension-add {
+  display: flex;
+  gap: 8px;
+}
+
+.dimension-add input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.dimension-add input:focus {
+  border-color: #3b82f6;
+}
+
+.dimension-add button {
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dimension-add button:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.dimension-add button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.dimension-config-hint {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 12px 0 0 0;
+  font-style: italic;
+}
+
+.dimension-config-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dimension-config-close {
+  padding: 8px 20px;
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dimension-config-close:hover {
+  background: #e5e7eb;
+}
+
+/* Dark mode support */
+[data-theme="dark"] .dimension-config-modal {
+  background: #1f2937;
+}
+
+[data-theme="dark"] .dimension-config-header {
+  border-bottom-color: #374151;
+}
+
+[data-theme="dark"] .dimension-config-header h3 {
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .dimension-config-metric-name {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .dimension-config-help {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .dimension-item {
+  background: #374151;
+}
+
+[data-theme="dark"] .dimension-name {
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .dimension-remove:hover {
+  background: #7f1d1d;
+}
+
+[data-theme="dark"] .dimension-add input {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .dimension-add input:focus {
+  border-color: #3b82f6;
+}
+
+[data-theme="dark"] .dimension-config-footer {
+  border-top-color: #374151;
+}
+
+[data-theme="dark"] .dimension-config-close {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .dimension-config-close:hover {
+  background: #4b5563;
+}
