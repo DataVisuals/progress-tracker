@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MdGridView, MdDragIndicator } from 'react-icons/md';
 import './MetricTabs.css';
 
-const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMetricRename, onMetricDelete, onMetricArchive, canEdit, onAddMetric, onGridView, onMetricReorder, projectMetrics, archivedMetrics = [], showArchived = false, onToggleShowArchived }) => {
+const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMetricRename, onMetricDelete, onMetricArchive, canEdit, onAddMetric, onGridView, onMetricReorder, projectMetrics, archivedMetrics = [], showArchived = false, onToggleShowArchived, onConfigureDimensions }) => {
   const [editingMetric, setEditingMetric] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [showDropdown, setShowDropdown] = useState(null);
@@ -444,6 +444,21 @@ const MetricTabs = ({ metrics, projectData, selectedMetric, onMetricChange, onMe
             }}>
               Rename Metric
             </button>
+            {onConfigureDimensions && (
+              <button
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  const metricObj = projectMetrics?.find(m => m.name === showDropdown);
+                  if (metricObj) {
+                    onConfigureDimensions(metricObj);
+                  }
+                  setShowDropdown(null);
+                }}
+              >
+                Configure Dimensions
+              </button>
+            )}
             {onMetricArchive && (
               <button
                 onMouseDown={(e) => {
