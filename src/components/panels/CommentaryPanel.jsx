@@ -138,9 +138,9 @@ const CommentaryPanel = ({
                       <div className="commentary-context" style={{ fontSize: '12px' }}>
                         {item.portfolioColor && <span className="commentary-portfolio-dot" style={{ backgroundColor: item.portfolioColor, width: '6px', height: '6px' }} title={item.portfolioName || 'No Portfolio'} />}
                         <span className="commentary-project" style={{ fontWeight: 500 }}>{item.projectName}</span>
-                        <span style={{ color: '#9ca3af' }}>·</span>
+                        <span className="commentary-separator" style={{ color: '#9ca3af' }}>·</span>
                         <span className="commentary-metric">{item.metricName}</span>
-                        <span style={{ color: '#9ca3af' }}>·</span>
+                        <span className="commentary-separator" style={{ color: '#9ca3af' }}>·</span>
                         <span className="commentary-period" style={{ color: '#6b7280' }}>{item.periodName}</span>
                       </div>
                     </div>

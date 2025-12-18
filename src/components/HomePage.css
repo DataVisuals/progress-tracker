@@ -6347,7 +6347,7 @@ html.dark-mode .quadrant-content {
 }
 
 /* Hide dot separators in fullscreen stacked view */
-.expanded-panel-content .commentary-context > span[style*="color: #9ca3af"] {
+.expanded-panel-content .commentary-separator {
   display: none;
 }
 
