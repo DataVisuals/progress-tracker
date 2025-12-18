@@ -322,10 +322,22 @@
   border-bottom: 1px solid #eee;
 }
 
+/* Scrollable container for users table */
+.users-table-scroll {
+  max-height: 50vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+}
+
+:root.dark-mode .users-table-scroll {
+  border-color: #374151;
+}
+
 .users-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 8px;
   table-layout: fixed;
 }
 
@@ -378,6 +390,9 @@
   background-color: #f8f9fa;
   font-weight: 600;
   color: #333;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .users-table tbody tr {
@@ -860,6 +875,9 @@
 :root.dark-mode .users-table th {
   background-color: #374151;
   color: #f9fafb;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 :root.dark-mode .users-table tbody tr:hover {

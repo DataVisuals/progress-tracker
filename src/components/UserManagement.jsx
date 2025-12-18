@@ -527,6 +527,7 @@ const UserManagement = ({ currentUser, onClose }) => {
               </div>
             )}
 
+            <div className="users-table-scroll">
             {loading ? (
               <p>Loading...</p>
             ) : (
@@ -641,6 +642,7 @@ const UserManagement = ({ currentUser, onClose }) => {
                 </tbody>
               </table>
             )}
+            </div>
           </div>
 
           {selectedUser && selectedUser.role === 'pm' && (
