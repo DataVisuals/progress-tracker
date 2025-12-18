@@ -6,9 +6,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest --testTimeout=10000 --runInBand",
-    "test:watch": "jest --watch",
-    "test:report": "jest --testTimeout=10000 --runInBand --reporters=./src/tests/custom-reporter.js --silent"
+    "test": "nice -n 10 jest --testTimeout=10000 --runInBand",
+    "test:watch": "nice -n 10 jest --watch",
+    "test:report": "nice -n 10 jest --testTimeout=10000 --runInBand --reporters=./src/tests/custom-reporter.js --silent"
   },
   "keywords": [],
   "author": "",

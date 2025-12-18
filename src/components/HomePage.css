@@ -5657,6 +5657,55 @@ html.dark-mode .quadrant-content {
   background: transparent;
 }
 
+/* Spacer to push How To button to far right */
+.dock-spacer {
+  flex: 1;
+}
+
+/* How To dock button */
+.how-to-dock-btn {
+  color: #f59e0b;
+}
+
+.how-to-dock-btn:hover {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+/* Spotlight effect for How To dock button */
+.how-to-dock-btn.spotlight {
+  animation: dock-spotlight-pulse 2s ease-in-out infinite;
+  position: relative;
+}
+
+.how-to-dock-btn.spotlight::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 8px;
+  animation: dock-spotlight-glow 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes dock-spotlight-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes dock-spotlight-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px 3px rgba(245, 158, 11, 0.4),
+                0 0 20px 6px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 15px 5px rgba(245, 158, 11, 0.6),
+                0 0 30px 10px rgba(245, 158, 11, 0.3);
+  }
+}
+
 :root.dark-mode .minimized-tab .lock-icon {
   color: #6b7280;
 }

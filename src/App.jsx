@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Build timestamp - updated automatically before each commit to gh
 const BUILD_TIMESTAMP = '2025-12-14 19:20:10';
+
 import Select from 'react-select';
 import 'react-quill/dist/quill.snow.css';
 import Login from './components/Login';
@@ -39,7 +40,7 @@ import PortfolioReviewModal from './components/PortfolioReviewModal';
 import ProjectOnePager from './components/ProjectOnePager';
 import { api, refreshToken } from './api/client';
 import { selectStyles } from './components/SelectStyles';
-import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode, MdSwapHoriz } from 'react-icons/md';
+import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode, MdSwapHoriz, MdMenuBook } from 'react-icons/md';
 import ProjectHealthModal, { calculateHealthScore } from './components/ProjectHealthModal';
 import ClarityIndicator from './components/ClarityIndicator';
 import Lottie from 'lottie-react';
@@ -145,6 +146,19 @@ function App() {
   });
   const [tokenExpiryWarning, setTokenExpiryWarning] = useState(null); // Time until expiry (for display)
   const [showTokenWarning, setShowTokenWarning] = useState(false); // Show warning modal
+  const [skipTutorialAtStartup, setSkipTutorialAtStartup] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('tutorialPrefs') || '{}');
+      // Reset preference if version changed
+      if (saved.version !== BUILD_TIMESTAMP) {
+        return false;
+      }
+      return saved.skip || false;
+    } catch {
+      return false;
+    }
+  });
+  const showHowToSpotlight = !skipTutorialAtStartup;
 
   // React Query hooks for cached data fetching
   // Note: Don't require isAuthenticated - app allows unauthenticated viewing
@@ -1817,15 +1831,6 @@ function App() {
               />
               <div className="header-title-group">
                 <span className="header-title-text">Progress Tracker</span>
-                <button
-                  className="ten-reasons-link"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowTutorial(true);
-                  }}
-                >
-                  Ten reasons you need this
-                </button>
               </div>
             </h1>
           </div>
@@ -2934,6 +2939,8 @@ function App() {
             setSelectedTipsCategory={setSelectedTipsCategory}
             projectDateHistory={projectDateHistory}
             milestoneDateHistory={milestoneDateHistory}
+            onShowTutorial={() => setShowTutorial(true)}
+            showHowToSpotlight={showHowToSpotlight}
           />
         )}
       </div>
@@ -3239,7 +3246,15 @@ function App() {
 
       {/* Tutorial Modal */}
       {showTutorial && (
-        <Tutorial onClose={() => setShowTutorial(false)} />
+        <Tutorial
+          onClose={() => setShowTutorial(false)}
+          skipAtStartup={skipTutorialAtStartup}
+          onSkipAtStartupChange={(skip) => {
+            setSkipTutorialAtStartup(skip);
+            localStorage.setItem('tutorialPrefs', JSON.stringify({ skip, version: BUILD_TIMESTAMP }));
+          }}
+          appVersion={BUILD_TIMESTAMP}
+        />
       )}
 
       {/* Project One-Pager Modal (Cmd+O / Ctrl+O) */}

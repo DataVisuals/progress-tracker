@@ -38,21 +38,21 @@ test.describe('Project Navigation', () => {
     await expect(appContainer).toBeVisible();
   });
 
-  test('should display "Ten reasons you need this" link', async ({ page }) => {
-    const tenReasonsLink = page.locator('.ten-reasons-link');
-    await expect(tenReasonsLink).toBeVisible();
-    await expect(tenReasonsLink).toContainText('Ten reasons you need this');
+  test('should display "How To..." button', async ({ page }) => {
+    const howToBtn = page.locator('.how-to-btn');
+    await expect(howToBtn).toBeVisible();
+    await expect(howToBtn).toContainText('How To...');
   });
 
-  test('should open Ten Reasons modal when clicked', async ({ page }) => {
-    const tenReasonsLink = page.locator('.ten-reasons-link');
-    await tenReasonsLink.click();
+  test('should open Tutorial modal when How To button clicked', async ({ page }) => {
+    const howToBtn = page.locator('.how-to-btn');
+    await howToBtn.click();
 
     // Modal should appear
     const modal = page.locator('.ten-reasons-modal');
     await expect(modal).toBeVisible({ timeout: 5000 });
 
-    // Should have the title
+    // Should have the title (first page is still "Ten Reasons")
     await expect(modal.locator('h2')).toContainText('Ten Reasons You Need This');
 
     // Close the modal

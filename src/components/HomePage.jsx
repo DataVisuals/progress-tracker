@@ -42,7 +42,8 @@ import {
   MdClose,
   MdLock,
   MdShare,
-  MdCheck
+  MdCheck,
+  MdMenuBook
 } from 'react-icons/md';
 import { FaDatabase } from 'react-icons/fa';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, RadialBarChart, RadialBar, Legend, PolarAngleAxis, LabelList, Treemap, CartesianGrid, PieChart, Pie } from 'recharts';
@@ -84,7 +85,9 @@ const HomePage = ({
   setShowTipsModal,
   setSelectedTipsCategory,
   projectDateHistory = {},
-  milestoneDateHistory: milestoneDateHistoryProp = {}
+  milestoneDateHistory: milestoneDateHistoryProp = {},
+  onShowTutorial,
+  showHowToSpotlight = false
 }) => {
 
   const [recentCommentary, setRecentCommentary] = useState([]);
@@ -1548,6 +1551,9 @@ const HomePage = ({
                 dockPositionsRef.current = null;
               }}
             >
+              {/* Left spacer to balance How To button on right */}
+              <div className="dock-spacer" />
+
               {/* Regular panels */}
               {allPanels.filter(p => !p.adminOnly && !p.hiddenFromDock).map((panel) => {
                 const PanelIcon = panel.icon;
@@ -1599,6 +1605,17 @@ const HomePage = ({
                   </button>
                 );
               })}
+
+              {/* How To button - pushed to far right */}
+              <div className="dock-spacer" />
+              <button
+                className={`minimized-tab how-to-dock-btn ${showHowToSpotlight ? 'spotlight' : ''}`}
+                onClick={onShowTutorial}
+                title="How to use Progress Tracker"
+              >
+                <MdMenuBook />
+                <span className="tab-tooltip">How To...</span>
+              </button>
             </div>
           </div>
         );

@@ -2212,10 +2212,10 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                 return (
                   <td
                     key={index}
-                    className={`number-cell ${statusClass} ${allowDataEdits && !isFuture ? 'editable-cell' : ''} ${completeFieldChanged ? 'recently-changed-cell' : ''}`}
+                    className={`number-cell ${statusClass} ${allowDataEdits && !isFuture ? 'editable-cell' : ''} ${isFuture ? 'future-cell' : ''} ${completeFieldChanged ? 'recently-changed-cell' : ''}`}
                     onClick={() => allowDataEdits && !isFuture && handleCellClick(item.id, 'complete', item.complete)}
                     style={allowDataEdits && !isFuture ? { cursor: 'pointer' } : {}}
-                    title={completeFieldChanged ? 'Recently updated' : ''}
+                    title={isFuture ? 'Future periods cannot be edited until the date arrives' : (completeFieldChanged ? 'Recently updated' : (allowDataEdits ? 'Click to edit' : ''))}
                   >
                     {isEditing ? (
                       <input

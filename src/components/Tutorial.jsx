@@ -32,11 +32,12 @@ import {
   MdAutoGraph,
   MdExtension,
   MdArticle,
-  MdNotInterested
+  MdNotInterested,
+  MdRemove
 } from 'react-icons/md';
 import './Tutorial.css';
 
-const Tutorial = ({ onClose, startPage = 0 }) => {
+const Tutorial = ({ onClose, startPage = 0, skipAtStartup = false, onSkipAtStartupChange, appVersion }) => {
   const [currentPage, setCurrentPage] = useState(startPage);
   const [isFlipping, setIsFlipping] = useState(false);
   const [flipDirection, setFlipDirection] = useState('next');
@@ -123,6 +124,18 @@ const Tutorial = ({ onClose, startPage = 0 }) => {
             </div>
           </div>
           <p className="reasons-cta">Use arrows to learn how to get started →</p>
+          <div className="startup-toggle-section">
+            <label className="startup-toggle">
+              <input
+                type="checkbox"
+                checked={skipAtStartup}
+                onChange={(e) => onSkipAtStartupChange?.(e.target.checked)}
+              />
+              <span className="toggle-slider"></span>
+              <span className="toggle-label">Don't show at startup</span>
+            </label>
+            <p className="version-note">Build: {appVersion} — This preference resets when the app is updated</p>
+          </div>
         </div>
       )
     },
@@ -652,7 +665,59 @@ const Tutorial = ({ onClose, startPage = 0 }) => {
         </div>
       )
     },
-    // Page 11: The Dock
+    // Page 11: Home Page Configuration
+    {
+      type: 'guide',
+      title: 'Configure Your Dashboard',
+      subtitle: 'Personalize the home page to suit your workflow',
+      icon: <MdDashboard />,
+      steps: [
+        'Click the cog icon (⚙️) in the top-right of the home page',
+        'Drag and drop panels to rearrange the quadrant layout',
+        'Click the minus icon on any panel to minimize it to the dock',
+        'Restore panels by clicking their icon in the dock'
+      ],
+      tip: 'Your layout preferences are saved automatically and persist across sessions.',
+      visual: (
+        <div className="tutorial-visual config-visual">
+          <div className="mock-quadrants">
+            <div className="mock-quadrant">
+              <div className="mock-panel-header">
+                <span>Project Health</span>
+                <MdRemove className="panel-action" />
+              </div>
+              <div className="mock-panel-content">📊</div>
+            </div>
+            <div className="mock-quadrant">
+              <div className="mock-panel-header">
+                <span>Recent Updates</span>
+                <MdRemove className="panel-action" />
+              </div>
+              <div className="mock-panel-content">📝</div>
+            </div>
+            <div className="mock-quadrant drag-target">
+              <div className="mock-panel-header">
+                <span>Metrics at Risk</span>
+                <MdRemove className="panel-action" />
+              </div>
+              <div className="mock-panel-content dragging">⚠️</div>
+            </div>
+            <div className="mock-quadrant">
+              <div className="mock-panel-header">
+                <span>Timeline</span>
+                <MdRemove className="panel-action" />
+              </div>
+              <div className="mock-panel-content">📅</div>
+            </div>
+          </div>
+          <div className="config-hint">
+            <MdTune className="config-icon" />
+            <span>Drag panels to swap positions</span>
+          </div>
+        </div>
+      )
+    },
+    // Page 12: The Dock
     {
       type: 'guide',
       title: 'The Dock',

@@ -2502,3 +2502,25 @@
   border-left-color: #fbbf24 !important;
 }
 
+/* Future period cells - not editable */
+.future-cell {
+  background-color: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed !important;
+  position: relative;
+}
+
+.future-cell:hover {
+  background-color: #f3f4f6;
+}
+
+/* Dark mode future cell */
+:root.dark-mode .future-cell {
+  background-color: #1f2937;
+  color: #6b7280;
+}
+
+:root.dark-mode .future-cell:hover {
+  background-color: #374151;
+}
+

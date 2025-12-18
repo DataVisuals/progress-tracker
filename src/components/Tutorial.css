@@ -400,6 +400,85 @@
   margin: 20px 0 0;
 }
 
+/* Startup toggle section */
+.startup-toggle-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  text-align: right;
+}
+
+.startup-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.startup-toggle input {
+  display: none;
+}
+
+.toggle-slider {
+  width: 40px;
+  height: 22px;
+  background: #cbd5e1;
+  border-radius: 11px;
+  position: relative;
+  transition: background 0.2s ease;
+}
+
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.startup-toggle input:checked + .toggle-slider {
+  background: #3b82f6;
+}
+
+.startup-toggle input:checked + .toggle-slider::after {
+  transform: translateX(18px);
+}
+
+.toggle-label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.version-note {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 8px 0 0;
+  font-style: italic;
+}
+
+:root.dark-mode .startup-toggle-section {
+  border-top-color: #374151;
+}
+
+:root.dark-mode .toggle-slider {
+  background: #4b5563;
+}
+
+:root.dark-mode .toggle-label {
+  color: #9ca3af;
+}
+
+:root.dark-mode .version-note {
+  color: #6b7280;
+}
+
 .reasons-summary {
   text-align: center;
   font-size: 14px;
@@ -1062,6 +1141,106 @@
 }
 
 /* Dock visual */
+/* Dashboard Configuration visual */
+.config-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.mock-quadrants {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.mock-quadrant {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.mock-quadrant.drag-target {
+  border: 2px dashed #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.mock-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.mock-panel-header .panel-action {
+  font-size: 14px;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.mock-panel-content {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.mock-panel-content.dragging {
+  animation: panel-drag 1s ease-in-out infinite;
+}
+
+@keyframes panel-drag {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.config-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 8px 14px;
+  border-radius: 6px;
+}
+
+.config-hint .config-icon {
+  font-size: 16px;
+  color: #3b82f6;
+}
+
+:root.dark-mode .mock-quadrant {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:root.dark-mode .mock-quadrant.drag-target {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+:root.dark-mode .mock-panel-header {
+  background: #111827;
+  border-color: #374151;
+  color: #d1d5db;
+}
+
+:root.dark-mode .config-hint {
+  background: #374151;
+  color: #9ca3af;
+}
+
 .mock-dock {
   display: flex;
   align-items: center;
