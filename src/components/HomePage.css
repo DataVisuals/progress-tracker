@@ -6334,6 +6334,9 @@ html.dark-mode .quadrant-content {
   padding-bottom: 8px;
   border-bottom: 1px solid #e5e7eb;
   margin-bottom: 4px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  flex-wrap: wrap;
 }
 
 .expanded-panel-content .commentary-label {
@@ -6342,6 +6345,8 @@ html.dark-mode .quadrant-content {
 
 .expanded-panel-content .commentary-project {
   font-size: 13px;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .expanded-panel-content .commentary-metric,
