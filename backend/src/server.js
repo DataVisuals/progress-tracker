@@ -3859,6 +3859,15 @@ function createApp(dbPath) {
         return res.status(400).json({ error: 'Dimension name is required' });
       }
 
+      // Enforce maximum of 4 dimensions per metric for visual clarity
+      const existingCount = await dbGet(
+        'SELECT COUNT(*) as count FROM metric_dimensions WHERE metric_id = ?',
+        [metricId]
+      );
+      if (existingCount.count >= 4) {
+        return res.status(400).json({ error: 'Maximum of 4 dimensions per metric allowed' });
+      }
+
       const result = await dbRun(
         'INSERT INTO metric_dimensions (metric_id, name, display_order) VALUES (?, ?, ?)',
         [metricId, name.trim(), display_order || 0]
