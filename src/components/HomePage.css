@@ -6308,10 +6308,15 @@ html.dark-mode .quadrant-content {
 /* Commentary fullscreen */
 .expanded-panel-content .commentary-list {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px;
   width: 100%;
   align-items: start;
+}
+
+.expanded-panel-content .commentary-list > div {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .expanded-panel-content .commentary-item {
@@ -6319,6 +6324,8 @@ html.dark-mode .quadrant-content {
   gap: 10px;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  word-break: break-word;
 }
 
 .expanded-panel-content .commentary-header {
@@ -6350,6 +6357,8 @@ html.dark-mode .quadrant-content {
 .expanded-panel-content .commentary-text {
   font-size: 14px;
   line-height: 1.5;
+  overflow: hidden;
+  word-break: break-word;
 }
 
 .expanded-panel-content .commentary-footer {
