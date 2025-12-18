@@ -136,8 +136,10 @@ const CommentaryPanel = ({
                   <div className="commentary-item" onClick={() => onMetricClick(item.projectId, item.metricName)} style={{ padding: '6px 8px' }}>
                     <div className="commentary-header" style={{ gap: '4px', marginBottom: '2px', flexWrap: 'wrap' }}>
                       <div className="commentary-context" style={{ fontSize: '12px' }}>
-                        {item.portfolioColor && <span className="commentary-portfolio-dot" style={{ backgroundColor: item.portfolioColor, width: '6px', height: '6px' }} title={item.portfolioName || 'No Portfolio'} />}
-                        <span className="commentary-project" style={{ fontWeight: 500 }}>{item.projectName}</span>
+                        <span className="commentary-project-row">
+                          {item.portfolioColor && <span className="commentary-portfolio-dot" style={{ backgroundColor: item.portfolioColor, width: '6px', height: '6px' }} title={item.portfolioName || 'No Portfolio'} />}
+                          <span className="commentary-project" style={{ fontWeight: 500 }}>{item.projectName}</span>
+                        </span>
                         <span className="commentary-separator" style={{ color: '#9ca3af' }}>·</span>
                         <span className="commentary-metric">{item.metricName}</span>
                         <span className="commentary-separator" style={{ color: '#9ca3af' }}>·</span>

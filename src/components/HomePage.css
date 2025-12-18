@@ -6351,6 +6351,13 @@ html.dark-mode .quadrant-content {
   display: none;
 }
 
+/* Keep portfolio dot and project name on same row */
+.expanded-panel-content .commentary-project-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .expanded-panel-content .commentary-label {
   font-size: 11px;
 }
