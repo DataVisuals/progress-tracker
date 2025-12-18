@@ -102,12 +102,21 @@ const RecentUpdatesPanel = ({
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
+    const diffWeeks = Math.floor(diffDays / 7);
 
     if (diffMins < 1) return 'just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    if (diffWeeks < 8) return `${diffWeeks}w ago`;
+    return `${Math.floor(diffWeeks / 4)}mo ago`;
+  };
+
+  const formatDateTime = (date) => {
+    if (!date) return '';
+    const dateStr = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    return `${dateStr} ${timeStr}`;
   };
 
   const getActionIcon = (action) => {
@@ -190,7 +199,8 @@ const RecentUpdatesPanel = ({
                     style={{ cursor: group.projectId ? 'pointer' : 'default' }}
                   >
                     <span className="update-project-name">{group.projectName}</span>
-                    <span className="update-time">{formatRelativeTime(group.latestUpdate)}</span>
+                    <span className="update-time">{formatDateTime(group.latestUpdate)}</span>
+                    <span className="update-relative-time">({formatRelativeTime(group.latestUpdate)})</span>
                     {group.projectId && <MdChevronRight className="update-nav-icon" />}
                   </div>
 

@@ -1013,3 +1013,87 @@
 :root.dark-mode .reset-password-info strong {
   color: #f9fafb;
 }
+
+/* Alphabet navigation bar */
+.alphabet-bar {
+  display: flex;
+  gap: 2px;
+  padding: 8px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+}
+
+.alphabet-letter {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #d1d5db;
+  cursor: default;
+  border-radius: 3px;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alphabet-letter.has-users {
+  color: #374151;
+  cursor: pointer;
+  background-color: #f3f4f6;
+}
+
+.alphabet-letter.has-users:hover {
+  background-color: #00aeef;
+  color: white;
+}
+
+/* Highlight row when scrolled to */
+.users-table tbody tr.highlight-scroll {
+  animation: highlightFade 1.5s ease-out;
+}
+
+@keyframes highlightFade {
+  0% {
+    background-color: #fef08a;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+:root.dark-mode .users-table tbody tr.highlight-scroll {
+  animation: highlightFadeDark 1.5s ease-out;
+}
+
+@keyframes highlightFadeDark {
+  0% {
+    background-color: #854d0e;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* Dark mode alphabet bar */
+:root.dark-mode .alphabet-bar {
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .alphabet-letter {
+  color: #4b5563;
+}
+
+:root.dark-mode .alphabet-letter.has-users {
+  color: #e5e7eb;
+  background-color: #374151;
+}
+
+:root.dark-mode .alphabet-letter.has-users:hover {
+  background-color: #00aeef;
+  color: white;
+}

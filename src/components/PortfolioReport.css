@@ -172,6 +172,16 @@
   border-color: #539668;
 }
 
+.summary-card.risk {
+  background: #fffbeb;
+  border-color: #f59e0b;
+}
+
+.summary-card.issue {
+  background: #fef2f2;
+  border-color: #dc2626;
+}
+
 .card-value {
   font-size: 24px;
   font-weight: 700;
@@ -448,6 +458,88 @@
   margin: 0;
 }
 
+/* Risks and Issues Sections */
+.risks-section,
+.issues-section {
+  margin-top: 16px;
+}
+
+.risks-list,
+.issues-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.risks-section .risk-item,
+.issues-section .issue-item {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px 12px;
+  border-left: 3px solid #f59e0b;
+}
+
+.issues-section .issue-item {
+  border-left-color: #dc2626;
+}
+
+.risk-header,
+.issue-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.risk-priority,
+.issue-priority {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+.risk-project,
+.issue-project {
+  flex: 1;
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.risk-status,
+.issue-status {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.issue-status {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.risk-title,
+.issue-title {
+  font-weight: 500;
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.risk-description,
+.issue-description {
+  font-size: 12px;
+  color: #4b5563;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
 /* Print styles for report-like appearance */
 @media print {
   .portfolio-report-modal {
@@ -517,6 +609,16 @@
 :root.dark-mode .summary-card.green {
   background: #052e16;
   border-color: #539668;
+}
+
+:root.dark-mode .summary-card.risk {
+  background: #451a03;
+  border-color: #f59e0b;
+}
+
+:root.dark-mode .summary-card.issue {
+  background: #450a0a;
+  border-color: #dc2626;
 }
 
 :root.dark-mode .card-value {
@@ -604,6 +706,27 @@
 }
 
 :root.dark-mode .no-projects {
+  color: #9ca3af;
+}
+
+:root.dark-mode .risks-section .risk-item,
+:root.dark-mode .issues-section .issue-item {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:root.dark-mode .risk-title,
+:root.dark-mode .issue-title {
+  color: #f3f4f6;
+}
+
+:root.dark-mode .risk-description,
+:root.dark-mode .issue-description {
+  color: #d1d5db;
+}
+
+:root.dark-mode .risk-project,
+:root.dark-mode .issue-project {
   color: #9ca3af;
 }
 

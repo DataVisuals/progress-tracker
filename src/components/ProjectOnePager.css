@@ -1,0 +1,808 @@
+/* Project One-Pager Modal - A4 Landscape Format */
+
+.one-pager-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.one-pager-content {
+  background: white;
+  border-radius: 6px;
+  max-width: 95vw;
+  width: 95vw;
+  max-height: 95vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.one-pager-content.loading {
+  max-width: 300px;
+  width: auto;
+  text-align: center;
+  padding: 40px;
+}
+
+/* Close button - Top right */
+.one-pager-content > .close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border: none;
+  font-size: 18px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  width: 30px;
+  height: 30px;
+  z-index: 20;
+}
+
+.one-pager-content > .close-btn:hover {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+/* Export button - Bottom right */
+.one-pager-content > .export-pdf-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #00aeef;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  z-index: 20;
+}
+
+.one-pager-content > .export-pdf-btn:hover:not(:disabled) {
+  background: #0094cc;
+}
+
+.one-pager-content > .export-pdf-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Printable Content */
+.one-pager-printable {
+  padding: 16px 20px;
+  /* A4 landscape aspect ratio target */
+  aspect-ratio: 297 / 210;
+  min-height: 0;
+}
+
+/* Header with RAG bar */
+.one-pager-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.one-pager-header .rag-bar {
+  width: 4px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.one-pager-header .header-content {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.one-pager-header .header-main h1 {
+  margin: 0;
+  font-size: 18px;
+  color: #111827;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.one-pager-header .header-main .project-desc {
+  margin: 4px 0 0 0;
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+.one-pager-header .header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-right: 32px; /* Space for close button */
+}
+
+.one-pager-header .header-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 10px;
+  color: #6b7280;
+}
+
+.one-pager-header .pm-label {
+  font-weight: 500;
+  color: #374151;
+}
+
+.one-pager-header .dates-label {
+  color: #6b7280;
+}
+
+.one-pager-header .generated-date {
+  color: #9ca3af;
+}
+
+/* Simple Timeline - inline in header, no box */
+.one-pager-printable .simple-timeline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.one-pager-printable .simple-timeline .timeline-remaining {
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  min-width: 50px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.one-pager-printable .simple-timeline .timeline-remaining.overdue {
+  color: #dc2626;
+}
+
+.one-pager-printable .simple-timeline .timeline-remaining.due-today {
+  color: #f59e0b;
+}
+
+.one-pager-printable .simple-timeline .timeline-remaining.urgent {
+  color: #f59e0b;
+}
+
+.one-pager-printable .simple-timeline .timeline-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.one-pager-printable .simple-timeline .timeline-start,
+.one-pager-printable .simple-timeline .timeline-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.one-pager-printable .simple-timeline .timeline-date {
+  display: block !important;
+  font-size: 10px;
+  font-weight: 600;
+  color: #374151 !important;
+  background: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  white-space: nowrap;
+}
+
+.one-pager-printable .simple-timeline .timeline-label {
+  font-size: 8px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.one-pager-printable .simple-timeline .timeline-line {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  width: 120px !important;
+  height: 3px;
+  background: #d1d5db !important;
+  border-radius: 2px;
+  overflow: visible;
+}
+
+.one-pager-printable .simple-timeline .timeline-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: #00aeef;
+  border-radius: 2px 0 0 2px;
+}
+
+.one-pager-printable .simple-timeline .timeline-today {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 11px;
+  background: #00aeef;
+  border-radius: 1px;
+  transform: translateX(-50%);
+}
+
+.one-pager-printable .simple-timeline .timeline-milestone {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.one-pager-printable .simple-timeline .milestone-dot {
+  width: 8px;
+  height: 8px;
+  background: #f59e0b;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.one-pager-printable .simple-timeline .timeline-milestone.completed .milestone-dot {
+  background: #10b981;
+}
+
+.one-pager-printable .simple-timeline .milestone-name {
+  display: none; /* Hide milestone names in compact view */
+}
+
+/* Metrics Section - 3 columns, 2 rows */
+.metrics-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.metrics-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.metric-chart-wrapper {
+  background: transparent;
+  min-height: 160px;
+}
+
+/* Override compact commentary for one-pager - minimal padding, more lines */
+.one-pager-printable .compact-commentary {
+  padding: 1px 2px;
+  margin-top: 1px;
+  gap: 2px;
+}
+
+.one-pager-printable .compact-commentary-text {
+  -webkit-line-clamp: 5;
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+.one-pager-printable .compact-commentary-date {
+  font-size: 8px;
+}
+
+.metrics-note {
+  margin-top: 6px;
+  font-size: 10px;
+  color: #9ca3af;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Milestones Section */
+.milestones-block {
+  background: #f9fafb;
+}
+
+.milestones-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.milestone-row td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.milestone-row:last-child td {
+  border-bottom: none;
+}
+
+.milestone-row.at-risk {
+  background: #fef2f2;
+}
+
+.milestone-row.completed {
+  background: #f0fdf4;
+}
+
+.milestone-status-cell {
+  width: 24px;
+  text-align: center;
+}
+
+.milestone-status {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.milestone-status.completed {
+  background: #10b981;
+  color: white;
+}
+
+.milestone-status.at-risk {
+  background: #ef4444;
+  color: white;
+}
+
+.milestone-status.pending {
+  background: #d1d5db;
+  color: #6b7280;
+}
+
+.milestone-name-cell {
+  font-weight: 500;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.milestone-date-cell {
+  width: 80px;
+  text-align: right;
+  color: #6b7280;
+  font-size: 10px;
+}
+
+/* Next Due Milestone */
+.milestone-row.next-due {
+  background: #eff6ff;
+}
+
+.next-due-badge {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: white;
+  background: #3b82f6;
+  padding: 1px 4px;
+  border-radius: 2px;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+/* Info Rows (Bottom Section) */
+.info-row {
+  margin-top: 8px;
+}
+
+.risks-issues-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.milestones-risks-issues-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+
+.info-block {
+  background: #f9fafb;
+  border-radius: 4px;
+  padding: 8px 10px;
+}
+
+.info-block h3 {
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.info-block h3 svg {
+  font-size: 14px;
+}
+
+.info-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  background: white;
+  border-left: 3px solid #f59e0b;
+  border-radius: 2px;
+}
+
+.priority-badge {
+  font-size: 7px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: white;
+  padding: 2px 4px;
+  border-radius: 2px;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.item-title {
+  font-size: 10px;
+  color: #374151;
+  line-height: 1.3;
+}
+
+.more-items {
+  font-size: 9px;
+  color: #9ca3af;
+  padding: 2px 6px;
+  font-style: italic;
+}
+
+/* Recovery Plans & Commentary - Flat structure */
+.one-pager-printable .recovery-section,
+.one-pager-printable .commentary-section {
+  margin-top: 8px;
+  padding: 8px 0;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 10px;
+  background: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+}
+
+.recovery-section .section-header,
+.commentary-section .section-header {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100px;
+  min-width: 100px;
+}
+
+.recovery-section .section-header h3,
+.commentary-section .section-header h3 {
+  font-size: 10px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.section-content {
+  flex: 1;
+  display: flex;
+  padding-left: 10px;
+  border-left: 3px solid #10b981;
+  min-height: 100%;
+  background: none;
+  border-radius: 0;
+}
+
+.commentary-section .section-content {
+  border-left-color: #f59e0b;
+}
+
+.recovery-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.recovery-item,
+.commentary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+.recovery-meta,
+.commentary-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 10px;
+  color: #6b7280;
+}
+
+.recovery-metric {
+  font-weight: 600;
+  color: #166534;
+}
+
+.recovery-date {
+  font-weight: 400;
+}
+
+.recovery-text,
+.commentary-text {
+  font-size: 11px;
+  color: #374151;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* No Items */
+.no-items-message {
+  padding: 16px;
+  text-align: center;
+  color: #9ca3af;
+  background: #f9fafb;
+  border-radius: 4px;
+}
+
+.no-items-message p {
+  margin: 0;
+  font-size: 11px;
+}
+
+/* Footer */
+.one-pager-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 9px;
+  color: #9ca3af;
+}
+
+/* Dark Mode */
+:root.dark-mode .one-pager-content {
+  background: #1f2937;
+  color: #e5e7eb;
+}
+
+:root.dark-mode .one-pager-actions .close-btn {
+  background: #374151;
+  color: #9ca3af;
+}
+
+:root.dark-mode .one-pager-actions .close-btn:hover {
+  background-color: #4b5563;
+  color: #f9fafb;
+}
+
+:root.dark-mode .one-pager-header {
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .one-pager-header .header-main h1 {
+  color: #f3f4f6;
+}
+
+:root.dark-mode .one-pager-header .header-main .project-desc {
+  color: #9ca3af;
+}
+
+:root.dark-mode .timeline-remaining {
+  color: #e5e7eb;
+}
+
+:root.dark-mode .timeline-remaining.overdue {
+  color: #f87171;
+}
+
+:root.dark-mode .timeline-remaining.due-today,
+:root.dark-mode .timeline-remaining.urgent {
+  color: #fbbf24;
+}
+
+:root.dark-mode .info-block {
+  background: #111827;
+}
+
+:root.dark-mode .info-block h3 {
+  color: #f3f4f6;
+}
+
+:root.dark-mode .info-item {
+  background: #1f2937;
+}
+
+:root.dark-mode .item-title {
+  color: #f3f4f6;
+}
+
+:root.dark-mode .recovery-section {
+  border-top-color: #374151;
+}
+
+:root.dark-mode .recovery-section .section-header h3 {
+  color: #e5e7eb;
+}
+
+:root.dark-mode .recovery-metric {
+  color: #86efac;
+}
+
+:root.dark-mode .recovery-text {
+  color: #d1d5db;
+}
+
+:root.dark-mode .commentary-section {
+  border-top-color: #374151;
+}
+
+:root.dark-mode .commentary-section .section-header h3 {
+  color: #e5e7eb;
+}
+
+:root.dark-mode .commentary-text {
+  color: #d1d5db;
+}
+
+:root.dark-mode .one-pager-footer {
+  border-top-color: #374151;
+}
+
+/* Dark mode - Milestones */
+:root.dark-mode .milestones-block {
+  background: #111827;
+}
+
+:root.dark-mode .milestones-table {
+  color: #e5e7eb;
+}
+
+:root.dark-mode .milestone-row td {
+  border-bottom-color: #374151;
+}
+
+:root.dark-mode .milestone-row.completed {
+  background: #052e16;
+}
+
+:root.dark-mode .milestone-row.at-risk {
+  background: #450a0a;
+}
+
+:root.dark-mode .milestone-row.next-due {
+  background: #1e3a5f;
+}
+
+:root.dark-mode .milestone-name-cell {
+  color: #f3f4f6;
+}
+
+:root.dark-mode .milestone-date-cell {
+  color: #9ca3af;
+}
+
+:root.dark-mode .milestone-status.pending {
+  background: #4b5563;
+  color: #d1d5db;
+}
+
+:root.dark-mode .commentary-meta {
+  color: #9ca3af;
+}
+
+:root.dark-mode .recovery-meta {
+  color: #9ca3af;
+}
+
+:root.dark-mode .recovery-date {
+  color: #9ca3af;
+}
+
+/* Print / PDF */
+@media print {
+  .one-pager-modal {
+    position: static;
+    background: none;
+    padding: 0;
+  }
+
+  .one-pager-content {
+    box-shadow: none;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .one-pager-actions {
+    display: none;
+  }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .metrics-charts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .metrics-charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .risks-issues-row {
+    grid-template-columns: 1fr;
+  }
+
+  .recovery-items-horizontal {
+    grid-template-columns: 1fr;
+  }
+
+  .one-pager-header .header-content {
+    flex-direction: column;
+  }
+
+  .one-pager-header .header-meta {
+    align-items: flex-start;
+  }
+}

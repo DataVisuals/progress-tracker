@@ -12,12 +12,21 @@ const formatTimestamp = (timestamp) => {
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
+  const diffWeeks = Math.floor(diffDays / 7);
 
   if (diffMins < 1) return 'just now';
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
+  if (diffWeeks < 8) return `${diffWeeks}w ago`;
+  return `${Math.floor(diffWeeks / 4)}mo ago`;
+};
+
+const formatDateTime = (timestamp) => {
+  const date = new Date(timestamp);
+  const dateStr = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return `${dateStr} ${timeStr}`;
 };
 
 // Strip HTML tags to get plain text for clarity scoring
@@ -136,9 +145,10 @@ const CommentaryPanel = ({
                       </div>
                     </div>
                     <div className="commentary-text ql-editor" style={{ fontSize: '13px', lineHeight: '1.4', padding: '0', margin: '0' }} dangerouslySetInnerHTML={{ __html: item.commentary }} />
-                    <div className="commentary-footer" style={{ fontSize: '11px', marginTop: '2px', gap: '6px' }}>
-                      {item.createdBy && <span className="commentary-author">{item.createdBy}</span>}
-                      <span className="commentary-time">{formatTimestamp(item.timestamp)}</span>
+                    <div className="commentary-footer" style={{ marginTop: '2px' }}>
+                      {item.createdBy && <><span className="commentary-author">{item.createdBy}</span><span style={{ color: '#9ca3af' }}>·</span></>}
+                      <span className="commentary-time">{formatDateTime(item.timestamp)}</span>
+                      <span className="commentary-relative-time">({formatTimestamp(item.timestamp)})</span>
                       <ClarityIndicator text={stripHtml(item.commentary)} size="sm" compact />
                     </div>
                   </div>
@@ -172,9 +182,10 @@ const CommentaryPanel = ({
                           style={{ backgroundColor: '#fafafa', marginLeft: '4px', padding: '4px 8px' }}
                         >
                           <div className="commentary-text ql-editor" style={{ fontSize: '11px', lineHeight: '1.3', padding: '0', margin: '0' }} dangerouslySetInnerHTML={{ __html: reply.commentary }} />
-                          <div className="commentary-footer" style={{ fontSize: '9px', marginTop: '2px', gap: '6px' }}>
-                            {reply.createdBy && <span className="commentary-author">{reply.createdBy}</span>}
-                            <span className="commentary-time">{formatTimestamp(reply.timestamp)}</span>
+                          <div className="commentary-footer" style={{ marginTop: '2px' }}>
+                            {reply.createdBy && <><span className="commentary-author">{reply.createdBy}</span><span style={{ color: '#9ca3af' }}>·</span></>}
+                            <span className="commentary-time">{formatDateTime(reply.timestamp)}</span>
+                            <span className="commentary-relative-time">({formatTimestamp(reply.timestamp)})</span>
                             <ClarityIndicator text={stripHtml(reply.commentary)} size="sm" compact />
                           </div>
                         </div>

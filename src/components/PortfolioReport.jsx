@@ -157,7 +157,17 @@ const PortfolioReport = ({ portfolioId, onClose, onMetricClick }) => {
 
   if (!reportData) return null;
 
-  const { portfolio, summary, redProjects, amberProjects, greenProjects } = reportData;
+  const { portfolio, summary, redProjects, amberProjects, greenProjects, risks = [], issues = [] } = reportData;
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'critical': return '#dc2626';
+      case 'high': return '#D0704d';
+      case 'medium': return '#f59e0b';
+      case 'low': return '#10b981';
+      default: return '#6b7280';
+    }
+  };
 
   return (
     <div className="portfolio-report-modal" onClick={onClose}>
@@ -194,6 +204,18 @@ const PortfolioReport = ({ portfolioId, onClose, onMetricClick }) => {
               <div className="card-value">{summary.greenCount}</div>
               <div className="card-label">Green Projects</div>
             </div>
+            {summary.openRisks > 0 && (
+              <div className="summary-card risk">
+                <div className="card-value">{summary.openRisks}</div>
+                <div className="card-label">Open Risks</div>
+              </div>
+            )}
+            {summary.openIssues > 0 && (
+              <div className="summary-card issue">
+                <div className="card-value">{summary.openIssues}</div>
+                <div className="card-label">Open Issues</div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -205,6 +227,60 @@ const PortfolioReport = ({ portfolioId, onClose, onMetricClick }) => {
 
         {/* Green Projects Section */}
         {renderProjectSection(greenProjects, 'Green Projects - On Track', 'green', false)}
+
+        {/* Risks Section */}
+        {risks.length > 0 && (
+          <div className="report-section risks-section">
+            <h3 className="report-section-title" style={{ color: '#f59e0b' }}>
+              <span className="rag-indicator" style={{ backgroundColor: '#f59e0b' }}></span>
+              Open Risks ({risks.length})
+            </h3>
+            <div className="risks-list">
+              {risks.map(risk => (
+                <div key={risk.id} className="risk-item" style={{ borderLeftColor: getPriorityColor(risk.priority) }}>
+                  <div className="risk-header">
+                    <span className="risk-priority" style={{ backgroundColor: getPriorityColor(risk.priority) }}>
+                      {risk.priority}
+                    </span>
+                    <span className="risk-project">{risk.project_name}</span>
+                    <span className="risk-status">{risk.status === 'in_progress' ? 'Mitigating' : 'Open'}</span>
+                  </div>
+                  <div className="risk-title">{risk.title}</div>
+                  {risk.description && (
+                    <div className="risk-description">{risk.description}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Issues Section */}
+        {issues.length > 0 && (
+          <div className="report-section issues-section">
+            <h3 className="report-section-title" style={{ color: '#dc2626' }}>
+              <span className="rag-indicator" style={{ backgroundColor: '#dc2626' }}></span>
+              Open Issues ({issues.length})
+            </h3>
+            <div className="issues-list">
+              {issues.map(issue => (
+                <div key={issue.id} className="issue-item" style={{ borderLeftColor: getPriorityColor(issue.priority) }}>
+                  <div className="issue-header">
+                    <span className="issue-priority" style={{ backgroundColor: getPriorityColor(issue.priority) }}>
+                      {issue.priority}
+                    </span>
+                    <span className="issue-project">{issue.project_name}</span>
+                    <span className="issue-status">{issue.status === 'in_progress' ? 'In Progress' : 'Open'}</span>
+                  </div>
+                  <div className="issue-title">{issue.title}</div>
+                  {issue.description && (
+                    <div className="issue-description">{issue.description}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {summary.totalProjects === 0 && (
           <div className="no-projects">

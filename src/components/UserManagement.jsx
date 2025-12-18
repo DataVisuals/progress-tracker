@@ -412,6 +412,34 @@ const UserManagement = ({ currentUser, onClose }) => {
     );
   }, [users, searchQuery]);
 
+  // Get letters that have users (for alphabet bar highlighting)
+  const lettersWithUsers = useMemo(() => {
+    const letters = new Set();
+    sortedFilteredUsers.forEach(u => {
+      const firstLetter = (u.name || '')[0]?.toUpperCase();
+      if (firstLetter && /[A-Z]/.test(firstLetter)) {
+        letters.add(firstLetter);
+      }
+    });
+    return letters;
+  }, [sortedFilteredUsers]);
+
+  // Scroll to first user starting with letter
+  const scrollToLetter = (letter) => {
+    const userIndex = sortedFilteredUsers.findIndex(u =>
+      (u.name || '').toUpperCase().startsWith(letter)
+    );
+    if (userIndex >= 0) {
+      const row = document.querySelector(`.users-table tbody tr:nth-child(${userIndex + 1})`);
+      if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Briefly highlight the row
+        row.classList.add('highlight-scroll');
+        setTimeout(() => row.classList.remove('highlight-scroll'), 1500);
+      }
+    }
+  };
+
   // Sort projects alphabetically
   const sortedProjects = useMemo(() => {
     return [...projects].sort((a, b) =>
@@ -482,6 +510,23 @@ const UserManagement = ({ currentUser, onClose }) => {
                 </button>
               </div>
             </div>
+            {/* Alphabet navigation bar */}
+            {!loading && sortedFilteredUsers.length > 5 && (
+              <div className="alphabet-bar">
+                {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
+                  <button
+                    key={letter}
+                    className={`alphabet-letter ${lettersWithUsers.has(letter) ? 'has-users' : ''}`}
+                    onClick={() => scrollToLetter(letter)}
+                    disabled={!lettersWithUsers.has(letter)}
+                    title={lettersWithUsers.has(letter) ? `Jump to ${letter}` : `No users starting with ${letter}`}
+                  >
+                    {letter}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {loading ? (
               <p>Loading...</p>
             ) : (

@@ -692,8 +692,8 @@ const PortfolioReviewModal = ({
     }
 
     // Sort by priority and limit to top 5
-    const priorityOrder = { high: 0, medium: 1, low: 2 };
-    return actions.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]).slice(0, 5);
+    const priorityOrder = { blocker: 0, critical: 1, significant: 2, high: 0, medium: 1, low: 2 };
+    return actions.sort((a, b) => (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3)).slice(0, 5);
   };
 
   const renderSummarySlide = () => {

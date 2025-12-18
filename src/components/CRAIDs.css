@@ -117,11 +117,15 @@
   opacity: 0.7;
 }
 
-.craid-item.priority-critical {
+.craid-item.priority-blocker {
   background-color: #fef2f2;
 }
 
-.craid-item.priority-high {
+.craid-item.priority-critical {
+  background-color: #fff7ed;
+}
+
+.craid-item.priority-significant {
   background-color: #fefce8;
 }
 
@@ -215,23 +219,18 @@
   letter-spacing: 0.3px;
 }
 
-.priority-badge.priority-critical {
+.priority-badge.priority-blocker {
   background-color: #dc2626;
   color: white;
 }
 
-.priority-badge.priority-high {
+.priority-badge.priority-critical {
+  background-color: #D0704d;
+  color: white;
+}
+
+.priority-badge.priority-significant {
   background-color: #f59e0b;
-  color: white;
-}
-
-.priority-badge.priority-medium {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.priority-badge.priority-low {
-  background-color: #6b7280;
   color: white;
 }
 

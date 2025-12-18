@@ -1032,6 +1032,37 @@
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
 }
 
+/* Tab badge for counts */
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 9px;
+  color: white;
+}
+
+.tab-badge.risk-badge {
+  background-color: #f59e0b;
+}
+
+.tab-badge.issue-badge {
+  background-color: #dc2626;
+}
+
+.tab-button.active .tab-badge.risk-badge {
+  background-color: #d97706;
+}
+
+.tab-button.active .tab-badge.issue-badge {
+  background-color: #b91c1c;
+}
+
 /* Recent activity indicator dot */
 .recent-indicator {
   display: inline-block;

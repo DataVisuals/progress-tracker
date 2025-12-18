@@ -2981,18 +2981,18 @@ html.dark-mode .quadrant-content {
 .commentary-item {
   display: flex;
   flex-direction: column;
-  padding: 5px 8px;
-  background-color: #f9fafb;
+  padding: 6px 8px;
+  background-color: #fafafa;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #f0f0f0;
   gap: 3px;
 }
 
 .commentary-item:hover {
-  background-color: #f0f9ff;
-  border-color: #00aeef;
+  background-color: #f5f5f5;
+  border-color: #e5e5e5;
 }
 
 .commentary-header {
@@ -3096,6 +3096,11 @@ html.dark-mode .quadrant-content {
 }
 
 .commentary-time {
+  font-size: 10px;
+  color: #6b7280;
+}
+
+.commentary-relative-time {
   font-size: 10px;
   color: #9ca3af;
 }
@@ -3969,13 +3974,13 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .commentary-item {
-  background-color: #374151;
-  border-color: #4b5563;
+  background-color: #1f2937;
+  border-color: #374151;
 }
 
 :root.dark-mode .commentary-item:hover {
-  background-color: #4b5563;
-  border-color: #00aeef;
+  background-color: #283548;
+  border-color: #4b5563;
 }
 
 :root.dark-mode .commentary-header {
@@ -4007,6 +4012,10 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .commentary-time {
+  color: #9ca3af;
+}
+
+:root.dark-mode .commentary-relative-time {
   color: #6b7280;
 }
 
@@ -6897,6 +6906,11 @@ html.dark-mode .quadrant-content {
 
 .update-time {
   font-size: 10px;
+  color: #6b7280;
+}
+
+.update-relative-time {
+  font-size: 10px;
   color: #9ca3af;
 }
 
@@ -6929,7 +6943,8 @@ html.dark-mode .quadrant-content {
 }
 
 .update-metric-name.recently-changed {
-  text-decoration: underline wavy #f59e0b;
+  /* Removed wavy underline - too distracting */
+  font-weight: 600;
 }
 
 .update-action-icon {
@@ -7022,6 +7037,14 @@ tr.recently-changed-row {
   color: #e5e7eb;
 }
 
+:root.dark-mode .update-time {
+  color: #9ca3af;
+}
+
+:root.dark-mode .update-relative-time {
+  color: #6b7280;
+}
+
 :root.dark-mode .update-metrics {
   border-left-color: #4b5563;
 }
@@ -7031,7 +7054,7 @@ tr.recently-changed-row {
 }
 
 :root.dark-mode .update-metric-name.recently-changed {
-  text-decoration: underline wavy #fbbf24;
+  font-weight: 600;
 }
 
 :root.dark-mode .update-metric-name {

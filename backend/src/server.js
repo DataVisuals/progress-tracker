@@ -1134,12 +1134,63 @@ function createApp(dbPath) {
         totalMetrics: projectsWithMetrics.reduce((sum, p) => sum + p.metrics.length, 0)
       };
 
+      // Get all open risks and issues for projects in this portfolio
+      const projectIds = projects.map(p => p.id);
+      let portfolioRisks = [];
+      let portfolioIssues = [];
+
+      if (projectIds.length > 0) {
+        const placeholders = projectIds.map(() => '?').join(',');
+
+        portfolioRisks = await dbAll(`
+          SELECT c.*, p.name as project_name
+          FROM craids c
+          JOIN projects p ON c.project_id = p.id
+          WHERE c.project_id IN (${placeholders})
+            AND c.type = 'risk'
+            AND c.status != 'closed'
+          ORDER BY
+            CASE c.priority
+              WHEN 'critical' THEN 1
+              WHEN 'high' THEN 2
+              WHEN 'medium' THEN 3
+              WHEN 'low' THEN 4
+              ELSE 5
+            END,
+            c.created_at DESC
+        `, projectIds);
+
+        portfolioIssues = await dbAll(`
+          SELECT c.*, p.name as project_name
+          FROM craids c
+          JOIN projects p ON c.project_id = p.id
+          WHERE c.project_id IN (${placeholders})
+            AND c.type = 'issue'
+            AND c.status != 'closed'
+          ORDER BY
+            CASE c.priority
+              WHEN 'critical' THEN 1
+              WHEN 'high' THEN 2
+              WHEN 'medium' THEN 3
+              WHEN 'low' THEN 4
+              ELSE 5
+            END,
+            c.created_at DESC
+        `, projectIds);
+      }
+
+      // Add risk and issue counts to summary
+      summary.openRisks = portfolioRisks.length;
+      summary.openIssues = portfolioIssues.length;
+
       const result = {
         portfolio,
         summary,
         redProjects,
         amberProjects,
-        greenProjects
+        greenProjects,
+        risks: portfolioRisks,
+        issues: portfolioIssues
       };
 
       // Cache for 10 minutes

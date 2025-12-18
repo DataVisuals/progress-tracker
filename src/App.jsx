@@ -36,6 +36,7 @@ import JumpToProject from './components/JumpToProject';
 import TipsModal from './components/TipsModal';
 import Tutorial from './components/Tutorial';
 import PortfolioReviewModal from './components/PortfolioReviewModal';
+import ProjectOnePager from './components/ProjectOnePager';
 import { api, refreshToken } from './api/client';
 import { selectStyles } from './components/SelectStyles';
 import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode, MdSwapHoriz } from 'react-icons/md';
@@ -125,6 +126,7 @@ function App() {
   const [showTipsModal, setShowTipsModal] = useState(false);
   const [selectedTipsCategory, setSelectedTipsCategory] = useState(null);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showOnePager, setShowOnePager] = useState(false);
   const [showPortfolioReview, setShowPortfolioReview] = useState(false);
   const [portfolioReviewId, setPortfolioReviewId] = useState(null);
   const [showPortfolioSelector, setShowPortfolioSelector] = useState(false);
@@ -247,7 +249,7 @@ function App() {
     };
   }, [isAuthenticated]);
 
-  // Keyboard shortcuts: Cmd+K for Jump to Project, ? for Tutorial, Ctrl+N for New Project
+  // Keyboard shortcuts: Cmd+K for Jump to Project, ? for Tutorial, Ctrl+N for New Project, Ctrl+O for One-Pager, Ctrl+U for User Management, Ctrl+H for Home
   useEffect(() => {
     const handleKeyDown = (e) => {
       // Don't trigger shortcuts when typing in inputs
@@ -270,6 +272,26 @@ function App() {
       if (e.ctrlKey && e.key === 'n' && !selectedProject) {
         e.preventDefault();
         setShowNewProject(true);
+      }
+
+      // Ctrl+O for one-pager view (only when viewing a project)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'o' && selectedProject) {
+        e.preventDefault();
+        setShowOnePager(true);
+      }
+
+      // Ctrl+U for user management
+      if ((e.metaKey || e.ctrlKey) && e.key === 'u') {
+        e.preventDefault();
+        setShowUserManagement(true);
+      }
+
+      // Ctrl+H for home page / dashboard
+      if ((e.metaKey || e.ctrlKey) && e.key === 'h') {
+        e.preventDefault();
+        setSelectedProject('');
+        setSelectedMetric('');
+        window.history.pushState({}, '', window.location.pathname);
       }
     };
 
@@ -3218,6 +3240,14 @@ function App() {
       {/* Tutorial Modal */}
       {showTutorial && (
         <Tutorial onClose={() => setShowTutorial(false)} />
+      )}
+
+      {/* Project One-Pager Modal (Cmd+O / Ctrl+O) */}
+      {showOnePager && selectedProject && (
+        <ProjectOnePager
+          project={projects.find(p => p.id === parseInt(selectedProject))}
+          onClose={() => setShowOnePager(false)}
+        />
       )}
 
       {/* Jump to Project (Cmd+K / Ctrl+K) */}

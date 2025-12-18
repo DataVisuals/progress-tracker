@@ -26,7 +26,7 @@ const CRAIDs = ({ projectId, canEdit = false }) => {
     title: '',
     description: '',
     status: 'open',
-    priority: 'medium',
+    priority: 'significant',
     period_id: null
   });
 
@@ -79,7 +79,7 @@ const CRAIDs = ({ projectId, canEdit = false }) => {
       title: '',
       description: '',
       status: 'open',
-      priority: 'medium',
+      priority: 'significant',
       period_id: null
     });
     setEditingCRAID(null);
@@ -287,10 +287,9 @@ const CRAIDs = ({ projectId, canEdit = false }) => {
                 value={{ value: formData.priority, label: formData.priority.charAt(0).toUpperCase() + formData.priority.slice(1) }}
                 onChange={(option) => setFormData({ ...formData, priority: option.value })}
                 options={[
-                  { value: 'low', label: 'Low' },
-                  { value: 'medium', label: 'Medium' },
-                  { value: 'high', label: 'High' },
-                  { value: 'critical', label: 'Critical' }
+                  { value: 'blocker', label: 'Blocker' },
+                  { value: 'critical', label: 'Critical' },
+                  { value: 'significant', label: 'Significant' }
                 ]}
                 styles={selectStyles}
               />

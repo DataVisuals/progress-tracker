@@ -2033,3 +2033,155 @@
 :root.dark-mode .consistency-tip span {
   color: #34d399;
 }
+
+/* Keyboard Shortcuts Page */
+.tutorial-shortcuts {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  flex: 1;
+}
+
+.shortcut-section {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 8px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+}
+
+.shortcut-section h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.shortcut-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shortcut-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.shortcut-keys {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.shortcut-keys kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+  font-weight: 600;
+  color: #334155;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+.shortcut-desc {
+  font-size: 11px;
+  color: #64748b;
+  text-align: right;
+  flex: 1;
+}
+
+.shortcuts-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.shortcuts-tip .tip-icon {
+  color: #3b82f6;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.shortcuts-tip span {
+  font-size: 11px;
+  color: #1e40af;
+}
+
+.shortcuts-tip kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: white;
+  border: 1px solid #93c5fd;
+  border-radius: 3px;
+  font-size: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+  font-weight: 600;
+  color: #1e40af;
+  margin: 0 2px;
+}
+
+/* Dark mode for shortcuts */
+:root.dark-mode .shortcut-section {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-color: #334155;
+}
+
+:root.dark-mode .shortcut-section h4 {
+  color: #cbd5e1;
+  border-bottom-color: #334155;
+}
+
+:root.dark-mode .shortcut-keys kbd {
+  background: #1e293b;
+  border-color: #475569;
+  color: #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+}
+
+:root.dark-mode .shortcut-desc {
+  color: #94a3b8;
+}
+
+:root.dark-mode .shortcuts-tip {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+:root.dark-mode .shortcuts-tip span {
+  color: #93c5fd;
+}
+
+:root.dark-mode .shortcuts-tip kbd {
+  background: #1e293b;
+  border-color: #3b82f6;
+  color: #93c5fd;
+}

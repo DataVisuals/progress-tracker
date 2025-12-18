@@ -733,7 +733,76 @@ const Tutorial = ({ onClose, startPage = 0 }) => {
         </div>
       )
     },
-    // Page 12: Get Started
+    // Page 12: Keyboard Shortcuts
+    {
+      type: 'concept',
+      title: 'Keyboard Shortcuts',
+      subtitle: 'Navigate faster with these shortcuts',
+      icon: <MdSpeed />,
+      content: (
+        <div className="tutorial-shortcuts">
+          <div className="shortcuts-grid">
+            <div className="shortcut-section">
+              <h4>Navigation</h4>
+              <div className="shortcut-list">
+                <div className="shortcut-item">
+                  <span className="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>K</kbd></span>
+                  <span className="shortcut-desc">Jump to any project</span>
+                </div>
+                <div className="shortcut-item">
+                  <span className="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>H</kbd></span>
+                  <span className="shortcut-desc">Go to home / dashboard</span>
+                </div>
+                <div className="shortcut-item">
+                  <span className="shortcut-keys"><kbd>?</kbd></span>
+                  <span className="shortcut-desc">Show this tutorial</span>
+                </div>
+                <div className="shortcut-item">
+                  <span className="shortcut-keys"><kbd>Esc</kbd></span>
+                  <span className="shortcut-desc">Close modal / Go back</span>
+                </div>
+              </div>
+            </div>
+            <div className="shortcut-section">
+              <h4>Project View</h4>
+              <div className="shortcut-list">
+                <div className="shortcut-item">
+                  <span className="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>O</kbd></span>
+                  <span className="shortcut-desc">Project one-pager (PDF export)</span>
+                </div>
+                <div className="shortcut-item">
+                  <span className="shortcut-keys"><kbd>←</kbd> <kbd>→</kbd></span>
+                  <span className="shortcut-desc">Navigate between metrics</span>
+                </div>
+              </div>
+            </div>
+            <div className="shortcut-section">
+              <h4>Home Page</h4>
+              <div className="shortcut-list">
+                <div className="shortcut-item">
+                  <span className="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>N</kbd></span>
+                  <span className="shortcut-desc">New project</span>
+                </div>
+              </div>
+            </div>
+            <div className="shortcut-section">
+              <h4>Admin</h4>
+              <div className="shortcut-list">
+                <div className="shortcut-item">
+                  <span className="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>U</kbd></span>
+                  <span className="shortcut-desc">User management</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="shortcuts-tip">
+            <MdLightbulb className="tip-icon" />
+            <span>On Mac, use <kbd>Cmd</kbd> instead of <kbd>Ctrl</kbd></span>
+          </div>
+        </div>
+      )
+    },
+    // Page 13: Get Started
     {
       type: 'finish',
       title: 'You\'re Ready!',
