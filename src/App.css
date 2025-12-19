@@ -830,13 +830,12 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
-  padding: 8px 0;
+  padding: 0;
   display: -webkit-box;
   -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-height: 42px;
 }
 
 .project-description.editable {
