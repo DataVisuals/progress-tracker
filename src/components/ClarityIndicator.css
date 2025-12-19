@@ -62,20 +62,54 @@
   font-size: 13px;
 }
 
-/* Tooltip - positioned to the right to avoid clipping */
+/* Tooltip - styled to match other hovers in the app */
 .clarity-tooltip {
-  position: absolute;
-  top: 50%;
-  left: calc(100% + 10px);
-  transform: translateY(-50%);
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 100;
+  z-index: 10000;
   min-width: 260px;
   max-width: 320px;
+  pointer-events: none;
+}
+
+/* Portal tooltip - rendered at body level with fixed positioning */
+.clarity-tooltip-portal {
+  animation: clarity-tooltip-fade-in 0.15s ease-out;
+}
+
+@keyframes clarity-tooltip-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+/* Compact tooltip - simplified for tight spaces */
+.clarity-tooltip-compact {
+  min-width: 200px;
+  max-width: 280px;
+  padding: 10px;
+}
+
+.clarity-tooltip-compact .clarity-tooltip-header {
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+}
+
+.clarity-tooltip-compact .clarity-issues {
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+}
+
+.clarity-tooltip-compact .clarity-stats {
+  margin-bottom: 0;
 }
 
 .clarity-tooltip::after {
@@ -96,6 +130,29 @@
   transform: translateY(-50%);
   border: 7px solid transparent;
   border-right-color: #e5e7eb;
+}
+
+/* Tooltip flipped to left side when would overflow right */
+.clarity-tooltip-left::after {
+  right: auto;
+  left: 100%;
+  border-right-color: transparent;
+  border-left-color: white;
+}
+
+.clarity-tooltip-left::before {
+  right: auto;
+  left: 100%;
+  border-right-color: transparent;
+  border-left-color: #e5e7eb;
+}
+
+:root.dark-mode .clarity-tooltip-left::after {
+  border-left-color: #1f2937;
+}
+
+:root.dark-mode .clarity-tooltip-left::before {
+  border-left-color: #374151;
 }
 
 .clarity-tooltip-header {
@@ -187,11 +244,11 @@
 }
 
 :root.dark-mode .clarity-tooltip::after {
-  border-top-color: #1f2937;
+  border-right-color: #1f2937;
 }
 
 :root.dark-mode .clarity-tooltip::before {
-  border-top-color: #374151;
+  border-right-color: #374151;
 }
 
 :root.dark-mode .clarity-tooltip-header {

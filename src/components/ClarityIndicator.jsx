@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { calculateClarityScore, getClarityDescription, getClarityMethodology } from '../utils/clarityScore';
 import './ClarityIndicator.css';
 
@@ -46,7 +47,24 @@ const GemIcon = ({ size = 16, className = '' }) => (
  */
 const ClarityIndicator = ({ text, showTooltip = true, size = 'md', compact = false, hoverReveal = false, contentType = 'comment' }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0, flipLeft: false });
+  const indicatorRef = useRef(null);
   const { score, details } = calculateClarityScore(text, contentType);
+
+  // Calculate tooltip position when hovered, flip to left if would go off-screen
+  useEffect(() => {
+    if (isHovered && indicatorRef.current) {
+      const rect = indicatorRef.current.getBoundingClientRect();
+      const tooltipWidth = compact ? 280 : 320;
+      const wouldOverflowRight = rect.right + 10 + tooltipWidth > window.innerWidth;
+
+      setTooltipPos({
+        top: rect.top + rect.height / 2,
+        left: wouldOverflowRight ? rect.left - 10 : rect.right + 10,
+        flipLeft: wouldOverflowRight
+      });
+    }
+  }, [isHovered, compact]);
 
   const sizeMap = {
     sm: 14,
@@ -67,59 +85,73 @@ const ClarityIndicator = ({ text, showTooltip = true, size = 'md', compact = fal
     return 'clarity-poor';
   };
 
-  // For compact mode, use native title tooltip to avoid clipping issues
-  const nativeTooltip = compact || !showTooltip
-    ? `Clarity: ${score}/5 - ${getClarityDescription(score, details)}${details.issues.length > 0 ? '\n\nSuggestions:\n• ' + details.issues.join('\n• ') : ''}`
-    : undefined;
+  // Render tooltip content
+  const renderTooltip = () => {
+    if (!showTooltip || !isHovered) return null;
 
-  return (
-    <div
-      className={`clarity-indicator ${getScoreClass(score)} size-${size}${hoverReveal ? ' hover-reveal' : ''}`}
-      onMouseEnter={() => !compact && setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      title={nativeTooltip}
-    >
-      <GemIcon size={iconSize} />
-      {!compact && <span className="clarity-score-number">{score}</span>}
+    const tooltipContent = (
+      <div
+        className={`clarity-tooltip clarity-tooltip-portal${compact ? ' clarity-tooltip-compact' : ''}${tooltipPos.flipLeft ? ' clarity-tooltip-left' : ''}`}
+        style={{
+          position: 'fixed',
+          top: tooltipPos.top,
+          left: tooltipPos.flipLeft ? 'auto' : tooltipPos.left,
+          right: tooltipPos.flipLeft ? window.innerWidth - tooltipPos.left : 'auto',
+          transform: 'translateY(-50%)'
+        }}
+      >
+        <div className="clarity-tooltip-header">
+          <span className="clarity-score-label">Clarity Score: {score}/5</span>
+          <span className="clarity-description">{getClarityDescription(score, details)}</span>
+        </div>
 
-      {showTooltip && !compact && isHovered && (
-        <div className="clarity-tooltip">
-          <div className="clarity-tooltip-header">
-            <span className="clarity-score-label">Clarity Score: {score}/5</span>
-            <span className="clarity-description">{getClarityDescription(score, details)}</span>
+        {details.issues.length > 0 && (
+          <div className="clarity-issues">
+            <span className="issues-label">Suggestions:</span>
+            <ul>
+              {details.issues.map((issue, i) => (
+                <li key={i}>{issue}</li>
+              ))}
+            </ul>
           </div>
+        )}
 
-          {details.issues.length > 0 && (
-            <div className="clarity-issues">
-              <span className="issues-label">Suggestions:</span>
-              <ul>
-                {details.issues.map((issue, i) => (
-                  <li key={i}>{issue}</li>
-                ))}
-              </ul>
-            </div>
+        <div className="clarity-stats">
+          <span>{details.wordCount} words</span>
+          <span>•</span>
+          <span>{details.sentenceCount} sentence{details.sentenceCount !== 1 ? 's' : ''}</span>
+          {details.fleschKincaid !== null && (
+            <>
+              <span>•</span>
+              <span>Grade {details.fleschKincaid}</span>
+            </>
           )}
+        </div>
 
-          <div className="clarity-stats">
-            <span>{details.wordCount} words</span>
-            <span>•</span>
-            <span>{details.sentenceCount} sentence{details.sentenceCount !== 1 ? 's' : ''}</span>
-            {details.fleschKincaid !== null && (
-              <>
-                <span>•</span>
-                <span>Grade {details.fleschKincaid}</span>
-              </>
-            )}
-          </div>
-
+        {!compact && (
           <div className="clarity-methodology">
             <details>
               <summary>How is this calculated?</summary>
               <pre>{getClarityMethodology(contentType)}</pre>
             </details>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+    );
+
+    return createPortal(tooltipContent, document.body);
+  };
+
+  return (
+    <div
+      ref={indicatorRef}
+      className={`clarity-indicator ${getScoreClass(score)} size-${size}${hoverReveal ? ' hover-reveal' : ''}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <GemIcon size={iconSize} />
+      {!compact && <span className="clarity-score-number">{score}</span>}
+      {renderTooltip()}
     </div>
   );
 };

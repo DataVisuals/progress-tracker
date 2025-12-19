@@ -29,7 +29,10 @@ const ProjectHealthPanel = ({
         className="health-score-gauge clickable"
         onClick={(e) => {
           e.stopPropagation();
-          if (onShowHealthModal) onShowHealthModal(project);
+          e.preventDefault();
+          if (onShowHealthModal) {
+            onShowHealthModal(project);
+          }
         }}
         title="Click for health breakdown"
       >
