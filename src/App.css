@@ -528,9 +528,9 @@
 }
 
 .report-header-right {
-  flex: 0 1 400px;
+  flex: 0 1 500px;
   min-width: 280px;
-  max-width: 400px;
+  max-width: 500px;
   background: #f9fafb;
   padding: 6px 8px;
   border-radius: 6px;
@@ -830,12 +830,13 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
-  padding: 0;
+  padding: 8px 0;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-height: 42px;
 }
 
 .project-description.editable {
