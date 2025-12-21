@@ -66,6 +66,7 @@ import HeatmapPanel from './panels/HeatmapPanel';
 import PerformancePanel from './panels/PerformancePanel';
 import RecentUpdatesPanel from './panels/RecentUpdatesPanel';
 import BacklogPanel from './panels/BacklogPanel';
+import SearchPanel from './panels/SearchPanel';
 import 'react-quill/dist/quill.snow.css';
 import './HomePage.css';
 import './MetricTabs.css';
@@ -125,6 +126,13 @@ const HomePage = ({
     if (stored) {
       try {
         const config = JSON.parse(stored);
+        // Migrate old 'search' layout to '1x1' with search panel
+        if (config.layout === 'search') {
+          config.layout = '1x1';
+          config.panels = ['search'];
+          // Save migrated config
+          localStorage.setItem('homePageDashboardConfig', JSON.stringify(config));
+        }
         // Filter out dock-only panels (like 'timeline') from quadrant view
         if (config.panels && Array.isArray(config.panels)) {
           config.panels = config.panels.filter(panelId => {
@@ -169,9 +177,6 @@ const HomePage = ({
   const [shareLinkCopied, setShareLinkCopied] = useState(false); // For share link feedback
   const hoverTimeoutRef = useRef(null); // Timeout for hover delay
   const dockPositionsRef = useRef(null); // Cache original dock button positions for smooth magnification
-  const [searchTerm, setSearchTerm] = useState(''); // Search input for search layout
-  const [searchSelectedIndex, setSearchSelectedIndex] = useState(0); // Selected result index
-  const searchInputRef = useRef(null); // Ref for search input focus
 
   // Check if current user is admin
   const isAdmin = currentUser?.role === 'admin';
@@ -1171,96 +1176,7 @@ const HomePage = ({
   const amberCount = spaceFilteredAtRisk.filter(m => m.ragStatus === 'amber').length;
 
   // Get current layout configuration
-  const currentLayout = LAYOUT_CONFIG[dashboardConfig?.layout] || LAYOUT_CONFIG['search'];
-
-  // Search functionality for search layout
-  const fuzzyMatch = (text, search) => {
-    if (!search) return true;
-    const searchLower = search.toLowerCase();
-    const textLower = text.toLowerCase();
-    let searchIdx = 0;
-    for (let i = 0; i < textLower.length && searchIdx < searchLower.length; i++) {
-      if (textLower[i] === searchLower[searchIdx]) searchIdx++;
-    }
-    return searchIdx === searchLower.length;
-  };
-
-  const scoreMatch = (text, search) => {
-    if (!search) return 0;
-    const searchLower = search.toLowerCase();
-    const textLower = text.toLowerCase();
-    if (textLower.startsWith(searchLower)) return 100;
-    const words = textLower.split(/\s+/);
-    for (const word of words) {
-      if (word.startsWith(searchLower)) return 80;
-    }
-    if (textLower.includes(searchLower)) return 60;
-    return 40;
-  };
-
-  const searchFilteredProjects = useMemo(() => {
-    // Use Object.entries to get ID (key) along with project data (value)
-    const projectList = Object.entries(projects).map(([id, project]) => ({ ...project, id }));
-    if (!projectList.length) return [];
-
-    // Filter by space if a space is selected
-    const spaceFiltered = selectedSpace === 'all'
-      ? projectList
-      : projectList.filter(p => {
-          const portfolio = portfolios?.find(pf => pf.id === p.portfolio_id);
-          return portfolio?.space_id === Number(selectedSpace);
-        });
-
-    return spaceFiltered
-      .filter(p => fuzzyMatch(p.name, searchTerm))
-      .map(p => ({
-        ...p,
-        score: scoreMatch(p.name, searchTerm),
-        portfolioName: portfolios?.find(pf => pf.id === p.portfolio_id)?.name,
-        portfolioColor: portfolios?.find(pf => pf.id === p.portfolio_id)?.color,
-        spaceName: spaces?.find(s => s.id === p.space_id)?.name
-      }))
-      .sort((a, b) => b.score !== a.score ? b.score - a.score : a.name.localeCompare(b.name))
-      .slice(0, 10);
-  }, [projects, portfolios, spaces, searchTerm, selectedSpace]);
-
-  const highlightMatch = (text, search) => {
-    if (!search) return text;
-    const searchLower = search.toLowerCase();
-    const textLower = text.toLowerCase();
-    const result = [];
-    let searchIdx = 0;
-    for (let i = 0; i < text.length; i++) {
-      if (searchIdx < searchLower.length && textLower[i] === searchLower[searchIdx]) {
-        result.push(<mark key={i}>{text[i]}</mark>);
-        searchIdx++;
-      } else {
-        result.push(text[i]);
-      }
-    }
-    return result;
-  };
-
-  const handleSearchKeyDown = (e) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSearchSelectedIndex(prev => prev < searchFilteredProjects.length - 1 ? prev + 1 : prev);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSearchSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      const selectedProject = searchFilteredProjects[searchSelectedIndex] || searchFilteredProjects[0];
-      if (selectedProject && selectedProject.id) {
-        onNavigateToProject(selectedProject.id);
-      }
-    }
-  };
-
-  // Reset selection when search results change
-  useEffect(() => {
-    setSearchSelectedIndex(0);
-  }, [searchFilteredProjects.length, searchTerm]);
+  const currentLayout = LAYOUT_CONFIG[dashboardConfig?.layout] || LAYOUT_CONFIG['1x1'];
 
   // Render a panel by its ID
   const renderPanel = (panelId, index, forDock = false) => {
@@ -1481,6 +1397,21 @@ const HomePage = ({
           />
         );
 
+      case 'search':
+        return (
+          <SearchPanel
+            key={panelId}
+            panelId={panelId}
+            index={index}
+            forDock={forDock}
+            projects={projects}
+            portfolios={portfolios}
+            spaces={spaces}
+            selectedSpace={selectedSpace}
+            onNavigateToProject={onNavigateToProject}
+          />
+        );
+
       default:
         return null;
     }
@@ -1532,76 +1463,9 @@ const HomePage = ({
         </div>
       </div>
 
-      {dashboardConfig?.layout === 'search' ? (
-        <div className="home-search-view">
-          <div className="search-container">
-            <div className="search-box">
-              <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" />
-                <path d="M21 21l-4.35-4.35" />
-              </svg>
-              <input
-                ref={searchInputRef}
-                type="text"
-                className="search-input"
-                placeholder="Search projects..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-                autoFocus
-              />
-            </div>
-            {selectedSpace !== 'all' && (
-              <div className="search-space-warning">
-                <MdFilterList className="warning-icon" />
-                Searching within {spaces.find(s => s.id === Number(selectedSpace))?.name || 'selected space'}
-              </div>
-            )}
-            {searchTerm && (
-              <div className="search-results">
-                {searchFilteredProjects.length === 0 ? (
-                  <div className="search-no-results">No projects found</div>
-                ) : (
-                  searchFilteredProjects.map((project, index) => (
-                    <div
-                      key={project.id}
-                      className={`search-result-item ${index === searchSelectedIndex ? 'selected' : ''}`}
-                      onClick={() => onNavigateToProject(project.id)}
-                      onMouseEnter={() => setSearchSelectedIndex(index)}
-                    >
-                      <div className="search-result-main">
-                        <span className="search-result-name">
-                          {highlightMatch(project.name, searchTerm)}
-                        </span>
-                      </div>
-                      <div className="search-result-meta">
-                        {project.portfolioName && (
-                          <span
-                            className="search-result-portfolio"
-                            style={{ backgroundColor: project.portfolioColor || '#888' }}
-                          >
-                            {project.portfolioName}
-                          </span>
-                        )}
-                        {project.spaceName && (
-                          <span className="search-result-space">{project.spaceName}</span>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-            <div className="search-hint">
-              <kbd>↑↓</kbd> navigate <kbd>↵</kbd> select
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className={`home-grid ${currentLayout.cssClass}`}>
-          {(dashboardConfig.panels || DEFAULT_DASHBOARD_CONFIG.panels).map((panelId, index) => renderPanel(panelId, index))}
-        </div>
-      )}
+      <div className={`home-grid ${currentLayout.cssClass}`}>
+        {(dashboardConfig.panels || DEFAULT_DASHBOARD_CONFIG.panels).map((panelId, index) => renderPanel(panelId, index))}
+      </div>
 
       {/* Dashboard Config Modal */}
       {showConfigModal && (

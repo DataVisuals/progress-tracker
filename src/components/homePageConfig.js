@@ -10,13 +10,15 @@ import {
   MdDateRange,
   MdFiberNew,
   MdPendingActions,
-  MdCleaningServices
+  MdCleaningServices,
+  MdSearch
 } from 'react-icons/md';
 import { FaDatabase } from 'react-icons/fa';
 
 // Panel configuration - defines all available panels
 // Order determines dock display order (inconsistencies first, then timeline, health, etc.)
 export const PANEL_CONFIG = {
+  search: { id: 'search', name: 'Project Search', shortLabel: 'Search', icon: MdSearch, adminOnly: false },
   inconsistencies: { id: 'inconsistencies', name: 'Inconsistencies', shortLabel: 'Clean Up', icon: MdCleaningServices, adminOnly: false },
   timeline: { id: 'timeline', name: 'Project Timeline', shortLabel: 'Timeline', icon: MdDateRange, adminOnly: false, dockOnly: true },
   projectHealth: { id: 'projectHealth', name: 'Project Health Rankings', shortLabel: 'Health', icon: MdFavorite, adminOnly: false },
@@ -33,17 +35,16 @@ export const PANEL_CONFIG = {
 
 // Layout configurations
 export const LAYOUT_CONFIG = {
-  'search': { name: 'Search', panelCount: 0, cssClass: 'layout-search' },
-  '2x2': { name: '2x2 Grid', panelCount: 4, cssClass: 'layout-2x2' },
+  '1x1': { name: 'Single Panel', panelCount: 1, cssClass: 'layout-1x1' },
   '2x1': { name: '2 Columns', panelCount: 2, cssClass: 'layout-2x1' },
   '1x2': { name: '2 Rows', panelCount: 2, cssClass: 'layout-1x2' },
-  '1x1': { name: 'Single Panel', panelCount: 1, cssClass: 'layout-1x1' },
+  '2x2': { name: '2x2 Grid', panelCount: 4, cssClass: 'layout-2x2' },
   '2x2-1x1': { name: '2x2 + Full Width', panelCount: 5, cssClass: 'layout-2x2-1x1' },
   '3x2': { name: '3x2 Grid', panelCount: 6, cssClass: 'layout-3x2' }
 };
 
 // Default dashboard configuration
 export const DEFAULT_DASHBOARD_CONFIG = {
-  layout: 'search',
-  panels: ['inconsistencies', 'projectHealth', 'heatmap', 'commentary']
+  layout: '1x1',
+  panels: ['search']
 };

@@ -99,10 +99,10 @@ const DashboardConfigModal = ({
   const renderLayoutPreview = (layoutId) => {
     const config = layoutConfig[layoutId];
     switch (layoutId) {
-      case 'search':
+      case '1x1':
         return (
-          <div className="layout-preview layout-search-preview">
-            <div className="preview-search-box" />
+          <div className="layout-preview layout-1x1-preview">
+            <div className="preview-cell" />
           </div>
         );
       case '2x2':
@@ -125,12 +125,6 @@ const DashboardConfigModal = ({
         return (
           <div className="layout-preview layout-1x2-preview">
             <div className="preview-cell" />
-            <div className="preview-cell" />
-          </div>
-        );
-      case '1x1':
-        return (
-          <div className="layout-preview layout-1x1-preview">
             <div className="preview-cell" />
           </div>
         );
