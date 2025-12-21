@@ -123,6 +123,31 @@
   height: 48px;
 }
 
+.layout-search-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-search-box {
+  width: 36px;
+  height: 10px;
+  background: #d1d5db;
+  border-radius: 5px;
+}
+
+.layout-option.selected .preview-search-box {
+  background: #00aeef;
+}
+
+:root.dark-mode .preview-search-box {
+  background: #4b5563;
+}
+
+:root.dark-mode .layout-option.selected .preview-search-box {
+  background: #00aeef;
+}
+
 .layout-option.selected .preview-cell {
   background: #00aeef;
 }

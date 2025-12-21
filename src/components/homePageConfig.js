@@ -33,6 +33,7 @@ export const PANEL_CONFIG = {
 
 // Layout configurations
 export const LAYOUT_CONFIG = {
+  'search': { name: 'Search', panelCount: 0, cssClass: 'layout-search' },
   '2x2': { name: '2x2 Grid', panelCount: 4, cssClass: 'layout-2x2' },
   '2x1': { name: '2 Columns', panelCount: 2, cssClass: 'layout-2x1' },
   '1x2': { name: '2 Rows', panelCount: 2, cssClass: 'layout-1x2' },
@@ -43,6 +44,6 @@ export const LAYOUT_CONFIG = {
 
 // Default dashboard configuration
 export const DEFAULT_DASHBOARD_CONFIG = {
-  layout: '2x2',
+  layout: 'search',
   panels: ['inconsistencies', 'projectHealth', 'heatmap', 'commentary']
 };

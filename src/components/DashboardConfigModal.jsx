@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MdSettings, MdCheck, MdClose, MdLock, MdDragIndicator } from 'react-icons/md';
+import { DEFAULT_DASHBOARD_CONFIG } from './homePageConfig';
 import './DashboardConfigModal.css';
 
 const DashboardConfigModal = ({
@@ -80,16 +81,15 @@ const DashboardConfigModal = ({
     // Clear minimized panels (old legacy state)
     localStorage.removeItem('homePageMinimizedPanels');
 
-    // Default configuration
+    // Use the centralized default configuration
     const defaultConfig = {
-      layout: '2x2',
-      panels: ['heatmap', 'metrics', 'commentary', 'inconsistencies'],
+      ...DEFAULT_DASHBOARD_CONFIG,
       lastModified: Date.now()
     };
 
     // Update local state to reflect reset
-    setSelectedLayout('2x2');
-    setSelectedPanels(['heatmap', 'metrics', 'commentary', 'inconsistencies']);
+    setSelectedLayout(DEFAULT_DASHBOARD_CONFIG.layout);
+    setSelectedPanels([...DEFAULT_DASHBOARD_CONFIG.panels]);
 
     // Save the default config (this will save to localStorage via onSave handler)
     onSave(defaultConfig);
@@ -99,6 +99,12 @@ const DashboardConfigModal = ({
   const renderLayoutPreview = (layoutId) => {
     const config = layoutConfig[layoutId];
     switch (layoutId) {
+      case 'search':
+        return (
+          <div className="layout-preview layout-search-preview">
+            <div className="preview-search-box" />
+          </div>
+        );
       case '2x2':
         return (
           <div className="layout-preview layout-2x2-preview">
