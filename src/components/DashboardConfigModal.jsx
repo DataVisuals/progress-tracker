@@ -187,7 +187,7 @@ const DashboardConfigModal = ({
           {/* Panel Selection */}
           <div className="config-section">
             <h3>Panel Configuration</h3>
-            <div className="panel-slots-grid">
+            <div className={`panel-slots-grid layout-grid-${selectedLayout}`}>
               {Array.from({ length: requiredPanelCount }).map((_, index) => {
                 const selectedPanelId = selectedPanels[index];
                 const selectedPanelConfig = selectedPanelId ? panelConfig[selectedPanelId] : null;

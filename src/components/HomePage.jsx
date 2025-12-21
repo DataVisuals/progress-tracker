@@ -65,6 +65,7 @@ import AuditPanel from './panels/AuditPanel';
 import HeatmapPanel from './panels/HeatmapPanel';
 import PerformancePanel from './panels/PerformancePanel';
 import RecentUpdatesPanel from './panels/RecentUpdatesPanel';
+import BacklogPanel from './panels/BacklogPanel';
 import 'react-quill/dist/quill.snow.css';
 import './HomePage.css';
 import './MetricTabs.css';
@@ -87,7 +88,10 @@ const HomePage = ({
   projectDateHistory = {},
   milestoneDateHistory: milestoneDateHistoryProp = {},
   onShowTutorial,
-  showHowToSpotlight = false
+  showHowToSpotlight = false,
+  onAddBacklogItem,
+  onEditBacklogItem,
+  onPromoteBacklogItem
 }) => {
 
   const [recentCommentary, setRecentCommentary] = useState([]);
@@ -291,7 +295,7 @@ const HomePage = ({
               .filter(p => p.space_id === parseInt(selectedSpace))
               .map(p => p.id);
             enrichedCommentary = enrichedCommentary.filter(comment =>
-              !comment.portfolioId || spacePortfolioIds.includes(comment.portfolioId)
+              comment.portfolioId && spacePortfolioIds.includes(comment.portfolioId)
             );
           }
         }
@@ -503,7 +507,7 @@ const HomePage = ({
             .filter(p => p.space_id === parseInt(selectedSpace))
             .map(p => p.id);
           sortedAtRiskMetrics = sortedAtRiskMetrics.filter(metric =>
-            !metric.portfolioId || spacePortfolioIds.includes(metric.portfolioId)
+            metric.portfolioId && spacePortfolioIds.includes(metric.portfolioId)
           );
         }
       }
@@ -1248,6 +1252,10 @@ const HomePage = ({
             darkMode={darkMode}
             forDock={forDock}
             onNavigateToProject={onNavigateToProject}
+            selectedSpace={selectedSpace}
+            spaces={spaces}
+            portfolios={portfolios}
+            projects={projects}
           />
         );
 
@@ -1365,6 +1373,22 @@ const HomePage = ({
           />
         );
 
+      case 'backlog':
+        return (
+          <BacklogPanel
+            key={panelId}
+            panelId={panelId}
+            index={index}
+            forDock={forDock}
+            selectedSpace={selectedSpace}
+            spaces={spaces}
+            portfolios={portfolios}
+            onAddBacklogItem={onAddBacklogItem}
+            onEditBacklogItem={onEditBacklogItem}
+            onPromoteBacklogItem={onPromoteBacklogItem}
+          />
+        );
+
       default:
         return null;
     }
@@ -1456,7 +1480,7 @@ const HomePage = ({
                   })()}
                   <h2>{PANEL_CONFIG[expandedDockPanel]?.name}</h2>
                   {/* Space indicator for space-aware panels */}
-                  {['heatmap', 'metrics', 'commentary', 'inconsistencies', 'projectHealth', 'timeline'].includes(expandedDockPanel) && (
+                  {['heatmap', 'metrics', 'commentary', 'inconsistencies', 'projectHealth', 'timeline', 'backlog', 'recentUpdates'].includes(expandedDockPanel) && (
                     <span className="space-filter-indicator">
                       <MdFilterList className="filter-icon" />
                       {selectedSpace === 'all'
@@ -1571,6 +1595,7 @@ const HomePage = ({
                     }}
                   >
                     <PanelIcon />
+                    <span className="dock-label">{panel.shortLabel || panel.name}</span>
                     <span className="tab-tooltip">{panel.name}</span>
                   </button>
                 );
@@ -1600,6 +1625,7 @@ const HomePage = ({
                     disabled={isLocked}
                   >
                     <PanelIcon />
+                    <span className="dock-label">{panel.shortLabel || panel.name}</span>
                     {isLocked && <MdLock className="lock-icon" />}
                     <span className="tab-tooltip">{panel.name}{isLocked ? ' (Admin)' : ''}</span>
                   </button>
@@ -1614,6 +1640,7 @@ const HomePage = ({
                 title="How to use Progress Tracker"
               >
                 <MdMenuBook />
+                <span className="dock-label">How To</span>
                 <span className="tab-tooltip">How To...</span>
               </button>
             </div>

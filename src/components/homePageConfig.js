@@ -8,24 +8,27 @@ import {
   MdPeople,
   MdDirectionsRun,
   MdDateRange,
-  MdFiberNew
+  MdFiberNew,
+  MdPendingActions,
+  MdCleaningServices
 } from 'react-icons/md';
-import { FaDatabase, FaSkullCrossbones } from 'react-icons/fa';
+import { FaDatabase } from 'react-icons/fa';
 
 // Panel configuration - defines all available panels
-// Order determines dock display order (timeline, inconsistencies, health first)
+// Order determines dock display order (inconsistencies first, then timeline, health, etc.)
 export const PANEL_CONFIG = {
-  timeline: { id: 'timeline', name: 'Project Timeline', icon: MdDateRange, adminOnly: false, dockOnly: true },
-  inconsistencies: { id: 'inconsistencies', name: 'Inconsistencies', icon: FaSkullCrossbones, adminOnly: false },
-  projectHealth: { id: 'projectHealth', name: 'Project Health Rankings', icon: MdFavorite, adminOnly: false },
-  heatmap: { id: 'heatmap', name: 'Most Viewed Projects', icon: MdVisibility, adminOnly: false },
-  metrics: { id: 'metrics', name: 'Metrics at Risk', icon: MdFlag, adminOnly: false },
-  commentary: { id: 'commentary', name: 'Recent Commentary', icon: MdComment, adminOnly: false },
-  recentUpdates: { id: 'recentUpdates', name: 'Recent Updates', icon: MdFiberNew, adminOnly: false },
-  attention: { id: 'attention', name: 'My Projects Needing Attention', icon: MdBuild, adminOnly: false, hiddenFromDock: true },
-  audit: { id: 'audit', name: 'Audit Log', icon: MdHistory, adminOnly: true },
-  activeUsers: { id: 'activeUsers', name: 'User Insights', icon: MdPeople, adminOnly: true },
-  performance: { id: 'performance', name: 'Performance', icon: MdDirectionsRun, adminOnly: true }
+  inconsistencies: { id: 'inconsistencies', name: 'Inconsistencies', shortLabel: 'Clean Up', icon: MdCleaningServices, adminOnly: false },
+  timeline: { id: 'timeline', name: 'Project Timeline', shortLabel: 'Timeline', icon: MdDateRange, adminOnly: false, dockOnly: true },
+  projectHealth: { id: 'projectHealth', name: 'Project Health Rankings', shortLabel: 'Health', icon: MdFavorite, adminOnly: false },
+  heatmap: { id: 'heatmap', name: 'Most Viewed Projects', shortLabel: 'Views', icon: MdVisibility, adminOnly: false },
+  metrics: { id: 'metrics', name: 'Metrics at Risk', shortLabel: 'Issues', icon: MdFlag, adminOnly: false },
+  commentary: { id: 'commentary', name: 'Recent Commentary', shortLabel: 'Comments', icon: MdComment, adminOnly: false },
+  recentUpdates: { id: 'recentUpdates', name: 'Recent Updates', shortLabel: 'Updates', icon: MdFiberNew, adminOnly: false },
+  attention: { id: 'attention', name: 'My Projects Needing Attention', shortLabel: 'Attention', icon: MdBuild, adminOnly: false, hiddenFromDock: true },
+  backlog: { id: 'backlog', name: 'Project Backlog', shortLabel: 'Backlog', icon: MdPendingActions, adminOnly: false },
+  audit: { id: 'audit', name: 'Audit Log', shortLabel: 'Audit', icon: MdHistory, adminOnly: true },
+  activeUsers: { id: 'activeUsers', name: 'User Insights', shortLabel: 'Users', icon: MdPeople, adminOnly: true },
+  performance: { id: 'performance', name: 'Performance', shortLabel: 'Perf', icon: MdDirectionsRun, adminOnly: true }
 };
 
 // Layout configurations
@@ -41,5 +44,5 @@ export const LAYOUT_CONFIG = {
 // Default dashboard configuration
 export const DEFAULT_DASHBOARD_CONFIG = {
   layout: '2x2',
-  panels: ['heatmap', 'projectHealth', 'commentary', 'inconsistencies']
+  panels: ['inconsistencies', 'projectHealth', 'heatmap', 'commentary']
 };

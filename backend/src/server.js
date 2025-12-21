@@ -2502,6 +2502,187 @@ function createApp(dbPath) {
     }
   });
 
+  // ===== BACKLOG =====
+  // Get all backlog items (with portfolio info - space derived from portfolio)
+  app.get('/api/backlog', async (req, res) => {
+    try {
+      const { space_id } = req.query;
+      let query = `
+        SELECT b.id, b.name, b.description, b.portfolio_id, b.initiative_manager,
+               b.priority, b.created_by, b.created_at, b.updated_at,
+               b.start_date, b.end_date,
+               p.name as portfolio_name,
+               p.color as portfolio_color,
+               p.space_id,
+               s.name as space_name,
+               u.name as created_by_name
+        FROM backlog_items b
+        LEFT JOIN portfolios p ON b.portfolio_id = p.id
+        LEFT JOIN spaces s ON p.space_id = s.id
+        LEFT JOIN users u ON b.created_by = u.id
+      `;
+      let params = [];
+
+      if (space_id) {
+        query += ' WHERE p.space_id = ?';
+        params.push(space_id);
+      }
+
+      query += ' ORDER BY b.created_at DESC';
+
+      const items = await dbAll(query, params);
+      res.json(items);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Get single backlog item
+  app.get('/api/backlog/:id', async (req, res) => {
+    try {
+      const item = await dbGet(`
+        SELECT b.*,
+               p.name as portfolio_name,
+               p.color as portfolio_color,
+               u.name as created_by_name
+        FROM backlog_items b
+        LEFT JOIN portfolios p ON b.portfolio_id = p.id
+        LEFT JOIN users u ON b.created_by = u.id
+        WHERE b.id = ?
+      `, [req.params.id]);
+
+      if (!item) {
+        return res.status(404).json({ error: 'Backlog item not found' });
+      }
+
+      res.json(item);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Create backlog item
+  app.post('/api/backlog', authenticateToken, async (req, res) => {
+    try {
+      const { name, description, portfolio_id, initiative_manager, priority, start_date, end_date, space_id } = req.body;
+
+      if (!name || !name.trim()) {
+        return res.status(400).json({ error: 'Name is required' });
+      }
+
+      const result = await dbRun(
+        `INSERT INTO backlog_items (name, description, portfolio_id, initiative_manager, priority, start_date, end_date, space_id, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [name.trim(), description || null, portfolio_id || null, initiative_manager || null, priority || 'medium', start_date || null, end_date || null, space_id || null, req.user.userId]
+      );
+
+      // Log to audit
+      await dbRun(
+        `INSERT INTO audit_log (action, table_name, record_id, user_id, user_email, new_values, description, ip_address)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        ['CREATE', 'backlog_items', result.lastID, req.user.userId, req.user.email, JSON.stringify({ name }), `Created backlog item: ${name}`, req.ip]
+      );
+
+      const newItem = await dbGet('SELECT * FROM backlog_items WHERE id = ?', [result.lastID]);
+      res.status(201).json(newItem);
+    } catch (err) {
+      console.error('Create backlog item error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Update backlog item
+  app.put('/api/backlog/:id', authenticateToken, async (req, res) => {
+    try {
+      const { name, description, portfolio_id, initiative_manager, priority, start_date, end_date, space_id } = req.body;
+      const { id } = req.params;
+
+      const existing = await dbGet('SELECT * FROM backlog_items WHERE id = ?', [id]);
+      if (!existing) {
+        return res.status(404).json({ error: 'Backlog item not found' });
+      }
+
+      if (name !== undefined && (!name || !name.trim())) {
+        return res.status(400).json({ error: 'Name cannot be empty' });
+      }
+
+      await dbRun(
+        `UPDATE backlog_items SET
+           name = COALESCE(?, name),
+           description = ?,
+           portfolio_id = ?,
+           initiative_manager = ?,
+           priority = COALESCE(?, priority),
+           start_date = ?,
+           end_date = ?,
+           space_id = ?,
+           updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [name?.trim(), description, portfolio_id, initiative_manager, priority, start_date, end_date, space_id, id]
+      );
+
+      const updated = await dbGet('SELECT * FROM backlog_items WHERE id = ?', [id]);
+      res.json(updated);
+    } catch (err) {
+      console.error('Update backlog item error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Delete backlog item
+  app.delete('/api/backlog/:id', authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const existing = await dbGet('SELECT * FROM backlog_items WHERE id = ?', [id]);
+      if (!existing) {
+        return res.status(404).json({ error: 'Backlog item not found' });
+      }
+
+      await dbRun('DELETE FROM backlog_items WHERE id = ?', [id]);
+
+      // Log to audit
+      await dbRun(
+        `INSERT INTO audit_log (action, table_name, record_id, user_id, user_email, old_values, description, ip_address)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        ['DELETE', 'backlog_items', id, req.user.userId, req.user.email, JSON.stringify({ name: existing.name }), `Deleted backlog item: ${existing.name}`, req.ip]
+      );
+
+      res.json({ message: 'Backlog item deleted successfully' });
+    } catch (err) {
+      console.error('Delete backlog item error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Promote backlog item to project (returns the backlog data for ProjectSetup to use)
+  app.post('/api/backlog/:id/promote', authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const item = await dbGet(`
+        SELECT b.*, p.name as portfolio_name
+        FROM backlog_items b
+        LEFT JOIN portfolios p ON b.portfolio_id = p.id
+        WHERE b.id = ?
+      `, [id]);
+
+      if (!item) {
+        return res.status(404).json({ error: 'Backlog item not found' });
+      }
+
+      // Return the backlog item data for the frontend to use in ProjectSetup
+      // The frontend will create the project and then delete the backlog item
+      res.json({
+        ...item,
+        message: 'Ready to promote - use this data to create project, then call DELETE /api/backlog/:id'
+      });
+    } catch (err) {
+      console.error('Promote backlog item error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ===== PROJECTS =====
   app.get('/api/projects', async (req, res) => {
     try {
@@ -6375,6 +6556,71 @@ function createApp(dbPath) {
         }
       }
 
+      // 5. Unresolved feedback (include primary PM, secondary PM, and portfolio manager)
+      const unresolvedFeedback = await dbAll(`
+        SELECT
+          f.id as feedback_id,
+          f.text as feedback_text,
+          f.project_id,
+          p.name as project_name,
+          p.initiative_manager as pm_name,
+          p.secondary_pm,
+          u.name as portfolio_manager_name,
+          f.created_at as first_detected
+        FROM feedback f
+        JOIN projects p ON f.project_id = p.id
+        LEFT JOIN portfolios port ON p.portfolio_id = port.id
+        LEFT JOIN users u ON port.manager_id = u.id
+        WHERE f.status != 'resolved'
+        ORDER BY p.initiative_manager, p.name
+      `);
+
+      for (const fb of unresolvedFeedback) {
+        const feedbackPreview = fb.feedback_text?.length > 50
+          ? fb.feedback_text.substring(0, 50) + '...'
+          : fb.feedback_text;
+
+        if (fb.pm_name) {
+          inconsistencies.push({
+            type: 'unresolved_feedback',
+            severity: 'medium',
+            pm_name: fb.pm_name,
+            project_id: fb.project_id,
+            project_name: fb.project_name,
+            feedback_id: fb.feedback_id,
+            details: feedbackPreview,
+            first_detected: fb.first_detected,
+            age_days: Math.floor((Date.now() - new Date(fb.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
+        if (fb.secondary_pm && fb.secondary_pm !== fb.pm_name) {
+          inconsistencies.push({
+            type: 'unresolved_feedback',
+            severity: 'medium',
+            pm_name: fb.secondary_pm,
+            project_id: fb.project_id,
+            project_name: fb.project_name,
+            feedback_id: fb.feedback_id,
+            details: feedbackPreview,
+            first_detected: fb.first_detected,
+            age_days: Math.floor((Date.now() - new Date(fb.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
+        if (fb.portfolio_manager_name && fb.portfolio_manager_name !== fb.pm_name && fb.portfolio_manager_name !== fb.secondary_pm) {
+          inconsistencies.push({
+            type: 'unresolved_feedback',
+            severity: 'medium',
+            pm_name: fb.portfolio_manager_name,
+            project_id: fb.project_id,
+            project_name: fb.project_name,
+            feedback_id: fb.feedback_id,
+            details: feedbackPreview,
+            first_detected: fb.first_detected,
+            age_days: Math.floor((Date.now() - new Date(fb.first_detected)) / (1000 * 60 * 60 * 24))
+          });
+        }
+      }
+
       // Severity order for sorting (high = 0, medium = 1, low = 2)
       const severityOrder = { high: 0, medium: 1, low: 2 };
 
@@ -9025,6 +9271,44 @@ function createApp(dbPath) {
     try {
       await dbRun(`ALTER TABLE metrics ADD COLUMN has_dimensions INTEGER DEFAULT 0`);
       console.log('✅ Added has_dimensions column to metrics');
+    } catch (err) {
+      // Column likely already exists
+    }
+
+    // Migration: Create backlog_items table for project ideas
+    try {
+      await dbRun(`
+        CREATE TABLE IF NOT EXISTS backlog_items (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          description TEXT,
+          portfolio_id INTEGER REFERENCES portfolios(id) ON DELETE SET NULL,
+          initiative_manager TEXT,
+          priority TEXT DEFAULT 'medium',
+          start_date DATE,
+          end_date DATE,
+          created_by INTEGER REFERENCES users(id),
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_backlog_portfolio ON backlog_items(portfolio_id)`);
+      await dbRun(`CREATE INDEX IF NOT EXISTS idx_backlog_priority ON backlog_items(priority)`);
+      console.log('✅ Created backlog_items table');
+    } catch (err) {
+      // Table likely already exists
+    }
+
+    // Migration: Add start_date and end_date to backlog_items
+    try {
+      await dbRun(`ALTER TABLE backlog_items ADD COLUMN start_date DATE`);
+      console.log('✅ Added start_date column to backlog_items');
+    } catch (err) {
+      // Column likely already exists
+    }
+    try {
+      await dbRun(`ALTER TABLE backlog_items ADD COLUMN end_date DATE`);
+      console.log('✅ Added end_date column to backlog_items');
     } catch (err) {
       // Column likely already exists
     }

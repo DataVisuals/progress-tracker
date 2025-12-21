@@ -7,14 +7,18 @@ const RecentUpdatesPanel = ({
   index,
   onNavigateToProject,
   darkMode,
-  forDock = false
+  forDock = false,
+  selectedSpace,
+  spaces,
+  portfolios,
+  projects
 }) => {
   const [updates, setUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadRecentUpdates();
-  }, []);
+  }, [selectedSpace]);
 
   const loadRecentUpdates = async () => {
     try {
@@ -30,6 +34,27 @@ const RecentUpdatesPanel = ({
     }
   };
 
+  // Get project IDs for the selected space
+  const spaceProjectIds = useMemo(() => {
+    if (!selectedSpace || selectedSpace === 'all') return null;
+    if (!portfolios || !projects) return null;
+
+    // Get portfolio IDs for the selected space
+    const spacePortfolioIds = portfolios
+      .filter(p => p.space_id === parseInt(selectedSpace))
+      .map(p => p.id);
+
+    // Get project IDs with those portfolios
+    return Object.entries(projects)
+      .filter(([_, project]) => spacePortfolioIds.includes(project.portfolio_id))
+      .map(([id]) => parseInt(id));
+  }, [selectedSpace, portfolios, projects]);
+
+  // Get current space name for empty state
+  const currentSpaceName = selectedSpace === 'all'
+    ? 'All Spaces'
+    : spaces?.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space';
+
   // Group updates by project and summarize
   const groupedUpdates = useMemo(() => {
     const groups = {};
@@ -38,6 +63,11 @@ const RecentUpdatesPanel = ({
     updates.forEach(update => {
       // Skip entries without project context
       if (!update.project_name) return;
+
+      // Filter by space if a specific space is selected
+      if (spaceProjectIds !== null && update.project_id) {
+        if (!spaceProjectIds.includes(update.project_id)) return;
+      }
 
       const projectKey = update.project_name;
       if (!groups[projectKey]) {
@@ -93,7 +123,7 @@ const RecentUpdatesPanel = ({
     return Object.values(groups)
       .sort((a, b) => (b.latestUpdate || 0) - (a.latestUpdate || 0))
       .slice(0, forDock ? 20 : 8);
-  }, [updates, forDock]);
+  }, [updates, forDock, spaceProjectIds]);
 
   const formatRelativeTime = (date) => {
     if (!date) return '';
@@ -180,6 +210,7 @@ const RecentUpdatesPanel = ({
           <div className="empty-state">
             <MdFiberNew className="empty-icon" />
             <p>No recent updates</p>
+            <span>No updates for {currentSpaceName}</span>
           </div>
         ) : (
           <div className="recent-updates-list">

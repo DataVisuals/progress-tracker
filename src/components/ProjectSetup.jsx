@@ -8,23 +8,28 @@ import UserSelector from './UserSelector';
 import './FormInputs.css';
 import './ProjectSetup.css';
 
-const ProjectSetup = ({ onComplete, onCancel }) => {
-  const [projectName, setProjectName] = useState('');
+const ProjectSetup = ({ onComplete, onCancel, backlogMode = false, initialData = null }) => {
+  const [projectName, setProjectName] = useState(initialData?.name || '');
   const [projectManager, setProjectManager] = useState(null);
   const [secondaryPM, setSecondaryPM] = useState(null);
-  const [projectDesc, setProjectDesc] = useState('');
-  const [portfolioId, setPortfolioId] = useState(null);
+  const [projectDesc, setProjectDesc] = useState(initialData?.description || '');
+  const [portfolioId, setPortfolioId] = useState(initialData?.portfolio_id || null);
+  const [priority, setPriority] = useState(initialData?.priority || 'medium');
   const [users, setUsers] = useState([]);
   const [portfolios, setPortfolios] = useState([]);
 
   // Calculate default dates: start = first of next month, end = 6 months later
   const [projectStartDate, setProjectStartDate] = useState(() => {
+    if (initialData?.start_date) return initialData.start_date;
+    if (backlogMode) return ''; // No default date for backlog
     const today = new Date();
     const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
     return nextMonth.toISOString().split('T')[0];
   });
 
   const [projectEndDate, setProjectEndDate] = useState(() => {
+    if (initialData?.end_date) return initialData.end_date;
+    if (backlogMode) return ''; // No default date for backlog
     const today = new Date();
     const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
     const sixMonthsLater = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 6, 0);
@@ -65,6 +70,14 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
       ]);
       setUsers(usersResponse.data);
       setPortfolios(portfoliosResponse.data);
+
+      // Set initiative manager from initialData if present
+      if (initialData?.initiative_manager && usersResponse.data) {
+        const matchingUser = usersResponse.data.find(u => u.name === initialData.initiative_manager);
+        if (matchingUser) {
+          setProjectManager({ value: matchingUser.id, label: matchingUser.name });
+        }
+      }
     } catch (err) {
       console.error('Failed to load data:', err);
     }
@@ -128,6 +141,64 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
     // Validation
     if (!projectName.trim()) {
       alert('Please enter a project name');
+      return;
+    }
+
+    // Backlog mode: relaxed validation, different API
+    if (backlogMode) {
+      // Description is required for backlog items
+      if (!projectDesc.trim()) {
+        alert('Please enter a description for this backlog item');
+        return;
+      }
+      // Portfolio is required for backlog items (determines space)
+      if (!portfolioId) {
+        alert('Please select a Portfolio');
+        return;
+      }
+      // Date validation only if dates are provided
+      if (projectStartDate && projectEndDate && new Date(projectStartDate) >= new Date(projectEndDate)) {
+        alert('Project end date must be after start date');
+        return;
+      }
+
+      try {
+        const backlogData = {
+          name: projectName,
+          description: projectDesc || null,
+          portfolio_id: portfolioId,
+          initiative_manager: projectManager ? projectManager.label : null,
+          priority: priority,
+          start_date: projectStartDate || null,
+          end_date: projectEndDate || null
+        };
+
+        if (initialData?.id) {
+          // Update existing backlog item
+          await api.updateBacklogItem(initialData.id, backlogData);
+        } else {
+          // Create new backlog item
+          await api.createBacklogItem(backlogData);
+        }
+        onComplete();
+      } catch (err) {
+        console.error('Failed to save backlog item:', err);
+        alert('Failed to save backlog item: ' + (err.response?.data?.error || err.message));
+      }
+      return;
+    }
+
+    // Regular project mode: full validation
+    if (!projectDesc.trim()) {
+      alert('Please enter a project description');
+      return;
+    }
+    if (!projectManager) {
+      alert('Please select a Primary Initiative Manager');
+      return;
+    }
+    if (!portfolioId) {
+      alert('Please select a Portfolio');
       return;
     }
     if (!projectStartDate || !projectEndDate) {
@@ -205,10 +276,16 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
     }
   };
 
+  const isPromoting = !backlogMode && initialData;
+
   return (
     <div className="project-setup-container">
-      <h2>Create New Project</h2>
-      <p className="setup-subtitle">Set up your project with metrics and target values</p>
+      <h2>{backlogMode ? (initialData ? 'Edit Backlog Item' : 'New Backlog Item') : (isPromoting ? 'Promote to Project' : 'Create New Project')}</h2>
+      <p className="setup-subtitle">
+        {backlogMode
+          ? 'Add a project idea to the backlog. Metrics can be added later when you promote it to a project.'
+          : (isPromoting ? 'Complete the project setup by adding metrics and targets.' : 'Set up your project with metrics and target values')}
+      </p>
 
       <div className="setup-section">
         <h3>Project Details</h3>
@@ -225,7 +302,7 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="project-desc">Description</label>
+            <label htmlFor="project-desc">Description *</label>
             <input
               id="project-desc"
               type="text"
@@ -238,7 +315,7 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
         </div>
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="project-manager">Primary Initiative Manager</label>
+            <label htmlFor="project-manager">Primary Initiative Manager{!backlogMode && ' *'}</label>
             <UserSelector
               users={users}
               selectedUser={projectManager}
@@ -258,7 +335,7 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
         </div>
         <div className="form-row three-col">
           <div className="form-group">
-            <label htmlFor="portfolio">Portfolio</label>
+            <label htmlFor="portfolio">Portfolio *</label>
             <Select
               id="portfolio"
               value={portfolioId ? { value: portfolioId, label: portfolios.find(p => p.id === portfolioId)?.name } : null}
@@ -268,11 +345,11 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
                 { value: '__create__', label: '+ Create New Portfolio...' }
               ]}
               styles={selectStyles}
-              placeholder="Select portfolio (optional)..."
+              placeholder="Select portfolio..."
             />
           </div>
           <div className="form-group">
-            <label htmlFor="project-start-date">Project Start Date *</label>
+            <label htmlFor="project-start-date">Project Start Date{!backlogMode && ' *'}</label>
             <input
               id="project-start-date"
               type="date"
@@ -281,7 +358,7 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="project-end-date">Project End Date *</label>
+            <label htmlFor="project-end-date">Project End Date{!backlogMode && ' *'}</label>
             <input
               id="project-end-date"
               type="date"
@@ -290,8 +367,27 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
             />
           </div>
         </div>
+        {backlogMode && (
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="priority">Priority</label>
+              <Select
+                id="priority"
+                value={{ value: priority, label: priority.charAt(0).toUpperCase() + priority.slice(1) }}
+                onChange={(option) => setPriority(option.value)}
+                options={[
+                  { value: 'high', label: 'High' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'low', label: 'Low' }
+                ]}
+                styles={selectStyles}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
+      {!backlogMode && (
       <div className="setup-section">
         <div className="section-header">
           <h3>Metrics & Targets</h3>
@@ -453,7 +549,9 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
           ))}
         </div>
       </div>
+      )}
 
+      {!backlogMode && (
       <div className="setup-section">
         <div className="section-header">
           <h3>External Links (Optional)</h3>
@@ -506,10 +604,16 @@ const ProjectSetup = ({ onComplete, onCancel }) => {
           ))}
         </div>
       </div>
+      )}
 
       <div className="modal-actions">
         <button className="save-btn" onClick={handleSubmit}>
-          Create Project with {metrics.filter(m => m.name.trim()).length} Metric{metrics.filter(m => m.name.trim()).length !== 1 ? 's' : ''}
+          {backlogMode
+            ? (initialData ? 'Save Changes' : 'Add to Backlog')
+            : (isPromoting
+                ? `Promote with ${metrics.filter(m => m.name.trim()).length} Metric${metrics.filter(m => m.name.trim()).length !== 1 ? 's' : ''}`
+                : `Create Project with ${metrics.filter(m => m.name.trim()).length} Metric${metrics.filter(m => m.name.trim()).length !== 1 ? 's' : ''}`)
+          }
         </button>
         <button className="cancel-btn" onClick={onCancel}>
           Cancel

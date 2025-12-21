@@ -33,7 +33,10 @@ import {
   MdExtension,
   MdArticle,
   MdNotInterested,
-  MdRemove
+  MdRemove,
+  MdPendingActions,
+  MdAddCircle,
+  MdArrowUpward
 } from 'react-icons/md';
 import './Tutorial.css';
 
@@ -337,7 +340,58 @@ const Tutorial = ({ onClose, startPage = 0, skipAtStartup = false, onSkipAtStart
         </div>
       )
     },
-    // Page 5: Creating Metrics
+    // Page 5: Project Backlog
+    {
+      type: 'guide',
+      title: 'Project Backlog',
+      subtitle: 'Capture ideas before they\'re ready for metrics',
+      icon: <MdPendingActions />,
+      steps: [
+        'Click the Project dropdown and select "New Backlog Item"',
+        'Enter a name and optional description - no metrics required',
+        'Assign to a portfolio to keep ideas organized',
+        'When ready, promote to a full project by adding a metric'
+      ],
+      tip: 'Use the backlog for early-stage ideas, initiatives pending approval, or projects awaiting scope definition.',
+      visual: (
+        <div className="tutorial-visual backlog-visual">
+          <div className="mock-backlog-list">
+            <div className="mock-backlog-header">
+              <MdPendingActions className="backlog-icon" />
+              <span>Project Backlog</span>
+            </div>
+            <div className="mock-backlog-item">
+              <div className="backlog-item-content">
+                <strong>API Modernization</strong>
+                <span>Awaiting architecture review</span>
+              </div>
+              <div className="backlog-item-action">
+                <MdAddCircle className="promote-icon" />
+              </div>
+            </div>
+            <div className="mock-backlog-item">
+              <div className="backlog-item-content">
+                <strong>Self-Service Portal</strong>
+                <span>Business case in progress</span>
+              </div>
+              <div className="backlog-item-action">
+                <MdAddCircle className="promote-icon" />
+              </div>
+            </div>
+            <div className="mock-backlog-item promoted">
+              <div className="backlog-item-content">
+                <strong>Cloud Migration</strong>
+                <span>Promoted to project</span>
+              </div>
+              <div className="backlog-item-action">
+                <MdArrowUpward className="promoted-icon" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    // Page 6: Creating Metrics
     {
       type: 'guide',
       title: 'Step 4: Add Metrics',
@@ -543,46 +597,7 @@ const Tutorial = ({ onClose, startPage = 0, skipAtStartup = false, onSkipAtStart
         </div>
       )
     },
-    // Page 9: Key Features
-    {
-      type: 'features',
-      title: 'Key Features to Explore',
-      subtitle: 'Get the most out of Progress Tracker',
-      icon: <MdDashboard />,
-      features: [
-        {
-          icon: <MdHistory />,
-          name: 'Time Travel',
-          desc: 'View your metrics as they appeared at any past date'
-        },
-        {
-          icon: <MdFilterList />,
-          name: 'Filters',
-          desc: 'Focus on red/amber metrics or specific portfolios'
-        },
-        {
-          icon: <MdComment />,
-          name: 'Commentary',
-          desc: 'Add context and explanations to your metrics'
-        },
-        {
-          icon: <MdTimeline />,
-          name: 'Progression Curves',
-          desc: 'Set expected trajectories: linear, S-curve, exponential'
-        },
-        {
-          icon: <MdCheckCircle />,
-          name: 'Consistency Checks',
-          desc: 'Automated reports flag data quality issues'
-        },
-        {
-          icon: <MdPeople />,
-          name: 'Collaboration',
-          desc: 'Share projects, leave feedback, track discussions'
-        }
-      ]
-    },
-    // Page 10: Consistency Checks
+    // Page 9: Consistency Checks
     {
       type: 'concept',
       title: 'Consistency Checks',
@@ -921,7 +936,46 @@ const Tutorial = ({ onClose, startPage = 0, skipAtStartup = false, onSkipAtStart
         </div>
       )
     },
-    // Page 13: Get Started
+    // Page 13: Key Features Summary
+    {
+      type: 'features',
+      title: 'Key Features to Explore',
+      subtitle: 'Get the most out of Progress Tracker',
+      icon: <MdDashboard />,
+      features: [
+        {
+          icon: <MdHistory />,
+          name: 'Time Travel',
+          desc: 'View your metrics as they appeared at any past date'
+        },
+        {
+          icon: <MdFilterList />,
+          name: 'Filters',
+          desc: 'Focus on red/amber metrics or specific portfolios'
+        },
+        {
+          icon: <MdComment />,
+          name: 'Commentary',
+          desc: 'Add context and explanations to your metrics'
+        },
+        {
+          icon: <MdTimeline />,
+          name: 'Progression Curves',
+          desc: 'Set expected trajectories: linear, S-curve, exponential'
+        },
+        {
+          icon: <MdCheckCircle />,
+          name: 'Consistency Checks',
+          desc: 'Automated reports flag data quality issues'
+        },
+        {
+          icon: <MdPeople />,
+          name: 'Collaboration',
+          desc: 'Share projects, leave feedback, track discussions'
+        }
+      ]
+    },
+    // Page 14: Get Started
     {
       type: 'finish',
       title: 'You\'re Ready!',
@@ -1112,14 +1166,19 @@ const Tutorial = ({ onClose, startPage = 0, skipAtStartup = false, onSkipAtStart
           </div>
 
           <div className="tutorial-dots">
-            {pages.map((_, index) => (
-              <button
-                key={index}
-                className={`tutorial-dot ${index === currentPage ? 'active' : ''} ${index < currentPage ? 'completed' : ''}`}
-                onClick={() => handleDotClick(index)}
-                aria-label={`Go to page ${index + 1}`}
-              />
-            ))}
+            {pages.map((_, index) => {
+              // Section boundaries for visual grouping
+              const sectionBoundaries = [1, 2, 7, 11, 12, 17];
+              const isEndOfSection = sectionBoundaries.includes(index);
+              return (
+                <button
+                  key={index}
+                  className={`tutorial-dot ${index === currentPage ? 'active' : ''} ${index < currentPage ? 'completed' : ''} ${isEndOfSection ? 'section-end' : ''}`}
+                  onClick={() => handleDotClick(index)}
+                  aria-label={`Go to page ${index + 1}`}
+                />
+              );
+            })}
           </div>
 
           {currentPage === pages.length - 1 && (

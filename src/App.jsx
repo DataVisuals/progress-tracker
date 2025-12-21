@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Build timestamp - updated automatically before each commit to gh
-const BUILD_TIMESTAMP = '2025-12-19 10:58:37';
+const BUILD_TIMESTAMP = '2025-12-21 07:38:16';
 
 import Select from 'react-select';
 import 'react-quill/dist/quill.snow.css';
@@ -46,6 +46,7 @@ import ProjectHealthModal, { calculateHealthScore } from './components/ProjectHe
 import ClarityIndicator from './components/ClarityIndicator';
 import Lottie from 'lottie-react';
 import progressChartAnimation from './assets/progress-chart.json';
+import headerLogoImage from './assets/project_metrics_cumulative_tight.gif';
 import bellNotificationAnimation from './assets/bell-notification.json';
 import { trackPage, startPageLoadTimer } from './hooks/usePageTracking';
 import { getTimeUntilExpiry, isTokenExpiringSoon, formatTimeUntilExpiry, storeTokenExpiry } from './utils/tokenUtils';
@@ -72,6 +73,9 @@ function App() {
   const [showDimensionConfig, setShowDimensionConfig] = useState(false);
   const [dimensionConfigMetric, setDimensionConfigMetric] = useState(null);
   const [showNewProject, setShowNewProject] = useState(false);
+  const [promotingBacklogItem, setPromotingBacklogItem] = useState(null);
+  const [showBacklogSetup, setShowBacklogSetup] = useState(false);
+  const [editingBacklogItem, setEditingBacklogItem] = useState(null);
   const [editingProjectName, setEditingProjectName] = useState(false);
   const [editProjectNameValue, setEditProjectNameValue] = useState('');
   const [editingProjectDesc, setEditingProjectDesc] = useState(false);
@@ -975,6 +979,16 @@ function App() {
   };
 
   const handleProjectSetupComplete = async (projectId) => {
+    // If we were promoting a backlog item, delete it now
+    if (promotingBacklogItem) {
+      try {
+        await api.deleteBacklogItem(promotingBacklogItem.id);
+      } catch (err) {
+        console.error('Failed to delete promoted backlog item:', err);
+      }
+      setPromotingBacklogItem(null);
+    }
+
     await loadProjects();
     setShowNewProject(false);
     // Reset metric selection and set project (triggers useEffect to load data)
@@ -999,6 +1013,34 @@ function App() {
 
   const handleProjectSetupCancel = () => {
     setShowNewProject(false);
+    setPromotingBacklogItem(null);
+  };
+
+  // Backlog handlers
+  const handleAddBacklogItem = () => {
+    setEditingBacklogItem(null);
+    setShowBacklogSetup(true);
+  };
+
+  const handleEditBacklogItem = (item) => {
+    setEditingBacklogItem(item);
+    setShowBacklogSetup(true);
+  };
+
+  const handleBacklogSetupComplete = () => {
+    setShowBacklogSetup(false);
+    setEditingBacklogItem(null);
+  };
+
+  const handleBacklogSetupCancel = () => {
+    setShowBacklogSetup(false);
+    setEditingBacklogItem(null);
+  };
+
+  const handlePromoteBacklogItem = (backlogItem) => {
+    // Store the backlog item being promoted and open project setup
+    setPromotingBacklogItem(backlogItem);
+    setShowNewProject(true);
   };
 
   const handleDeleteProject = async () => {
@@ -1837,10 +1879,10 @@ function App() {
               style={{ cursor: 'pointer' }}
               title="Go to Dashboard"
             >
-              <Lottie
-                animationData={progressChartAnimation}
-                loop={true}
-                className="app-logo-lottie"
+              <img
+                src={headerLogoImage}
+                alt="Progress Tracker"
+                className="app-logo-image"
               />
               <div className="header-title-group">
                 <span className="header-title-text">Progress Tracker</span>
@@ -1904,6 +1946,9 @@ function App() {
                       <>
                         <button onMouseDown={() => { setShowNewProject(true); setShowProjectDropdown(false); }}>
                           New Project
+                        </button>
+                        <button onMouseDown={() => { setShowBacklogSetup(true); setShowProjectDropdown(false); }}>
+                          New Backlog Item
                         </button>
                         {/* Import Data feature temporarily disabled
                         <button onMouseDown={() => { setShowImportData(true); setShowProjectDropdown(false); }}>
@@ -2955,6 +3000,9 @@ function App() {
             milestoneDateHistory={milestoneDateHistory}
             onShowTutorial={() => setShowTutorial(true)}
             showHowToSpotlight={showHowToSpotlight}
+            onAddBacklogItem={handleAddBacklogItem}
+            onEditBacklogItem={handleEditBacklogItem}
+            onPromoteBacklogItem={handlePromoteBacklogItem}
           />
         )}
       </div>
@@ -3033,6 +3081,24 @@ function App() {
             <ProjectSetup
               onComplete={handleProjectSetupComplete}
               onCancel={handleProjectSetupCancel}
+              initialData={promotingBacklogItem}
+            />
+          </div>
+        </div>
+      )}
+
+      {showBacklogSetup && (
+        <div
+          className="modal-overlay"
+          onMouseDown={handleModalMouseDown}
+          onClick={(e) => handleModalClick(e, handleBacklogSetupCancel)}
+        >
+          <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+            <ProjectSetup
+              onComplete={handleBacklogSetupComplete}
+              onCancel={handleBacklogSetupCancel}
+              backlogMode={true}
+              initialData={editingBacklogItem}
             />
           </div>
         </div>

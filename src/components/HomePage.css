@@ -1,5 +1,5 @@
 .home-page {
-  padding: 0 20px 20px 20px;
+  padding: 0 20px 60px 20px;
   max-width: none;
   width: 100%;
   margin: 0 auto;
@@ -96,7 +96,7 @@
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
   gap: 8px;
-  height: calc(100vh - 160px);
+  height: calc(100vh - 200px);
   min-height: 500px;
 }
 
@@ -4451,6 +4451,209 @@ html.dark-mode .quadrant-content {
   text-align: center;
 }
 
+/* New flat inconsistency list with age indicators */
+.inconsistency-total-badge {
+  background: #dc2626;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.inconsistency-list-flat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.inconsistency-item {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.inconsistency-item:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.age-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.age-indicator.age-green {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.age-indicator.age-amber {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.age-indicator.age-red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.age-indicator .age-icon {
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+
+.age-indicator .age-days {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.age-indicator .age-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.issue-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.issue-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.issue-title-row .issue-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #1f2937;
+  margin: 0;
+}
+
+.issue-title-row .metric-rag-marker {
+  flex-shrink: 0;
+}
+
+.issue-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.issue-project {
+  color: #6b7280;
+}
+
+.issue-owner {
+  color: #374151;
+  font-weight: 500;
+}
+
+.issue-owner-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  background: #e0e7ff;
+  color: #4338ca;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+/* Owner column - subtle emphasis */
+.issue-owner-column {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+  padding-left: 12px;
+}
+
+.issue-owner-name {
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Dark mode for flat list */
+:root.dark-mode .inconsistency-item {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+:root.dark-mode .inconsistency-item:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+:root.dark-mode .age-indicator.age-green {
+  background: #064e3b;
+  color: #6ee7b7;
+}
+
+:root.dark-mode .age-indicator.age-amber {
+  background: #78350f;
+  color: #fcd34d;
+}
+
+:root.dark-mode .age-indicator.age-red {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+:root.dark-mode .issue-title-row .issue-title {
+  color: #f3f4f6;
+}
+
+:root.dark-mode .issue-project {
+  color: #9ca3af;
+}
+
+:root.dark-mode .issue-owner {
+  color: #d1d5db;
+}
+
+:root.dark-mode .issue-owner-pill {
+  background: #3730a3;
+  color: #c7d2fe;
+}
+
+:root.dark-mode .issue-owner-name {
+  color: #f87171;
+}
+
+:root.dark-mode .inconsistency-total-badge {
+  background: #b91c1c;
+}
+
 .loading-text {
   text-align: center;
   padding: 40px 20px;
@@ -5465,8 +5668,9 @@ html.dark-mode .quadrant-content {
   position: relative;
   display: flex;
   justify-content: center;
-  gap: 8px;
-  padding: 4px 16px;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 6px 16px 4px;
   background: #f3f4f6;
   border-top: 1px solid #e5e7eb;
   overflow: visible;
@@ -5477,22 +5681,24 @@ html.dark-mode .quadrant-content {
 .dock-divider {
   width: 2px;
   min-width: 2px;
-  height: 22px;
+  height: 36px;
   background: #d1d5db;
-  margin: 4px 6px;
+  margin: 4px 8px;
   flex-shrink: 0;
   -webkit-flex-shrink: 0;
+  align-self: center;
 }
 
-/* Icon-only tab buttons */
+/* Icon tab buttons with labels */
 .minimized-tab {
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
+  min-width: 52px;
+  height: auto;
+  padding: 4px 6px 3px;
   background: none;
   border: none;
   border-radius: 6px;
@@ -5504,6 +5710,15 @@ html.dark-mode .quadrant-content {
   flex-shrink: 0;
   backface-visibility: hidden;
   -webkit-font-smoothing: subpixel-antialiased;
+  gap: 2px;
+}
+
+/* Dock label text */
+.dock-label {
+  font-size: 9px;
+  font-weight: 500;
+  white-space: nowrap;
+  line-height: 1.1;
 }
 
 .minimized-tab:hover {
@@ -5530,14 +5745,14 @@ html.dark-mode .quadrant-content {
 
 .minimized-tab .lock-icon {
   position: absolute;
-  bottom: 2px;
+  top: 2px;
   right: 2px;
   font-size: 10px;
   color: #9ca3af;
 }
 
-.minimized-tab svg {
-  font-size: 18px;
+.minimized-tab > svg {
+  font-size: 20px;
 }
 
 /* FontAwesome database icon is slightly larger, scale it down */
@@ -5552,10 +5767,10 @@ html.dark-mode .quadrant-content {
 .minimized-tab[data-panel="timeline"]:hover { background: rgba(139, 92, 246, 0.15); }
 .minimized-tab[data-panel="timeline"].active { background: #8b5cf6; color: white; }
 
-/* Inconsistencies - black */
-.minimized-tab[data-panel="inconsistencies"] { color: #1f2937; }
-.minimized-tab[data-panel="inconsistencies"]:hover { background: rgba(31, 41, 55, 0.15); }
-.minimized-tab[data-panel="inconsistencies"].active { background: #1f2937; color: white; }
+/* Clean Up/Inconsistencies - teal/cyan */
+.minimized-tab[data-panel="inconsistencies"] { color: #0891b2; }
+.minimized-tab[data-panel="inconsistencies"]:hover { background: rgba(8, 145, 178, 0.15); }
+.minimized-tab[data-panel="inconsistencies"].active { background: #0891b2; color: white; }
 
 /* Project Health - pink */
 .minimized-tab[data-panel="projectHealth"] { color: #ec4899; }
@@ -5596,6 +5811,11 @@ html.dark-mode .quadrant-content {
 .minimized-tab[data-panel="performance"]:not(.locked) { color: #fbbf24; }
 .minimized-tab[data-panel="performance"]:hover:not(.locked) { background: rgba(251, 191, 36, 0.15); }
 .minimized-tab[data-panel="performance"].active { background: #f59e0b; color: white; }
+
+/* Backlog - orange */
+.minimized-tab[data-panel="backlog"] { color: #f97316; }
+.minimized-tab[data-panel="backlog"]:hover { background: rgba(249, 115, 22, 0.15); }
+.minimized-tab[data-panel="backlog"].active { background: #f97316; color: white; }
 
 /* Tooltip that appears above on hover */
 .tab-tooltip {
@@ -5643,10 +5863,10 @@ html.dark-mode .quadrant-content {
   background: #4b5563;
 }
 
-/* Dark mode - skull needs light color on dark background */
-:root.dark-mode .minimized-tab[data-panel="inconsistencies"] { color: #e5e7eb; }
-:root.dark-mode .minimized-tab[data-panel="inconsistencies"]:hover { background: rgba(229, 231, 235, 0.15); }
-:root.dark-mode .expanded-panel-fullscreen[data-panel="inconsistencies"] .expanded-panel-icon { color: #e5e7eb; }
+/* Dark mode - Clean Up uses same teal color */
+:root.dark-mode .minimized-tab[data-panel="inconsistencies"] { color: #22d3ee; }
+:root.dark-mode .minimized-tab[data-panel="inconsistencies"]:hover { background: rgba(34, 211, 238, 0.15); }
+:root.dark-mode .expanded-panel-fullscreen[data-panel="inconsistencies"] .expanded-panel-icon { color: #22d3ee; }
 
 /* Dark mode - locked tabs only need opacity adjustment, colors inherited from panel-specific styles */
 :root.dark-mode .minimized-tab.locked {
@@ -5825,6 +6045,7 @@ html.dark-mode .quadrant-content {
 .expanded-panel-fullscreen[data-panel="audit"] .expanded-panel-icon { color: #6366f1; }
 .expanded-panel-fullscreen[data-panel="activeUsers"] .expanded-panel-icon { color: #06b6d4; }
 .expanded-panel-fullscreen[data-panel="performance"] .expanded-panel-icon { color: #fbbf24; }
+.expanded-panel-fullscreen[data-panel="backlog"] .expanded-panel-icon { color: #f97316; }
 
 /* Fullscreen panel controls */
 .expanded-panel-header .fullscreen-switch {

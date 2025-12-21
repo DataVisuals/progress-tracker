@@ -324,6 +324,15 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.app-logo-image {
+  height: 32px;
+  width: auto;
+  background-color: #0075B0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
 .header-right {
   display: flex;
   align-items: center;

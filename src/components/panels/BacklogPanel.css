@@ -1,0 +1,393 @@
+/* BacklogPanel.css */
+
+/* Panel header additions */
+.backlog-quadrant .quadrant-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.backlog-quadrant .quadrant-icon {
+  color: #f97316;
+}
+
+.backlog-count {
+  font-size: 13px;
+  color: #6b7280;
+  margin-left: auto;
+}
+
+.add-backlog-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.add-backlog-btn:hover {
+  background: #2563eb;
+}
+
+.add-backlog-btn.compact {
+  padding: 6px;
+}
+
+.add-backlog-btn.compact svg {
+  margin: 0;
+}
+
+/* Backlog list view - 1 column in panel, 2 columns in fullscreen */
+.backlog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 8px;
+}
+
+.fullscreen-backlog .backlog-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.backlog-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.fullscreen-backlog .backlog-group {
+  display: contents;
+}
+
+.backlog-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #3b82f6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fullscreen-backlog .backlog-group-header {
+  grid-column: 1 / -1;
+}
+
+.portfolio-color-dot,
+.group-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.group-name,
+.portfolio-name {
+  font-weight: 600;
+}
+
+/* Backlog item */
+.backlog-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #f9fafb;
+  border-radius: 8px;
+  transition: background 0.15s;
+  border: 1px solid #e5e7eb;
+  box-sizing: border-box;
+}
+
+.backlog-item:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.backlog-item-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.backlog-priority-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.backlog-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.backlog-item-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.backlog-item-description {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+.backlog-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.backlog-item-manager {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.backlog-item-dates {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* Item actions */
+.backlog-item-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.backlog-item:hover .backlog-item-actions {
+  opacity: 1;
+}
+
+.backlog-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.backlog-action-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.backlog-action-btn.delete:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.backlog-promote-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #059669;
+  background: #d1fae5;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.backlog-promote-btn:hover {
+  background: #a7f3d0;
+  color: #047857;
+}
+
+/* Fullscreen dock view - columns */
+.fullscreen-backlog .backlog-columns {
+  display: flex;
+  gap: 20px;
+  padding: 16px;
+  overflow-x: auto;
+}
+
+.backlog-column {
+  flex: 1;
+  min-width: 300px;
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.backlog-column-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 8px;
+}
+
+.backlog-column-header .portfolio-name {
+  flex: 1;
+}
+
+.backlog-column-header .item-count {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.backlog-column-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.backlog-column-items .backlog-item {
+  margin: 0;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.backlog-column-items .backlog-item:hover {
+  background: #f9fafb;
+}
+
+/* Empty state */
+.backlog-quadrant .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.backlog-quadrant .empty-icon {
+  font-size: 48px;
+  color: #d1d5db;
+  margin-bottom: 12px;
+}
+
+.backlog-quadrant .empty-state p {
+  font-size: 16px;
+  font-weight: 500;
+  color: #374151;
+  margin: 0 0 4px;
+}
+
+.backlog-quadrant .empty-state span {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.empty-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.empty-add-btn:hover {
+  background: #2563eb;
+}
+
+/* Dark mode */
+:root.dark-mode .backlog-item {
+  background: #374151;
+}
+
+:root.dark-mode .backlog-item:hover {
+  background: #4b5563;
+}
+
+:root.dark-mode .backlog-item-name {
+  color: #f3f4f6;
+}
+
+:root.dark-mode .backlog-item-description {
+  color: #d1d5db;
+}
+
+:root.dark-mode .backlog-item-manager {
+  color: #6b7280;
+}
+
+:root.dark-mode .backlog-group-header {
+  color: #9ca3af;
+}
+
+:root.dark-mode .backlog-action-btn {
+  color: #9ca3af;
+}
+
+:root.dark-mode .backlog-action-btn:hover {
+  background: #4b5563;
+  color: #f3f4f6;
+}
+
+:root.dark-mode .backlog-action-btn.delete:hover {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+:root.dark-mode .backlog-promote-btn {
+  color: #34d399;
+  background: #064e3b;
+}
+
+:root.dark-mode .backlog-promote-btn:hover {
+  background: #065f46;
+  color: #6ee7b7;
+}
+
+:root.dark-mode .backlog-column {
+  background: #374151;
+}
+
+:root.dark-mode .backlog-column-header {
+  color: #f3f4f6;
+  border-color: #4b5563;
+}
+
+:root.dark-mode .backlog-column-items .backlog-item {
+  background: #1f2937;
+}
+
+:root.dark-mode .backlog-column-items .backlog-item:hover {
+  background: #374151;
+}
+
+:root.dark-mode .backlog-count {
+  color: #9ca3af;
+}

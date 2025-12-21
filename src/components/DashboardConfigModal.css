@@ -1,13 +1,14 @@
 /* Dashboard Config Modal */
 .modal-content.dashboard-config-modal {
-  max-width: 1600px;
+  max-width: 1800px;
   width: 98vw;
-  max-height: 96vh;
+  max-height: 98vh;
+  min-height: 80vh;
 }
 
 .dashboard-config-modal .modal-body {
-  padding: 0 32px;
-  max-height: 88vh;
+  padding: 0 40px 20px;
+  max-height: 90vh;
   overflow-y: auto;
 }
 
@@ -126,21 +127,53 @@
   background: #00aeef;
 }
 
-/* Panel Slots Grid */
+/* Panel Slots Grid - matches actual dashboard layout */
 .panel-slots-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(550px, 1fr));
-  gap: 28px;
+  gap: 12px;
+}
+
+/* 2x2 Grid */
+.panel-slots-grid.layout-grid-2x2 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+/* 2 Columns */
+.panel-slots-grid.layout-grid-2x1 {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* 2 Rows */
+.panel-slots-grid.layout-grid-1x2 {
+  grid-template-columns: 1fr;
+}
+
+/* Single Panel */
+.panel-slots-grid.layout-grid-1x1 {
+  grid-template-columns: 1fr;
+  max-width: 50%;
+}
+
+/* 2x2 + Full Width */
+.panel-slots-grid.layout-grid-2x2-1x1 {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* 3x2 Grid */
+.panel-slots-grid.layout-grid-3x2 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
 }
 
 .panel-slot-wrapper {
   background: #f9fafb;
   border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 20px;
+  border-radius: 6px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 .panel-slot-wrapper.full-width {
@@ -150,8 +183,8 @@
 .slot-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding-bottom: 8px;
+  gap: 6px;
+  padding-bottom: 6px;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -176,9 +209,9 @@
   border-radius: 12px;
 }
 
-/* Current Selection */
+/* Current Selection - hidden as selection is shown via thumbnail highlighting */
 .current-selection {
-  margin-bottom: 12px;
+  display: none;
 }
 
 .selected-panel-card {
@@ -218,8 +251,8 @@
 /* Panel Thumbnails Grid */
 .panel-thumbnails {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
 }
 
 .panel-thumbnail {
@@ -227,14 +260,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 20px 14px;
+  gap: 4px;
+  padding: 8px 6px;
   background: white;
   border: 2px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
-  min-height: 110px;
+  min-height: 58px;
 }
 
 .panel-thumbnail:hover {
@@ -259,7 +292,7 @@
 }
 
 .thumbnail-icon {
-  font-size: 36px;
+  font-size: 20px;
   color: #00aeef;
   transition: transform 0.2s;
 }

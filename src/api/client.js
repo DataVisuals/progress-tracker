@@ -265,6 +265,14 @@ export const api = {
   updateSpace: (id, data) => client.put(`/spaces/${id}`, data),
   deleteSpace: (id) => client.delete(`/spaces/${id}`),
 
+  // Backlog
+  getBacklog: (spaceId) => client.get(`/backlog${spaceId ? `?space_id=${spaceId}` : ''}`),
+  getBacklogItem: (id) => client.get(`/backlog/${id}`),
+  createBacklogItem: (data) => client.post('/backlog', data),
+  updateBacklogItem: (id, data) => client.put(`/backlog/${id}`, data),
+  deleteBacklogItem: (id) => client.delete(`/backlog/${id}`),
+  promoteBacklogItem: (id) => client.post(`/backlog/${id}/promote`),
+
   // User Preferences
   updateDefaultSpace: (spaceId) => client.put('/auth/default-space', { default_space_id: spaceId }),
 };
