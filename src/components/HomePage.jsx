@@ -1199,7 +1199,8 @@ const HomePage = ({
   };
 
   const searchFilteredProjects = useMemo(() => {
-    const projectList = Object.values(projects);
+    // Use Object.entries to get ID (key) along with project data (value)
+    const projectList = Object.entries(projects).map(([id, project]) => ({ ...project, id }));
     if (!projectList.length) return [];
     return projectList
       .filter(p => fuzzyMatch(p.name, searchTerm))
@@ -1232,23 +1233,18 @@ const HomePage = ({
   };
 
   const handleSearchKeyDown = (e) => {
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setSearchSelectedIndex(prev => prev < searchFilteredProjects.length - 1 ? prev + 1 : prev);
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setSearchSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (searchFilteredProjects[searchSelectedIndex]) {
-          onNavigateToProject(searchFilteredProjects[searchSelectedIndex].id);
-        }
-        break;
-      default:
-        break;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSearchSelectedIndex(prev => prev < searchFilteredProjects.length - 1 ? prev + 1 : prev);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSearchSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const selectedProject = searchFilteredProjects[searchSelectedIndex] || searchFilteredProjects[0];
+      if (selectedProject && selectedProject.id) {
+        onNavigateToProject(selectedProject.id);
+      }
     }
   };
 

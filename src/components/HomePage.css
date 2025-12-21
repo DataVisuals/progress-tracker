@@ -158,9 +158,6 @@
 .search-container {
   width: 100%;
   max-width: 580px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
 .search-box {
@@ -168,18 +165,15 @@
   width: 100%;
   display: flex;
   align-items: center;
-  background: white;
-  border: 1px solid #dfe1e5;
-  border-radius: 24px;
-  padding: 12px 20px;
-  box-shadow: 0 1px 6px rgba(32, 33, 36, 0.08);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid #d1d5db;
+  padding: 8px 4px;
+  transition: border-color 0.2s ease;
 }
 
-.search-box:hover,
 .search-box:focus-within {
-  box-shadow: 0 2px 8px rgba(32, 33, 36, 0.15);
-  border-color: rgba(0, 0, 0, 0);
+  border-bottom-color: #00aeef;
 }
 
 .search-icon {
@@ -304,13 +298,12 @@
 
 /* Dark mode for search layout */
 :root.dark-mode .search-box {
-  background: #1f2937;
-  border-color: #374151;
+  background: transparent;
+  border-bottom-color: #4b5563;
 }
 
-:root.dark-mode .search-box:hover,
 :root.dark-mode .search-box:focus-within {
-  border-color: #4b5563;
+  border-bottom-color: #00aeef;
 }
 
 :root.dark-mode .search-icon {
