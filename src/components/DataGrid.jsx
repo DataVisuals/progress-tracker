@@ -463,10 +463,12 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
                       value={row.complete}
                       onChange={(e) => handleCellChange(row.id, 'complete', parseFloat(e.target.value) || 0)}
                       onBlur={() => handleCellBlur(row.id, 'complete')}
-                      className={isFuture ? 'readonly-input' : ''}
+                      className={isFuture ? 'readonly-input future-period' : ''}
                       style={{width: '100%'}}
                       readOnly={isFuture}
                       disabled={isFuture}
+                      title={isFuture ? 'Future periods cannot have completion values until the period has started' : ''}
+                      placeholder={isFuture ? 'Future' : ''}
                     />
                   </td>
                   <td>
@@ -600,7 +602,8 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
                   <label htmlFor="new-metric-target">Final Target: *</label>
                   <input
                     id="new-metric-target"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={newMetricConfig.final_target}
                     onChange={(e) => setNewMetricConfig({...newMetricConfig, final_target: parseFloat(e.target.value) || 0})}
                     placeholder="100"
@@ -637,8 +640,8 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
                   <label htmlFor="new-metric-amber-tolerance">Amber Tolerance (%):</label>
                   <input
                     id="new-metric-amber-tolerance"
-                    type="number"
-                    step="0.1"
+                    type="text"
+                    inputMode="decimal"
                     value={newMetricConfig.amber_tolerance}
                     onChange={(e) => setNewMetricConfig({...newMetricConfig, amber_tolerance: parseFloat(e.target.value) || 5.0})}
                     placeholder="5.0"
@@ -649,8 +652,8 @@ const DataGrid = ({ data, metrics, projectMetrics = [], onDataChange, onClose, p
                   <label htmlFor="new-metric-red-tolerance">Red Tolerance (%):</label>
                   <input
                     id="new-metric-red-tolerance"
-                    type="number"
-                    step="0.1"
+                    type="text"
+                    inputMode="decimal"
                     value={newMetricConfig.red_tolerance}
                     onChange={(e) => setNewMetricConfig({...newMetricConfig, red_tolerance: parseFloat(e.target.value) || 10.0})}
                     placeholder="10.0"

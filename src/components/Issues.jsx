@@ -140,7 +140,7 @@ const Issues = ({ projectId, canEdit = false }) => {
 
   // Group by status
   const openIssues = issues.filter(i => i.status === 'open' || i.status === 'in_progress');
-  const closedIssues = issues.filter(i => i.status === 'closed');
+  const closedIssues = issues.filter(i => i.status === 'closed' || i.status === 'resolved');
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -154,7 +154,8 @@ const Issues = ({ projectId, canEdit = false }) => {
   const getStatusLabel = (status) => {
     switch (status) {
       case 'in_progress': return 'In Progress';
-      case 'closed': return 'Resolved';
+      case 'closed': return 'Closed';
+      case 'resolved': return 'Resolved';
       default: return 'Open';
     }
   };
@@ -221,7 +222,7 @@ const Issues = ({ projectId, canEdit = false }) => {
 
           {closedIssues.length > 0 && (
             <div className="issues-section closed-section">
-              <h4 className="section-title">Resolved Issues ({closedIssues.length})</h4>
+              <h4 className="section-title">Closed Issues ({closedIssues.length})</h4>
               <div className="issues-list">
                 {closedIssues.map((issue) => (
                   <div key={issue.id} className="issue-item closed">
@@ -230,7 +231,7 @@ const Issues = ({ projectId, canEdit = false }) => {
                         {issue.priority}
                       </div>
                       <div className="issue-title">{issue.title}</div>
-                      <div className="issue-status" data-status="closed">Resolved</div>
+                      <div className="issue-status" data-status={issue.status}>{getStatusLabel(issue.status)}</div>
                       {canEdit && (
                         <div className="issue-actions">
                           <button className="edit-issue-btn" onClick={() => handleStartEdit(issue)} title="Edit">

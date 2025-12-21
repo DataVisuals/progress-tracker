@@ -86,9 +86,10 @@ const getRedMetrics = (data, metricsList) => {
 
 // Exported helper to calculate health scores for all dimensions
 // Returns { overall, projectDescribed, metricsDescribed, metricCoverage, metricManagement, projectControl, contentClarity }
-// contentClarity evaluates project description, metric descriptions, and period commentary
+// contentClarity evaluates ALL project text: descriptions, commentary, recovery plans, risks, issues
 // projectLinks can be an array of links OR a number (link_count from API)
-export const calculateHealthScores = (project, projectData, metrics, recoveryPlans = [], projectLinks = []) => {
+// craids is an optional array of risks/issues for content clarity analysis
+export const calculateHealthScores = (project, projectData, metrics, recoveryPlans = [], projectLinks = [], craids = []) => {
   if (!project || !projectData || !metrics) {
     return {
       overall: 0,
@@ -124,23 +125,14 @@ export const calculateHealthScores = (project, projectData, metrics, recoveryPla
     projectDescribedScore += Math.round((linkCount / 3) * 50);
   }
 
-  // 2. Metrics Described Score (metric-level documentation)
+  // 2. Metrics Described Score (metric-level documentation only)
+  // This dimension is purely about documentation quality, not metric status
   let metricsDescribedScore = 0;
   if (metrics.length > 0) {
     const metricsWithDesc = metrics.filter(m => m.description && m.description.trim().length > 5).length;
-    metricsDescribedScore += Math.round((metricsWithDesc / metrics.length) * 50);
+    metricsDescribedScore = Math.round((metricsWithDesc / metrics.length) * 100);
   } else {
-    metricsDescribedScore += 50; // No metrics = full points for this part
-  }
-  const redMetrics = getRedMetrics(projectData, metrics);
-  if (redMetrics.length > 0) {
-    const activeRecoveryPlans = recoveryPlans.filter(p => p.status === 'active');
-    const redMetricsWithPlans = redMetrics.filter(m =>
-      activeRecoveryPlans.some(p => p.metric_id === m.id)
-    ).length;
-    metricsDescribedScore += Math.round((redMetricsWithPlans / redMetrics.length) * 50);
-  } else {
-    metricsDescribedScore += 50;
+    metricsDescribedScore = 100; // No metrics = full points
   }
 
   // 2. Metric Coverage Score
@@ -195,65 +187,36 @@ export const calculateHealthScores = (project, projectData, metrics, recoveryPla
   }
 
   // 4. Project Control Score
-  // Only evaluate periods that have ENDED and have data entered
-  let projectControlScore = 100;
-  if (metrics.length > 0 && projectData.length > 0) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    let totalPeriods = 0;
-    let greenPeriods = 0;
-    let amberPeriods = 0;
-    let redPeriods = 0;
-
-    metrics.forEach(metric => {
-      const metricPeriods = projectData.filter(p => p.metric_id === metric.id);
-      // Only include periods that have ENDED and have complete data
-      const endedPeriods = metricPeriods.filter(p => {
-        const frequency = p.frequency || 'monthly';
-        return hasPeriodEnded(p.reporting_date, frequency, today) &&
-               p.complete !== null && p.complete !== undefined;
-      });
-
-      endedPeriods.forEach(period => {
-        const complete = parseFloat(period.complete) || 0;
-        const expected = parseFloat(period.expected) || 0;
-
-        if (expected === 0) return;
-
-        const variance = complete - expected;
-        const variancePercent = Math.abs((variance / expected) * 100);
-        const redTolerance = parseFloat(period.red_tolerance) || 10.0;
-        const amberTolerance = parseFloat(period.amber_tolerance) || 5.0;
-
-        totalPeriods++;
-
-        if (variance >= 0 || variancePercent <= amberTolerance) {
-          greenPeriods++;
-        } else if (variancePercent <= redTolerance) {
-          amberPeriods++;
-        } else {
-          redPeriods++;
-        }
-      });
-    });
-
-    if (totalPeriods > 0) {
-      projectControlScore = Math.round(
-        ((greenPeriods * 100) + (amberPeriods * 50) + (redPeriods * 0)) / totalPeriods
-      );
-    }
+  // Measures whether red metrics have recovery plans
+  // Neutral if no red metrics (not rewarded, not penalized)
+  // Only penalized if red metrics exist WITHOUT recovery plans
+  let projectControlScore = 100; // Default: no action needed
+  const redMetricsList = getRedMetrics(projectData, metrics);
+  if (redMetricsList.length > 0) {
+    const activeRecoveryPlans = recoveryPlans.filter(p => p.status === 'active');
+    const redMetricsWithPlans = redMetricsList.filter(m =>
+      activeRecoveryPlans.some(p => p.metric_id === m.id)
+    ).length;
+    // Score based on recovery plan coverage of red metrics
+    projectControlScore = Math.round((redMetricsWithPlans / redMetricsList.length) * 100);
   }
 
   // 5. Content Clarity Score
-  // Evaluate clarity of project description, metric descriptions, and period commentary
-  let contentClarityScore = 50; // Default if no commentary
+  // Evaluate clarity of ALL text: descriptions, commentary, recovery plans, risks, issues
+  let contentClarityScore = 50; // Default if no text to analyze
   const textToAnalyze = [];
 
   // Include project description
   if (project.description && project.description.trim().length > 10) {
     textToAnalyze.push(project.description);
   }
+
+  // Include metric descriptions
+  metrics.forEach(metric => {
+    if (metric.description && metric.description.trim().length > 10) {
+      textToAnalyze.push(metric.description);
+    }
+  });
 
   // Include period commentary
   projectData.forEach(period => {
@@ -262,10 +225,23 @@ export const calculateHealthScores = (project, projectData, metrics, recoveryPla
     }
   });
 
-  // Include metric descriptions
-  metrics.forEach(metric => {
-    if (metric.description && metric.description.trim().length > 10) {
-      textToAnalyze.push(metric.description);
+  // Include recovery plan descriptions
+  recoveryPlans.forEach(plan => {
+    if (plan.title && plan.title.trim().length > 5) {
+      textToAnalyze.push(plan.title);
+    }
+    if (plan.description && plan.description.trim().length > 10) {
+      textToAnalyze.push(plan.description);
+    }
+  });
+
+  // Include risks and issues (CRAIDs)
+  craids.forEach(craid => {
+    if (craid.title && craid.title.trim().length > 5) {
+      textToAnalyze.push(craid.title);
+    }
+    if (craid.description && craid.description.trim().length > 10) {
+      textToAnalyze.push(craid.description);
     }
   });
 
@@ -292,8 +268,8 @@ export const calculateHealthScores = (project, projectData, metrics, recoveryPla
 };
 
 // Backwards-compatible export that returns just the overall score
-export const calculateHealthScore = (project, projectData, metrics, recoveryPlans = [], projectLinks = []) => {
-  return calculateHealthScores(project, projectData, metrics, recoveryPlans, projectLinks).overall;
+export const calculateHealthScore = (project, projectData, metrics, recoveryPlans = [], projectLinks = [], craids = []) => {
+  return calculateHealthScores(project, projectData, metrics, recoveryPlans, projectLinks, craids).overall;
 };
 
 const ProjectHealthModal = ({
@@ -302,11 +278,12 @@ const ProjectHealthModal = ({
   metrics,
   recoveryPlans = [],
   projectLinks = [],
+  craids = [],
   onClose
 }) => {
   // Use the shared calculation function to ensure consistency
   const healthScores = useMemo(() => {
-    const scores = calculateHealthScores(project, projectData, metrics, recoveryPlans, projectLinks);
+    const scores = calculateHealthScores(project, projectData, metrics, recoveryPlans, projectLinks, craids);
     return {
       projectDescribed: scores.projectDescribed,
       metricsDescribed: scores.metricsDescribed,
@@ -315,7 +292,7 @@ const ProjectHealthModal = ({
       projectControl: scores.projectControl,
       contentClarity: scores.contentClarity
     };
-  }, [project, projectData, metrics, recoveryPlans, projectLinks]);
+  }, [project, projectData, metrics, recoveryPlans, projectLinks, craids]);
 
   // Prepare data for radar chart (6 dimensions)
   const radarData = [
@@ -410,17 +387,13 @@ const ProjectHealthModal = ({
             label: `Metric descriptions (${metricsWithDesc}/${metrics?.length || 0})`,
             met: metrics?.length === 0 || metricsWithDesc === metrics?.length,
             tooltip: metrics?.length === 0
-              ? 'No metrics defined - full 50 points awarded.'
-              : `Each metric with description (>5 chars) contributes. ${metricsWithDesc}/${metrics.length} = ${Math.round((metricsWithDesc / metrics.length) * 50)} points of 50.`
+              ? 'No metrics defined yet.'
+              : `Each metric should have a description explaining what it measures. ${metricsWithDesc}/${metrics.length} metrics have descriptions.`
           },
           {
-            label: redMetricsList.length === 0
-              ? 'No red metrics (full points)'
-              : `Recovery plans (${redMetricsWithPlans}/${redMetricsList.length} red metrics)`,
-            met: redMetricsList.length === 0 || redMetricsWithPlans === redMetricsList.length,
-            tooltip: redMetricsList.length === 0
-              ? 'No red metrics - full 50 points awarded.'
-              : `${redMetricsList.length} red metric${redMetricsList.length !== 1 ? 's' : ''}, ${redMetricsWithPlans} with active recovery plan${redMetricsWithPlans !== 1 ? 's' : ''}. Points based on coverage.`
+            label: 'Clear explanation of each metric',
+            met: metricsWithDesc === (metrics?.length || 0),
+            tooltip: 'Descriptions help stakeholders understand what each metric tracks and why it matters.'
           }
         ];
       case 'Metric Coverage':
@@ -455,29 +428,38 @@ const ProjectHealthModal = ({
           }
         ];
       case 'Project Control':
+        const redMetricsForControl = getRedMetrics(projectData, metrics);
+        const activePlansForControl = recoveryPlans.filter(p => p.status === 'active');
+        const coveredRedMetrics = redMetricsForControl.filter(m =>
+          activePlansForControl.some(p => p.metric_id === m.id)
+        ).length;
         return [
           {
-            label: 'Metrics staying on track',
-            met: healthScores.projectControl >= 80,
-            tooltip: 'Based on variance from expected values. Green metrics = high score, red metrics = low score.'
+            label: redMetricsForControl.length === 0
+              ? 'No recovery plans required'
+              : `Recovery plans (${coveredRedMetrics}/${redMetricsForControl.length} red metrics)`,
+            met: redMetricsForControl.length === 0 || coveredRedMetrics === redMetricsForControl.length,
+            tooltip: redMetricsForControl.length === 0
+              ? 'No metrics currently need recovery plans.'
+              : `${redMetricsForControl.length} metric${redMetricsForControl.length !== 1 ? 's are' : ' is'} red. ${coveredRedMetrics} ${coveredRedMetrics !== 1 ? 'have' : 'has'} active recovery plans.`
           },
           {
-            label: 'Minimal red/amber periods',
-            met: healthScores.projectControl >= 60,
-            tooltip: 'Fewer negative variances in recent periods improves this score.'
+            label: 'Issues being actively managed',
+            met: healthScores.projectControl >= 80,
+            tooltip: 'Red metrics should have recovery plans explaining how they will get back on track.'
           }
         ];
       case 'Content Clarity':
         return [
           {
-            label: 'Clear, concise writing',
-            met: healthScores.contentClarity >= 80,
-            tooltip: 'Evaluates project description, metric descriptions, and commentary for clarity. Rewards concise sentences (10-20 words) and plain language.'
+            label: 'All project text evaluated',
+            met: healthScores.contentClarity >= 60,
+            tooltip: 'Analyzes: project description, metric descriptions, period commentary, recovery plans, risks, and issues. Rewards clear, concise writing.'
           },
           {
-            label: 'Minimal jargon & abbreviations',
-            met: healthScores.contentClarity >= 60,
-            tooltip: 'Penalizes business jargon (synergy, leverage, etc.) and unexplained abbreviations. Defined abbreviations like "PMO (Project Management Office)" are OK.'
+            label: 'Plain language, minimal jargon',
+            met: healthScores.contentClarity >= 80,
+            tooltip: 'Penalizes business jargon (synergy, leverage, etc.) and unexplained abbreviations. Rewards short sentences (10-20 words) and plain language.'
           }
         ];
       default:

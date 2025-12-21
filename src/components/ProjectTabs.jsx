@@ -1,5 +1,5 @@
 import React from 'react';
-import { MdGridView, MdFeedback, MdWarning, MdFlag, MdComment } from 'react-icons/md';
+import { MdGridView, MdFeedback, MdWarning, MdFlag, MdComment, MdBugReport, MdPriorityHigh } from 'react-icons/md';
 import './ProjectTabs.css';
 
 const ProjectTabs = ({
@@ -9,6 +9,8 @@ const ProjectTabs = ({
   recoveryPlanCount = 0,
   milestonesCount = 0,
   commentaryCount = 0,
+  risksCount = 0,
+  issuesCount = 0,
   needsRecoveryPlan = false,
   currentUser
 }) => {
@@ -39,6 +41,18 @@ const ProjectTabs = ({
       label: 'Recovery Plans',
       icon: <MdWarning />,
       badge: recoveryPlanCount > 0 ? recoveryPlanCount : null
+    },
+    {
+      id: 'risks',
+      label: 'Risks',
+      icon: <MdPriorityHigh />,
+      badge: risksCount > 0 ? risksCount : null
+    },
+    {
+      id: 'issues',
+      label: 'Issues',
+      icon: <MdBugReport />,
+      badge: issuesCount > 0 ? issuesCount : null
     }
   ];
 

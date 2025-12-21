@@ -318,6 +318,18 @@
   cursor: not-allowed !important;
 }
 
+/* Future period cells - clearly indicate why they're not editable */
+.future-period {
+  background-color: #fef3c7 !important;
+  color: #92400e !important;
+  font-style: italic;
+}
+
+.future-period::placeholder {
+  color: #b45309 !important;
+  opacity: 1;
+}
+
 .delete-row-btn {
   background-color: #ef4444;
   color: white;
@@ -693,6 +705,15 @@
 :root.dark-mode .readonly-input {
   background-color: #374151 !important;
   color: #9ca3af !important;
+}
+
+:root.dark-mode .future-period {
+  background-color: #78350f !important;
+  color: #fef3c7 !important;
+}
+
+:root.dark-mode .future-period::placeholder {
+  color: #fcd34d !important;
 }
 
 :root.dark-mode .data-grid-actions {

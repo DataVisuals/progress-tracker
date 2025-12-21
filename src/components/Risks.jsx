@@ -140,7 +140,7 @@ const Risks = ({ projectId, canEdit = false }) => {
 
   // Group by status
   const openRisks = risks.filter(r => r.status === 'open' || r.status === 'in_progress');
-  const closedRisks = risks.filter(r => r.status === 'closed');
+  const closedRisks = risks.filter(r => r.status === 'closed' || r.status === 'resolved');
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -155,6 +155,7 @@ const Risks = ({ projectId, canEdit = false }) => {
     switch (status) {
       case 'in_progress': return 'Mitigating';
       case 'closed': return 'Closed';
+      case 'resolved': return 'Resolved';
       default: return 'Open';
     }
   };
@@ -230,7 +231,7 @@ const Risks = ({ projectId, canEdit = false }) => {
                         {risk.priority}
                       </div>
                       <div className="risk-title">{risk.title}</div>
-                      <div className="risk-status" data-status="closed">Closed</div>
+                      <div className="risk-status" data-status={risk.status}>{getStatusLabel(risk.status)}</div>
                       {canEdit && (
                         <div className="risk-actions">
                           <button className="edit-risk-btn" onClick={() => handleStartEdit(risk)} title="Edit">

@@ -21,8 +21,7 @@ import { RAG_COLORS } from '../constants/colors';
 import TimeTravel from './TimeTravel';
 import Feedback from './Feedback';
 import RecoveryPlans from './RecoveryPlans';
-import Risks from './Risks';
-import Issues from './Issues';
+// Risks and Issues moved to project-level tabs
 // import CRAIDs from './CRAIDs'; // DISABLED: CRAIDs feature hidden
 import Lottie from 'lottie-react';
 import fixingAnimation from '../assets/fixing-animation.json';
@@ -452,11 +451,9 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
   const [highlightedSeries, setHighlightedSeries] = useState(null);
   const [isCommentaryCollapsed, setIsCommentaryCollapsed] = useState(true);
   const [isDataTableCollapsed, setIsDataTableCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState('table'); // 'table', 'commentary', 'feedback', 'recovery', 'timetravel', 'risks', 'issues', or 'dependencies'
+  const [activeTab, setActiveTab] = useState('table'); // 'table', 'commentary', 'feedback', 'recovery', 'timetravel'
   const [feedbackData, setFeedbackData] = useState([]); // For checking recent feedback
   const [recoveryPlansData, setRecoveryPlansData] = useState([]); // For checking recent recovery plans
-  const [openRisksCount, setOpenRisksCount] = useState(0); // For badge on Risks tab
-  const [openIssuesCount, setOpenIssuesCount] = useState(0); // For badge on Issues tab
   const chartContainerRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [periodsPerPage] = useState(12); // Show 12 periods at a time
@@ -652,25 +649,6 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     loadRecoveryPlans();
   }, [projectId]);
 
-  // Load CRAID data for risk/issue counts
-  useEffect(() => {
-    const loadCraidCounts = async () => {
-      if (!projectId) return;
-      try {
-        const response = await api.getProjectCRAIDs(projectId);
-        const craids = response.data;
-        const openRisks = craids.filter(c => c.type === 'risk' && c.status !== 'closed').length;
-        const openIssues = craids.filter(c => c.type === 'issue' && c.status !== 'closed').length;
-        setOpenRisksCount(openRisks);
-        setOpenIssuesCount(openIssues);
-      } catch (err) {
-        console.error('Failed to load CRAID counts:', err);
-        setOpenRisksCount(0);
-        setOpenIssuesCount(0);
-      }
-    };
-    loadCraidCounts();
-  }, [projectId]);
 
   // Helper function to check if there are recent items (within last 24 hours)
   const hasRecentComments = () => {
@@ -2223,28 +2201,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
               Time Travel
             </button>
           )}
-          {projectId && (
-            <button
-              className={`tab-button ${activeTab === 'risks' ? 'active' : ''}`}
-              onClick={() => setActiveTab('risks')}
-            >
-              Risks
-              {openRisksCount > 0 && (
-                <span className="tab-badge risk-badge">{openRisksCount}</span>
-              )}
-            </button>
-          )}
-          {projectId && (
-            <button
-              className={`tab-button ${activeTab === 'issues' ? 'active' : ''}`}
-              onClick={() => setActiveTab('issues')}
-            >
-              Issues
-              {openIssuesCount > 0 && (
-                <span className="tab-badge issue-badge">{openIssuesCount}</span>
-              )}
-            </button>
-          )}
+          {/* Risks and Issues moved to project-level tabs */}
           {/* DISABLED: CRAIDs/Dependencies feature hidden
           <button
             className={`tab-button ${activeTab === 'dependencies' ? 'active' : ''}`}
@@ -2533,19 +2490,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           </div>
         )}
 
-        {/* Risks Tab Content */}
-        {activeTab === 'risks' && projectId && (
-          <div className="tab-content">
-            <Risks projectId={projectId} canEdit={allowDataEdits} />
-          </div>
-        )}
-
-        {/* Issues Tab Content */}
-        {activeTab === 'issues' && projectId && (
-          <div className="tab-content">
-            <Issues projectId={projectId} canEdit={allowDataEdits} />
-          </div>
-        )}
+        {/* Risks and Issues moved to project-level tabs */}
 
         {/* DISABLED: CRAIDs/Dependencies feature hidden
         {activeTab === 'dependencies' && projectId && (

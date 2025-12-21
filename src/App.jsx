@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Build timestamp - updated automatically before each commit to gh
-const BUILD_TIMESTAMP = '2025-12-21 20:50:51';
+const BUILD_TIMESTAMP = '2025-12-21 21:32:13';
 
 import Select from 'react-select';
 import 'react-quill/dist/quill.snow.css';
@@ -18,6 +18,8 @@ import MetricTabs from './components/MetricTabs';
 import ProjectTabs from './components/ProjectTabs';
 import Feedback from './components/Feedback';
 import RecoveryPlans from './components/RecoveryPlans';
+import Risks from './components/Risks';
+import Issues from './components/Issues';
 import Milestones from './components/Milestones';
 import ProjectTimelineBar from './components/ProjectTimelineBar';
 import DataGrid from './components/DataGrid';
@@ -104,6 +106,9 @@ function App() {
   const [projectDateHistory, setProjectDateHistory] = useState({}); // { recordId: { dateFieldsChanged: {...} } }
   const [milestoneDateHistory, setMilestoneDateHistory] = useState({}); // { recordId: { dateFieldsChanged: {...} } }
   const [projectFeedbackCount, setProjectFeedbackCount] = useState(0);
+  const [projectRisksCount, setProjectRisksCount] = useState(0);
+  const [projectIssuesCount, setProjectIssuesCount] = useState(0);
+  const [projectCraids, setProjectCraids] = useState([]);
   const [projectMilestonesCount, setProjectMilestonesCount] = useState(0);
   const [projectMilestones, setProjectMilestones] = useState([]);
   const [projectComments, setProjectComments] = useState([]);
@@ -514,6 +519,7 @@ function App() {
       loadProjectLinks();
       loadProjectRecoveryPlans();
       loadProjectFeedbackCount();
+      loadProjectCraidCounts();
       loadProjectMilestonesCount();
       loadProjectComments();
       loadRecentProjectChanges();
@@ -686,6 +692,25 @@ function App() {
     } catch (err) {
       console.error('Failed to load feedback count:', err);
       setProjectFeedbackCount(0);
+    }
+  };
+
+  const loadProjectCraidCounts = async () => {
+    try {
+      const response = await api.getProjectCRAIDs(selectedProject);
+      const craids = response.data || [];
+      // Store full CRAIDs list for content clarity analysis
+      setProjectCraids(craids);
+      // Count as open only if status is 'open' or 'in_progress' (not 'closed' or 'resolved')
+      const openRisks = craids.filter(c => c.type === 'risk' && (c.status === 'open' || c.status === 'in_progress')).length;
+      const openIssues = craids.filter(c => c.type === 'issue' && (c.status === 'open' || c.status === 'in_progress')).length;
+      setProjectRisksCount(openRisks);
+      setProjectIssuesCount(openIssues);
+    } catch (err) {
+      console.error('Failed to load CRAID counts:', err);
+      setProjectCraids([]);
+      setProjectRisksCount(0);
+      setProjectIssuesCount(0);
     }
   };
 
@@ -2503,6 +2528,8 @@ function App() {
               recoveryPlanCount={projectRecoveryPlans.length}
               milestonesCount={projectMilestonesCount}
               commentaryCount={projectComments.length}
+              risksCount={projectRisksCount}
+              issuesCount={projectIssuesCount}
               needsRecoveryPlan={needsRecoveryPlan}
               currentUser={currentUser}
             />
@@ -2977,6 +3004,24 @@ function App() {
                 </div>
               </div>
             )}
+
+            {selectedProjectTab === 'risks' && (
+              <div style={{ marginTop: '20px' }}>
+                <Risks
+                  projectId={parseInt(selectedProject)}
+                  canEdit={canEdit()}
+                />
+              </div>
+            )}
+
+            {selectedProjectTab === 'issues' && (
+              <div style={{ marginTop: '20px' }}>
+                <Issues
+                  projectId={parseInt(selectedProject)}
+                  canEdit={canEdit()}
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -3306,6 +3351,7 @@ function App() {
           metrics={projectMetrics}
           recoveryPlans={projectRecoveryPlans}
           projectLinks={projectLinks}
+          craids={projectCraids}
           onClose={() => setShowProjectHealth(false)}
         />
       )}
