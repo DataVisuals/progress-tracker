@@ -1202,7 +1202,16 @@ const HomePage = ({
     // Use Object.entries to get ID (key) along with project data (value)
     const projectList = Object.entries(projects).map(([id, project]) => ({ ...project, id }));
     if (!projectList.length) return [];
-    return projectList
+
+    // Filter by space if a space is selected
+    const spaceFiltered = selectedSpace === 'all'
+      ? projectList
+      : projectList.filter(p => {
+          const portfolio = portfolios?.find(pf => pf.id === p.portfolio_id);
+          return portfolio?.space_id === Number(selectedSpace);
+        });
+
+    return spaceFiltered
       .filter(p => fuzzyMatch(p.name, searchTerm))
       .map(p => ({
         ...p,
@@ -1213,7 +1222,7 @@ const HomePage = ({
       }))
       .sort((a, b) => b.score !== a.score ? b.score - a.score : a.name.localeCompare(b.name))
       .slice(0, 10);
-  }, [projects, portfolios, spaces, searchTerm]);
+  }, [projects, portfolios, spaces, searchTerm, selectedSpace]);
 
   const highlightMatch = (text, search) => {
     if (!search) return text;
@@ -1542,6 +1551,12 @@ const HomePage = ({
                 autoFocus
               />
             </div>
+            {selectedSpace !== 'all' && (
+              <div className="search-space-warning">
+                <MdFilterList className="warning-icon" />
+                Searching within {spaces.find(s => s.id === Number(selectedSpace))?.name || 'selected space'}
+              </div>
+            )}
             {searchTerm && (
               <div className="search-results">
                 {searchFilteredProjects.length === 0 ? (

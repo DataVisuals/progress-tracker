@@ -274,6 +274,24 @@
   color: #6b7280;
 }
 
+.search-space-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #92400e;
+}
+
+.search-space-warning .warning-icon {
+  font-size: 16px;
+  color: #f59e0b;
+}
+
 .search-hint {
   margin-top: 16px;
   font-size: 12px;
@@ -359,6 +377,16 @@
   background: #374151;
   border-color: #4b5563;
   color: #9ca3af;
+}
+
+:root.dark-mode .search-space-warning {
+  background: #422006;
+  border-color: #d97706;
+  color: #fcd34d;
+}
+
+:root.dark-mode .search-space-warning .warning-icon {
+  color: #fbbf24;
 }
 
 /* Dashboard Config Button */
