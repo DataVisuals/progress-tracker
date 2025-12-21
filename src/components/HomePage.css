@@ -153,11 +153,13 @@
   justify-content: center;
   height: calc(100vh - 200px);
   min-height: 400px;
+  background: transparent;
 }
 
 .search-container {
   width: 100%;
   max-width: 580px;
+  background: transparent;
 }
 
 .search-box {
@@ -190,7 +192,7 @@
   outline: none;
   font-size: 16px;
   color: #202124;
-  background: transparent;
+  background: var(--bg-primary, #f5f5f5);
 }
 
 .search-input::placeholder {
@@ -312,6 +314,7 @@
 
 :root.dark-mode .search-input {
   color: #f3f4f6;
+  background: var(--bg-primary, #111827);
 }
 
 :root.dark-mode .search-input::placeholder {
