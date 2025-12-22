@@ -10,16 +10,15 @@ import {
   MdDateRange,
   MdFiberNew,
   MdPendingActions,
-  MdCleaningServices,
   MdSearch
 } from 'react-icons/md';
-import { FaDatabase } from 'react-icons/fa';
+import { FaDatabase, FaBroom } from 'react-icons/fa';
 
 // Panel configuration - defines all available panels
 // Order determines dock display order (inconsistencies first, then timeline, health, etc.)
 export const PANEL_CONFIG = {
   search: { id: 'search', name: 'Project Search', shortLabel: 'Search', icon: MdSearch, adminOnly: false },
-  inconsistencies: { id: 'inconsistencies', name: 'Inconsistencies', shortLabel: 'Clean Up', icon: MdCleaningServices, adminOnly: false },
+  inconsistencies: { id: 'inconsistencies', name: 'Inconsistencies', shortLabel: 'Clean Up', icon: FaBroom, adminOnly: false },
   timeline: { id: 'timeline', name: 'Project Timeline', shortLabel: 'Timeline', icon: MdDateRange, adminOnly: false, dockOnly: true },
   projectHealth: { id: 'projectHealth', name: 'Project Health Rankings', shortLabel: 'Health', icon: MdFavorite, adminOnly: false },
   heatmap: { id: 'heatmap', name: 'Most Viewed Projects', shortLabel: 'Views', icon: MdVisibility, adminOnly: false },

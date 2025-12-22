@@ -7,12 +7,11 @@
 
 .portfolio-selector label {
   font-weight: 600;
-  color: white;
+  color: rgba(255, 255, 255, 0.95);
   font-size: 11px;
   white-space: nowrap;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  opacity: 0.95;
 }
 
 .portfolio-select-container {
@@ -25,13 +24,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 8px;
-  font-size: 11px;
+  padding: 4px 10px;
+  font-size: 12px;
   font-weight: 500;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
   background-color: rgba(255, 255, 255, 0.95);
-  color: #1f2937;
+  color: #003c71;
   cursor: pointer;
   transition: all 0.2s ease;
   height: 28px;
@@ -56,7 +55,7 @@
 }
 
 .selected-text {
-  color: #1f2937;
+  color: #003c71;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -71,7 +70,7 @@
 .dropdown-arrow {
   transition: transform 0.2s ease;
   flex-shrink: 0;
-  color: #1f2937;
+  color: #003c71;
 }
 
 .dropdown-arrow.open {
@@ -80,7 +79,7 @@
 
 .portfolio-select-trigger:hover {
   background-color: white;
-  border-color: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.4);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transform: translateY(-1px);
 }
@@ -88,13 +87,13 @@
 .portfolio-select-trigger:focus {
   outline: none;
   background-color: white;
-  border-color: rgba(255, 255, 255, 0.6);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15), 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #00aeef;
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .portfolio-select-trigger.open {
-  border-color: rgba(255, 255, 255, 0.6);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+  border-color: #00aeef;
+  box-shadow: 0 0 0 3px rgba(0, 174, 239, 0.2);
 }
 
 .portfolio-select-dropdown {

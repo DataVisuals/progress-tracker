@@ -1559,7 +1559,7 @@
   position: relative;
   width: 100%;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
 }
 
@@ -1595,11 +1595,17 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  margin-left: 12px;
+  margin-right: 12px;
 }
 
 .timeline-action-icon {
   font-size: 12px;
   color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .timeline-action-icon.create {
@@ -1807,8 +1813,9 @@
 }
 
 :root.dark-mode .timeline-card {
-  background: #1f2937;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: transparent;
+  border: 1px solid #4b5563;
+  box-shadow: none;
 }
 
 :root.dark-mode .timeline-card-summary:hover {
@@ -1862,9 +1869,10 @@
 }
 
 .home-quadrant:not(.expanded-panel-content) .timeline-event {
-  width: calc(100% - 40px);
-  margin-left: 25px !important;
+  width: calc(100% - 48px);
+  margin-left: 0 !important;
   margin-right: 0 !important;
+  padding-left: 12px;
 }
 
 .home-quadrant:not(.expanded-panel-content) .timeline-event.left,
@@ -3195,7 +3203,7 @@
 .attention-quadrant .quadrant-icon { color: #f59e0b; }
 
 /* Dark mode quadrant icons */
-:root.dark-mode .inconsistency-quadrant .quadrant-icon { color: #e5e7eb; }
+:root.dark-mode .inconsistency-quadrant .quadrant-icon { color: #22d3ee; }
 
 .quadrant-icon.tip {
   color: #f5ad5b;
@@ -3321,7 +3329,7 @@ html.dark-mode .quadrant-content {
   border: 1px solid #cbd5e1 !important;
   box-sizing: border-box;
   cursor: pointer;
-  margin-bottom: 2px !important;
+  margin-bottom: 8px !important;
 }
 
 :root:not(.dark-mode) .commentary-item:hover {
@@ -3667,7 +3675,7 @@ html.dark-mode .quadrant-content {
 }
 
 .dark-mode .stat-separator {
-  color: #6b7280;
+  color: #9ca3af;
 }
 
 .dark-mode .stat-divider {
@@ -3676,6 +3684,14 @@ html.dark-mode .quadrant-content {
 
 .dark-mode .stat-target {
   color: #9ca3af;
+}
+
+.dark-mode .stat-variance.red {
+  color: #fca5a5;
+}
+
+.dark-mode .stat-variance.amber {
+  color: #fcd34d;
 }
 
 .metric-header {
@@ -4374,6 +4390,7 @@ html.dark-mode .quadrant-content {
   border: 1px solid #4b5563;
   border-radius: 6px;
   padding: 12px 14px;
+  margin-bottom: 8px;
 }
 
 :root.dark-mode .commentary-item:hover {
@@ -4381,6 +4398,7 @@ html.dark-mode .quadrant-content {
   border: 1px solid #4b5563;
   border-radius: 6px;
   padding: 12px 14px;
+  margin-bottom: 8px;
 }
 
 :root.dark-mode .commentary-item-name {
@@ -4516,7 +4534,7 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .metric-arrow {
-  color: #fca5a5;
+  color: #9ca3af;
 }
 
 :root.dark-mode .tip-icon-wrapper {
@@ -7732,6 +7750,9 @@ html.dark-mode .quadrant-content {
 
 .update-action-icon {
   font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
 }
 
 .update-action-icon.create {

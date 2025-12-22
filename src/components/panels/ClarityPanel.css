@@ -230,11 +230,13 @@
 }
 
 :root.dark-mode .clarity-ranking-item {
-  background: #374151;
+  background: transparent;
+  border: 1px solid #4b5563;
 }
 
 :root.dark-mode .clarity-ranking-item:hover {
-  background: #4b5563;
+  background: #374151;
+  border: 1px solid #4b5563;
 }
 
 :root.dark-mode .clarity-rank {

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { MdCheckCircle, MdShare, MdCheck, MdAccessTime, MdWarning, MdError } from 'react-icons/md';
-import { FaSkullCrossbones, FaFire } from 'react-icons/fa';
+import { FaFire, FaBroom } from 'react-icons/fa';
 
 // Get age RAG status, icon, and description
 const getAgeInfo = (ageDays) => {
@@ -96,7 +96,7 @@ const InconsistenciesPanel = ({
   return (
     <div key={panelId} className={`home-quadrant inconsistency-quadrant panel-${index + 1}`}>
       <div className="quadrant-header">
-        <FaSkullCrossbones className="quadrant-icon" />
+        <FaBroom className="quadrant-icon" />
         <h2>Inconsistencies</h2>
         {sortedIssues.length > 0 && (
           <span className="inconsistency-total-badge">{sortedIssues.length}</span>
