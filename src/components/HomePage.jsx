@@ -279,6 +279,9 @@ const HomePage = ({
           const projectInfo = Object.entries(projects).find(([id]) =>
             parseInt(id) === comment.project_id
           );
+          const portfolio = projectInfo && portfolios ? portfolios.find(p => p.id === projectInfo[1].portfolio_id) : null;
+          const space = portfolio && spaces ? spaces.find(s => s.id === portfolio.space_id) : null;
+
           return {
             id: comment.id,
             commentary: comment.comment_text,
@@ -291,6 +294,8 @@ const HomePage = ({
             portfolioId: projectInfo ? projectInfo[1].portfolio_id : null,
             portfolioColor: projectInfo ? projectInfo[1].portfolio_color : null,
             portfolioName: projectInfo ? projectInfo[1].portfolio_name : null,
+            spaceId: space ? space.id : null,
+            spaceName: space ? space.name : null,
             parentCommentId: comment.parent_comment_id
           };
         });

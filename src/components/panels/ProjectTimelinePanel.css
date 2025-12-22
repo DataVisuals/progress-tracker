@@ -608,7 +608,7 @@
 
 /* Dark Mode */
 :root.dark-mode .timeline-axis-sticky {
-  background: #1e293b;
+  background: #111827;
 }
 
 :root.dark-mode .timeline-axis {
@@ -616,16 +616,16 @@
 }
 
 :root.dark-mode .timeline-axis-label-spacer {
-  background: #1e293b;
+  background: #111827;
 }
 
 :root.dark-mode .timeline-axis-countdown-spacer {
-  background: #1e293b;
+  background: #111827;
 }
 
 :root.dark-mode .timeline-axis-label {
   color: #94a3b8;
-  background: #0f172a;
+  background: #111827;
 }
 
 :root.dark-mode .timeline-project-row {
@@ -637,7 +637,7 @@
 }
 
 :root.dark-mode .timeline-project-label {
-  background: #1e293b;
+  background: #111827;
   z-index: 30;
 }
 
@@ -646,7 +646,7 @@
 }
 
 :root.dark-mode .project-countdown-badge {
-  background: #1e293b;
+  background: #111827;
 }
 
 :root.dark-mode .project-label-tooltip {
@@ -662,9 +662,9 @@
 }
 
 :root.dark-mode .terminus-countdown {
-  background: #1e293b;
+  background: #111827;
 }
 
 :root.dark-mode .stop-dot {
-  background: #1e293b;
+  background: #111827;
 }

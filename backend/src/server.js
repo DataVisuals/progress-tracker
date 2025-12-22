@@ -624,7 +624,14 @@ function createApp(dbPath) {
   // Get all spaces
   app.get('/api/spaces', async (req, res) => {
     try {
-      const spaces = await dbAll('SELECT * FROM spaces ORDER BY display_order, name');
+      const spaces = await dbAll(`
+        SELECT s.*,
+          (SELECT COUNT(*) FROM projects p
+           JOIN portfolios po ON p.portfolio_id = po.id
+           WHERE po.space_id = s.id) as project_count
+        FROM spaces s
+        ORDER BY s.display_order, s.name
+      `);
       res.json(spaces);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -754,7 +761,8 @@ function createApp(dbPath) {
   app.get('/api/portfolios', async (req, res) => {
     try {
       const portfolios = await dbAll(`
-        SELECT p.*, u.name as manager_name
+        SELECT p.*, u.name as manager_name,
+               (SELECT COUNT(*) FROM projects WHERE portfolio_id = p.id) as project_count
         FROM portfolios p
         LEFT JOIN users u ON p.manager_id = u.id
         ORDER BY p.display_order, p.name

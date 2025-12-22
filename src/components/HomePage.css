@@ -317,30 +317,43 @@
 }
 
 /* Dark mode for search layout */
+:root.dark-mode .home-search-view {
+  background: transparent;
+  border: none;
+}
+
+:root.dark-mode .search-container {
+  background: transparent;
+  border: none;
+  border-bottom: none;
+}
+
 :root.dark-mode .search-box {
   background: transparent;
-  border-bottom-color: #4b5563;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 12px 16px;
 }
 
 :root.dark-mode .search-box:focus-within {
-  border-bottom-color: #00aeef;
+  border-color: #374151;
 }
 
 :root.dark-mode .search-icon {
-  color: #6b7280;
+  color: #9ca3af;
 }
 
 :root.dark-mode .search-input {
   color: #f3f4f6;
-  background: var(--bg-primary, #111827);
+  background: transparent;
 }
 
 :root.dark-mode .search-input::placeholder {
-  color: #6b7280;
+  color: #9ca3af;
 }
 
 :root.dark-mode .search-results {
-  background: #1f2937;
+  background: #111827;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -370,13 +383,15 @@
 }
 
 :root.dark-mode .search-hint {
-  color: #6b7280;
+  color: #9ca3af;
+  border: none;
+  border-bottom: none;
 }
 
 :root.dark-mode .search-hint kbd {
-  background: #374151;
-  border-color: #4b5563;
-  color: #9ca3af;
+  background: #1f2937;
+  border: 1px solid #374151;
+  color: #d1d5db;
 }
 
 :root.dark-mode .search-space-warning {
@@ -387,6 +402,18 @@
 
 :root.dark-mode .search-space-warning .warning-icon {
   color: #fbbf24;
+}
+
+/* Ensure consistent search box styling in dock/expanded view */
+:root.dark-mode .expanded-panel-content .search-box {
+  border: 1px solid #374151;
+  background: transparent;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+:root.dark-mode .expanded-panel-content .search-box:focus-within {
+  border-color: #374151;
 }
 
 /* Dashboard Config Button */
@@ -697,7 +724,7 @@
 
 /* Dark mode for attention columns */
 :root.dark-mode .attention-column {
-  background: #1f2937;
+  background: #111827;
 }
 
 :root.dark-mode .attention-column.split-column {
@@ -705,7 +732,7 @@
 }
 
 :root.dark-mode .attention-split-section {
-  background: #1f2937;
+  background: #111827;
 }
 
 :root.dark-mode .attention-column-header {
@@ -1136,8 +1163,9 @@
 /* Expandable detail items */
 .audit-detail-item {
   border-radius: 4px;
-  background: white;
-  border-left: 3px solid #e5e7eb;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-left-width: 3px;
   font-size: 11px;
 }
 
@@ -1305,7 +1333,9 @@
 }
 
 :root.dark-mode .audit-detail-item {
-  background: #1e293b;
+  background: transparent;
+  border: 1px solid #4b5563;
+  border-left-width: 3px;
   border-left-color: #475569;
 }
 
@@ -1322,7 +1352,7 @@
 }
 
 :root.dark-mode .audit-detail-summary:hover {
-  background: #334155;
+  background: #374151;
 }
 
 :root.dark-mode .audit-detail-summary .audit-user {
@@ -2570,6 +2600,13 @@
   padding: 8px 12px;
   background: #f9fafb;
   border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.active-user-item:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
 }
 
 .active-user-info {
@@ -2596,48 +2633,48 @@
 
 /* Dark Mode for new panels */
 :root.dark-mode .attention-item {
-  background: #374151;
+  background: transparent;
   border-color: #4b5563;
 }
 
 :root.dark-mode .attention-item:hover {
-  background: #4b5563;
+  background: #374151;
 }
 
 :root.dark-mode .attention-item.feedback-item {
-  background: #422006;
+  background: transparent;
   border-color: #92400e;
 }
 
 :root.dark-mode .attention-item.feedback-item:hover {
-  background: #713f12;
+  background: #422006;
 }
 
 :root.dark-mode .attention-item.upcoming-item {
-  background: #1e3a5f;
+  background: transparent;
   border-color: #3b82f6;
 }
 
 :root.dark-mode .attention-item.upcoming-item:hover {
-  background: #1e40af;
+  background: #1e3a5f;
 }
 
 :root.dark-mode .attention-item.upcoming-item.soon {
-  background: #451a03;
+  background: transparent;
   border-color: #d97706;
 }
 
 :root.dark-mode .attention-item.upcoming-item.soon:hover {
-  background: #78350f;
+  background: #451a03;
 }
 
 :root.dark-mode .attention-item.upcoming-item.overdue {
-  background: #450a0a;
+  background: transparent;
   border-color: #dc2626;
 }
 
 :root.dark-mode .attention-item.upcoming-item.overdue:hover {
-  background: #7f1d1d;
+  background: #450a0a;
 }
 
 :root.dark-mode .attention-section-divider {
@@ -2688,12 +2725,12 @@
 }
 
 :root.dark-mode .health-ranking-item {
-  background: #374151;
-  border-color: #4b5563;
+  background: transparent;
+  border: 1px solid #4b5563;
 }
 
 :root.dark-mode .health-ranking-item:hover {
-  background: #1e3a5f;
+  background: #374151;
   border-color: #00aeef;
 }
 
@@ -2797,6 +2834,11 @@
 }
 
 :root.dark-mode .active-user-item {
+  background: transparent;
+  border: 1px solid #4b5563;
+}
+
+:root.dark-mode .active-user-item:hover {
   background: #374151;
 }
 
@@ -2946,12 +2988,12 @@
 }
 
 :root.dark-mode .feedback-item {
-  background-color: #374151;
+  background-color: transparent;
   border-color: #4b5563;
 }
 
 :root.dark-mode .feedback-item:hover {
-  background-color: #4b5563;
+  background-color: #374151;
   border-color: #00aeef;
 }
 
@@ -3169,7 +3211,7 @@
 .dark-mode .home-quadrant .quadrant-content,
 html.dark-mode .home-quadrant .quadrant-content,
 html.dark-mode .quadrant-content {
-  background-color: #1f2937 !important;
+  background-color: #111827 !important;
 }
 
 /* Loading and Empty States */
@@ -3222,21 +3264,137 @@ html.dark-mode .quadrant-content {
   text-align: left;
 }
 
-.commentary-item {
+/* Commentary list - like backlog */
+.commentary-list {
   display: flex;
   flex-direction: column;
-  padding: 6px 8px;
-  background-color: #fafafa;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid #f0f0f0;
-  gap: 3px;
+  gap: 6px;
+  padding: 10px;
 }
 
-.commentary-item:hover {
-  background-color: #f5f5f5;
-  border-color: #e5e5e5;
+.fullscreen-commentary .commentary-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 10px;
+}
+
+.commentary-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.fullscreen-commentary .commentary-group {
+  display: contents;
+}
+
+.commentary-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0 6px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #3b82f6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fullscreen-commentary .commentary-group-header {
+  grid-column: 1 / -1;
+}
+
+.commentary-count {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+:root:not(.dark-mode) .commentary-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 10px 12px !important;
+  background: #f9fafb !important;
+  border-radius: 6px !important;
+  transition: all 0.15s;
+  border: 1px solid #cbd5e1 !important;
+  box-sizing: border-box;
+  cursor: pointer;
+  margin-bottom: 2px !important;
+}
+
+:root:not(.dark-mode) .commentary-item:hover {
+  background-color: #f3f4f6 !important;
+  border-color: #94a3b8 !important;
+}
+
+.commentary-item-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.commentary-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.commentary-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.3;
+}
+
+.fullscreen-commentary .commentary-item {
+  padding: 12px 14px;
+}
+
+.fullscreen-commentary .commentary-item-name {
+  font-size: 16px;
+}
+
+.commentary-text {
+  font-size: 12px;
+  color: #374151;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+.fullscreen-commentary .commentary-text {
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+.commentary-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.fullscreen-commentary .commentary-item-meta {
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.commentary-item-period,
+.commentary-item-author,
+.commentary-item-time {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.fullscreen-commentary .commentary-item-period,
+.fullscreen-commentary .commentary-item-author,
+.fullscreen-commentary .commentary-item-time {
+  font-size: 11px;
 }
 
 .commentary-header {
@@ -3293,18 +3451,12 @@ html.dark-mode .quadrant-content {
   font-size: 10px;
 }
 
-.commentary-text {
-  margin: 0;
-  font-size: 12px;
-  color: #374151;
-  line-height: 1.35;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-
 /* Rich text rendering for commentary */
 .commentary-text.ql-editor {
   padding: 0;
+  margin: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .commentary-text.ql-editor p {
@@ -4176,13 +4328,13 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .home-quadrant {
-  background-color: #1f2937;
+  background-color: #111827;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 :root.dark-mode .quadrant-header {
-  background-color: #374151;
-  border-bottom-color: #4b5563;
+  background-color: #111827;
+  border-bottom-color: #374151;
 }
 
 :root.dark-mode .quadrant-header h2 {
@@ -4218,13 +4370,39 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .commentary-item {
-  background-color: #1f2937;
-  border-color: #374151;
+  background: transparent;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  padding: 12px 14px;
 }
 
 :root.dark-mode .commentary-item:hover {
-  background-color: #283548;
-  border-color: #4b5563;
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+
+:root.dark-mode .commentary-item-name {
+  color: #f3f4f6;
+}
+
+:root.dark-mode .commentary-text {
+  color: #d1d5db;
+}
+
+:root.dark-mode .commentary-item-period,
+:root.dark-mode .commentary-item-author,
+:root.dark-mode .commentary-item-time {
+  color: #6b7280;
+}
+
+:root.dark-mode .commentary-group-header {
+  color: #9ca3af;
+}
+
+:root.dark-mode .commentary-count {
+  color: #9ca3af;
 }
 
 :root.dark-mode .commentary-header {
@@ -4268,7 +4446,7 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .metrics-list {
-  background-color: #1f2937;
+  background-color: #111827;
 }
 
 :root.dark-mode .portfolio-group-header {
@@ -4849,13 +5027,13 @@ html.dark-mode .quadrant-content {
 
 /* Dark mode for flat list */
 :root.dark-mode .inconsistency-item {
-  background: #374151;
+  background: transparent;
   border-color: #4b5563;
 }
 
 :root.dark-mode .inconsistency-item:hover {
-  background: #4b5563;
-  border-color: #6b7280;
+  background: #374151;
+  border-color: #4b5563;
 }
 
 :root.dark-mode .age-indicator.age-green {
@@ -5672,8 +5850,12 @@ html.dark-mode .quadrant-content {
 
 /* Dark Mode Support */
 :root.dark-mode .inconsistency-pm-item {
-  background: #1f2937;
-  border-color: #374151;
+  background: transparent;
+  border-color: #4b5563;
+}
+
+:root.dark-mode .inconsistency-pm-item:hover {
+  background: #374151;
 }
 
 :root.dark-mode .inconsistency-pm-header {
@@ -6099,7 +6281,7 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .minimized-tabs {
-  background: #1f2937;
+  background: #111827;
   border-top-color: #374151;
 }
 
@@ -6492,12 +6674,12 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .expanded-panel-content .attention-item {
-  background: #374151 !important;
+  background: transparent !important;
   border-color: #4b5563 !important;
 }
 
 :root.dark-mode .expanded-panel-content .attention-item:hover {
-  background: #4b5563 !important;
+  background: #374151 !important;
 }
 
 :root.dark-mode .expanded-panel-content .attention-item .attention-title {
@@ -6509,12 +6691,12 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .expanded-panel-content .attention-item.feedback-item {
-  background: #422006 !important;
+  background: transparent !important;
   border-color: #92400e !important;
 }
 
 :root.dark-mode .expanded-panel-content .attention-item.feedback-item:hover {
-  background: #713f12 !important;
+  background: #422006 !important;
 }
 
 /* Fix user feedback list in fullscreen */
@@ -6737,7 +6919,7 @@ html.dark-mode .quadrant-content {
 
 /* Dark mode for metrics columns */
 :root.dark-mode .metrics-column {
-  background: #1f2937;
+  background: #111827;
 }
 
 :root.dark-mode .column-header {
@@ -6773,22 +6955,26 @@ html.dark-mode .quadrant-content {
 /* Commentary fullscreen */
 .expanded-panel-content .commentary-list {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
   width: 100%;
-  align-items: start;
+  padding: 0 8px;
 }
 
-.expanded-panel-content .commentary-list > div {
-  min-width: 0;
-  overflow: hidden;
+.expanded-panel-content .commentary-group {
+  display: contents;
+}
+
+.expanded-panel-content .commentary-group-header {
+  grid-column: 1 / -1;
 }
 
 .expanded-panel-content .commentary-item {
-  padding: 16px;
+  padding: 12px 14px;
   gap: 10px;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  box-shadow: none;
   overflow: hidden;
   word-break: break-word;
 }
@@ -6951,11 +7137,13 @@ html.dark-mode .quadrant-content {
 }
 
 .dark-mode .fullscreen-health .health-ranking-item {
-  background: #374151;
+  background: transparent;
+  border: 1px solid #4b5563;
 }
 
 .dark-mode .fullscreen-health .health-ranking-item:hover {
-  background: #4b5563;
+  background: #374151;
+  border-color: #4b5563;
 }
 
 /* Active users fullscreen */
@@ -7258,27 +7446,32 @@ html.dark-mode .quadrant-content {
 
 /* Dark mode for users fullscreen */
 :root.dark-mode .users-list-section {
-  background: #1f2937;
+  background: #111827;
 }
 
 :root.dark-mode .users-list-section .active-user-item {
+  background: transparent;
+  border: 1px solid #4b5563;
+}
+
+:root.dark-mode .users-list-section .active-user-item:hover {
   background: #374151;
 }
 
 :root.dark-mode .activity-by-user-section {
-  background: #1f2937;
+  background: #111827;
 }
 
 :root.dark-mode .timeline-section {
-  background: #1f2937;
+  background: #111827;
 }
 
 :root.dark-mode .users-bottom-section {
-  background: #1f2937;
+  background: #111827;
 }
 
 :root.dark-mode .activity-chart {
-  background: #1f2937;
+  background: #111827;
 }
 
 :root.dark-mode .activity-tooltip {
@@ -7292,7 +7485,7 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .expanded-panel-header {
-  background: #1f2937;
+  background: #111827;
   border-bottom-color: #374151;
 }
 
@@ -7331,9 +7524,13 @@ html.dark-mode .quadrant-content {
 
 /* Dark mode fullscreen commentary */
 :root.dark-mode .expanded-panel-content .commentary-item {
-  background: #1f2937;
-  border-color: #374151;
+  background: transparent;
+  border-color: #4b5563;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+:root.dark-mode .expanded-panel-content .commentary-item:hover {
+  background: #374151;
 }
 
 :root.dark-mode .expanded-panel-content .commentary-header {
@@ -7410,22 +7607,62 @@ html.dark-mode .quadrant-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px 12px;
+  gap: 4px;
+  padding: 8px;
   overflow-y: auto;
 }
 
+.fullscreen-updates .recent-updates-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 8px;
+  align-content: start;
+}
+
+.updates-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.fullscreen-updates .updates-group {
+  display: contents;
+}
+
+.updates-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #3b82f6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fullscreen-updates .updates-group-header {
+  grid-column: 1 / -1;
+}
+
+.updates-count {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
 .recent-update-item {
-  padding: 6px 8px;
-  border-radius: 4px;
-  background: #fafafa;
-  border: 1px solid #f0f0f0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  box-sizing: border-box;
   transition: all 0.2s ease;
 }
 
 .recent-update-item:hover {
-  background: #f5f5f5;
-  border-color: #e5e5e5;
+  background: #f3f4f6;
+  border-color: #d1d5db;
 }
 
 .recent-update-item.very-recent {
@@ -7445,19 +7682,19 @@ html.dark-mode .quadrant-content {
 
 .update-project-name {
   font-weight: 600;
-  font-size: 12px;
+  font-size: 16px;
   color: #374151;
   flex: 1;
   transition: color 0.15s;
 }
 
 .update-time {
-  font-size: 10px;
+  font-size: 12px;
   color: #6b7280;
 }
 
 .update-relative-time {
-  font-size: 10px;
+  font-size: 11px;
   color: #9ca3af;
 }
 
@@ -7470,9 +7707,8 @@ html.dark-mode .quadrant-content {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  margin-top: 4px;
+  margin-top: 6px;
   padding-left: 4px;
-  border-left: 2px solid #e5e7eb;
 }
 
 .update-metric-item {
@@ -7481,7 +7717,7 @@ html.dark-mode .quadrant-content {
   gap: 4px;
   padding: 2px 4px;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
   transition: background 0.15s;
 }
 
@@ -7530,9 +7766,9 @@ html.dark-mode .quadrant-content {
 .update-summary {
   font-size: 10px;
   color: #6b7280;
-  margin-top: 4px;
-  padding-top: 4px;
-  border-top: 1px dashed #e5e7eb;
+  margin-top: 6px;
+  padding-top: 0;
+  border-top: none;
 }
 
 /* ===== Recently Changed Highlight ===== */
@@ -7567,17 +7803,25 @@ tr.recently-changed-row {
 
 /* Dark mode - Recent Updates */
 :root.dark-mode .recent-update-item {
-  background: #1f2937;
-  border-color: #374151;
+  background: transparent;
+  border-color: #4b5563;
 }
 
 :root.dark-mode .recent-update-item:hover {
-  background: #283548;
+  background: #374151;
   border-color: #4b5563;
 }
 
 :root.dark-mode .recent-update-item.very-recent {
   border-color: #fbbf24;
+}
+
+:root.dark-mode .updates-group-header {
+  color: #9ca3af;
+}
+
+:root.dark-mode .updates-count {
+  color: #6b7280;
 }
 
 :root.dark-mode .update-project-name {
@@ -7590,10 +7834,6 @@ tr.recently-changed-row {
 
 :root.dark-mode .update-relative-time {
   color: #6b7280;
-}
-
-:root.dark-mode .update-metrics {
-  border-left-color: #4b5563;
 }
 
 :root.dark-mode .update-metric-item:hover {

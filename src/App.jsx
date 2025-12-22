@@ -841,10 +841,11 @@ function App() {
     updateURL(selectedProject, metric);
   };
 
-  // Navigate to a specific project and optionally a metric (for HomePage)
-  const handleNavigateToProject = (projectId, metricName = '') => {
+  // Navigate to a specific project and optionally a metric or tab (for HomePage)
+  const handleNavigateToProject = (projectId, metricName = '', tabName = 'overview') => {
     startPageLoadTimer(); // Start timing page load
     setSelectedProject(projectId.toString());
+    setSelectedProjectTab(tabName);
     if (metricName) {
       setSelectedMetric(metricName);
       updateURL(projectId.toString(), metricName);

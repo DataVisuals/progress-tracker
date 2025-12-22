@@ -148,12 +148,16 @@ export default function PortfolioSelector({
                       style={{ backgroundColor: portfolio.color }}
                     />
                     <span className="option-name">{portfolio.name}</span>
+                    {portfolio.project_count !== undefined && (
+                      <span className="portfolio-project-count">{portfolio.project_count}</span>
+                    )}
                   </div>
                   {onPortfolioReview && (
                     <button
                       className="portfolio-review-btn"
-                      onClick={(e) => handleReviewClick(portfolio.id, e)}
-                      title="Portfolio Review"
+                      onClick={(e) => portfolio.project_count > 0 && handleReviewClick(portfolio.id, e)}
+                      title={portfolio.project_count > 0 ? "Portfolio Review" : ""}
+                      style={portfolio.project_count === 0 ? { visibility: 'hidden', pointerEvents: 'none' } : {}}
                     >
                       <MdAssessment />
                     </button>

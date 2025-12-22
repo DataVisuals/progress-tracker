@@ -55,10 +55,11 @@ const RecentUpdatesPanel = ({
     ? 'All Spaces'
     : spaces?.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space';
 
-  // Group updates by project and summarize
+  // Group updates by space or portfolio, then by project and summarize
   const groupedUpdates = useMemo(() => {
-    const groups = {};
+    const projectGroups = {};
     const now = new Date();
+    const groupBySpace = selectedSpace === 'all';
 
     updates.forEach(update => {
       // Skip entries without project context
@@ -70,41 +71,63 @@ const RecentUpdatesPanel = ({
       }
 
       const projectKey = update.project_name;
-      if (!groups[projectKey]) {
-        groups[projectKey] = {
+      if (!projectGroups[projectKey]) {
+        projectGroups[projectKey] = {
           projectName: update.project_name,
-          projectId: update.project_id || null, // Use project_id from enriched audit entry
+          projectId: update.project_id || null,
+          portfolioId: null,
+          portfolioName: null,
+          portfolioColor: null,
+          spaceId: null,
+          spaceName: null,
           metrics: {},
           latestUpdate: null,
           updateCount: 0
         };
       }
 
-      // Update project_id if we have it (some entries may have it, some may not)
-      if (update.project_id && !groups[projectKey].projectId) {
-        groups[projectKey].projectId = update.project_id;
+      // Get portfolio and space info from projects data
+      if (update.project_id && projects) {
+        const projectData = projects[update.project_id];
+        if (projectData) {
+          projectGroups[projectKey].portfolioId = projectData.portfolio_id;
+          projectGroups[projectKey].portfolioName = projectData.portfolio_name;
+          projectGroups[projectKey].portfolioColor = projectData.portfolio_color;
+
+          // Get space from portfolio
+          if (portfolios) {
+            const portfolio = portfolios.find(p => p.id === projectData.portfolio_id);
+            if (portfolio && spaces) {
+              const space = spaces.find(s => s.id === portfolio.space_id);
+              if (space) {
+                projectGroups[projectKey].spaceId = space.id;
+                projectGroups[projectKey].spaceName = space.name;
+              }
+            }
+          }
+        }
       }
 
       // Track latest update time
       const updateTime = new Date(update.created_at);
-      if (!groups[projectKey].latestUpdate || updateTime > groups[projectKey].latestUpdate) {
-        groups[projectKey].latestUpdate = updateTime;
+      if (!projectGroups[projectKey].latestUpdate || updateTime > projectGroups[projectKey].latestUpdate) {
+        projectGroups[projectKey].latestUpdate = updateTime;
       }
 
-      groups[projectKey].updateCount++;
+      projectGroups[projectKey].updateCount++;
 
       // Group metric-related updates
       if (update.metric_name) {
         const metricKey = update.metric_name;
-        if (!groups[projectKey].metrics[metricKey]) {
-          groups[projectKey].metrics[metricKey] = {
+        if (!projectGroups[projectKey].metrics[metricKey]) {
+          projectGroups[projectKey].metrics[metricKey] = {
             metricName: metricKey,
             actions: [],
             latestUpdate: null
           };
         }
 
-        groups[projectKey].metrics[metricKey].actions.push({
+        projectGroups[projectKey].metrics[metricKey].actions.push({
           action: update.action,
           tableName: update.table_name,
           timestamp: updateTime,
@@ -112,18 +135,54 @@ const RecentUpdatesPanel = ({
           description: update.description
         });
 
-        if (!groups[projectKey].metrics[metricKey].latestUpdate ||
-            updateTime > groups[projectKey].metrics[metricKey].latestUpdate) {
-          groups[projectKey].metrics[metricKey].latestUpdate = updateTime;
+        if (!projectGroups[projectKey].metrics[metricKey].latestUpdate ||
+            updateTime > projectGroups[projectKey].metrics[metricKey].latestUpdate) {
+          projectGroups[projectKey].metrics[metricKey].latestUpdate = updateTime;
         }
       }
     });
 
-    // Convert to array and sort by latest update
-    return Object.values(groups)
-      .sort((a, b) => (b.latestUpdate || 0) - (a.latestUpdate || 0))
-      .slice(0, forDock ? 20 : 8);
-  }, [updates, forDock, spaceProjectIds]);
+    // Group by space or portfolio
+    const spaceOrPortfolioGroups = {};
+    Object.values(projectGroups).forEach(project => {
+      let groupKey, groupName, groupColor;
+
+      if (groupBySpace) {
+        groupKey = project.spaceId || 'none';
+        groupName = project.spaceName || 'No Space';
+        groupColor = null;
+      } else {
+        groupKey = project.portfolioId || 'none';
+        groupName = project.portfolioName || 'No Portfolio';
+        groupColor = project.portfolioColor;
+      }
+
+      if (!spaceOrPortfolioGroups[groupKey]) {
+        spaceOrPortfolioGroups[groupKey] = {
+          groupId: groupKey !== 'none' ? groupKey : null,
+          groupName,
+          groupColor,
+          items: []
+        };
+      }
+
+      spaceOrPortfolioGroups[groupKey].items.push(project);
+    });
+
+    // Sort items within each group by latest update
+    Object.values(spaceOrPortfolioGroups).forEach(group => {
+      group.items.sort((a, b) => (b.latestUpdate || 0) - (a.latestUpdate || 0));
+      // Limit items per group
+      group.items = group.items.slice(0, forDock ? 20 : 8);
+    });
+
+    // Sort groups: named groups first alphabetically, then "No Space/Portfolio"
+    return Object.values(spaceOrPortfolioGroups).sort((a, b) => {
+      if (!a.groupId) return 1;
+      if (!b.groupId) return -1;
+      return a.groupName.localeCompare(b.groupName);
+    });
+  }, [updates, forDock, spaceProjectIds, selectedSpace, projects, portfolios, spaces]);
 
   const formatRelativeTime = (date) => {
     if (!date) return '';
@@ -198,7 +257,7 @@ const RecentUpdatesPanel = ({
   };
 
   return (
-    <div key={panelId} className={`home-quadrant recent-updates-quadrant panel-${index + 1}`}>
+    <div key={panelId} className={`home-quadrant recent-updates-quadrant ${forDock ? 'fullscreen-updates' : ''} panel-${index + 1}`}>
       <div className="quadrant-header">
         <MdFiberNew className="quadrant-icon" />
         <h2>Recent Updates</h2>
@@ -214,64 +273,73 @@ const RecentUpdatesPanel = ({
           </div>
         ) : (
           <div className="recent-updates-list">
-            {groupedUpdates.map((group, idx) => {
-              const metricList = Object.values(group.metrics);
-              const actionSummary = getActionSummary(group.metrics);
-              const isRecentUpdate = isRecent(group.latestUpdate);
+            {groupedUpdates.map((groupData, groupIdx) => (
+              <div key={groupIdx} className="updates-group">
+                <div className="updates-group-header">
+                  {groupData.groupColor && <span className="group-color-dot" style={{ backgroundColor: groupData.groupColor }} />}
+                  <span className="group-name">{groupData.groupName}</span>
+                  <span className="updates-count">({groupData.items.length})</span>
+                </div>
+                {groupData.items.map((group, idx) => {
+                  const metricList = Object.values(group.metrics);
+                  const actionSummary = getActionSummary(group.metrics);
+                  const isRecentUpdate = isRecent(group.latestUpdate);
 
-              return (
-                <div
-                  key={idx}
-                  className={`recent-update-item ${isRecentUpdate ? 'very-recent' : ''}`}
-                >
-                  <div
-                    className="update-project-header"
-                    onClick={() => handleProjectClick(group)}
-                    style={{ cursor: group.projectId ? 'pointer' : 'default' }}
-                  >
-                    <span className="update-project-name">{group.projectName}</span>
-                    <span className="update-time">{formatDateTime(group.latestUpdate)}</span>
-                    <span className="update-relative-time">({formatRelativeTime(group.latestUpdate)})</span>
-                    {group.projectId && <MdChevronRight className="update-nav-icon" />}
-                  </div>
+                  return (
+                    <div
+                      key={idx}
+                      className={`recent-update-item ${isRecentUpdate ? 'very-recent' : ''}`}
+                    >
+                      <div
+                        className="update-project-header"
+                        onClick={() => handleProjectClick(group)}
+                        style={{ cursor: group.projectId ? 'pointer' : 'default' }}
+                      >
+                        <span className="update-project-name">{group.projectName}</span>
+                        <span className="update-time">{formatDateTime(group.latestUpdate)}</span>
+                        <span className="update-relative-time">({formatRelativeTime(group.latestUpdate)})</span>
+                        {group.projectId && <MdChevronRight className="update-nav-icon" />}
+                      </div>
 
-                  {metricList.length > 0 && (
-                    <div className="update-metrics">
-                      {metricList.slice(0, forDock ? 5 : 3).map((metric, midx) => {
-                        const latestAction = metric.actions[0];
-                        const isMetricRecent = isRecent(metric.latestUpdate);
+                      {metricList.length > 0 && (
+                        <div className="update-metrics">
+                          {metricList.slice(0, forDock ? 5 : 3).map((metric, midx) => {
+                            const latestAction = metric.actions[0];
+                            const isMetricRecent = isRecent(metric.latestUpdate);
 
-                        return (
-                          <div
-                            key={midx}
-                            className="update-metric-item"
-                            onClick={() => handleMetricClick(group, metric.metricName)}
-                            style={{ cursor: group.projectId ? 'pointer' : 'default' }}
-                          >
-                            {getActionIcon(latestAction?.action)}
-                            <span className={`update-metric-name ${isMetricRecent ? 'recently-changed' : ''}`}>{metric.metricName}</span>
-                            <span className="update-metric-detail">
-                              {metric.actions.length > 1
-                                ? `${metric.actions.length} changes`
-                                : latestAction?.user}
-                            </span>
-                          </div>
-                        );
-                      })}
-                      {metricList.length > (forDock ? 5 : 3) && (
-                        <div className="update-more">
-                          +{metricList.length - (forDock ? 5 : 3)} more metrics
+                            return (
+                              <div
+                                key={midx}
+                                className="update-metric-item"
+                                onClick={() => handleMetricClick(group, metric.metricName)}
+                                style={{ cursor: group.projectId ? 'pointer' : 'default' }}
+                              >
+                                {getActionIcon(latestAction?.action)}
+                                <span className={`update-metric-name ${isMetricRecent ? 'recently-changed' : ''}`}>{metric.metricName}</span>
+                                <span className="update-metric-detail">
+                                  {metric.actions.length > 1
+                                    ? `${metric.actions.length} changes`
+                                    : latestAction?.user}
+                                </span>
+                              </div>
+                            );
+                          })}
+                          {metricList.length > (forDock ? 5 : 3) && (
+                            <div className="update-more">
+                              +{metricList.length - (forDock ? 5 : 3)} more metrics
+                            </div>
+                          )}
                         </div>
                       )}
-                    </div>
-                  )}
 
-                  {actionSummary && (
-                    <div className="update-summary">{actionSummary}</div>
-                  )}
-                </div>
-              );
-            })}
+                      {actionSummary && (
+                        <div className="update-summary">{actionSummary}</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         )}
       </div>

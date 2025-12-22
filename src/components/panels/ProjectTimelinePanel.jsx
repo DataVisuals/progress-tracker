@@ -427,6 +427,10 @@ const ProjectTimelinePanel = ({
                         className={`tubemap-stop ${status}`}
                         style={{ left: `${milestonePosition}%` }}
                         data-milestone-id={milestone.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onNavigateToProject(project.id, '', 'milestones');
+                        }}
                         onMouseEnter={(e) => {
                           e.stopPropagation();
                           if (!e.target.closest('.milestone-history-icon')) {

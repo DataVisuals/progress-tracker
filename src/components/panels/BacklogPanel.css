@@ -324,11 +324,12 @@
 
 /* Dark mode */
 :root.dark-mode .backlog-item {
-  background: #374151;
+  background: transparent;
+  border-color: #4b5563;
 }
 
 :root.dark-mode .backlog-item:hover {
-  background: #4b5563;
+  background: #374151;
 }
 
 :root.dark-mode .backlog-item-name {
@@ -381,7 +382,7 @@
 }
 
 :root.dark-mode .backlog-column-items .backlog-item {
-  background: #1f2937;
+  background: transparent;
 }
 
 :root.dark-mode .backlog-column-items .backlog-item:hover {

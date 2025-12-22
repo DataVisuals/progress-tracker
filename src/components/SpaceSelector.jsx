@@ -136,6 +136,9 @@ export default function SpaceSelector({
                 >
                   <div className="option-content">
                     <span className="option-name">{space.name || `Space ${space.id}`}</span>
+                    {space.project_count !== undefined && (
+                      <span className="portfolio-project-count">{space.project_count}</span>
+                    )}
                   </div>
                 </div>
               ))}
