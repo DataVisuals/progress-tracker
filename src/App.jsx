@@ -43,6 +43,7 @@ import PortfolioReviewModal from './components/PortfolioReviewModal';
 import ProjectOnePager from './components/ProjectOnePager';
 import ProjectHeader from './components/ProjectHeader';
 import ProjectCommentary from './components/ProjectCommentary';
+import UserRace from './components/UserRace';
 import { api, refreshToken } from './api/client';
 import { selectStyles } from './components/SelectStyles';
 import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode, MdSwapHoriz, MdMenuBook } from 'react-icons/md';
@@ -127,6 +128,7 @@ function App() {
   const [showImportData, setShowImportData] = useState(false);
   const [showPortfolioManager, setShowPortfolioManager] = useState(false);
   const [showSpaceManager, setShowSpaceManager] = useState(false);
+  const [showUserRace, setShowUserRace] = useState(false);
   const [showChaserModal, setShowChaserModal] = useState(false);
   const [chaserData, setChaserData] = useState({ emails: '', sections: '', pmCount: 0, issueCount: 0 });
   const [showAdminReport, setShowAdminReport] = useState(false);
@@ -323,6 +325,12 @@ function App() {
         setSelectedProject('');
         setSelectedMetric('');
         window.history.pushState({}, '', window.location.pathname);
+      }
+
+      // Ctrl+R for user race Easter egg
+      if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
+        e.preventDefault();
+        setShowUserRace(true);
       }
     };
 
@@ -2725,6 +2733,15 @@ function App() {
             ×
           </button>
         </div>
+      )}
+
+      {/* User Race Easter Egg (Ctrl+R) */}
+      {showUserRace && (
+        <UserRace
+          users={users}
+          projects={projects}
+          onClose={() => setShowUserRace(false)}
+        />
       )}
     </div>
   );

@@ -84,6 +84,8 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: 8px 16px;
+  padding-bottom: 140px;
+  scroll-padding-bottom: 140px;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -448,6 +450,7 @@
 /* Commentary Section - Using MetricChart styles */
 .portfolio-review-slide .commentary-section {
   margin-top: 12px;
+  margin-bottom: 120px;
   padding: 12px;
   flex-shrink: 0;
   width: 100%;
@@ -693,6 +696,7 @@
   background: #fafafa;
   border: 1px solid #e5e7eb;
   border-radius: 4px;
+  margin-bottom: 120px;
 }
 
 .suggested-actions-section h3 {

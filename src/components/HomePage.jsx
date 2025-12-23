@@ -10,7 +10,7 @@ import {
   MdTune,
   MdShowChart,
   MdTimeline,
-  MdFilterList,
+  MdFilterAlt,
   MdFolderSpecial,
   MdCheckCircle,
   MdArrowForward,
@@ -1482,7 +1482,7 @@ const HomePage = ({
                   {/* Space indicator for space-aware panels */}
                   {['heatmap', 'metrics', 'commentary', 'inconsistencies', 'projectHealth', 'timeline', 'backlog', 'recentUpdates'].includes(expandedDockPanel) && (
                     <span className="space-filter-indicator">
-                      <MdFilterList className="filter-icon" />
+                      <MdFilterAlt className="filter-icon" />
                       {selectedSpace === 'all'
                         ? 'All Spaces'
                         : spaces.find(s => s.id === Number(selectedSpace))?.name || 'Unknown Space'}

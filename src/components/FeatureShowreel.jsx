@@ -6,7 +6,7 @@ import {
   MdSpeed,
   MdTimeline,
   MdTrendingUp,
-  MdFilterList,
+  MdFilterAlt,
   MdFolderSpecial,
   MdCheckCircle,
   MdList,
@@ -61,7 +61,7 @@ const FeatureShowreel = ({ onClose }) => {
       ]
     },
     {
-      icon: <MdFilterList />,
+      icon: <MdFilterAlt />,
       title: "Focus on Measures That Are Moving",
       description: "Quickly identify which metrics are changing and require attention. Filter out the noise and focus on what matters most for your project status.",
       details: [
@@ -118,7 +118,7 @@ const FeatureShowreel = ({ onClose }) => {
     ],
     "Organization": [
       { icon: <MdFolderSpecial />, name: "Portfolios", desc: "Group projects with color-coded portfolios" },
-      { icon: <MdFilterList />, name: "Portfolio Filtering", desc: "View projects by portfolio" },
+      { icon: <MdFilterAlt />, name: "Portfolio Filtering", desc: "View projects by portfolio" },
       { icon: <MdCheckCircle />, name: "Consistency Reports", desc: "Automated data quality checks" }
     ],
     "Security & Audit": [

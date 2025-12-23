@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { MdSearch, MdFilterList } from 'react-icons/md';
+import { MdSearch, MdFilterAlt } from 'react-icons/md';
 
 // Fuzzy match function
 const fuzzyMatch = (str, pattern) => {
@@ -149,7 +149,7 @@ const SearchPanel = ({
           </div>
           {selectedSpace !== 'all' && (
             <div className="search-space-warning">
-              <MdFilterList className="warning-icon" />
+              <MdFilterAlt className="warning-icon" />
               Searching within {spaces.find(s => s.id === Number(selectedSpace))?.name || 'selected space'}
             </div>
           )}

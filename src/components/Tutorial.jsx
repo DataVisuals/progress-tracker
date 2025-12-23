@@ -19,7 +19,7 @@ import {
   MdComment,
   MdPeople,
   MdAssignment,
-  MdFilterList,
+  MdFilterAlt,
   MdHistory,
   MdDock,
   MdOpenInNew,
@@ -949,7 +949,7 @@ const Tutorial = ({ onClose, startPage = 0, skipAtStartup = false, onSkipAtStart
           desc: 'View your metrics as they appeared at any past date'
         },
         {
-          icon: <MdFilterList />,
+          icon: <MdFilterAlt />,
           name: 'Filters',
           desc: 'Focus on red/amber metrics or specific portfolios'
         },

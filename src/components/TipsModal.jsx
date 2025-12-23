@@ -13,7 +13,7 @@ import {
   MdBuild,
   MdPeople,
   MdVisibility,
-  MdFilterList,
+  MdFilterAlt,
   MdHistory,
   MdSpeed,
   MdViewWeek,
@@ -150,7 +150,7 @@ export const tipsByCategory = {
       description: "Compare actual progress against expected trajectories, accounting for scope changes."
     },
     {
-      icon: <MdFilterList />,
+      icon: <MdFilterAlt />,
       title: "Focus on Metrics That Are Moving",
       description: "Filter by RAG status to prioritize attention on problem areas."
     },
@@ -234,7 +234,7 @@ export const tipsByCategory = {
       description: "Group related projects together for better oversight and portfolio-level views."
     },
     {
-      icon: <MdFilterList />,
+      icon: <MdFilterAlt />,
       title: "Use Portfolio Filters",
       description: "Filter the consistency report by portfolio to focus on specific business areas."
     },
