@@ -224,8 +224,6 @@ const ActiveUsersPanel = ({
           <div className="users-grid-layout">
             {/* Top Left: Activity by User */}
             <div className="users-quadrant top-left">
-            {/* Activity by User Chart */}
-            <div className="activity-by-user-section">
               <div className="section-header">
                 <h3>Activity by User</h3>
                 <select
@@ -294,11 +292,9 @@ const ActiveUsersPanel = ({
                 <div className="empty-state compact">No activity data</div>
               )}
             </div>
-            </div>
 
             {/* Top Right: Logged in Users */}
             <div className="users-quadrant top-right">
-            <div className="users-list-section">
               <div className="section-header">
                 <h3>Logged In <span className="subtitle">Last 30 min</span></h3>
               </div>
@@ -328,13 +324,12 @@ const ActiveUsersPanel = ({
                 </div>
               )}
             </div>
-            </div>
 
             {/* Bottom Left: Clarity Rankings (Compact) */}
             <div className="users-quadrant bottom-left">
-            <div className="section-header">
-              <h3>Clarity Rankings</h3>
-            </div>
+              <div className="section-header">
+                <h3>Clarity Rankings</h3>
+              </div>
             {clarityLoading ? (
               <div className="loading-state">Loading...</div>
             ) : clarityError ? (
@@ -363,33 +358,33 @@ const ActiveUsersPanel = ({
 
             {/* Bottom Right: Asleep at the Wheel (Inactive PMs) */}
             <div className="users-quadrant bottom-right">
-            <div className="section-header">
-              <h3>Asleep at the Wheel</h3>
-            </div>
-            {!inactivePMs ? (
-              <div className="loading-state">Loading...</div>
-            ) : inactivePMs.error ? (
-              <div className="empty-state compact">
-                <MdWarning className="empty-icon" />
-                <p>Unable to load</p>
+              <div className="section-header">
+                <h3>Asleep at the Wheel</h3>
               </div>
-            ) : inactivePMs.count === 0 ? (
-              <div className="empty-state compact">
-                <p>All PMs are active!</p>
-              </div>
-            ) : (
-              <div className="inactive-pms-list">
-                {inactivePMs.pms?.slice(0, 10).map((pm, idx) => (
-                  <div key={pm.id} className="inactive-pm-item">
-                    <div className="inactive-pm-info">
-                      <span className="inactive-pm-name">{pm.name}</span>
-                      <span className="inactive-pm-email">{pm.email}</span>
+              {!inactivePMs ? (
+                <div className="loading-state">Loading...</div>
+              ) : inactivePMs.error ? (
+                <div className="empty-state compact">
+                  <MdWarning className="empty-icon" />
+                  <p>Unable to load</p>
+                </div>
+              ) : inactivePMs.count === 0 ? (
+                <div className="empty-state compact">
+                  <p>All PMs are active!</p>
+                </div>
+              ) : (
+                <div className="inactive-pms-list">
+                  {inactivePMs.pms?.slice(0, 10).map((pm, idx) => (
+                    <div key={pm.id} className="inactive-pm-item">
+                      <div className="inactive-pm-info">
+                        <span className="inactive-pm-name">{pm.name}</span>
+                        <span className="inactive-pm-email">{pm.email}</span>
+                      </div>
+                      <span className="inactive-pm-time">{formatTimeSince(pm.daysSinceLogin, pm.neverLoggedIn)}</span>
                     </div>
-                    <span className="inactive-pm-time">{formatTimeSince(pm.daysSinceLogin, pm.neverLoggedIn)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
