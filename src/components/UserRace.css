@@ -122,6 +122,7 @@
   border-radius: 12px;
   min-height: 400px;
   max-height: 700px;
+  position: relative;
 }
 
 .race-lane {
@@ -272,10 +273,29 @@
 }
 
 .race-results {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   text-align: center;
   color: white;
-  animation: slideUp 0.6s ease-out;
-  margin-top: 20px;
+  background: rgba(23, 32, 51, 0.98);
+  padding: 40px 60px;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  z-index: 100;
+  border: 2px solid rgba(251, 191, 36, 0.3);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.6s ease-out, visibility 0.6s ease-out;
+}
+
+.race-results.visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 @keyframes slideUp {
@@ -290,12 +310,13 @@
 }
 
 .race-results h2 {
-  font-size: 20px;
-  margin: 0 0 12px 0;
+  font-size: 32px;
+  margin: 0 0 20px 0;
   background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  font-weight: 700;
 }
 
 .podium {
@@ -357,6 +378,26 @@
   font-size: 11px;
   color: #94a3b8;
   font-weight: 600;
+}
+
+.results-footer {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.results-footer kbd {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: 600;
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  margin: 0 4px;
 }
 
 .race-footer {
@@ -432,6 +473,12 @@
 
 :root:not(.dark-mode) .race-car {
   background: #edf1f6;
+}
+
+:root:not(.dark-mode) .race-results {
+  background: rgba(237, 241, 246, 0.98);
+  border: 2px solid rgba(245, 158, 11, 0.3);
+  backdrop-filter: blur(8px);
 }
 
 :root:not(.dark-mode) .race-results h2 {

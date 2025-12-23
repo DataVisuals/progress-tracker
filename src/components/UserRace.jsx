@@ -201,56 +201,55 @@ const UserRace = ({ users = [], projects = [], onClose }) => {
             <p>Loading race data...</p>
           </div>
         ) : (
-          <>
-            <div className="race-track-container">
-              {userScores.map((user, index) => (
-                <div key={user.id} className="race-lane">
-                  <div className="lane-info">
-                    <span className="user-name">{user.name}</span>
-                    <span className="lane-pill">Lane {index + 1}</span>
-                    {raceFinished && (
-                      <span className="user-stats">
-                        {user.interactions} interactions • {Math.round(user.avgHealthScore)}% health
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="lane-track">
-                    <div className="track-line" />
-                    <div
-                      className={`race-car ${raceFinished ? 'finished' : ''}`}
-                      style={{
-                        left: `${user.progress}%`,
-                        color: getCarColor(index)
-                      }}
-                    >
-                      <GiRaceCar />
-                    </div>
-                    <div className="finish-line">🏁</div>
-                  </div>
+          <div className="race-track-container">
+            {userScores.map((user, index) => (
+              <div key={user.id} className="race-lane">
+                <div className="lane-info">
+                  <span className="user-name">{user.name}</span>
+                  <span className="lane-pill">Lane {index + 1}</span>
+                  {raceFinished && (
+                    <span className="user-stats">
+                      {user.interactions} interactions • {Math.round(user.avgHealthScore)}% health
+                    </span>
+                  )}
                 </div>
-              ))}
-            </div>
 
-            {raceFinished && (
-              <div className="race-results">
-                <h2>Final Results</h2>
-                <div className="podium">
-                  {userScores
-                    .slice()
-                    .sort((a, b) => a.rank - b.rank)
-                    .slice(0, 3)
-                    .map((user, index) => (
-                      <div key={user.id} className={`podium-place place-${index + 1}`}>
-                        {getMedalIcon(index)}
-                        <div className="podium-name">{user.name}</div>
-                        <div className="podium-score">{Math.round(user.score)} pts</div>
-                      </div>
-                    ))}
+                <div className="lane-track">
+                  <div className="track-line" />
+                  <div
+                    className={`race-car ${raceFinished ? 'finished' : ''}`}
+                    style={{
+                      left: `${user.progress}%`,
+                      color: getCarColor(index)
+                    }}
+                  >
+                    <GiRaceCar />
+                  </div>
+                  <div className="finish-line">🏁</div>
                 </div>
               </div>
-            )}
-          </>
+            ))}
+
+            <div className={`race-results ${raceFinished ? 'visible' : ''}`}>
+              <h2>Final Results</h2>
+              <div className="podium">
+                {userScores
+                  .slice()
+                  .sort((a, b) => a.rank - b.rank)
+                  .slice(0, 3)
+                  .map((user, index) => (
+                    <div key={user.id} className={`podium-place place-${index + 1}`}>
+                      {getMedalIcon(index)}
+                      <div className="podium-name">{user.name}</div>
+                      <div className="podium-score">{Math.round(user.score)} pts</div>
+                    </div>
+                  ))}
+              </div>
+              <div className="results-footer">
+                Press <kbd>Esc</kbd> to close
+              </div>
+            </div>
+          </div>
         )}
 
         <div className="race-footer">
