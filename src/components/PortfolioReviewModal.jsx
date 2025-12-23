@@ -42,6 +42,7 @@ const PortfolioReviewModal = ({
   const [projectsMilestones, setProjectsMilestones] = useState({});
   const [projectsComments, setProjectsComments] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
   const [expandedComments, setExpandedComments] = useState({});
   const slideRef = useRef(null);
@@ -59,10 +60,12 @@ const PortfolioReviewModal = ({
     const fetchAllProjectData = async () => {
       if (portfolioProjects.length === 0) {
         setLoading(false);
+        setLoadingProgress(0);
         return;
       }
 
       setLoading(true);
+      setLoadingProgress(0);
       const data = {};
       const metrics = {};
       const links = {};
@@ -70,7 +73,10 @@ const PortfolioReviewModal = ({
       const milestones = {};
       const comments = {};
 
-      for (const project of portfolioProjects) {
+      const totalProjects = portfolioProjects.length;
+
+      for (let i = 0; i < portfolioProjects.length; i++) {
+        const project = portfolioProjects[i];
         try {
           // Fetch project data
           const dataResponse = await api.get(`/projects/${project.id}/data`);
@@ -96,6 +102,9 @@ const PortfolioReviewModal = ({
           // Fetch project comments
           const commentsResponse = await api.get(`/projects/${project.id}/comments`);
           comments[project.id] = commentsResponse.data;
+
+          // Update progress after each project is loaded
+          setLoadingProgress(Math.round(((i + 1) / totalProjects) * 100));
         } catch (err) {
           console.error(`Error fetching data for project ${project.id}:`, err);
         }
@@ -1308,7 +1317,15 @@ const PortfolioReviewModal = ({
     return (
       <div className="modal-overlay">
         <div className="modal-content portfolio-review-modal">
-          <div className="loading-state">Loading portfolio data...</div>
+          <div className="loading-state">
+            <div className="loading-content">
+              <div className="loading-text">Loading portfolio data...</div>
+              <div className="progress-bar-container">
+                <div className="progress-bar" style={{ width: `${loadingProgress}%` }}></div>
+              </div>
+              <div className="progress-text">{loadingProgress}%</div>
+            </div>
+          </div>
         </div>
       </div>
     );

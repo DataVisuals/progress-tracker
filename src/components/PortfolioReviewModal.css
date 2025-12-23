@@ -1294,6 +1294,41 @@
   color: #6b7280;
 }
 
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 300px;
+}
+
+.loading-text {
+  font-size: 16px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #00aeef;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 14px;
+  color: #9ca3af;
+  font-weight: 600;
+}
+
 /* Dark Mode */
 :root.dark-mode .portfolio-review-modal {
   background: #1f2937;
@@ -1540,6 +1575,22 @@
 
 :root.dark-mode .loading-state {
   color: #9ca3af;
+}
+
+:root.dark-mode .loading-text {
+  color: #9ca3af;
+}
+
+:root.dark-mode .progress-bar-container {
+  background-color: #374151;
+}
+
+:root.dark-mode .progress-bar {
+  background-color: #00aeef;
+}
+
+:root.dark-mode .progress-text {
+  color: #6b7280;
 }
 
 /* Dark Mode - Compact Summary */

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Build timestamp - updated automatically before each commit to gh
-const BUILD_TIMESTAMP = '2025-12-23 13:36:02';
+const BUILD_TIMESTAMP = '2025-12-23 13:43:37';
 
 import Select from 'react-select';
 import 'react-quill/dist/quill.snow.css';
