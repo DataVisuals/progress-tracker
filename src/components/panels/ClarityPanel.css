@@ -750,7 +750,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
-  gap: 16px;
+  gap: 24px;
   height: 100%;
   width: 100%;
 }

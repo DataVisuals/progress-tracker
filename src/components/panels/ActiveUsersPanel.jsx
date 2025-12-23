@@ -299,7 +299,9 @@ const ActiveUsersPanel = ({
             {/* Top Right: Logged in Users */}
             <div className="users-quadrant top-right">
             <div className="users-list-section">
-              <h3>Logged In <span className="subtitle">Last 30 min</span></h3>
+              <div className="section-header">
+                <h3>Logged In <span className="subtitle">Last 30 min</span></h3>
+              </div>
               {!activeUsers ? (
                 <div className="loading-state">Loading...</div>
               ) : activeUsers.error ? (
@@ -394,7 +396,9 @@ const ActiveUsersPanel = ({
           {/* Activity Timeline - Full Width Below Grid */}
           {userActivity && !userActivity.error && getTimelineChartData().length > 0 && (
             <div className="timeline-section">
-              <h3>Activity Timeline</h3>
+              <div className="section-header">
+                <h3>Activity Timeline</h3>
+              </div>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={getTimelineChartData()} margin={{ top: 5, right: 20, left: 10, bottom: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" />
