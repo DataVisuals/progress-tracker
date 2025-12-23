@@ -25,18 +25,27 @@ const UserRace = ({ users = [], projects = [], onClose }) => {
 
         const allProjectsList = projectsResponse.data || [];
 
-        // Load project data and metrics for each project to calculate health
+        // Load project data for ALL projects (we'll filter users later)
         const projectsWithData = await Promise.all(
           allProjectsList.map(async (project) => {
             try {
-              const [dataResponse, metricsResponse] = await Promise.all([
-                api.getProjectData(project.id),
-                api.get(`/projects/${project.id}/metrics`)
-              ]);
+              const dataResponse = await api.getProjectData(project.id);
+              const projectData = dataResponse.data || [];
+
+              // Extract unique metrics from the period data (like HomePage does)
+              const metricsMap = {};
+              projectData.forEach(period => {
+                if (period.metric_id && !metricsMap[period.metric_id]) {
+                  metricsMap[period.metric_id] = {
+                    id: period.metric_id,
+                    name: period.metric,
+                    description: period.metric_description || ''
+                  };
+                }
+              });
+              const metrics = Object.values(metricsMap);
 
               // Calculate health score
-              const projectData = dataResponse.data || [];
-              const metrics = metricsResponse.data || [];
               const healthScore = calculateHealthScore(project, projectData, metrics, [], project.link_count || 0);
 
               return {
@@ -67,16 +76,18 @@ const UserRace = ({ users = [], projects = [], onClose }) => {
       }
     };
     fetchData();
-  }, []);
+  }, []); // Only run once on mount
 
   useEffect(() => {
     if (loading || users.length === 0 || allProjects.length === 0) return;
 
-    // Filter out admin users from the race
-    const nonAdminUsers = users.filter(user => user.role !== 'admin');
+    // Filter out system accounts (keep admins who manage projects)
+    const eligibleUsers = users.filter(user =>
+      user.name !== 'System Admin' && user.name !== 'System'
+    );
 
     // Calculate scores for each user, excluding those without projects
-    const scores = nonAdminUsers
+    const scores = eligibleUsers
       .map(user => {
         // Count user interactions from audit log
         const interactions = auditLog.filter(log => log.user_id === user.id).length;
