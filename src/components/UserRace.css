@@ -24,13 +24,13 @@
 .user-race-container {
   width: 95vw;
   max-width: 1400px;
-  height: 90vh;
+  max-height: 90vh;
   background: #172033;
   border-radius: 20px;
   padding: 40px;
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 24px;
   position: relative;
   overflow-y: auto;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
@@ -117,10 +117,11 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
   padding: 20px;
   border-radius: 12px;
   min-height: 400px;
+  max-height: 700px;
 }
 
 .race-lane {

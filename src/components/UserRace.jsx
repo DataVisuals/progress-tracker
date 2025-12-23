@@ -73,8 +73,11 @@ const UserRace = ({ users = [], projects = [], onClose }) => {
     // Sort by score to assign ranks
     const sortedScores = scores.sort((a, b) => b.score - a.score);
 
+    // Take only top 10 users
+    const top10Scores = sortedScores.slice(0, 10);
+
     // Assign ranks based on score
-    const rankedScores = sortedScores.map((user, index) => ({
+    const rankedScores = top10Scores.map((user, index) => ({
       ...user,
       rank: index + 1 // 1 = highest score (fastest)
     }));
