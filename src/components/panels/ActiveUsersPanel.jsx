@@ -397,8 +397,14 @@ const ActiveUsersPanel = ({
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={getTimelineChartData()} margin={{ top: 5, right: 20, left: 10, bottom: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" angle={-45} textAnchor="end" height={50} tick={{ fontSize: 9 }} />
-                  <YAxis tick={{ fontSize: 9 }} />
+                  <XAxis
+                    dataKey="date"
+                    angle={-45}
+                    textAnchor="end"
+                    height={50}
+                    tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  />
+                  <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} />
                   <Tooltip
                     content={({ active, payload, label }) => {
                       if (!active || !payload?.length) return null;
