@@ -207,11 +207,9 @@ const UserRace = ({ users = [], projects = [], onClose }) => {
                 <div className="lane-info">
                   <span className="user-name">{user.name}</span>
                   <span className="lane-pill">Lane {index + 1}</span>
-                  {raceFinished && (
-                    <span className="user-stats">
-                      {user.interactions} interactions • {Math.round(user.avgHealthScore)}% health
-                    </span>
-                  )}
+                  <span className={`user-stats ${raceFinished ? 'visible' : ''}`}>
+                    {user.interactions} interactions • {Math.round(user.avgHealthScore)}% health
+                  </span>
                 </div>
 
                 <div className="lane-track">
