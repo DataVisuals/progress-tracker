@@ -445,6 +445,7 @@ const ActiveUsersPanel = ({
           )}
 
         {/* Old clarity section removed - now in bottom-left quadrant */}
+        </div>
       </div>
     );
   }
