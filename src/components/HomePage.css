@@ -2978,8 +2978,8 @@
 
 /* Dark mode for feedback section */
 :root.dark-mode .feedback-section {
-  background-color: #1f2937;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background-color: transparent;
+  box-shadow: none;
 }
 
 :root.dark-mode .feedback-header {
@@ -2992,7 +2992,7 @@
 }
 
 :root.dark-mode .feedback-content {
-  background-color: #1f2937;
+  background-color: transparent;
 }
 
 :root.dark-mode .feedback-item {

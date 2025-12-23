@@ -54,6 +54,7 @@ const ActiveUsersPanel = ({
   isAdmin,
   forDock,
   activeUsers,
+  inactivePMs,
   userActivity,
   userActivityDays,
   setUserActivityDays,
@@ -203,13 +204,26 @@ const ActiveUsersPanel = ({
 
   const userColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'];
 
-  // Fullscreen view: logged-in users list + activity charts
+  // Helper to format time since last activity
+  const formatTimeSince = (daysSinceLogin, neverLoggedIn) => {
+    if (neverLoggedIn) return 'Never logged in';
+    if (daysSinceLogin === 0) return 'Today';
+    if (daysSinceLogin === 1) return '1 day ago';
+    if (daysSinceLogin < 7) return `${daysSinceLogin} days ago`;
+    if (daysSinceLogin < 30) return `${Math.floor(daysSinceLogin / 7)} week${Math.floor(daysSinceLogin / 7) > 1 ? 's' : ''} ago`;
+    if (daysSinceLogin < 365) return `${Math.floor(daysSinceLogin / 30)} month${Math.floor(daysSinceLogin / 30) > 1 ? 's' : ''} ago`;
+    return `${Math.floor(daysSinceLogin / 365)} year${Math.floor(daysSinceLogin / 365) > 1 ? 's' : ''} ago`;
+  };
+
+  // Fullscreen view: 4 quadrants layout
   if (forDock) {
     return (
       <div key={panelId} className={`home-quadrant active-users-quadrant fullscreen-users panel-${index + 1}`}>
         <div className="quadrant-content users-fullscreen-layout">
-          {/* Top row: Activity by User (left) + Logged in Users (right) */}
-          <div className="users-top-row">
+          {/* 2x2 Grid Layout */}
+          <div className="users-grid-layout">
+            {/* Top Left: Activity by User */}
+            <div className="users-quadrant top-left">
             {/* Activity by User Chart */}
             <div className="activity-by-user-section">
               <div className="section-header">
@@ -280,8 +294,10 @@ const ActiveUsersPanel = ({
                 <div className="empty-state compact">No activity data</div>
               )}
             </div>
+            </div>
 
-            {/* Logged in Users list */}
+            {/* Top Right: Logged in Users */}
+            <div className="users-quadrant top-right">
             <div className="users-list-section">
               <h3>Logged In <span className="subtitle">Last 30 min</span></h3>
               {!activeUsers ? (
@@ -310,10 +326,73 @@ const ActiveUsersPanel = ({
                 </div>
               )}
             </div>
+            </div>
+
+            {/* Bottom Left: Clarity Rankings (Compact) */}
+            <div className="users-quadrant bottom-left">
+            <div className="section-header">
+              <h3>Clarity Rankings</h3>
+            </div>
+            {clarityLoading ? (
+              <div className="loading-state">Loading...</div>
+            ) : clarityError ? (
+              <div className="clarity-error-small">{clarityError}</div>
+            ) : userRankings.length === 0 ? (
+              <div className="clarity-empty-small">No comment data</div>
+            ) : (
+              <div className="clarity-compact-quadrant">
+                <div className="clarity-mini-list">
+                  {userRankings.slice(0, 5).map((user, idx) => (
+                    <div key={user.userId} className="clarity-mini-item">
+                      <span className="clarity-mini-rank">{idx + 1}</span>
+                      <div className={`clarity-mini-gem ${getScoreClass(user.avgScore)}`}>
+                        <GemIcon size={12} />
+                      </div>
+                      <span className="clarity-mini-name">{user.userName}</span>
+                      <span className={`clarity-mini-score ${getScoreClass(user.avgScore)}`}>
+                        {user.avgScore.toFixed(1)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            </div>
+
+            {/* Bottom Right: Asleep at the Wheel (Inactive PMs) */}
+            <div className="users-quadrant bottom-right">
+            <div className="section-header">
+              <h3>Asleep at the Wheel</h3>
+            </div>
+            {!inactivePMs ? (
+              <div className="loading-state">Loading...</div>
+            ) : inactivePMs.error ? (
+              <div className="empty-state compact">
+                <MdWarning className="empty-icon" />
+                <p>Unable to load</p>
+              </div>
+            ) : inactivePMs.count === 0 ? (
+              <div className="empty-state compact">
+                <p>All PMs are active!</p>
+              </div>
+            ) : (
+              <div className="inactive-pms-list">
+                {inactivePMs.pms?.slice(0, 10).map((pm, idx) => (
+                  <div key={pm.id} className="inactive-pm-item">
+                    <div className="inactive-pm-info">
+                      <span className="inactive-pm-name">{pm.name}</span>
+                      <span className="inactive-pm-email">{pm.email}</span>
+                    </div>
+                    <span className="inactive-pm-time">{formatTimeSince(pm.daysSinceLogin, pm.neverLoggedIn)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            </div>
           </div>
 
-          {/* Bottom row: Timeline (full width) */}
-          {userActivity && !userActivity.error && getTimelineChartData().length > 0 && (
+          {/* Old timeline section removed - replaced with 4 quadrant grid */}
+          {false && userActivity && !userActivity.error && getTimelineChartData().length > 0 && (
             <div className="timeline-section">
               <h3>Activity Timeline</h3>
               <ResponsiveContainer width="100%" height={260}>
@@ -366,8 +445,8 @@ const ActiveUsersPanel = ({
           )}
         </div>
 
-        {/* Clarity Rankings at bottom */}
-        <div className="users-bottom-section">
+        {/* Old clarity section removed - now in bottom-left quadrant */}
+        {false && <div className="users-bottom-section">
           <div className="section-header">
             <h3>Clarity Rankings</h3>
           </div>
@@ -433,7 +512,7 @@ const ActiveUsersPanel = ({
               </div>
             </div>
           )}
-        </div>
+        </div>}
       </div>
     );
   }

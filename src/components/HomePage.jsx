@@ -153,6 +153,7 @@ const HomePage = ({
   const [auditSelectedDate, setAuditSelectedDate] = useState(null); // Selected date string for lazy loading
   const [databaseStats, setDatabaseStats] = useState(null); // Database stats for admin panel
   const [activeUsers, setActiveUsers] = useState(null); // Active users for admin panel
+  const [inactivePMs, setInactivePMs] = useState(null); // Inactive PMs ranked by time since last login
   const [userActivity, setUserActivity] = useState(null); // User activity data for fullscreen admin panel
   const [userActivityDays, setUserActivityDays] = useState(30); // Days for user activity report
   const [healthRankingView, setHealthRankingView] = useState(() => {
@@ -754,6 +755,15 @@ const HomePage = ({
           setActiveUsers({ error: auErr.message });
         }
 
+        // Load inactive PMs
+        try {
+          const inactivePMsResponse = await api.get('/admin/inactive-pms');
+          setInactivePMs(inactivePMsResponse.data);
+        } catch (ipErr) {
+          console.log('Could not load inactive PMs:', ipErr.message);
+          setInactivePMs({ error: ipErr.message });
+        }
+
         // Load user activity data
         try {
           const activityResponse = await api.get(`/admin/user-activity?days=${userActivityDays}`);
@@ -1334,6 +1344,7 @@ const HomePage = ({
             isAdmin={isAdmin}
             forDock={forDock}
             activeUsers={activeUsers}
+            inactivePMs={inactivePMs}
             userActivity={userActivity}
             userActivityDays={userActivityDays}
             setUserActivityDays={setUserActivityDays}

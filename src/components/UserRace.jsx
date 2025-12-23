@@ -10,26 +10,32 @@ const UserRace = ({ users = [], projects = [], onClose }) => {
   const [raceFinished, setRaceFinished] = useState(false);
   const [userScores, setUserScores] = useState([]);
   const [auditLog, setAuditLog] = useState([]);
+  const [allProjects, setAllProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch audit log data
+  // Fetch audit log data and all projects (not filtered by portfolio)
   useEffect(() => {
-    const fetchAuditLog = async () => {
+    const fetchData = async () => {
       try {
-        const response = await api.getAuditLog({ limit: 1000 });
-        setAuditLog(response.data || []);
+        const [auditResponse, projectsResponse] = await Promise.all([
+          api.getAuditLog({ limit: 1000 }),
+          api.get('/projects') // Load ALL projects, not filtered
+        ]);
+        setAuditLog(auditResponse.data || []);
+        setAllProjects(projectsResponse.data || []);
         setLoading(false);
       } catch (err) {
-        console.error('Failed to load audit log:', err);
+        console.error('Failed to load race data:', err);
         setAuditLog([]);
+        setAllProjects([]);
         setLoading(false);
       }
     };
-    fetchAuditLog();
+    fetchData();
   }, []);
 
   useEffect(() => {
-    if (loading || users.length === 0 || projects.length === 0) return;
+    if (loading || users.length === 0 || allProjects.length === 0) return;
 
     // Filter out admin users from the race
     const nonAdminUsers = users.filter(user => user.role !== 'admin');
@@ -39,10 +45,10 @@ const UserRace = ({ users = [], projects = [], onClose }) => {
       // Count user interactions from audit log
       const interactions = auditLog.filter(log => log.user_id === user.id).length;
 
-      // Get user's projects
-      const userProjects = projects.filter(p => p.initiative_manager === user.name);
+      // Get user's projects from ALL projects (not filtered)
+      const userProjects = allProjects.filter(p => p.initiative_manager === user.name);
 
-      let avgHealthScore = 0;
+      let avgHealthScore = 50; // Default score for users with no projects
       if (userProjects.length > 0) {
         // Use the healthScore property if it exists on the projects
         // If not available, estimate based on project count (temporary fallback)
@@ -100,7 +106,7 @@ const UserRace = ({ users = [], projects = [], onClose }) => {
 
     // Start race after brief delay
     setTimeout(() => setRaceStarted(true), 500);
-  }, [loading, users, projects, auditLog]);
+  }, [loading, users, allProjects, auditLog]);
 
   useEffect(() => {
     if (!raceStarted || userScores.length === 0) return;

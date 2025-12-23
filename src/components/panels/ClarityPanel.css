@@ -745,3 +745,206 @@
 :root.dark-mode .users-bottom-section {
   border-top-color: #374151;
 }
+/* 4-Quadrant Grid Layout for ActiveUsersPanel Fullscreen */
+.users-grid-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 16px;
+  height: 100%;
+  width: 100%;
+}
+
+.users-quadrant {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+}
+
+.users-quadrant.top-left {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.users-quadrant.top-right {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.users-quadrant.bottom-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.users-quadrant.bottom-right {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+/* Compact Clarity Styles for Bottom-Left Quadrant */
+.clarity-compact-quadrant {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.clarity-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.clarity-mini-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #f9fafb;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.clarity-mini-rank {
+  width: 20px;
+  text-align: center;
+  font-weight: 700;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.clarity-mini-gem {
+  flex-shrink: 0;
+}
+
+.clarity-mini-gem.clarity-good {
+  color: #10b981;
+}
+
+.clarity-mini-gem.clarity-average {
+  color: #f59e0b;
+}
+
+.clarity-mini-gem.clarity-poor {
+  color: #ef4444;
+}
+
+.clarity-mini-name {
+  flex: 1;
+  font-weight: 500;
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clarity-mini-score {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.clarity-mini-score.clarity-good {
+  color: #10b981;
+}
+
+.clarity-mini-score.clarity-average {
+  color: #f59e0b;
+}
+
+.clarity-mini-score.clarity-poor {
+  color: #ef4444;
+}
+
+.clarity-error-small,
+.clarity-empty-small {
+  padding: 12px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+/* Inactive PMs Styles for Bottom-Right Quadrant */
+.inactive-pms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inactive-pm-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: #fef2f2;
+  border-left: 3px solid #ef4444;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.inactive-pm-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.inactive-pm-name {
+  font-weight: 600;
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inactive-pm-email {
+  font-size: 11px;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inactive-pm-time {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: #dc2626;
+  font-size: 11px;
+  text-align: right;
+  margin-left: 12px;
+}
+
+/* Dark Mode */
+:root.dark-mode .users-quadrant {
+  background: #1e293b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+:root.dark-mode .clarity-mini-item {
+  background: #334155;
+}
+
+:root.dark-mode .clarity-mini-name {
+  color: #e2e8f0;
+}
+
+:root.dark-mode .inactive-pm-item {
+  background: #7f1d1d;
+  border-left-color: #ef4444;
+}
+
+:root.dark-mode .inactive-pm-name {
+  color: #f9fafb;
+}
+
+:root.dark-mode .inactive-pm-email {
+  color: #9ca3af;
+}
+
+:root.dark-mode .inactive-pm-time {
+  color: #fca5a5;
+}

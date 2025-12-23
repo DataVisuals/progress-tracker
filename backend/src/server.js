@@ -7223,6 +7223,59 @@ function createApp(dbPath) {
     }
   });
 
+  // Get inactive PMs ranked by time since last login (admin only)
+  app.get('/api/admin/inactive-pms', authenticateToken, async (req, res) => {
+    try {
+      if (!isAdmin(req.user)) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      // Get all PMs and their last activity
+      const inactivePMs = await dbAll(`
+        SELECT
+          u.id,
+          u.name,
+          u.email,
+          u.role,
+          MAX(pv.created_at) as lastActivity,
+          COUNT(pv.id) as totalPageViews
+        FROM users u
+        LEFT JOIN page_views pv ON pv.user_id = u.id
+        WHERE u.role = 'pm'
+        GROUP BY u.id, u.name, u.email, u.role
+        ORDER BY lastActivity ASC NULLS FIRST
+      `);
+
+      // Calculate time since last activity
+      const now = new Date();
+      const pmsWithInactivity = inactivePMs.map(pm => {
+        if (!pm.lastActivity) {
+          return {
+            ...pm,
+            daysSinceLogin: null,
+            neverLoggedIn: true
+          };
+        }
+        const lastActive = new Date(pm.lastActivity);
+        const diffMs = now - lastActive;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        return {
+          ...pm,
+          daysSinceLogin: diffDays,
+          neverLoggedIn: false
+        };
+      });
+
+      res.json({
+        pms: pmsWithInactivity,
+        count: pmsWithInactivity.length
+      });
+    } catch (err) {
+      console.error('Inactive PMs error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Get page heatmap data (admin only) - filtered for projects only
   app.get('/api/admin/page-heatmap', authenticateToken, async (req, res) => {
     try {
