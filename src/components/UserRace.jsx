@@ -56,8 +56,8 @@ const UserRace = ({ users = [], projects = [], onClose }) => {
         avgHealthScore = healthScores.reduce((sum, score) => sum + score, 0) / healthScores.length;
       }
 
-      // Final score: 60% interactions, 40% health score
-      const score = (interactions * 0.6) + (avgHealthScore * 0.4);
+      // Final score: 40% interactions, 60% health score
+      const score = (interactions * 0.4) + (avgHealthScore * 0.6);
 
       return {
         id: user.id,
