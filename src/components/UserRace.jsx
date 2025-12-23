@@ -56,22 +56,33 @@ const UserRace = ({ users = [], projects = [], onClose }) => {
         avgHealthScore = healthScores.reduce((sum, score) => sum + score, 0) / healthScores.length;
       }
 
-      // Final score: 40% interactions, 60% health score
-      const score = (interactions * 0.4) + (avgHealthScore * 0.6);
-
       return {
         id: user.id,
         name: user.name,
         email: user.email,
-        score,
+        rawInteractions: interactions,
         interactions,
         avgHealthScore,
         progress: 0
       };
     });
 
+    // Normalize interactions to 0-100 scale based on max in dataset
+    const maxInteractions = Math.max(...scores.map(s => s.rawInteractions), 1);
+    const scoredUsers = scores.map(user => {
+      const normalizedInteractions = (user.rawInteractions / maxInteractions) * 100;
+
+      // Final score: 40% normalized interactions, 60% health score
+      const score = (normalizedInteractions * 0.4) + (user.avgHealthScore * 0.6);
+
+      return {
+        ...user,
+        score
+      };
+    });
+
     // Sort by score to assign ranks
-    const sortedScores = scores.sort((a, b) => b.score - a.score);
+    const sortedScores = scoredUsers.sort((a, b) => b.score - a.score);
 
     // Take only top 10 users
     const top10Scores = sortedScores.slice(0, 10);
