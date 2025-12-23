@@ -760,9 +760,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: transparent;
   overflow-y: auto;
 }
 
@@ -920,8 +918,7 @@
 
 /* Dark Mode */
 :root.dark-mode .users-quadrant {
-  background: #1e293b;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: transparent;
 }
 
 :root.dark-mode .clarity-mini-item {
@@ -953,9 +950,7 @@
 .timeline-section {
   margin-top: 16px;
   padding: 16px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: transparent;
 }
 
 .timeline-section h3 {
@@ -966,8 +961,7 @@
 }
 
 :root.dark-mode .timeline-section {
-  background: #1e293b;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: transparent;
 }
 
 :root.dark-mode .timeline-section h3 {
