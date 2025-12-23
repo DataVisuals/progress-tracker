@@ -391,8 +391,8 @@ const ActiveUsersPanel = ({
             </div>
           </div>
 
-          {/* Old timeline section removed - replaced with 4 quadrant grid */}
-          {false && userActivity && !userActivity.error && getTimelineChartData().length > 0 && (
+          {/* Activity Timeline - Full Width Below Grid */}
+          {userActivity && !userActivity.error && getTimelineChartData().length > 0 && (
             <div className="timeline-section">
               <h3>Activity Timeline</h3>
               <ResponsiveContainer width="100%" height={260}>
@@ -443,10 +443,9 @@ const ActiveUsersPanel = ({
               </ResponsiveContainer>
             </div>
           )}
-        </div>
 
         {/* Old clarity section removed - now in bottom-left quadrant */}
-        {false && <div className="users-bottom-section">
+        {false && (
           <div className="section-header">
             <h3>Clarity Rankings</h3>
           </div>

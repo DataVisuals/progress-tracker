@@ -13,7 +13,7 @@ const UserRace = ({ users = [], projects = [], onClose }) => {
   const [allProjects, setAllProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch audit log data and all projects (not filtered by portfolio)
+  // Fetch audit log data and all projects with their data (not filtered by portfolio)
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -22,7 +22,42 @@ const UserRace = ({ users = [], projects = [], onClose }) => {
           api.get('/projects') // Load ALL projects, not filtered
         ]);
         setAuditLog(auditResponse.data || []);
-        setAllProjects(projectsResponse.data || []);
+
+        const allProjectsList = projectsResponse.data || [];
+
+        // Load project data and metrics for each project to calculate health
+        const projectsWithData = await Promise.all(
+          allProjectsList.map(async (project) => {
+            try {
+              const [dataResponse, metricsResponse] = await Promise.all([
+                api.getProjectData(project.id),
+                api.get(`/projects/${project.id}/metrics`)
+              ]);
+
+              // Calculate health score
+              const projectData = dataResponse.data || [];
+              const metrics = metricsResponse.data || [];
+              const healthScore = calculateHealthScore(project, projectData, metrics, [], project.link_count || 0);
+
+              return {
+                ...project,
+                healthScore,
+                projectData,
+                metrics
+              };
+            } catch (err) {
+              console.error(`Failed to load data for project ${project.id}:`, err);
+              return {
+                ...project,
+                healthScore: 0,
+                projectData: [],
+                metrics: []
+              };
+            }
+          })
+        );
+
+        setAllProjects(projectsWithData);
         setLoading(false);
       } catch (err) {
         console.error('Failed to load race data:', err);
@@ -40,38 +75,35 @@ const UserRace = ({ users = [], projects = [], onClose }) => {
     // Filter out admin users from the race
     const nonAdminUsers = users.filter(user => user.role !== 'admin');
 
-    // Calculate scores for each user using existing health scores
-    const scores = nonAdminUsers.map(user => {
-      // Count user interactions from audit log
-      const interactions = auditLog.filter(log => log.user_id === user.id).length;
+    // Calculate scores for each user, excluding those without projects
+    const scores = nonAdminUsers
+      .map(user => {
+        // Count user interactions from audit log
+        const interactions = auditLog.filter(log => log.user_id === user.id).length;
 
-      // Get user's projects from ALL projects (not filtered)
-      const userProjects = allProjects.filter(p => p.initiative_manager === user.name);
+        // Get user's projects from ALL projects (not filtered)
+        const userProjects = allProjects.filter(p => p.initiative_manager === user.name);
 
-      let avgHealthScore = 50; // Default score for users with no projects
-      if (userProjects.length > 0) {
-        // Use the healthScore property if it exists on the projects
-        // If not available, estimate based on project count (temporary fallback)
-        const healthScores = userProjects.map(p => {
-          if (p.healthScore !== undefined && p.healthScore !== null) {
-            return p.healthScore;
-          }
-          // Fallback: estimate 60% health for projects without computed scores
-          return 60;
-        });
-        avgHealthScore = healthScores.reduce((sum, score) => sum + score, 0) / healthScores.length;
-      }
+        // Skip users with no projects
+        if (userProjects.length === 0) {
+          return null;
+        }
 
-      return {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        rawInteractions: interactions,
-        interactions,
-        avgHealthScore,
-        progress: 0
-      };
-    });
+        // Calculate average health score from their projects
+        const healthScores = userProjects.map(p => p.healthScore || 0);
+        const avgHealthScore = healthScores.reduce((sum, score) => sum + score, 0) / healthScores.length;
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          rawInteractions: interactions,
+          interactions,
+          avgHealthScore,
+          progress: 0
+        };
+      })
+      .filter(user => user !== null); // Remove users without projects
 
     // Normalize interactions to 0-100 scale based on max in dataset
     const maxInteractions = Math.max(...scores.map(s => s.rawInteractions), 1);

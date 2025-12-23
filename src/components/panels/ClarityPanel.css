@@ -948,3 +948,28 @@
 :root.dark-mode .inactive-pm-time {
   color: #fca5a5;
 }
+
+/* Timeline Section Below Grid */
+.timeline-section {
+  margin-top: 16px;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+:root.dark-mode .timeline-section {
+  background: #1e293b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+:root.dark-mode .timeline-section h3 {
+  color: #f9fafb;
+}
