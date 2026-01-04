@@ -92,7 +92,7 @@
 }
 
 .timeline-axis-label {
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
@@ -123,6 +123,7 @@
   flex: 1;
   padding: 8px 0 2px 0;
   min-width: fit-content;
+  position: relative;
 }
 
 .timeline-project-row {
@@ -134,12 +135,12 @@
   min-height: 32px;
   min-width: fit-content;
   position: relative;
-  z-index: 1;
+  z-index: 10;
 }
 
 .timeline-project-row:hover {
   background-color: #f8fafc;
-  z-index: 10;
+  z-index: 20;
 }
 
 .timeline-project-row.past {
@@ -190,7 +191,7 @@
   color: white;
   padding: 6px 10px;
   border-radius: 6px;
-  font-size: 10px;
+  font-size: 15px;
   white-space: nowrap;
   display: flex;
   flex-direction: column;
@@ -211,7 +212,7 @@
 
 .project-label-tooltip .tooltip-pm {
   color: #9ca3af;
-  font-size: 9px;
+  font-size: 13px;
   margin-top: 2px;
 }
 
@@ -274,7 +275,7 @@
   flex-shrink: 0;
   text-align: right;
   padding-right: 6px;
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 700;
   position: sticky;
   right: 0;
@@ -361,7 +362,7 @@
   color: white;
   padding: 4px 8px;
   border-radius: 4px;
-  font-size: 9px;
+  font-size: 13px;
   white-space: nowrap;
   display: flex;
   flex-direction: column;
@@ -372,14 +373,14 @@
 }
 
 .tubemap-stop .milestone-tooltip strong {
-  font-size: 10px;
+  font-size: 15px;
   margin-bottom: 1px;
 }
 
 .tubemap-stop .milestone-tooltip .completed-badge {
   color: #10b981;
   font-weight: 600;
-  font-size: 9px;
+  font-size: 13px;
 }
 
 /* Project Tooltip (on terminus) */
@@ -418,7 +419,7 @@
 
 .tubemap-terminus .project-tooltip .tooltip-pm {
   color: #9ca3af;
-  font-size: 10px;
+  font-size: 15px;
   margin-top: 2px;
 }
 
@@ -447,7 +448,7 @@
 }
 
 .date-history-icon svg {
-  font-size: 9px;
+  font-size: 13px;
   color: white;
 }
 
@@ -479,7 +480,7 @@
 }
 
 .milestone-history-icon svg {
-  font-size: 8px;
+  font-size: 12px;
   color: white;
 }
 
@@ -498,7 +499,7 @@
   color: white;
   padding: 8px 12px;
   border-radius: 6px;
-  font-size: 10px;
+  font-size: 15px;
   white-space: nowrap;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   z-index: 500;
@@ -552,7 +553,7 @@
 }
 
 .history-label {
-  font-size: 8px;
+  font-size: 12px;
   background: #4b5563;
   padding: 1px 4px;
   border-radius: 3px;
@@ -560,7 +561,7 @@
 }
 
 .history-slippage {
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 600;
   padding: 1px 4px;
   border-radius: 3px;
@@ -570,20 +571,42 @@
 }
 
 /* Today Marker - One per row to create continuous effect */
-.timeline-today-marker-row {
+.timeline-today-triangle-row {
   position: absolute;
-  top: 0;
-  height: 100%;
-  width: 2px;
+  top: 4px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 10px solid #fbbf24;
+  transform: translateX(-6px);
   pointer-events: none;
-  z-index: 0;
+  z-index: 10;
 }
 
-.today-line-segment {
-  width: 100%;
-  height: 100%;
-  background: #f59e0b;
-  opacity: 0.3;
+/* Today vertical line container */
+.timeline-today-container {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask-image: linear-gradient(to right, transparent 0px, transparent 320px, black 320px);
+  mask-image: linear-gradient(to right, transparent 0px, transparent 320px, black 320px);
+}
+
+/* Today vertical line */
+.timeline-today-line {
+  position: absolute;
+  top: -50px;
+  bottom: 0;
+  width: 2px;
+  background-color: #fbbf24;
+  pointer-events: none;
+  opacity: 0.7;
+  box-shadow: 0 0 4px rgba(251, 191, 36, 0.5);
 }
 
 /* Empty State */
@@ -638,7 +661,6 @@
 
 :root.dark-mode .timeline-project-label {
   background: #111827;
-  z-index: 30;
 }
 
 :root.dark-mode .timeline-project-label .project-name {

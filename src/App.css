@@ -325,12 +325,14 @@
 }
 
 .app-logo-image {
-  height: 32px;
-  width: auto;
-  background-color: #0075B0;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  height: 36px;
+  width: 36px;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.app-logo-image:hover {
+  transform: scale(1.1);
 }
 
 .header-right {
@@ -597,7 +599,7 @@
   color: #fff;
   padding: 2px 8px;
   border-radius: 10px;
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -638,6 +640,7 @@
 
 .pm-info-inline {
   font-weight: 500;
+  font-size: 15px;
 }
 
 .pm-separator {
@@ -648,7 +651,7 @@
 .pm-placeholder-inline {
   color: #9ca3af;
   font-style: italic;
-  font-size: 12px;
+  font-size: 15px;
 }
 
 /* Inline links */
@@ -688,6 +691,7 @@
 .project-timeline-date {
   font-weight: 500;
   color: #374151;
+  font-size: 15px;
 }
 
 .project-timeline-separator {
@@ -837,7 +841,7 @@
 
 .project-description {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.5;
   padding: 0;
   display: -webkit-box;
@@ -2439,6 +2443,18 @@
   background: var(--bg-tertiary) !important;
   border-color: var(--border-color) !important;
   color: var(--text-primary) !important;
+}
+
+.character-counter {
+  display: flex;
+  font-size: 10px;
+  color: #6b7280;
+  margin-bottom: 4px;
+  justify-content: flex-end;
+}
+
+:root.dark-mode .character-counter {
+  color: #d1d5db;
 }
 
 :root.dark-mode .commentary-item {

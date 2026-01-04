@@ -46,12 +46,11 @@ import ProjectCommentary from './components/ProjectCommentary';
 import UserRace from './components/UserRace';
 import { api, refreshToken } from './api/client';
 import { selectStyles } from './components/SelectStyles';
-import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode, MdSwapHoriz, MdMenuBook } from 'react-icons/md';
+import { MdArrowDropDown, MdHelpOutline, MdShare, MdLightMode, MdDarkMode, MdSwapHoriz, MdMenuBook, MdShowChart } from 'react-icons/md';
 import ProjectHealthModal, { calculateHealthScore } from './components/ProjectHealthModal';
 import ClarityIndicator from './components/ClarityIndicator';
 import Lottie from 'lottie-react';
 import progressChartAnimation from './assets/progress-chart.json';
-import headerLogoImage from './assets/project_metrics_cumulative_tight.gif';
 import bellNotificationAnimation from './assets/bell-notification.json';
 import { trackPage, startPageLoadTimer } from './hooks/usePageTracking';
 import { getTimeUntilExpiry, isTokenExpiringSoon, formatTimeUntilExpiry, storeTokenExpiry } from './utils/tokenUtils';
@@ -336,6 +335,20 @@ function App() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedProject]);
+
+  // Check for showHealth query parameter and automatically open health modal
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes('?showHealth=true') && selectedProject) {
+      // Small delay to ensure project data is loaded
+      setTimeout(() => {
+        setShowProjectHealth(true);
+        // Clean up the URL
+        const cleanHash = hash.replace(/\?showHealth=true/, '');
+        window.history.replaceState({}, '', cleanHash || window.location.pathname);
+      }, 100);
+    }
   }, [selectedProject]);
 
   // Arrow key navigation between metrics when in metric view
@@ -1573,13 +1586,13 @@ function App() {
       const metric = projectMetrics.find(m => m.name === selectedMetric);
       if (!metric) return;
 
-      // If enabling, check if we already have 5 OTHER metrics shown in portfolio review
+      // If enabling, check if we already have 4 OTHER metrics shown in portfolio review
       if (showInReview) {
         const otherShownCount = projectMetrics.filter(m =>
           m.id !== metric.id && m.show_in_portfolio_review
         ).length;
-        if (otherShownCount >= 5) {
-          alert('Maximum of 5 metrics can be shown in Portfolio Review. Please disable another metric first.');
+        if (otherShownCount >= 4) {
+          alert('Maximum of 4 metrics can be shown in Portfolio Review. Please disable another metric first.');
           return;
         }
       }
@@ -1778,11 +1791,7 @@ function App() {
               style={{ cursor: 'pointer' }}
               title="Go to Dashboard"
             >
-              <img
-                src={headerLogoImage}
-                alt="Progress Tracker"
-                className="app-logo-image"
-              />
+              <MdShowChart className="app-logo-image" />
               <div className="header-title-group">
                 <span className="header-title-text">Progress Tracker</span>
               </div>
@@ -2283,7 +2292,7 @@ function App() {
           </div>
         )}
 
-        {!selectedProject && (
+        <div style={{ display: !selectedProject ? 'block' : 'none' }}>
           <HomePage
             projects={projectsObject}
             projectsData={allProjectsData}
@@ -2307,7 +2316,7 @@ function App() {
             onEditBacklogItem={handleEditBacklogItem}
             onPromoteBacklogItem={handlePromoteBacklogItem}
           />
-        )}
+        </div>
       </div>
 
       {showDataGrid && (
@@ -2657,6 +2666,10 @@ function App() {
         <ProjectOnePager
           project={projects.find(p => p.id === parseInt(selectedProject))}
           onClose={() => setShowOnePager(false)}
+          onHealthClick={(proj) => {
+            setShowOnePager(false);
+            setShowProjectHealth(true);
+          }}
         />
       )}
 

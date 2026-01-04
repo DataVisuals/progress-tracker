@@ -80,9 +80,10 @@ const ProjectCommentary = ({
           <div className="commentary-item-add" style={{ marginBottom: '8px', padding: '6px' }}>
             <textarea
               value={newCommentValue}
-              onChange={(e) => setNewCommentValue(e.target.value)}
+              onChange={(e) => setNewCommentValue(e.target.value.slice(0, 350))}
               placeholder="Add your commentary here..."
               className="comment-textarea"
+              maxLength={350}
               style={{
                 width: '100%',
                 minHeight: '60px',
@@ -97,6 +98,9 @@ const ProjectCommentary = ({
               }}
               autoFocus
             />
+            <div className="character-counter">
+              {newCommentValue.length}/350 characters
+            </div>
             <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
               <button
                 onClick={handleCancelAddComment}
@@ -157,8 +161,9 @@ const ProjectCommentary = ({
                     <div className="commentary-item-edit">
                       <textarea
                         value={editCommentValue}
-                        onChange={(e) => setEditCommentValue(e.target.value)}
+                        onChange={(e) => setEditCommentValue(e.target.value.slice(0, 350))}
                         className="comment-textarea"
+                        maxLength={350}
                         style={{
                           width: '100%',
                           minHeight: '60px',
@@ -173,6 +178,9 @@ const ProjectCommentary = ({
                         }}
                         autoFocus
                       />
+                      <div className="character-counter">
+                        {editCommentValue.length}/350 characters
+                      </div>
                       <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                         <button
                           onClick={handleCancelEditComment}
@@ -282,8 +290,9 @@ const ProjectCommentary = ({
                               <div className="commentary-item-edit">
                                 <textarea
                                   value={editCommentValue}
-                                  onChange={(e) => setEditCommentValue(e.target.value)}
+                                  onChange={(e) => setEditCommentValue(e.target.value.slice(0, 350))}
                                   className="comment-textarea"
+                                  maxLength={350}
                                   style={{
                                     width: '100%',
                                     minHeight: '50px',
@@ -298,6 +307,9 @@ const ProjectCommentary = ({
                                   }}
                                   autoFocus
                                 />
+                                <div className="character-counter">
+                                  {editCommentValue.length}/350 characters
+                                </div>
                                 <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                                   <button onClick={handleCancelEditComment} className="btn-secondary" style={{ padding: '3px 6px', fontSize: '10px' }}>Cancel</button>
                                   <button onClick={() => handleSaveComment(reply.id)} className="btn-primary" style={{ padding: '3px 6px', fontSize: '10px' }}>Save</button>
@@ -339,9 +351,10 @@ const ProjectCommentary = ({
                   }}>
                     <textarea
                       value={newCommentValue}
-                      onChange={(e) => setNewCommentValue(e.target.value)}
+                      onChange={(e) => setNewCommentValue(e.target.value.slice(0, 350))}
                       placeholder="Write a reply..."
                       className="comment-textarea"
+                      maxLength={350}
                       style={{
                         width: '100%',
                         minHeight: '50px',
@@ -356,6 +369,9 @@ const ProjectCommentary = ({
                       }}
                       autoFocus
                     />
+                    <div className="character-counter">
+                      {newCommentValue.length}/350 characters
+                    </div>
                     <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                       <button onClick={handleCancelReply} className="btn-secondary" style={{ padding: '4px 8px', fontSize: '11px' }}>Cancel</button>
                       <button onClick={() => handleAddComment(comment.id)} className="btn-primary" style={{ padding: '4px 8px', fontSize: '11px' }}>Reply</button>

@@ -83,7 +83,7 @@
 }
 
 .stat-label {
-  font-size: 10px;
+  font-size: 15px;
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -549,7 +549,7 @@
 }
 
 .attention-item.compact .attention-project {
-  font-size: 9px;
+  font-size: 13px;
   margin-top: 0;
   line-height: 1.1;
 }
@@ -559,7 +559,7 @@
 }
 
 .attention-item.compact .upcoming-due-badge .due-label {
-  font-size: 9px;
+  font-size: 13px;
 }
 
 .attention-item.compact .attention-icon-wrapper {
@@ -784,7 +784,7 @@
 }
 
 .upcoming-due-badge .due-label {
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 600;
   color: #3b82f6;
 }
@@ -883,7 +883,7 @@
 
 .health-toggle-btn {
   padding: 3px 8px;
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 500;
   border: 1px solid #d1d5db;
   background: white;
@@ -914,7 +914,7 @@
 }
 
 .active-filter-switch .switch-label {
-  font-size: 10px;
+  font-size: 15px;
   color: #6b7280;
   white-space: nowrap;
 }
@@ -988,7 +988,7 @@
 }
 
 .health-rank {
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 600;
   color: #9ca3af;
   min-width: 18px;
@@ -1029,7 +1029,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 700;
   /* Color set inline based on health score */
 }
@@ -1064,7 +1064,7 @@
 }
 
 .health-pm-name {
-  font-size: 10px;
+  font-size: 15px;
   color: #6b7280;
   white-space: nowrap;
   overflow: hidden;
@@ -1088,7 +1088,7 @@
 }
 
 .audit-section-title {
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1197,7 +1197,7 @@
 
 .audit-detail-summary::before {
   content: '▶';
-  font-size: 8px;
+  font-size: 12px;
   color: #94a3b8;
   transition: transform 0.15s;
   flex-shrink: 0;
@@ -1238,7 +1238,7 @@
 .audit-detail-summary .audit-time {
   margin-left: auto;
   color: #94a3b8;
-  font-size: 10px;
+  font-size: 15px;
   flex-shrink: 0;
 }
 
@@ -1252,7 +1252,7 @@
 .audit-values-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 10px;
+  font-size: 15px;
 }
 
 .audit-values-table th {
@@ -1261,7 +1261,7 @@
   background: #e2e8f0;
   color: #475569;
   font-weight: 600;
-  font-size: 9px;
+  font-size: 13px;
   text-transform: uppercase;
 }
 
@@ -1324,7 +1324,7 @@
 .audit-no-details {
   color: #94a3b8;
   font-style: italic;
-  font-size: 10px;
+  font-size: 15px;
 }
 
 /* Dark mode for audit entries */
@@ -1477,14 +1477,14 @@
   justify-content: space-between;
   align-items: center;
   margin-top: 4px;
-  font-size: 9px;
+  font-size: 13px;
   color: #94a3b8;
 }
 
 .activity-summary {
   font-weight: 600;
   color: #3b82f6;
-  font-size: 10px;
+  font-size: 15px;
 }
 
 .activity-summary.selected {
@@ -1541,7 +1541,7 @@
   padding: 4px 12px;
   background: #3b82f6;
   color: white;
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 600;
   border-radius: 12px;
   text-transform: uppercase;
@@ -1732,7 +1732,7 @@
 }
 
 .timeline-time {
-  font-size: 10px;
+  font-size: 15px;
   color: #94a3b8;
 }
 
@@ -1751,7 +1751,7 @@
 }
 
 .timeline-card-context {
-  font-size: 10px;
+  font-size: 15px;
   margin-top: 4px;
   color: #64748b;
 }
@@ -1965,7 +1965,7 @@
 .performance-quadrant .compact-stats-inline .stat-label {
   color: #6b7280;
   text-transform: uppercase;
-  font-size: 9px;
+  font-size: 13px;
 }
 
 :root.dark-mode .performance-quadrant .compact-stats-inline .stat-value {
@@ -1979,7 +1979,7 @@
 .performance-quadrant .db-summary-line {
   margin-bottom: 4px;
   padding: 2px 6px;
-  font-size: 10px;
+  font-size: 15px;
 }
 
 .performance-quadrant .db-summary-line .db-size-value {
@@ -2139,7 +2139,7 @@
 .db-bar-scale {
   display: flex;
   justify-content: space-between;
-  font-size: 9px;
+  font-size: 13px;
   color: #9ca3af;
   margin-top: 2px;
 }
@@ -2235,7 +2235,7 @@
 }
 
 .db-section-title {
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -2273,7 +2273,7 @@
   gap: 6px;
   padding: 4px 8px;
   background: #f3f4f6;
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 600;
   color: #6b7280;
   text-transform: uppercase;
@@ -2286,7 +2286,7 @@
   grid-template-columns: 1fr auto auto;
   gap: 6px;
   padding: 4px 8px;
-  font-size: 10px;
+  font-size: 15px;
   border-bottom: 1px solid #f3f4f6;
   background: white;
 }
@@ -2577,7 +2577,7 @@
 .db-size-limits {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 15px;
   color: #9ca3af;
 }
 
@@ -2952,13 +2952,13 @@
 }
 
 .feedback-author {
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 500;
   color: #6b7280;
 }
 
 .feedback-time {
-  font-size: 10px;
+  font-size: 15px;
   color: #9ca3af;
 }
 
@@ -3323,18 +3323,20 @@ html.dark-mode .quadrant-content {
   align-items: flex-start;
   justify-content: space-between;
   padding: 10px 12px !important;
-  background: #f9fafb !important;
+  background: transparent !important;
   border-radius: 6px !important;
   transition: all 0.15s;
-  border: 1px solid #cbd5e1 !important;
+  border: 1px solid #e5e7eb !important;
+  border-left: 3px solid #8b5cf6 !important;
   box-sizing: border-box;
   cursor: pointer;
   margin-bottom: 8px !important;
 }
 
 :root:not(.dark-mode) .commentary-item:hover {
-  background-color: #f3f4f6 !important;
-  border-color: #94a3b8 !important;
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
+  border-left-color: #8b5cf6 !important;
 }
 
 .commentary-item-left {
@@ -3353,9 +3355,9 @@ html.dark-mode .quadrant-content {
 }
 
 .commentary-item-name {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  color: #1f2937;
+  color: #111827;
   line-height: 1.3;
 }
 
@@ -3368,8 +3370,8 @@ html.dark-mode .quadrant-content {
 }
 
 .commentary-text {
-  font-size: 12px;
-  color: #374151;
+  font-size: 15px;
+  color: #1f2937;
   line-height: 1.4;
   margin-top: 2px;
 }
@@ -3395,14 +3397,14 @@ html.dark-mode .quadrant-content {
 .commentary-item-period,
 .commentary-item-author,
 .commentary-item-time {
-  font-size: 10px;
-  color: #9ca3af;
+  font-size: 13px;
+  color: #6b7280;
 }
 
 .fullscreen-commentary .commentary-item-period,
 .fullscreen-commentary .commentary-item-author,
 .fullscreen-commentary .commentary-item-time {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .commentary-header {
@@ -3410,7 +3412,7 @@ html.dark-mode .quadrant-content {
   align-items: center;
   flex-wrap: wrap;
   gap: 2px 6px;
-  font-size: 10px;
+  font-size: 15px;
   justify-content: flex-start;
 }
 
@@ -3432,31 +3434,31 @@ html.dark-mode .quadrant-content {
 .commentary-label {
   color: #9ca3af;
   font-weight: 400;
-  font-size: 10px;
+  font-size: 15px;
 }
 
 .commentary-portfolio {
   font-weight: 500;
   color: #6b7280;
-  font-size: 10px;
+  font-size: 15px;
 }
 
 .commentary-project {
   font-weight: 600;
   color: #374151;
-  font-size: 10px;
+  font-size: 15px;
 }
 
 .commentary-metric {
   font-weight: 500;
   color: #374151;
-  font-size: 10px;
+  font-size: 15px;
 }
 
 .commentary-period {
   font-weight: 500;
   color: #374151;
-  font-size: 10px;
+  font-size: 15px;
 }
 
 /* Rich text rendering for commentary */
@@ -3490,22 +3492,22 @@ html.dark-mode .quadrant-content {
   justify-content: flex-end;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: 15px;
 }
 
 .commentary-author {
-  font-size: 10px;
+  font-size: 15px;
   color: #6b7280;
   font-weight: 500;
 }
 
 .commentary-time {
-  font-size: 10px;
+  font-size: 15px;
   color: #6b7280;
 }
 
 .commentary-relative-time {
-  font-size: 10px;
+  font-size: 15px;
   color: #9ca3af;
 }
 
@@ -3526,7 +3528,7 @@ html.dark-mode .quadrant-content {
   gap: 6px;
   padding: 2px 4px;
   margin-top: 6px;
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 600;
   color: #6b7280;
   border-bottom: 1px solid #e5e7eb;
@@ -3556,18 +3558,19 @@ html.dark-mode .quadrant-content {
   display: flex;
   -webkit-justify-content: space-between;
   justify-content: space-between;
-  -webkit-align-items: center;
-  align-items: center;
-  padding: 6px 10px;
-  background-color: #fef2f2;
-  border-radius: 4px;
+  -webkit-align-items: flex-start;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background-color: transparent;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid #fecaca;
+  border: 1px solid #e5e7eb;
+  border-left: 3px solid #dc2626;
   text-align: left;
-  line-height: 1;
+  line-height: 1.4;
   box-sizing: border-box;
-  min-height: 36px;
+  min-height: 48px;
 }
 
 .metric-item .metric-left {
@@ -3575,18 +3578,19 @@ html.dark-mode .quadrant-content {
 }
 
 .metric-item:hover {
-  background-color: #fee2e2;
-  border-color: #D0704d;
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  border-left-color: #dc2626;
 }
 
 .metric-item.amber {
-  background-color: #fffbeb;
-  border-color: #fde68a;
+  border-left-color: #f59e0b;
 }
 
 .metric-item.amber:hover {
-  background-color: #fef3c7;
-  border-color: #f5ad5b;
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  border-left-color: #f59e0b;
 }
 
 .metric-left {
@@ -3605,10 +3609,11 @@ html.dark-mode .quadrant-content {
 .metric-right {
   display: -webkit-flex;
   display: flex;
-  -webkit-align-items: center;
-  align-items: center;
+  -webkit-align-items: flex-start;
+  align-items: flex-start;
   -webkit-flex-shrink: 0;
   flex-shrink: 0;
+  padding-top: 2px;
 }
 
 .metric-right > * {
@@ -3625,7 +3630,7 @@ html.dark-mode .quadrant-content {
   -webkit-align-items: baseline;
   align-items: baseline;
   gap: 4px;
-  font-size: 12px;
+  font-size: 15px;
   white-space: nowrap;
 }
 
@@ -3640,22 +3645,22 @@ html.dark-mode .quadrant-content {
 }
 
 .stat-separator {
-  color: #9ca3af;
-  font-size: 11px;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 .stat-divider {
-  color: #d1d5db;
+  color: #9ca3af;
   margin: 0 2px;
 }
 
 .stat-target {
   font-weight: 600;
-  color: #6b7280;
+  color: #4b5563;
 }
 
 .stat-variance {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   margin-left: 4px;
 }
@@ -3715,14 +3720,14 @@ html.dark-mode .quadrant-content {
 .metric-text {
   display: -webkit-flex;
   display: flex;
-  -webkit-flex-direction: row;
-  flex-direction: row;
-  -webkit-align-items: baseline;
-  align-items: baseline;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-align-items: flex-start;
+  align-items: flex-start;
   -webkit-flex: 1;
   flex: 1;
   min-width: 0;
-  gap: 6px;
+  gap: 2px;
 }
 
 .portfolio-dot {
@@ -3733,19 +3738,16 @@ html.dark-mode .quadrant-content {
 }
 
 .metric-project {
-  font-size: 11px;
+  font-size: 16px;
   font-weight: 600;
-  color: #003c71;
-  white-space: nowrap;
-  line-height: 16px;
+  color: #111827;
+  line-height: 1.3;
   flex-shrink: 0;
 }
 
 .metric-project::after {
-  content: "›";
-  margin-left: 6px;
-  color: #9ca3af;
-  font-weight: 400;
+  content: "";
+  margin-left: 0;
 }
 
 .recovery-plan-indicator {
@@ -3772,12 +3774,9 @@ html.dark-mode .quadrant-content {
 }
 
 .metric-name {
-  font-size: 11px;
-  color: #6b7280;
-  line-height: 16px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 15px;
+  color: #4b5563;
+  line-height: 1.3;
   flex: 1;
   min-width: 0;
 }
@@ -3827,7 +3826,7 @@ html.dark-mode .quadrant-content {
 }
 
 .gauge-label {
-  font-size: 9px;
+  font-size: 13px;
   color: #6b7280;
   font-weight: 500;
   white-space: nowrap;
@@ -3840,12 +3839,12 @@ html.dark-mode .quadrant-content {
 }
 
 .target-icon {
-  font-size: 10px;
+  font-size: 15px;
   color: #6b7280;
 }
 
 .target-value {
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 600;
   color: #374151;
 }
@@ -4029,7 +4028,7 @@ html.dark-mode .quadrant-content {
   display: flex;
   align-items: center;
   gap: 3px;
-  font-size: 10px;
+  font-size: 15px;
   color: #9ca3af;
 }
 
@@ -4095,7 +4094,7 @@ html.dark-mode .quadrant-content {
 }
 
 .performance-quadrant .perf-label {
-  font-size: 8px;
+  font-size: 12px;
   margin-top: 0;
 }
 
@@ -4153,7 +4152,7 @@ html.dark-mode .quadrant-content {
 
 .performance-note {
   margin: 6px 0 0 0;
-  font-size: 10px;
+  font-size: 15px;
   color: #9ca3af;
   font-style: italic;
   text-align: center;
@@ -4386,18 +4385,20 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .commentary-item {
-  background: transparent;
-  border: 1px solid #4b5563;
+  background: transparent !important;
+  border: 1px solid #374151 !important;
+  border-left: 3px solid #8b5cf6 !important;
   border-radius: 6px;
-  padding: 12px 14px;
+  padding: 10px 12px !important;
   margin-bottom: 8px;
 }
 
 :root.dark-mode .commentary-item:hover {
-  background: #374151;
-  border: 1px solid #4b5563;
+  background: #1f2937 !important;
+  border: 1px solid #4b5563 !important;
+  border-left: 3px solid #8b5cf6 !important;
   border-radius: 6px;
-  padding: 12px 14px;
+  padding: 10px 12px !important;
   margin-bottom: 8px;
 }
 
@@ -4412,7 +4413,7 @@ html.dark-mode .quadrant-content {
 :root.dark-mode .commentary-item-period,
 :root.dark-mode .commentary-item-author,
 :root.dark-mode .commentary-item-time {
-  color: #6b7280;
+  color: #9ca3af;
 }
 
 :root.dark-mode .commentary-group-header {
@@ -4473,27 +4474,29 @@ html.dark-mode .quadrant-content {
 }
 
 :root.dark-mode .metric-item {
-  background-color: #7f1d1d;
-  border-color: #991b1b;
+  background-color: transparent;
+  border-color: #374151;
+  border-left-color: #dc2626;
 }
 
 :root.dark-mode .metric-item:hover {
-  background-color: #991b1b;
-  border-color: #fca5a5;
+  background-color: #1f2937;
+  border-color: #4b5563;
+  border-left-color: #dc2626;
 }
 
 :root.dark-mode .metric-item.amber {
-  background-color: #451a03;
-  border-color: #92400e;
+  border-left-color: #f59e0b;
 }
 
 :root.dark-mode .metric-item.amber:hover {
-  background-color: #78350f;
-  border-color: #f5ad5b;
+  background-color: #1f2937;
+  border-color: #4b5563;
+  border-left-color: #f59e0b;
 }
 
 :root.dark-mode .metric-project {
-  color: #e0f2fe;
+  color: #f3f4f6;
 }
 
 :root.dark-mode .recovery-plan-indicator {
@@ -4967,7 +4970,7 @@ html.dark-mode .quadrant-content {
 }
 
 .age-indicator .age-label {
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -6159,7 +6162,7 @@ html.dark-mode .quadrant-content {
 
 /* Dock label text */
 .dock-label {
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
   line-height: 1.1;
@@ -6191,7 +6194,7 @@ html.dark-mode .quadrant-content {
   position: absolute;
   top: 2px;
   right: 2px;
-  font-size: 10px;
+  font-size: 15px;
   color: #9ca3af;
 }
 
@@ -6784,7 +6787,7 @@ html.dark-mode .quadrant-content {
 }
 
 .expanded-panel-content .audit-detail-summary::before {
-  font-size: 10px;
+  font-size: 15px;
 }
 
 .expanded-panel-content .audit-detail-summary .audit-time {
@@ -6854,7 +6857,7 @@ html.dark-mode .quadrant-content {
 }
 
 .metrics-column .metric-name {
-  font-size: 12px;
+  font-size: 16px;
 }
 
 .metrics-column .gauge-track {
@@ -7236,7 +7239,7 @@ html.dark-mode .quadrant-content {
 }
 
 .users-list-section h3 .subtitle {
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 400;
   color: var(--text-secondary);
 }
@@ -7276,7 +7279,7 @@ html.dark-mode .quadrant-content {
 }
 
 .users-list-section .active-user-email {
-  font-size: 9px;
+  font-size: 13px;
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -7284,7 +7287,7 @@ html.dark-mode .quadrant-content {
 }
 
 .users-list-section .active-user-time {
-  font-size: 9px;
+  font-size: 13px;
   color: var(--text-muted);
   white-space: nowrap;
   flex-shrink: 0;
@@ -7670,21 +7673,23 @@ html.dark-mode .quadrant-content {
 }
 
 .recent-update-item {
-  padding: 12px 14px;
-  border-radius: 8px;
-  background: #f9fafb;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: transparent;
   border: 1px solid #e5e7eb;
+  border-left: 3px solid #3b82f6;
   box-sizing: border-box;
   transition: all 0.2s ease;
 }
 
 .recent-update-item:hover {
-  background: #f3f4f6;
+  background: #f9fafb;
   border-color: #d1d5db;
+  border-left-color: #3b82f6;
 }
 
 .recent-update-item.very-recent {
-  border-color: #f59e0b;
+  border-left-color: #f59e0b;
 }
 
 .update-project-header {
@@ -7701,19 +7706,19 @@ html.dark-mode .quadrant-content {
 .update-project-name {
   font-weight: 600;
   font-size: 16px;
-  color: #374151;
+  color: #111827;
   flex: 1;
   transition: color 0.15s;
 }
 
 .update-time {
-  font-size: 12px;
-  color: #6b7280;
+  font-size: 15px;
+  color: #4b5563;
 }
 
 .update-relative-time {
-  font-size: 11px;
-  color: #9ca3af;
+  font-size: 13px;
+  color: #6b7280;
 }
 
 .update-nav-icon {
@@ -7731,16 +7736,31 @@ html.dark-mode .quadrant-content {
 
 .update-metric-item {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 4px;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 6px;
   border-radius: 3px;
-  font-size: 13px;
+  font-size: 15px;
   transition: background 0.15s;
 }
 
 .update-metric-item:hover {
   background: rgba(0, 0, 0, 0.03);
+}
+
+.update-metric-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.update-metric-description {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.4;
+  padding-left: 16px;
+  font-style: italic;
 }
 
 .update-metric-name.recently-changed {
@@ -7753,6 +7773,7 @@ html.dark-mode .quadrant-content {
   display: inline-flex;
   align-items: center;
   vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .update-action-icon.create {
@@ -7768,25 +7789,27 @@ html.dark-mode .quadrant-content {
 }
 
 .update-metric-name {
-  color: #4b5563;
+  color: #374151;
   flex: 1;
+  min-width: 0;
 }
 
 .update-metric-detail {
-  font-size: 10px;
-  color: #9ca3af;
+  font-size: 13px;
+  color: #6b7280;
+  flex-shrink: 0;
 }
 
 .update-more {
-  font-size: 10px;
-  color: #6b7280;
+  font-size: 13px;
+  color: #4b5563;
   padding: 2px 4px;
   font-style: italic;
 }
 
 .update-summary {
-  font-size: 10px;
-  color: #6b7280;
+  font-size: 13px;
+  color: #4b5563;
   margin-top: 6px;
   padding-top: 0;
   border-top: none;
@@ -7825,16 +7848,22 @@ tr.recently-changed-row {
 /* Dark mode - Recent Updates */
 :root.dark-mode .recent-update-item {
   background: transparent;
-  border-color: #4b5563;
+  border-color: #374151;
+  border-left-color: #3b82f6;
 }
 
 :root.dark-mode .recent-update-item:hover {
-  background: #374151;
+  background: #1f2937;
   border-color: #4b5563;
+  border-left-color: #3b82f6;
 }
 
 :root.dark-mode .recent-update-item.very-recent {
-  border-color: #fbbf24;
+  border-left-color: #fbbf24;
+}
+
+:root.dark-mode .update-project-name {
+  color: #f3f4f6;
 }
 
 :root.dark-mode .updates-group-header {
@@ -7859,6 +7888,18 @@ tr.recently-changed-row {
 
 :root.dark-mode .update-metric-item:hover {
   background: rgba(255, 255, 255, 0.05);
+}
+
+:root.dark-mode .update-metric-description {
+  color: #9ca3af;
+}
+
+:root.dark-mode .update-metric-name {
+  color: #d1d5db;
+}
+
+:root.dark-mode .update-metric-detail {
+  color: #9ca3af;
 }
 
 :root.dark-mode .update-metric-name.recently-changed {

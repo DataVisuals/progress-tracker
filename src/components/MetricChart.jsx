@@ -475,6 +475,38 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     return changes.fields.includes(fieldName);
   };
 
+  // Helper function to strip HTML tags and count plain text characters
+  const getPlainTextLength = (html) => {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div.textContent.trim().length;
+  };
+
+  // Helper function to limit ReactQuill text to 350 characters
+  const limitQuillText = (html, maxLength = 350) => {
+    if (getPlainTextLength(html) <= maxLength) {
+      return html;
+    }
+    // If over limit, truncate the plain text and return
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    const plainText = div.textContent || '';
+    return plainText.slice(0, maxLength);
+  };
+
+  // Wrapped onChange handlers for ReactQuill with character limit
+  const handleNewCommentTextChange = (value) => {
+    setNewCommentText(limitQuillText(value));
+  };
+
+  const handleEditingCommentTextChange = (value) => {
+    setEditingCommentText(limitQuillText(value));
+  };
+
+  const handleReplyTextChange = (value) => {
+    setReplyText(limitQuillText(value));
+  };
+
   // Sort data by date always for consistency
   const sortedData = [...data].sort((a, b) => {
     return new Date(a.reporting_date) - new Date(b.reporting_date);
@@ -1209,6 +1241,12 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
     const valuePerPixel = dataRange / chartHeight;
     const newValue = Math.max(0, Math.round(draggedPoint.startValue + (deltaY * valuePerPixel)));
 
+    // Validate the new value
+    if (isNaN(newValue) || !isFinite(newValue)) {
+      console.error('Invalid drag value calculated:', { newValue, deltaY, valuePerPixel, dataRange });
+      return;
+    }
+
     // Update the dragged point's current value for live preview
     setDraggedPoint(prev => prev ? { ...prev, currentValue: newValue } : null);
   }, [draggedPoint, sortedData]);
@@ -1218,7 +1256,21 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
 
     // Only update if value changed
     if (draggedPoint.currentValue !== draggedPoint.startValue) {
+      // Validate the value before sending
+      if (isNaN(draggedPoint.currentValue) || !isFinite(draggedPoint.currentValue)) {
+        console.error('Invalid expected value, not updating:', draggedPoint.currentValue);
+        alert('Invalid value calculated. Please try again or enter the value manually.');
+        setIsDragging(false);
+        setDraggedPoint(null);
+        return;
+      }
+
       try {
+        console.log('Updating expected value:', {
+          periodId: sortedData[draggedPoint.index].id,
+          oldValue: draggedPoint.startValue,
+          newValue: draggedPoint.currentValue
+        });
         await api.updatePeriod(sortedData[draggedPoint.index].id, { expected: draggedPoint.currentValue });
         // Trigger parent to reload data
         if (onDataChange) {
@@ -1226,7 +1278,8 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
         }
       } catch (err) {
         console.error('Failed to update expected value:', err);
-        alert('Failed to update expected value');
+        const errorMsg = err.response?.data?.error || err.message || 'Unknown error';
+        alert(`Failed to update expected value: ${errorMsg}`);
       }
     }
 
@@ -1624,7 +1677,11 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
           {/* Portfolio Review Toggle */}
           {canEdit && onShowInPortfolioReviewChange && (
             <div className="metric-property" style={{ marginLeft: 'auto' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: '#6b7280' }}>
+              <label
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px' }}
+                className="portfolio-review-checkbox"
+                title="Only 4 metrics can be shown in the portfolio review. Disable another metric first if limit is reached."
+              >
                 <input
                   type="checkbox"
                   checked={showInPortfolioReview}
@@ -1994,7 +2051,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                   <ReactQuill
                     theme="snow"
                     value={newCommentText}
-                    onChange={setNewCommentText}
+                    onChange={handleNewCommentTextChange}
                     placeholder="Add comment..."
                     className="commentary-quill-sidebar"
                     modules={{
@@ -2006,6 +2063,9 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                       ]
                     }}
                   />
+                  <div className="character-counter" style={{ marginTop: '4px', marginBottom: 0 }}>
+                    {getPlainTextLength(newCommentText)}/350 characters
+                  </div>
                   <div className="commentary-actions-sidebar">
                     <ClarityIndicator text={newCommentText} size="sm" />
                     <div className="action-buttons">
@@ -2031,7 +2091,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                                   <ReactQuill
                                     theme="snow"
                                     value={editingCommentText}
-                                    onChange={setEditingCommentText}
+                                    onChange={handleEditingCommentTextChange}
                                     className="commentary-quill-sidebar"
                                     modules={{
                                       toolbar: [
@@ -2042,6 +2102,9 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                                       ]
                                     }}
                                   />
+                                  <div className="character-counter" style={{ marginTop: '4px', marginBottom: 0 }}>
+                                    {getPlainTextLength(editingCommentText)}/350 characters
+                                  </div>
                                   <div className="commentary-actions-sidebar" style={{ marginTop: '2px' }}>
                                     <ClarityIndicator text={editingCommentText} size="sm" />
                                     <div className="action-buttons">
@@ -2053,23 +2116,23 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                               ) : (
                                 <>
                                   <div className="comment-header-sidebar" style={{ gap: '4px', marginBottom: '1px' }}>
-                                    <span className="comment-date-sidebar" style={{ fontSize: '10px' }}>{comment.reporting_date}</span>
+                                    <span className="comment-date-sidebar">{comment.reporting_date}</span>
                                     <ClarityIndicator text={comment.comment_text} size="sm" compact />
-                                    <span className="comment-meta-sidebar" style={{ fontSize: '10px' }}>
+                                    <span className="comment-meta-sidebar">
                                       {comment.created_by_name && !comment.is_system && comment.created_by_name}
                                       {comment.is_system && 'System'}
                                       {allowDataEdits && !comment.is_system && (
-                                        <button onClick={() => handleReplyToComment(comment)} title="Reply" style={{ marginRight: '2px', fontSize: '10px' }}>↩</button>
+                                        <button onClick={() => handleReplyToComment(comment)} title="Reply" style={{ marginRight: '2px' }}>↩</button>
                                       )}
                                       {allowDataEdits && (isAdmin || !comment.is_system) && (
                                         <>
-                                          <button onClick={() => handleEditComment(comment)} title="Edit" style={{ fontSize: '10px' }}>✎</button>
-                                          <button onClick={() => handleDeleteComment(comment.id, comment.period_id)} title="Delete" style={{ fontSize: '10px' }}>×</button>
+                                          <button onClick={() => handleEditComment(comment)} title="Edit">✎</button>
+                                          <button onClick={() => handleDeleteComment(comment.id, comment.period_id)} title="Delete">×</button>
                                         </>
                                       )}
                                     </span>
                                   </div>
-                                  <div className="comment-text-sidebar ql-editor" style={{ fontSize: '11px', lineHeight: '1.3', padding: '0' }} dangerouslySetInnerHTML={{ __html: comment.comment_text }} />
+                                  <div className="comment-text-sidebar ql-editor" style={{ lineHeight: '1.3', padding: '0' }} dangerouslySetInnerHTML={{ __html: comment.comment_text }} />
                                 </>
                               )}
                             </div>
@@ -2083,7 +2146,6 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                                     background: 'none',
                                     border: 'none',
                                     cursor: 'pointer',
-                                    fontSize: '10px',
                                     color: '#6b7280',
                                     padding: '2px 0',
                                     display: 'flex',
@@ -2091,7 +2153,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                                     gap: '3px'
                                   }}
                                 >
-                                  <span style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', fontSize: '8px' }}>▶</span>
+                                  <span style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▶</span>
                                   {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
                                 </button>
 
@@ -2099,16 +2161,19 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                                 {isExpanded && (
                                   <div style={{ marginLeft: '6px', borderLeft: '2px solid #e5e7eb', paddingLeft: '6px' }}>
                                     {replies.map((reply) => (
-                                      <div key={reply.id} className={`commentary-item-sidebar reply ${reply.is_system ? 'system' : ''} ${isRecentlyUpdated(reply.created_at) ? 'recently-changed-comment' : ''}`} style={{ padding: '3px 6px', fontSize: '0.9em' }}>
+                                      <div key={reply.id} className={`commentary-item-sidebar reply ${reply.is_system ? 'system' : ''} ${isRecentlyUpdated(reply.created_at) ? 'recently-changed-comment' : ''}`} style={{ padding: '3px 6px' }}>
                                         {editingCommentId === reply.id ? (
                                           <div className="editing-comment-sidebar">
                                             <ReactQuill
                                               theme="snow"
                                               value={editingCommentText}
-                                              onChange={setEditingCommentText}
+                                              onChange={handleEditingCommentTextChange}
                                               className="commentary-quill-sidebar"
                                               modules={{ toolbar: [['bold', 'italic', 'underline'], ['clean']] }}
                                             />
+                                            <div className="character-counter" style={{ marginTop: '4px', marginBottom: 0 }}>
+                                              {getPlainTextLength(editingCommentText)}/350 characters
+                                            </div>
                                             <div className="commentary-actions-sidebar" style={{ marginTop: '2px' }}>
                                               <div className="action-buttons">
                                                 <button className="save-btn-small" onClick={() => handleSaveComment(reply.id, reply.period_id)}>Save</button>
@@ -2119,19 +2184,19 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                                         ) : (
                                           <>
                                             <div className="comment-header-sidebar" style={{ gap: '3px', marginBottom: '1px' }}>
-                                              <span className="comment-date-sidebar" style={{ fontSize: '9px' }}>{reply.reporting_date}</span>
-                                              <span className="comment-meta-sidebar" style={{ fontSize: '9px' }}>
+                                              <span className="comment-date-sidebar">{reply.reporting_date}</span>
+                                              <span className="comment-meta-sidebar">
                                                 {reply.created_by_name && !reply.is_system && reply.created_by_name}
                                                 {reply.is_system && 'System'}
                                                 {allowDataEdits && (isAdmin || !reply.is_system) && (
                                                   <>
-                                                    <button onClick={() => handleEditComment(reply)} title="Edit" style={{ fontSize: '9px' }}>✎</button>
-                                                    <button onClick={() => handleDeleteComment(reply.id, reply.period_id)} title="Delete" style={{ fontSize: '9px' }}>×</button>
+                                                    <button onClick={() => handleEditComment(reply)} title="Edit">✎</button>
+                                                    <button onClick={() => handleDeleteComment(reply.id, reply.period_id)} title="Delete">×</button>
                                                   </>
                                                 )}
                                               </span>
                                             </div>
-                                            <div className="comment-text-sidebar ql-editor" style={{ fontSize: '10px', lineHeight: '1.3', padding: '0' }} dangerouslySetInnerHTML={{ __html: reply.comment_text }} />
+                                            <div className="comment-text-sidebar ql-editor" style={{ lineHeight: '1.3', padding: '0' }} dangerouslySetInnerHTML={{ __html: reply.comment_text }} />
                                           </>
                                         )}
                                       </div>
@@ -2147,11 +2212,14 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                                 <ReactQuill
                                   theme="snow"
                                   value={replyText}
-                                  onChange={setReplyText}
+                                  onChange={handleReplyTextChange}
                                   placeholder="Write a reply..."
                                   className="commentary-quill-sidebar"
                                   modules={{ toolbar: [['bold', 'italic', 'underline'], ['clean']] }}
                                 />
+                                <div className="character-counter" style={{ marginTop: '4px', marginBottom: 0 }}>
+                                  {getPlainTextLength(replyText)}/350 characters
+                                </div>
                                 <div className="commentary-actions-sidebar" style={{ marginTop: '2px' }}>
                                   <div className="action-buttons">
                                     <button className="save-btn-small" onClick={() => handleSubmitReply(comment)}>Reply</button>
@@ -2178,9 +2246,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
       {compactMode && allComments.length > 0 && (
         <div className="compact-commentary">
           <div className="compact-commentary-text ql-editor" dangerouslySetInnerHTML={{ __html: allComments[0].comment_text }} />
-          <div className="compact-commentary-date">
-            {formatDate(allComments[0].reporting_date)}
-          </div>
+          <span className="compact-commentary-date-inline"> — {formatDate(allComments[0].reporting_date)}</span>
         </div>
       )}
 

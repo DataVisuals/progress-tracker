@@ -303,7 +303,7 @@ const RecentUpdatesPanel = ({
 
                       {metricList.length > 0 && (
                         <div className="update-metrics">
-                          {metricList.slice(0, forDock ? 5 : 3).map((metric, midx) => {
+                          {metricList.slice(0, forDock ? 10 : 5).map((metric, midx) => {
                             const latestAction = metric.actions[0];
                             const isMetricRecent = isRecent(metric.latestUpdate);
 
@@ -314,19 +314,26 @@ const RecentUpdatesPanel = ({
                                 onClick={() => handleMetricClick(group, metric.metricName)}
                                 style={{ cursor: group.projectId ? 'pointer' : 'default' }}
                               >
-                                {getActionIcon(latestAction?.action)}
-                                <span className={`update-metric-name ${isMetricRecent ? 'recently-changed' : ''}`}>{metric.metricName}</span>
-                                <span className="update-metric-detail">
-                                  {metric.actions.length > 1
-                                    ? `${metric.actions.length} changes`
-                                    : latestAction?.user}
-                                </span>
+                                <div className="update-metric-header">
+                                  {getActionIcon(latestAction?.action)}
+                                  <span className={`update-metric-name ${isMetricRecent ? 'recently-changed' : ''}`}>{metric.metricName}</span>
+                                  <span className="update-metric-detail">
+                                    {metric.actions.length > 1
+                                      ? `${metric.actions.length} changes`
+                                      : latestAction?.user}
+                                  </span>
+                                </div>
+                                {latestAction?.description && (
+                                  <div className="update-metric-description">
+                                    {latestAction.description}
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
-                          {metricList.length > (forDock ? 5 : 3) && (
+                          {metricList.length > (forDock ? 10 : 5) && (
                             <div className="update-more">
-                              +{metricList.length - (forDock ? 5 : 3)} more metrics
+                              +{metricList.length - (forDock ? 10 : 5)} more metrics
                             </div>
                           )}
                         </div>

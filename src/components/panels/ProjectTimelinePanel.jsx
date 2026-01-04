@@ -281,6 +281,17 @@ const ProjectTimelinePanel = ({
           </div>
           {/* Project rows with tubemap design */}
           <div className="timeline-projects">
+            {/* Today vertical line container */}
+            {timelineData.range && (
+              <div className="timeline-today-container">
+                <div
+                  className="timeline-today-line"
+                  style={{
+                    left: `${(nowPosition / 100) * 2150}px`
+                  }}
+                />
+              </div>
+            )}
           {timelineData.projects.map((project) => {
             const endPosition = getPosition(project.endDate);
             const startPosition = project.startDate ? getPosition(project.startDate) : Math.max(0, endPosition - 10);
@@ -576,16 +587,6 @@ const ProjectTimelinePanel = ({
                       </div>
                     )}
                   </div>
-
-                  {/* Today marker - inside track for correct positioning */}
-                  {timelineData.range && (
-                    <div
-                      className="timeline-today-marker-row"
-                      style={{ left: `${nowPosition}%` }}
-                    >
-                      <div className="today-line-segment" />
-                    </div>
-                  )}
                 </div>
 
                 {/* Time remaining badge */}
