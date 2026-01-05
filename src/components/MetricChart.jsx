@@ -28,6 +28,7 @@ import fixingAnimation from '../assets/fixing-animation.json';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import ClarityIndicator from './ClarityIndicator';
+import { getFirstName } from '../utils/userHelpers';
 import './MetricChart.css';
 
 // Barclays blue color for expected line
@@ -2119,7 +2120,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                                     <span className="comment-date-sidebar">{comment.reporting_date}</span>
                                     <ClarityIndicator text={comment.comment_text} size="sm" compact />
                                     <span className="comment-meta-sidebar">
-                                      {comment.created_by_name && !comment.is_system && comment.created_by_name}
+                                      {comment.created_by_name && !comment.is_system && <span title={comment.created_by_name}>{getFirstName(comment.created_by_name)}</span>}
                                       {comment.is_system && 'System'}
                                       {allowDataEdits && !comment.is_system && (
                                         <button onClick={() => handleReplyToComment(comment)} title="Reply" style={{ marginRight: '2px' }}>↩</button>
@@ -2186,7 +2187,7 @@ const MetricChart = ({ metricName, data, canEdit = false, canEditData, onDataCha
                                             <div className="comment-header-sidebar" style={{ gap: '3px', marginBottom: '1px' }}>
                                               <span className="comment-date-sidebar">{reply.reporting_date}</span>
                                               <span className="comment-meta-sidebar">
-                                                {reply.created_by_name && !reply.is_system && reply.created_by_name}
+                                                {reply.created_by_name && !reply.is_system && <span title={reply.created_by_name}>{getFirstName(reply.created_by_name)}</span>}
                                                 {reply.is_system && 'System'}
                                                 {allowDataEdits && (isAdmin || !reply.is_system) && (
                                                   <>

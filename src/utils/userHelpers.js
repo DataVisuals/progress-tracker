@@ -20,3 +20,19 @@ export const getUserInitials = (name) => {
   }
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
+
+/**
+ * Get first name from a full name
+ * @param {string} name - The user's full name
+ * @returns {string} First name only
+ *
+ * Examples:
+ * - "John Doe" -> "John"
+ * - "Jane" -> "Jane"
+ * - "" -> ""
+ */
+export const getFirstName = (name) => {
+  if (!name) return '';
+  const parts = name.trim().split(' ').filter(Boolean);
+  return parts[0] || '';
+};
