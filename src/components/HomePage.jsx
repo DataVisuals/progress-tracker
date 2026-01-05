@@ -127,22 +127,62 @@ const HomePage = ({
     if (stored) {
       try {
         const config = JSON.parse(stored);
+        let needsMigration = false;
+
         // Migrate old 'search' layout to '1x1' with search panel
         if (config.layout === 'search') {
+          console.log('[Config Migration] Migrating "search" layout to "1x1"');
           config.layout = '1x1';
           config.panels = ['search'];
-          // Save migrated config
-          localStorage.setItem('homePageDashboardConfig', JSON.stringify(config));
+          needsMigration = true;
         }
-        // Filter out dock-only panels (like 'timeline') from quadrant view
+
+        // Validate layout exists in LAYOUT_CONFIG
+        if (!config.layout || !LAYOUT_CONFIG[config.layout]) {
+          console.log(`[Config Migration] Invalid layout "${config.layout}", resetting to default`);
+          needsMigration = true;
+        }
+
+        // Filter out invalid or dock-only panels
         if (config.panels && Array.isArray(config.panels)) {
+          const originalLength = config.panels.length;
           config.panels = config.panels.filter(panelId => {
             const panelInfo = PANEL_CONFIG[panelId];
-            return panelInfo && !panelInfo.dockOnly;
+            if (!panelInfo) {
+              console.log(`[Config Migration] Removing invalid panel "${panelId}"`);
+              return false;
+            }
+            if (panelInfo.dockOnly) {
+              console.log(`[Config Migration] Removing dock-only panel "${panelId}"`);
+              return false;
+            }
+            return true;
           });
+          if (config.panels.length !== originalLength) {
+            needsMigration = true;
+          }
+        } else {
+          // panels is missing or not an array
+          needsMigration = true;
         }
+
+        // If config is now invalid (no panels or invalid layout), reset to defaults
+        if (needsMigration && (!config.panels || config.panels.length === 0 || !LAYOUT_CONFIG[config.layout])) {
+          console.log('[Config Migration] Config invalid after cleanup, resetting to defaults');
+          localStorage.setItem('homePageDashboardConfig', JSON.stringify(DEFAULT_DASHBOARD_CONFIG));
+          return DEFAULT_DASHBOARD_CONFIG;
+        }
+
+        // Save migrated config if it changed
+        if (needsMigration) {
+          console.log('[Config Migration] Saving migrated config:', config);
+          localStorage.setItem('homePageDashboardConfig', JSON.stringify(config));
+        }
+
         return config;
       } catch (e) {
+        console.error('[Config Migration] Failed to parse stored config, resetting to defaults:', e);
+        localStorage.removeItem('homePageDashboardConfig');
         return DEFAULT_DASHBOARD_CONFIG;
       }
     }
@@ -166,8 +206,27 @@ const HomePage = ({
     const stored = localStorage.getItem('homePageMinimizedPanels');
     if (stored) {
       try {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed)) return [];
+
+        // Filter out invalid panel IDs
+        const valid = parsed.filter(panelId => {
+          const exists = PANEL_CONFIG[panelId];
+          if (!exists) {
+            console.log(`[Config Migration] Removing invalid minimized panel "${panelId}"`);
+          }
+          return exists;
+        });
+
+        // Save cleaned up list if it changed
+        if (valid.length !== parsed.length) {
+          localStorage.setItem('homePageMinimizedPanels', JSON.stringify(valid));
+        }
+
+        return valid;
       } catch (e) {
+        console.error('[Config Migration] Failed to parse minimized panels:', e);
+        localStorage.removeItem('homePageMinimizedPanels');
         return [];
       }
     }
