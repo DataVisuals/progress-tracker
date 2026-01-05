@@ -3743,6 +3743,10 @@ html.dark-mode .quadrant-content {
   color: #111827;
   line-height: 1.3;
   flex-shrink: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .metric-project::after {
@@ -3779,6 +3783,10 @@ html.dark-mode .quadrant-content {
   line-height: 1.3;
   flex: 1;
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .metric-variance {
