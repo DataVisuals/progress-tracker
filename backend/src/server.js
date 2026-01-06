@@ -2743,8 +2743,8 @@ function createApp(dbPath) {
         return res.status(401).json({ error: 'User not authenticated' });
       }
   
-      const { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id } = req.body;
-      const projectData = { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id };
+      const { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id, benefits } = req.body;
+      const projectData = { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id, benefits };
 
       // Log project creation attempt
       logger.project.createAttempt(req.user, projectData);
@@ -2778,8 +2778,8 @@ function createApp(dbPath) {
       }
 
       const result = await dbRun(
-        'INSERT INTO projects (name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [name, description, initiative_manager || null, secondary_pm || null, start_date || null, end_date || null, portfolio_id || null]
+        'INSERT INTO projects (name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id, benefits) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [name, description, initiative_manager || null, secondary_pm || null, start_date || null, end_date || null, portfolio_id || null, benefits || null]
       );
 
       // Auto-grant permission to the creating user if they are a PM or Editor
@@ -2795,7 +2795,7 @@ function createApp(dbPath) {
       await grantPermissionsToInitiativeManagers(result.lastID, initiative_manager, secondary_pm);
 
       await logAudit(req.user, 'CREATE', 'projects', result.lastID, null,
-        { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id },
+        { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id, benefits },
         `Created project "${name}"`,
         req.ip
       );
@@ -2803,7 +2803,7 @@ function createApp(dbPath) {
       // Log successful creation
       logger.project.createSuccess(req.user, result.lastID, projectData);
 
-      res.json({ id: result.lastID, name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id });
+      res.json({ id: result.lastID, name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id, benefits });
     } catch (err) {
       logger.project.createFailure(req.user, req.body, err.message);
       res.status(500).json({ error: err.message });
@@ -2817,7 +2817,7 @@ function createApp(dbPath) {
         return res.status(403).json({ error: 'You do not have permission to edit this project' });
       }
 
-      const { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id } = req.body;
+      const { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id, benefits } = req.body;
       const oldProject = await dbGet('SELECT * FROM projects WHERE id = ?', [req.params.id]);
 
       if (!oldProject) {
@@ -2839,16 +2839,16 @@ function createApp(dbPath) {
       }
 
       await dbRun(
-        'UPDATE projects SET name = ?, description = ?, initiative_manager = ?, secondary_pm = ?, start_date = ?, end_date = ?, portfolio_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [name, description, initiative_manager || null, secondary_pm || null, start_date || null, end_date || null, portfolio_id || null, req.params.id]
+        'UPDATE projects SET name = ?, description = ?, initiative_manager = ?, secondary_pm = ?, start_date = ?, end_date = ?, portfolio_id = ?, benefits = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [name, description, initiative_manager || null, secondary_pm || null, start_date || null, end_date || null, portfolio_id || null, benefits || null, req.params.id]
       );
 
       // Grant permissions to new initiative managers
       await grantPermissionsToInitiativeManagers(req.params.id, initiative_manager, secondary_pm);
 
       await logAudit(req.user, 'UPDATE', 'projects', req.params.id,
-        { name: oldProject.name, description: oldProject.description, initiative_manager: oldProject.initiative_manager, secondary_pm: oldProject.secondary_pm, start_date: oldProject.start_date, end_date: oldProject.end_date, portfolio_id: oldProject.portfolio_id },
-        { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id },
+        { name: oldProject.name, description: oldProject.description, initiative_manager: oldProject.initiative_manager, secondary_pm: oldProject.secondary_pm, start_date: oldProject.start_date, end_date: oldProject.end_date, portfolio_id: oldProject.portfolio_id, benefits: oldProject.benefits },
+        { name, description, initiative_manager, secondary_pm, start_date, end_date, portfolio_id, benefits },
         `Updated project "${name}"`,
         req.ip
       );
@@ -9370,6 +9370,14 @@ function createApp(dbPath) {
     try {
       await dbRun(`ALTER TABLE backlog_items ADD COLUMN end_date DATE`);
       console.log('✅ Added end_date column to backlog_items');
+    } catch (err) {
+      // Column likely already exists
+    }
+
+    // Migration: Add benefits column to projects
+    try {
+      await dbRun(`ALTER TABLE projects ADD COLUMN benefits TEXT`);
+      console.log('✅ Added benefits column to projects');
     } catch (err) {
       // Column likely already exists
     }

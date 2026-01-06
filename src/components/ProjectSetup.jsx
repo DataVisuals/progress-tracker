@@ -8,12 +8,22 @@ import UserSelector from './UserSelector';
 import './FormInputs.css';
 import './ProjectSetup.css';
 
+// Benefits options
+const BENEFITS_OPTIONS = [
+  { value: 'automation', label: 'Automation and Process Optimisation' },
+  { value: 'capability', label: 'Capability Development' },
+  { value: 'cost', label: 'Cost Optimisation' },
+  { value: 'technology', label: 'Technology Modernisation' },
+  { value: 'risk', label: 'Risk and Controls' }
+];
+
 const ProjectSetup = ({ onComplete, onCancel, backlogMode = false, initialData = null }) => {
   const [projectName, setProjectName] = useState(initialData?.name || '');
   const [projectManager, setProjectManager] = useState(null);
   const [secondaryPM, setSecondaryPM] = useState(null);
   const [projectDesc, setProjectDesc] = useState(initialData?.description || '');
   const [portfolioId, setPortfolioId] = useState(initialData?.portfolio_id || null);
+  const [benefits, setBenefits] = useState(initialData?.benefits || '');
   const [priority, setPriority] = useState(initialData?.priority || 'medium');
   const [users, setUsers] = useState([]);
   const [portfolios, setPortfolios] = useState([]);
@@ -201,6 +211,10 @@ const ProjectSetup = ({ onComplete, onCancel, backlogMode = false, initialData =
       alert('Please select a Portfolio');
       return;
     }
+    if (!benefits) {
+      alert('Please select a Benefits category');
+      return;
+    }
     if (!projectStartDate || !projectEndDate) {
       alert('Please select project start and end dates');
       return;
@@ -236,7 +250,8 @@ const ProjectSetup = ({ onComplete, onCancel, backlogMode = false, initialData =
         secondary_pm: secondaryPM ? secondaryPM.label : '',
         start_date: projectStartDate,
         end_date: projectEndDate,
-        portfolio_id: portfolioId
+        portfolio_id: portfolioId,
+        benefits: benefits
       });
       const projectId = projectResponse.data.id;
 
@@ -349,6 +364,18 @@ const ProjectSetup = ({ onComplete, onCancel, backlogMode = false, initialData =
             />
           </div>
           <div className="form-group">
+            <label htmlFor="benefits">Benefits{!backlogMode && ' *'}</label>
+            <Select
+              id="benefits"
+              value={benefits ? BENEFITS_OPTIONS.find(b => b.value === benefits) : null}
+              onChange={(option) => setBenefits(option ? option.value : '')}
+              options={BENEFITS_OPTIONS}
+              styles={selectStyles}
+              placeholder="Select primary benefit..."
+              isClearable
+            />
+          </div>
+          <div className="form-group">
             <label htmlFor="project-start-date">Project Start Date{!backlogMode && ' *'}</label>
             <input
               id="project-start-date"
@@ -357,6 +384,8 @@ const ProjectSetup = ({ onComplete, onCancel, backlogMode = false, initialData =
               onChange={(e) => setProjectStartDate(e.target.value)}
             />
           </div>
+        </div>
+        <div className="form-row three-col">
           <div className="form-group">
             <label htmlFor="project-end-date">Project End Date{!backlogMode && ' *'}</label>
             <input
@@ -366,6 +395,8 @@ const ProjectSetup = ({ onComplete, onCancel, backlogMode = false, initialData =
               onChange={(e) => setProjectEndDate(e.target.value)}
             />
           </div>
+          <div className="form-group" />
+          <div className="form-group" />
         </div>
         {backlogMode && (
           <div className="form-row">
