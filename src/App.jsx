@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Build timestamp - updated automatically before each commit to gh
-const BUILD_TIMESTAMP = '2026-01-05 16:13:20';
+const BUILD_TIMESTAMP = '2026-01-06 09:15:00';
 import Select from 'react-select';
 import 'react-quill/dist/quill.snow.css';
 import Login from './components/Login';
@@ -163,19 +163,6 @@ function App() {
   });
   const [tokenExpiryWarning, setTokenExpiryWarning] = useState(null); // Time until expiry (for display)
   const [showTokenWarning, setShowTokenWarning] = useState(false); // Show warning modal
-  const [skipTutorialAtStartup, setSkipTutorialAtStartup] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('tutorialPrefs') || '{}');
-      // Reset preference if version changed
-      if (saved.version !== BUILD_TIMESTAMP) {
-        return false;
-      }
-      return saved.skip || false;
-    } catch {
-      return false;
-    }
-  });
-  const showHowToSpotlight = !skipTutorialAtStartup;
 
   // React Query hooks for cached data fetching
   // Note: Don't require isAuthenticated - app allows unauthenticated viewing
@@ -2310,7 +2297,6 @@ function App() {
             projectDateHistory={projectDateHistory}
             milestoneDateHistory={milestoneDateHistory}
             onShowTutorial={() => setShowTutorial(true)}
-            showHowToSpotlight={showHowToSpotlight}
             onAddBacklogItem={handleAddBacklogItem}
             onEditBacklogItem={handleEditBacklogItem}
             onPromoteBacklogItem={handlePromoteBacklogItem}
@@ -2651,12 +2637,6 @@ function App() {
       {showTutorial && (
         <Tutorial
           onClose={() => setShowTutorial(false)}
-          skipAtStartup={skipTutorialAtStartup}
-          onSkipAtStartupChange={(skip) => {
-            setSkipTutorialAtStartup(skip);
-            localStorage.setItem('tutorialPrefs', JSON.stringify({ skip, version: BUILD_TIMESTAMP }));
-          }}
-          appVersion={BUILD_TIMESTAMP}
         />
       )}
 

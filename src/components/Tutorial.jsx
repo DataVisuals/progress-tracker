@@ -40,7 +40,7 @@ import {
 } from 'react-icons/md';
 import './Tutorial.css';
 
-const Tutorial = ({ onClose, startPage = 0, skipAtStartup = false, onSkipAtStartupChange, appVersion }) => {
+const Tutorial = ({ onClose, startPage = 0 }) => {
   const [currentPage, setCurrentPage] = useState(startPage);
   const [isFlipping, setIsFlipping] = useState(false);
   const [flipDirection, setFlipDirection] = useState('next');
@@ -127,18 +127,6 @@ const Tutorial = ({ onClose, startPage = 0, skipAtStartup = false, onSkipAtStart
             </div>
           </div>
           <p className="reasons-cta">Use arrows to learn how to get started →</p>
-          <div className="startup-toggle-section">
-            <label className="startup-toggle">
-              <input
-                type="checkbox"
-                checked={skipAtStartup}
-                onChange={(e) => onSkipAtStartupChange?.(e.target.checked)}
-              />
-              <span className="toggle-slider"></span>
-              <span className="toggle-label">Don't show at startup</span>
-            </label>
-            <p className="version-note">Build: {appVersion} — This preference resets when the app is updated</p>
-          </div>
         </div>
       )
     },

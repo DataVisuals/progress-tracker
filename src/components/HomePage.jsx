@@ -90,7 +90,6 @@ const HomePage = ({
   projectDateHistory = {},
   milestoneDateHistory: milestoneDateHistoryProp = {},
   onShowTutorial,
-  showHowToSpotlight = false,
   onAddBacklogItem,
   onEditBacklogItem,
   onPromoteBacklogItem
@@ -1702,16 +1701,16 @@ const HomePage = ({
                 );
               })}
 
-              {/* How To button - pushed to far right */}
+              {/* Getting Started button - pushed to far right */}
               <div className="dock-spacer" />
               <button
-                className={`minimized-tab how-to-dock-btn ${showHowToSpotlight ? 'spotlight' : ''}`}
+                className="minimized-tab how-to-dock-btn"
                 onClick={onShowTutorial}
-                title="How to use Progress Tracker"
+                title="Getting Started with Progress Tracker"
               >
                 <MdMenuBook />
-                <span className="dock-label">How To</span>
-                <span className="tab-tooltip">How To...</span>
+                <span className="dock-label">Get Started</span>
+                <span className="tab-tooltip">Getting Started</span>
               </button>
             </div>
           </div>
