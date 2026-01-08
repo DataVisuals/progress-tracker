@@ -1,9 +1,29 @@
 import React from 'react';
 import { MdSwapHoriz, MdShare } from 'react-icons/md';
+import Select from 'react-select';
 import ClarityIndicator from './ClarityIndicator';
 import UserSelector from './UserSelector';
 import ProjectDependencies from './ProjectDependencies';
 import { formatDate, isRecentlyUpdated } from '../utils/dateFormatters';
+import { selectStyles } from './SelectStyles';
+
+// Benefits options - shared with ProjectSetup
+const BENEFITS_OPTIONS = [
+  { value: 'automation', label: 'Automation and Process Optimisation' },
+  { value: 'capability', label: 'Capability Development' },
+  { value: 'cost', label: 'Cost Optimisation' },
+  { value: 'technology', label: 'Technology Modernisation' },
+  { value: 'risk', label: 'Risk and Controls' }
+];
+
+// Short labels for badge display
+const BENEFITS_SHORT_LABELS = {
+  automation: 'Automation',
+  capability: 'Capability',
+  cost: 'Cost',
+  technology: 'Technology',
+  risk: 'Risk & Controls'
+};
 
 /**
  * ProjectHeader component - displays project title, metadata, portfolio, dates, IMs, links, and description
@@ -45,6 +65,14 @@ const ProjectHeader = ({
   setEditSecondaryPMValue,
   setEditingPMs,
   users,
+
+  // Editing state - Benefits
+  editingBenefits,
+  editBenefitsValue,
+  setEditBenefitsValue,
+  setEditingBenefits,
+  handleBenefitsClick,
+  handleSaveBenefits,
 
   // Editing state - Description
   editingProjectDesc,
@@ -257,6 +285,40 @@ const ProjectHeader = ({
                 + Add dates
               </button>
             ) : null}
+            {/* Benefits badges */}
+            {editingBenefits ? (
+              <div className="benefits-editor">
+                <Select
+                  isMulti
+                  value={BENEFITS_OPTIONS.filter(b => editBenefitsValue.includes(b.value))}
+                  onChange={(options) => setEditBenefitsValue(options ? options.map(o => o.value) : [])}
+                  options={BENEFITS_OPTIONS}
+                  styles={selectStyles}
+                  placeholder="Select benefits..."
+                  className="benefits-select"
+                  menuPortalTarget={document.body}
+                  autoFocus
+                />
+                <button className="save-btn" onClick={handleSaveBenefits}>Save</button>
+                <button className="cancel-btn" onClick={() => setEditingBenefits(false)}>Cancel</button>
+              </div>
+            ) : (
+              <div
+                className={`benefits-display ${canEdit() ? 'editable' : ''}`}
+                onClick={canEdit() ? handleBenefitsClick : undefined}
+                title={canEdit() ? "Click to edit benefits" : undefined}
+              >
+                {currentProject?.benefits ? (
+                  currentProject.benefits.split(',').filter(Boolean).map((benefit, idx) => (
+                    <span key={benefit} className="benefit-badge">
+                      {BENEFITS_SHORT_LABELS[benefit] || benefit}
+                    </span>
+                  ))
+                ) : canEdit() ? (
+                  <span className="benefit-placeholder">+ Benefits</span>
+                ) : null}
+              </div>
+            )}
           </div>
           {/* Second row: IMs and Links combined */}
           <div className="project-meta-row">

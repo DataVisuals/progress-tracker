@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Build timestamp - updated automatically before each commit to gh
-const BUILD_TIMESTAMP = '2026-01-06 09:45:00';
+const BUILD_TIMESTAMP = '2026-01-06 10:15:00';
 import Select from 'react-select';
 import 'react-quill/dist/quill.snow.css';
 import Login from './components/Login';
@@ -94,6 +94,8 @@ function App() {
   const [editingPMs, setEditingPMs] = useState(false);
   const [editPMValue, setEditPMValue] = useState(null);
   const [editSecondaryPMValue, setEditSecondaryPMValue] = useState(null);
+  const [editingBenefits, setEditingBenefits] = useState(false);
+  const [editBenefitsValue, setEditBenefitsValue] = useState([]);
   const [users, setUsers] = useState([]);
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
@@ -1387,6 +1389,37 @@ function App() {
     setEditingPMs(false);
   };
 
+  const handleBenefitsClick = () => {
+    if (!canEdit()) return;
+    setEditingBenefits(true);
+    // Parse current benefits (comma-separated string)
+    const currentBenefits = currentProject?.benefits ? currentProject.benefits.split(',').filter(Boolean) : [];
+    setEditBenefitsValue(currentBenefits);
+  };
+
+  const handleSaveBenefits = async () => {
+    const newBenefits = editBenefitsValue.join(',');
+    const benefitsChanged = newBenefits !== (currentProject?.benefits || '');
+
+    if (benefitsChanged) {
+      try {
+        await api.updateProject(selectedProject, {
+          name: currentProject.name,
+          description: currentProject.description,
+          initiative_manager: currentProject.initiative_manager,
+          secondary_pm: currentProject.secondary_pm,
+          portfolio_id: currentProject.portfolio_id,
+          benefits: newBenefits
+        });
+        await loadProjects();
+      } catch (err) {
+        console.error('Failed to update benefits:', err);
+        alert('Failed to update benefits: ' + (err.response?.data?.error || err.message));
+      }
+    }
+    setEditingBenefits(false);
+  };
+
   const handleMetricCreated = async (metricName) => {
     // Reload both metrics list and project data
     await loadProjectMetrics();
@@ -2069,6 +2102,12 @@ function App() {
               handleSaveProjectDates={handleSaveProjectDates}
               handlePMsClick={handlePMsClick}
               handleSavePMs={handleSavePMs}
+              editingBenefits={editingBenefits}
+              editBenefitsValue={editBenefitsValue}
+              setEditBenefitsValue={setEditBenefitsValue}
+              setEditingBenefits={setEditingBenefits}
+              handleBenefitsClick={handleBenefitsClick}
+              handleSaveBenefits={handleSaveBenefits}
               handleProjectDescClick={handleProjectDescClick}
               handleProjectDescKeyDown={handleProjectDescKeyDown}
               handleSaveProjectDesc={handleSaveProjectDesc}

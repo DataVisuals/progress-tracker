@@ -23,7 +23,14 @@ const ProjectSetup = ({ onComplete, onCancel, backlogMode = false, initialData =
   const [secondaryPM, setSecondaryPM] = useState(null);
   const [projectDesc, setProjectDesc] = useState(initialData?.description || '');
   const [portfolioId, setPortfolioId] = useState(initialData?.portfolio_id || null);
-  const [benefits, setBenefits] = useState(initialData?.benefits || '');
+  const [benefits, setBenefits] = useState(() => {
+    if (!initialData?.benefits) return [];
+    // Handle comma-separated string from database
+    if (typeof initialData.benefits === 'string') {
+      return initialData.benefits.split(',').filter(Boolean);
+    }
+    return Array.isArray(initialData.benefits) ? initialData.benefits : [];
+  });
   const [priority, setPriority] = useState(initialData?.priority || 'medium');
   const [users, setUsers] = useState([]);
   const [portfolios, setPortfolios] = useState([]);
@@ -211,8 +218,8 @@ const ProjectSetup = ({ onComplete, onCancel, backlogMode = false, initialData =
       alert('Please select a Portfolio');
       return;
     }
-    if (!benefits) {
-      alert('Please select a Benefits category');
+    if (!benefits || benefits.length === 0) {
+      alert('Please select at least one Benefits category');
       return;
     }
     if (!projectStartDate || !projectEndDate) {
@@ -251,7 +258,7 @@ const ProjectSetup = ({ onComplete, onCancel, backlogMode = false, initialData =
         start_date: projectStartDate,
         end_date: projectEndDate,
         portfolio_id: portfolioId,
-        benefits: benefits
+        benefits: benefits.join(',')
       });
       const projectId = projectResponse.data.id;
 
@@ -367,12 +374,12 @@ const ProjectSetup = ({ onComplete, onCancel, backlogMode = false, initialData =
             <label htmlFor="benefits">Benefits{!backlogMode && ' *'}</label>
             <Select
               id="benefits"
-              value={benefits ? BENEFITS_OPTIONS.find(b => b.value === benefits) : null}
-              onChange={(option) => setBenefits(option ? option.value : '')}
+              isMulti
+              value={BENEFITS_OPTIONS.filter(b => benefits.includes(b.value))}
+              onChange={(options) => setBenefits(options ? options.map(o => o.value) : [])}
               options={BENEFITS_OPTIONS}
               styles={selectStyles}
-              placeholder="Select primary benefit..."
-              isClearable
+              placeholder="Select benefits..."
             />
           </div>
           <div className="form-group">
