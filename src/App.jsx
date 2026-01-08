@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 // Build timestamp - updated automatically before each commit to gh
-const BUILD_TIMESTAMP = '2026-01-06 10:15:00';
+const BUILD_TIMESTAMP = '2026-01-06 10:30:00';
 import Select from 'react-select';
 import 'react-quill/dist/quill.snow.css';
 import Login from './components/Login';
@@ -1111,7 +1111,8 @@ function App() {
         description: project.description,
         initiative_manager: project.initiative_manager,
         secondary_pm: project.secondary_pm,
-        portfolio_id: project.portfolio_id
+        portfolio_id: project.portfolio_id,
+        benefits: project.benefits
       });
 
       // Reload projects to reflect the new name
@@ -1166,7 +1167,8 @@ function App() {
           description: editProjectDescValue,
           initiative_manager: currentProject.initiative_manager,
           secondary_pm: currentProject.secondary_pm,
-          portfolio_id: currentProject.portfolio_id
+          portfolio_id: currentProject.portfolio_id,
+          benefits: currentProject.benefits
         });
         // Reload projects to reflect the new description
         await loadProjects();
@@ -1298,7 +1300,8 @@ function App() {
           secondary_pm: currentProject.secondary_pm,
           start_date: editProjectStartDate,
           end_date: editProjectEndDate,
-          portfolio_id: currentProject.portfolio_id
+          portfolio_id: currentProject.portfolio_id,
+          benefits: currentProject.benefits
         });
         // Reload projects to reflect the new dates
         await loadProjects();
@@ -1335,7 +1338,8 @@ function App() {
           secondary_pm: currentProject.secondary_pm,
           start_date: currentProject.start_date,
           end_date: currentProject.end_date,
-          portfolio_id: editPortfolioValue
+          portfolio_id: editPortfolioValue,
+          benefits: currentProject.benefits
         });
 
         // If we're filtering by a portfolio and the project was moved to a different one,
@@ -1378,7 +1382,8 @@ function App() {
           description: currentProject.description,
           initiative_manager: newPMName,
           secondary_pm: newSecondaryPMName,
-          portfolio_id: currentProject.portfolio_id
+          portfolio_id: currentProject.portfolio_id,
+          benefits: currentProject.benefits
         });
         await loadProjects();
       } catch (err) {
