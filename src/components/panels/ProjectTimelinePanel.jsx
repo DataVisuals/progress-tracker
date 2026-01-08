@@ -139,13 +139,24 @@ const ProjectTimelinePanel = ({
       current.setMonth(current.getMonth() + 1);
     }
 
-    // If too many markers, show every 2nd or 3rd month to prevent overlap
+    // If too many markers, show every 2nd, 3rd or 4th month to prevent overlap
     const totalMonths = allMarkers.length;
     let step = 1;
-    if (totalMonths > 18) step = 3;
-    else if (totalMonths > 12) step = 2;
+    if (totalMonths > 24) step = 4;
+    else if (totalMonths > 16) step = 3;
+    else if (totalMonths > 10) step = 2;
 
-    return allMarkers.filter((_, idx) => idx % step === 0);
+    // Filter by step and also ensure minimum spacing (4% apart)
+    const filtered = allMarkers.filter((_, idx) => idx % step === 0);
+    const result = [];
+    let lastPosition = -10;
+    for (const marker of filtered) {
+      if (marker.position - lastPosition >= 4) {
+        result.push(marker);
+        lastPosition = marker.position;
+      }
+    }
+    return result;
   };
 
   // Format date for display
@@ -281,13 +292,13 @@ const ProjectTimelinePanel = ({
           </div>
           {/* Project rows with tubemap design */}
           <div className="timeline-projects">
-            {/* Today vertical line container */}
+            {/* Today vertical line container - positioned within track area only */}
             {timelineData.range && (
               <div className="timeline-today-container">
                 <div
                   className="timeline-today-line"
                   style={{
-                    left: `${(nowPosition / 100) * 2150}px`
+                    left: `${nowPosition}%`
                   }}
                 />
               </div>
